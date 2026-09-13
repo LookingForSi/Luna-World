@@ -1,109 +1,109 @@
-# Luna World v0.1 — Design Specification
+# Luna World v0.1 — Спецификация дизайна
 
-Date: 2026-09-13
-Status: proposed / ready for owner review
-Target release: `0.1.0`
-Current development version: `0.1.0-dev.0`
+Дата: 2026-09-13  
+Статус: утверждено владельцем проекта  
+Целевая версия: `0.1.0`  
+Текущая версия разработки: `0.1.0-dev.0`
 
-## 1. Decision summary
+## 1. Ключевые решения
 
-Luna World v0.1 is a **Vertical Slice**, not a tech demo and not a mini-MMO.
+Luna World v0.1 — это **Vertical Slice**, а не техническое демо и не mini-MMO.
 
-The game is a standalone Roblox multiplayer RPG inspired by the *feeling* of Lineage II C4 / Interlude: serious stylized fantasy, spacious environments, target-based PvE, meaningful progression and rare loot. It must not copy Lineage II IP, assets, names, maps, UI, music, lore, or other protected elements.
+Игра создаётся как самостоятельная multiplayer RPG внутри Roblox, вдохновлённая ощущением Lineage II эпохи C4 / Interlude: серьёзное стилизованное fantasy, просторные локации, target-based PvE, ощутимая прогрессия и значимый редкий лут. Проект не копирует IP Lineage II, чужие ассеты, названия, карты, интерфейс, музыку, лор или иные защищённые элементы.
 
-Movement is modern (`WASD / gamepad / touch`), while combat follows classic MMORPG target-based principles.
+Перемещение персонажа — современное (`WASD / gamepad / touch`), а бой строится по классическим принципам target-based MMORPG.
 
-The v0.1 route is:
+Маршрут v0.1:
 
 `Luna Village → Moonfall Valley → Ruins of Selene`
 
-Target first-play session: roughly 45–90 minutes.
+Целевая длительность первого прохождения: примерно 45–90 минут.
 
-Level cap: 10.
+Максимальный уровень v0.1: 10.
 
-## 2. Product success criterion
+## 2. Критерий продуктового успеха
 
-The slice must answer three questions positively:
+Vertical Slice должен дать положительный ответ на три вопроса:
 
-1. Does the player want to kill one more mob?
-2. Does the player want to see what the next meaningful drop is?
-3. After the first dungeon boss, does the player want to see more of the world?
+1. Хочет ли игрок убить ещё одного моба?
+2. Хочет ли игрок узнать, какой значимый предмет выпадет следующим?
+3. После первого dungeon boss хочет ли игрок увидеть продолжение мира?
 
-Commercial validation is not required for v0.1.
+Коммерческая проверка и монетизация не являются обязательной целью v0.1.
 
-## 3. Required gameplay systems
+## 3. Обязательные игровые системы
 
-v0.1 requires:
+В v0.1 должны работать:
 
-- character/archetype selection;
-- modern character movement;
-- target selection and target frame;
+- выбор персонажа / архетипа;
+- современное управление персонажем;
+- выбор цели и target frame;
 - server-authoritative autoattack;
-- active skills and cooldowns;
-- mob AI with aggro/chase/leash/attack/return;
-- XP and levels 1–10;
+- активные skills и cooldowns;
+- AI мобов с состояниями aggro / chase / leash / attack / return;
+- XP и уровни 1–10;
 - loot tables;
 - inventory;
-- visible equipment changes where practical;
-- short quest chain;
-- party up to 4 players;
-- open-world elite/miniboss;
+- визуальная смена экипировки там, где это практически оправдано;
+- короткая цепочка quests;
+- party до 4 игроков;
+- open-world elite / miniboss;
 - instanced dungeon;
-- final dungeon boss;
-- persistent character progress.
+- финальный dungeon boss;
+- сохранение прогресса между сессиями.
 
-Explicitly excluded: PvP, clans, castle sieges, player trading, auction house, crafting, enchantment, mounts, pets, housing, large raids, battle pass and monetization shop.
+Явно не входят в v0.1: PvP, clans, castle sieges, player trading, auction house, crafting, enchantment, mounts, pets, housing, большие raids, battle pass и monetization shop.
 
-## 4. Character archetypes
+## 4. Архетипы персонажей
 
-Three archetypes are sufficient for v0.1:
+Для v0.1 достаточно трёх архетипов:
 
-- Knight — durable melee;
+- Knight — живучий melee;
 - Ranger — ranged physical DPS;
-- Mystic — magic damage with limited support/heal.
+- Mystic — magic damage с ограниченной поддержкой / heal.
 
-Each has a basic attack and approximately three active abilities. Names are working names until content/lore pass.
+У каждого есть базовая атака и примерно три активных skill. Названия abilities являются рабочими до отдельного content/lore pass.
 
-## 5. World design
+## 5. Устройство мира
 
 ### Luna Village
 
-Safe starting settlement with onboarding, NPCs, basic merchant/blacksmith interactions and the road into the world. It must feel like a place, not a button lobby.
+Безопасное стартовое поселение с onboarding, NPC, базовыми merchant / blacksmith взаимодействиями и дорогой в основной мир. Деревня должна ощущаться местом, а не lobby с кнопками.
 
 ### Moonfall Valley
 
-Shared multiplayer PvE region with escalating danger, several visual subareas, multiple mob types, an elite/miniboss and a visible connection toward the dungeon.
+Общая multiplayer PvE-зона с постепенным ростом опасности, несколькими визуально различимыми участками, несколькими типами мобов, elite / miniboss и видимой связью с будущим dungeon.
 
 ### Ruins of Selene
 
-Short 1–4 player instanced dungeon lasting roughly 8–15 minutes. Final boss has at least a basic attack, readable telegraphed AoE and low-HP enrage/escalation.
+Короткий instanced dungeon для 1–4 игроков длительностью примерно 8–15 минут. Финальный boss имеет как минимум обычную атаку, читаемую telegraphed AoE-механику и усиление / enrage при низком HP.
 
-## 6. Art direction
+## 6. Визуальное направление
 
-Reference mood: early Lineage II C4 / Interlude.
+Основной референс по атмосфере — ранняя Lineage II C4 / Interlude.
 
-Required qualities:
+Обязательные качества:
 
-- serious stylized fantasy;
-- near-human character proportions;
-- stone/wood/forest/ruin visual language;
-- restrained saturation;
-- moon/silver/cold-light motifs for Luna identity;
-- readable silhouettes and combat telegraphs;
-- limited visual noise;
-- UI inspired by classic PC MMORPG ergonomics but adapted for mobile.
+- серьёзное стилизованное fantasy;
+- близкие к человеческим пропорции персонажей;
+- визуальный язык камня, дерева, леса и древних руин;
+- сдержанная насыщенность;
+- мотивы луны, серебра и холодного света как часть собственной идентичности Luna World;
+- хорошо читаемые силуэты и combat telegraphs;
+- ограниченный визуальный шум;
+- UI с эргономикой классических PC MMORPG, адаптированный под mobile.
 
-The project deliberately avoids direct replication of any copyrighted game assets or designs.
+Проект сознательно избегает прямого воспроизведения защищённых ассетов и дизайнов других игр.
 
-## 7. Technical architecture
+## 7. Техническая архитектура
 
-The server is authoritative for gameplay-relevant state.
+Игровое состояние, влияющее на результат, является **server authoritative**.
 
-Client responsibilities: input, camera, target intent, UI, presentation/FX and action requests.
+Ответственность клиента: input, camera, выбор цели как намерение, UI, presentation / FX и отправка запросов действий.
 
-Server responsibilities: validation, combat results, cooldowns, XP, loot, inventory ownership, currency, quests, party eligibility, dungeon rewards and persistence.
+Ответственность сервера: validation, результаты боя, cooldowns, XP, loot, inventory ownership, currency, quests, party eligibility, dungeon rewards и persistence.
 
-Planned source layout:
+Планируемая структура исходников:
 
 ```text
 src/client
@@ -113,7 +113,7 @@ tests
 docs
 ```
 
-Planned Rojo mapping:
+Планируемый Rojo mapping:
 
 ```text
 src/shared  -> ReplicatedStorage/Shared
@@ -121,11 +121,11 @@ src/server  -> ServerScriptService/Server
 src/client  -> StarterPlayer/StarterPlayerScripts/Client
 ```
 
-No external backend, PostgreSQL, Redis, custom auth or generic framework is required for v0.1 unless a real platform limitation is demonstrated.
+Для v0.1 не требуется внешний backend, PostgreSQL, Redis, custom auth или универсальный framework, пока не доказано конкретное ограничение Roblox Platform.
 
 ## 8. Persistence
 
-Persistent state includes at minimum:
+Минимальный набор persistent state:
 
 - archetype;
 - level;
@@ -136,75 +136,76 @@ Persistent state includes at minimum:
 - unlocked skills;
 - quest state.
 
-Persistence uses an independent integer `DataVersion` with sequential migrations. Game SemVer does not replace save-schema versioning.
+Схема сохранений имеет отдельную целочисленную версию `DataVersion` и последовательные migrations. SemVer игры не заменяет версию схемы сохранений.
 
-A load/migration failure must never silently become a fresh empty profile.
+Ошибка загрузки / миграции существующего профиля не должна молча превращаться в новый пустой профиль.
 
-## 9. Versioning
+## 9. Версионирование
 
-Game releases follow SemVer.
+Релизы игры используют SemVer.
 
-Development begins at `0.1.0-dev.0`; first accepted vertical slice releases as `0.1.0`.
+Разработка начинается с `0.1.0-dev.0`; первый принятый Vertical Slice выпускается как `0.1.0`.
 
-Meaningful release changes are tracked in `CHANGELOG.md` and release commits are tagged as `vX.Y.Z`.
+Значимые изменения релиза фиксируются в `CHANGELOG.md`, а релизные commits получают tag вида `vX.Y.Z`.
 
-## 10. Testing
+## 10. Тестирование
 
-Testing is layered:
+Тестирование многоуровневое:
 
-- unit tests for deterministic logic;
-- integration tests across gameplay systems;
-- Roblox runtime/playtests for replication, character lifecycle, UI, physics and platform behavior.
+- unit tests для детерминированной логики;
+- integration tests для взаимодействия игровых систем;
+- Roblox runtime / playtests для replication, character lifecycle, UI, physics и platform behavior.
 
-Every gameplay milestone requires a multiplayer smoke test with at least `1 server + 2 clients`.
+Каждый gameplay milestone требует multiplayer smoke test минимум с конфигурацией `1 server + 2 clients`.
 
-Every gameplay Remote must also be tested against invalid/malicious requests appropriate to its contract.
+Каждый gameplay Remote дополнительно проверяется на некорректные / malicious запросы, соответствующие его контракту.
 
-Persistence schema changes require migration tests using representative older data.
+Изменения persistence schema требуют migration tests на representative older data.
 
-## 11. Refactoring policy
+## 11. Политика рефакторинга
 
-Each major milestone is followed by a stabilization/refactor gate before the next large feature block begins.
+После каждого крупного milestone выполняется отдельный stabilization / refactor gate до начала следующего большого функционального блока.
 
-The gate includes:
+Gate включает:
 
-- green tests;
-- regression cleanup;
-- dead-code removal;
-- duplication reduction;
-- module-boundary review;
-- network validation review;
-- lifecycle/cleanup review;
-- persistence migration review;
-- documentation update.
+- зелёные тесты;
+- устранение regression;
+- удаление dead code;
+- сокращение дублирования;
+- проверку границ модулей;
+- проверку network validation;
+- проверку lifecycle / cleanup;
+- проверку persistence migrations;
+- обновление документации.
 
-Large rewrites without a specific problem and verification strategy are not allowed.
+Большие переписывания без конкретно сформулированной проблемы и стратегии проверки запрещены.
 
-## 12. Implementation order
+## 12. Порядок реализации
 
-1. Playground: Wolf target/attack/damage/death/XP/respawn in multiplayer.
+1. Playground: Wolf target / attack / damage / death / XP / respawn в multiplayer.
 2. Combat & Skills.
 3. Progression, Loot & Persistence.
 4. Luna Village & Quests.
 5. Moonfall Valley.
 6. Party & Multiplayer Hardening.
 7. Ruins of Selene.
-8. Full v0.1 alpha candidate and external playtest.
+8. Полный v0.1 alpha candidate и внешний playtest.
 
-Each step has a stabilization gate as described in `docs/ROADMAP.md`.
+После каждого этапа выполняется stabilization gate согласно `docs/ROADMAP.md` и `docs/REFACTORING_POLICY.md`.
 
-## 13. Canonical detailed documents
+## 13. Канонические детальные документы
 
-This spec is the approval snapshot. Detailed living rules are maintained in:
+Эта спецификация является утверждённым снимком ключевых решений. Детальные и обновляемые правила находятся в:
 
 - `docs/PRODUCT_VISION.md`;
 - `docs/GAME_DESIGN_V0.1.md`;
 - `docs/WORLD_AND_ART_DIRECTION.md`;
 - `docs/ARCHITECTURE.md`;
 - `docs/DEVELOPMENT_RULES.md`;
+- `docs/REFACTORING_POLICY.md`;
 - `docs/TESTING_STRATEGY.md`;
 - `docs/VERSIONING.md`;
 - `docs/ROADMAP.md`;
 - `AGENTS.md`.
 
-If implementation discovers a necessary contradiction, the contradiction must be raised and the relevant design document updated deliberately rather than bypassed silently.
+Если реализация обнаруживает необходимое противоречие с дизайном, оно поднимается явно и соответствующий документ изменяется осознанно. Молчаливый обход зафиксированной архитектуры запрещён.
