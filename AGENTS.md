@@ -127,11 +127,13 @@ Examples currently out of scope:
 
 When a requested change implies one of these systems, call it out instead of silently expanding the project.
 
-## 10. Code style
+## 10. Language and code style
 
+- Project, product, design, architecture, roadmap, testing, versioning, release and implementation-plan documentation must be written in Russian.
+- `AGENTS.md` is the only standing exception and may remain in English so that coding agents can consume the rules consistently.
 - Source code identifiers: English.
-- Code comments: English unless a specific domain explanation is clearer in Russian.
-- Product/design documentation may be Russian.
+- Code comments: English unless a specific domain explanation is materially clearer in Russian.
+- Do not create new English-language documentation files unless the owner explicitly requests an exception.
 - Prefer explicit Luau types on module boundaries and important data structures.
 - Avoid magic numbers; place tunable values in configuration.
 - Keep warnings/errors actionable and include useful context without exposing secrets.
