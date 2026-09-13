@@ -44,9 +44,11 @@
 - [Мир и арт-направление](docs/WORLD_AND_ART_DIRECTION.md)
 - [Архитектура](docs/ARCHITECTURE.md)
 - [Правила разработки](docs/DEVELOPMENT_RULES.md)
+- [Политика межэтапного рефакторинга](docs/REFACTORING_POLICY.md)
 - [Стратегия тестирования](docs/TESTING_STRATEGY.md)
 - [Версионирование](docs/VERSIONING.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Design specification v0.1](docs/superpowers/specs/2026-09-13-luna-world-v0.1-design.md)
 - [Правила для AI-агентов](AGENTS.md)
 
 ## Toolchain
