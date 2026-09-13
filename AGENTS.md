@@ -11,8 +11,9 @@ Before implementing or modifying behavior, read:
 3. `docs/GAME_DESIGN_V0.1.md`
 4. `docs/ARCHITECTURE.md`
 5. `docs/DEVELOPMENT_RULES.md`
-6. `docs/TESTING_STRATEGY.md`
-7. `docs/VERSIONING.md`
+6. `docs/REFACTORING_POLICY.md`
+7. `docs/TESTING_STRATEGY.md`
+8. `docs/VERSIONING.md`
 
 If a task conflicts with these documents, stop and report the conflict instead of silently overriding the design.
 
@@ -86,6 +87,8 @@ For networking features, test invalid / malicious client requests as well as nor
 Do not remove or weaken a failing test merely to make the suite pass unless the underlying requirement was explicitly changed.
 
 ## 8. Refactoring discipline
+
+Follow `docs/REFACTORING_POLICY.md`.
 
 Refactoring and feature work should be separated when practical.
 
