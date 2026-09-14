@@ -3,9 +3,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
-local CombatService = require(script.services.CombatService)
-local MobService = require(script.services.MobService)
-local ProgressionService = require(script.services.ProgressionService)
+local CombatService = require(script.Parent.services.CombatService)
+local MobService = require(script.Parent.services.MobService)
+local ProgressionService = require(script.Parent.services.ProgressionService)
 
 local function findMobDefinitionById(mobId: string)
 	for _, definition in MobDefinitions do
