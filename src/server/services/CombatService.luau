@@ -19,7 +19,19 @@ local attackingByPlayer: { [Player]: boolean } = {}
 local nextAttackAtByPlayer: { [Player]: number } = {}
 local characterDeathConnections: { [Player]: RBXScriptConnection } = {}
 local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
+local targetDeathConnections: { [Player]: RBXScriptConnection } = {}
 local started = false
+
+local TARGET_ATTRIBUTE = CombatConfig.SelectedTargetAttribute
+local ATTACKING_ATTRIBUTE = CombatConfig.BasicAttackingAttribute
+
+local function setReplicatedTarget(player: Player, entityId: string?): ()
+	player:SetAttribute(TARGET_ATTRIBUTE, entityId)
+end
+
+local function setReplicatedAttacking(player: Player, active: boolean): ()
+	player:SetAttribute(ATTACKING_ATTRIBUTE, active)
+end
 
 local function getLivingCharacterRoot(player: Player): BasePart?
 	local character = player.Character
@@ -49,11 +61,22 @@ end
 local function cancelAttack(player: Player): ()
 	attackGeneration[player] = (attackGeneration[player] or 0) + 1
 	attackingByPlayer[player] = nil
+	setReplicatedAttacking(player, false)
+end
+
+local function clearTarget(player: Player): ()
+	local targetDeathConnection = targetDeathConnections[player]
+	if targetDeathConnection ~= nil then
+		targetDeathConnection:Disconnect()
+		targetDeathConnections[player] = nil
+	end
+	targetsByPlayer[player] = nil
+	setReplicatedTarget(player, nil)
 end
 
 local function clearPlayerState(player: Player): ()
 	cancelAttack(player)
-	targetsByPlayer[player] = nil
+	clearTarget(player)
 	nextAttackAtByPlayer[player] = nil
 end
 
@@ -81,7 +104,7 @@ local function runAttackLoop(player: Player, generation: number): ()
 
 		local target = MobService.getByEntityId(targetId)
 		if target == nil or getLivingMobRoot(target) == nil then
-			targetsByPlayer[player] = nil
+			clearTarget(player)
 			break
 		end
 
@@ -91,7 +114,7 @@ local function runAttackLoop(player: Player, generation: number): ()
 			-- MobService owns damage and last-attacker attribution; the client never supplies either.
 			local applied = MobService.applyDamage(targetId, CombatConfig.BasicAttackDamage, player)
 			if not applied then
-				targetsByPlayer[player] = nil
+				clearTarget(player)
 				break
 			end
 			nextAttackAtByPlayer[player] = now + CombatConfig.BasicAttackInterval
@@ -102,6 +125,7 @@ local function runAttackLoop(player: Player, generation: number): ()
 
 	if attackGeneration[player] == generation then
 		attackingByPlayer[player] = nil
+		setReplicatedAttacking(player, false)
 	end
 end
 
@@ -130,7 +154,19 @@ local function onTargetRequest(player: Player, entityId: unknown): ()
 		return
 	end
 
+	clearTarget(player)
 	targetsByPlayer[player] = entityId
+	setReplicatedTarget(player, entityId)
+
+	local humanoid = target:FindFirstChildOfClass("Humanoid")
+	if humanoid ~= nil then
+		targetDeathConnections[player] = humanoid.Died:Connect(function()
+			if targetsByPlayer[player] == entityId then
+				cancelAttack(player)
+				clearTarget(player)
+			end
+		end)
+	end
 end
 
 local function onAttackRequest(player: Player, active: unknown): ()
@@ -154,6 +190,7 @@ local function onAttackRequest(player: Player, active: unknown): ()
 	local generation = (attackGeneration[player] or 0) + 1
 	attackGeneration[player] = generation
 	attackingByPlayer[player] = true
+	setReplicatedAttacking(player, true)
 	task.spawn(runAttackLoop, player, generation)
 end
 
@@ -178,6 +215,8 @@ local function onPlayerAdded(player: Player): ()
 	if characterAddedConnections[player] ~= nil then
 		return
 	end
+	setReplicatedTarget(player, nil)
+	setReplicatedAttacking(player, false)
 	characterAddedConnections[player] = player.CharacterAdded:Connect(function(character)
 		bindCharacter(player, character)
 	end)

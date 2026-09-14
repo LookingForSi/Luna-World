@@ -7,12 +7,17 @@ local UserInputService = game:GetService("UserInputService")
 local TargetController = {}
 
 local localPlayer = Players.LocalPlayer
+local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local targetRequest = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TargetRequest") :: RemoteEvent
+local TARGET_ATTRIBUTE = CombatConfig.SelectedTargetAttribute
 
 local inputBeganConnection: RBXScriptConnection? = nil
 local touchTapConnection: RBXScriptConnection? = nil
+local targetAttributeConnection: RBXScriptConnection? = nil
+local descendantAddedConnection: RBXScriptConnection? = nil
 local selectedHighlight: Highlight? = nil
 local onTargetChanged: ((Model?) -> ())? = nil
+local selectedModel: Model? = nil
 
 local function findEntityModel(instance: Instance?): Model?
 	local current = instance
@@ -23,6 +28,50 @@ local function findEntityModel(instance: Instance?): Model?
 		current = current.Parent
 	end
 	return nil
+end
+
+local function findEntityModelById(entityId: string): Model?
+	for _, descendant in workspace:GetDescendants() do
+		if descendant:IsA("Model") and descendant:GetAttribute("EntityId") == entityId then
+			return descendant
+		end
+	end
+	return nil
+end
+
+local function showConfirmedTarget(model: Model?): ()
+	if selectedModel == model then
+		return
+	end
+
+	selectedModel = model
+	if selectedHighlight ~= nil then
+		selectedHighlight:Destroy()
+		selectedHighlight = nil
+	end
+
+	if model ~= nil then
+		local highlight = Instance.new("Highlight")
+		highlight.Name = "LocalTargetHighlight"
+		highlight.Adornee = model
+		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		highlight.Parent = model
+		selectedHighlight = highlight
+	end
+
+	if onTargetChanged ~= nil then
+		onTargetChanged(model)
+	end
+end
+
+local function syncConfirmedTarget(): ()
+	local entityId = localPlayer:GetAttribute(TARGET_ATTRIBUTE)
+	if typeof(entityId) ~= "string" then
+		showConfirmedTarget(nil)
+		return
+	end
+
+	showConfirmedTarget(findEntityModelById(entityId))
 end
 
 local function selectAtScreenPosition(screenPosition: Vector2): ()
@@ -50,20 +99,8 @@ local function selectAtScreenPosition(screenPosition: Vector2): ()
 		return
 	end
 
-	if selectedHighlight ~= nil then
-		selectedHighlight:Destroy()
-	end
-	local highlight = Instance.new("Highlight")
-	highlight.Name = "LocalTargetHighlight"
-	highlight.Adornee = model
-	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	highlight.Parent = model
-	selectedHighlight = highlight
-
+	-- Rendering waits for the server to validate and replicate the confirmed target.
 	targetRequest:FireServer(entityId)
-	if onTargetChanged ~= nil then
-		onTargetChanged(model)
-	end
 end
 
 function TargetController.start(targetChanged: (Model?) -> ()): ()
@@ -87,6 +124,14 @@ function TargetController.start(targetChanged: (Model?) -> ()): ()
 			selectAtScreenPosition(position)
 		end
 	end)
+	targetAttributeConnection = localPlayer:GetAttributeChangedSignal(TARGET_ATTRIBUTE):Connect(syncConfirmedTarget)
+	descendantAddedConnection = workspace.DescendantAdded:Connect(function(descendant: Instance)
+		local entityId = localPlayer:GetAttribute(TARGET_ATTRIBUTE)
+		if typeof(entityId) == "string" and descendant:IsA("Model") and descendant:GetAttribute("EntityId") == entityId then
+			syncConfirmedTarget()
+		end
+	end)
+	syncConfirmedTarget()
 end
 
 function TargetController.stop(): ()
@@ -98,10 +143,19 @@ function TargetController.stop(): ()
 		touchTapConnection:Disconnect()
 		touchTapConnection = nil
 	end
+	if targetAttributeConnection ~= nil then
+		targetAttributeConnection:Disconnect()
+		targetAttributeConnection = nil
+	end
+	if descendantAddedConnection ~= nil then
+		descendantAddedConnection:Disconnect()
+		descendantAddedConnection = nil
+	end
 	if selectedHighlight ~= nil then
 		selectedHighlight:Destroy()
 		selectedHighlight = nil
 	end
+	selectedModel = nil
 	onTargetChanged = nil
 end
 
