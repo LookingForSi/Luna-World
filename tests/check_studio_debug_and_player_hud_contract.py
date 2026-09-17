@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static smoke check for Studio-only archetype switching and player HUD bars."""
+"""Static smoke check for Studio-only archetype switching, player HUD bars, and visible wolf damage."""
 
 from pathlib import Path
 
@@ -21,6 +21,7 @@ def require(path: str, token: str, message: str) -> None:
 SERVER_DEBUG = "src/server/services/StudioDebugService.luau"
 CLIENT_DEBUG = "src/client/ui/StudioTestPanel.luau"
 HUD = "src/client/ui/CombatHud.luau"
+MOBS = "src/shared/definitions/MobDefinitions.luau"
 SERVER_MAIN = "src/server/main.server.luau"
 CLIENT_MAIN = "src/client/main.client.luau"
 DEFAULT_PROJECT = "default.project.json"
@@ -46,5 +47,8 @@ for token in ("PlayerHealthBar", "PlayerHealthFill", "PlayerResourceBar", "Playe
     require(HUD, token, f"player HUD is missing {token}")
 require(HUD, "humanoid.Health / humanoid.MaxHealth", "player HP bar must be driven by the local Humanoid")
 require(HUD, "currentValue / maximumValue", "resource bar must be driven by authoritative replicated resource values")
+
+# Grey wolf damage is deliberately above the knight's current defense so an ordinary PvE hit is visible in acceptance testing.
+require(MOBS, "basicAttackDamage = 22", "grey wolf needs visible post-mitigation damage against the knight test archetype")
 
 print("Studio debug and player HUD contract: PASS")
