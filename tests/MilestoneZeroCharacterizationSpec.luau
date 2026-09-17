@@ -24,6 +24,9 @@ local lifecycleComplete = ReplicatedStorage.TestRemotes:WaitForChild("ManualAtta
 local skillRuntimeStart = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeStart") :: RemoteEvent
 local skillRuntimeCommand = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeCommand") :: RemoteFunction
 local skillRuntimeComplete = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeComplete") :: RemoteEvent
+local autoAttackRuntimeStart = ReplicatedStorage.TestRemotes:WaitForChild("AutoAttackRuntimeStart") :: RemoteEvent
+local autoAttackRuntimeCommand = ReplicatedStorage.TestRemotes:WaitForChild("AutoAttackRuntimeCommand") :: RemoteFunction
+local autoAttackRuntimeComplete = ReplicatedStorage.TestRemotes:WaitForChild("AutoAttackRuntimeComplete") :: RemoteEvent
 
 local function waitUntil<T>(description: string, timeoutSeconds: number, readValue: () -> T?): T
 	local deadline = os.clock() + timeoutSeconds
@@ -157,6 +160,7 @@ return function(TestRunner)
 		local completedByPlayer: { [Player]: boolean } = {}
 		local lifecycleCompletedByPlayer: { [Player]: boolean } = {}
 		local skillRuntimeCompletedByPlayer: { [Player]: boolean } = {}
+		local autoAttackRuntimeCompletedByPlayer: { [Player]: boolean } = {}
 		local fixtureReady = false
 		local completionConnection: RBXScriptConnection? = attackContractComplete.OnServerEvent:Connect(function(sender)
 			completedByPlayer[sender] = true
@@ -166,6 +170,9 @@ return function(TestRunner)
 		end)
 		local skillRuntimeCompletionConnection = skillRuntimeComplete.OnServerEvent:Connect(function(sender)
 			skillRuntimeCompletedByPlayer[sender] = true
+		end)
+		local autoAttackRuntimeCompletionConnection = autoAttackRuntimeComplete.OnServerEvent:Connect(function(sender)
+			autoAttackRuntimeCompletedByPlayer[sender] = true
 		end)
 		attackContractReady.OnServerInvoke = function(_sender: Player): boolean
 			waitUntil("positioned server attack fixture", 12, function(): boolean?
@@ -357,6 +364,51 @@ return function(TestRunner)
 			waitUntil("authoritative skill runtime client completion", 70, function(): boolean?
 				return if skillRuntimeCompletedByPlayer[player] then true else nil
 			end)
+
+			autoAttackRuntimeCommand.OnServerInvoke = function(sender: Player, command: unknown): any
+				assert(sender == player)
+				if command == "PrepareTarget" then
+					local preparedId = prepareLifecycleTarget(player)
+					local preparedHumanoid = if lifecycleMob ~= nil then lifecycleMob:FindFirstChildOfClass("Humanoid") else nil
+					assert(preparedHumanoid ~= nil)
+					preparedHumanoid.MaxHealth = 1000
+					preparedHumanoid.Health = preparedHumanoid.MaxHealth
+					return preparedId
+				elseif command == "MoveTargetOutOfRange" then
+					local currentMob = lifecycleMob
+					local playerRoot = if player.Character ~= nil then player.Character:FindFirstChild("HumanoidRootPart") else nil
+					assert(currentMob ~= nil and playerRoot ~= nil and playerRoot:IsA("BasePart"))
+					currentMob:PivotTo(playerRoot.CFrame * CFrame.new(0, 0, -200))
+					return true
+				elseif command == "ReturnTarget" then
+					local currentMob = lifecycleMob
+					local playerRoot = if player.Character ~= nil then player.Character:FindFirstChild("HumanoidRootPart") else nil
+					assert(currentMob ~= nil and playerRoot ~= nil and playerRoot:IsA("BasePart"))
+					currentMob:PivotTo(playerRoot.CFrame * CFrame.new(0, 0, -(CombatConfig.BasicAttackRange * 0.5)))
+					return true
+				elseif command == "KillTarget" then
+					local currentHumanoid = if lifecycleMob ~= nil then lifecycleMob:FindFirstChildOfClass("Humanoid") else nil
+					assert(currentHumanoid ~= nil)
+					currentHumanoid.Health = 0
+					return true
+				elseif command == "RemoveTarget" then
+					local currentMob = lifecycleMob
+					assert(currentMob ~= nil)
+					currentMob:Destroy()
+					lifecycleMob = nil
+					return true
+				elseif command == "KillActor" then
+					local actorHumanoid = if player.Character ~= nil then player.Character:FindFirstChildOfClass("Humanoid") else nil
+					assert(actorHumanoid ~= nil)
+					actorHumanoid.Health = 0
+					return true
+				end
+				error("unsupported AUTO runtime command")
+			end
+			autoAttackRuntimeStart:FireClient(player)
+			waitUntil("AUTO runtime client completion", 60, function(): boolean?
+				return if autoAttackRuntimeCompletedByPlayer[player] then true else nil
+			end)
 		end)
 
 		if deathConnection ~= nil then
@@ -369,11 +421,13 @@ return function(TestRunner)
 		end
 		lifecycleCompletionConnection:Disconnect()
 		skillRuntimeCompletionConnection:Disconnect()
+		autoAttackRuntimeCompletionConnection:Disconnect()
 		Players.RespawnTime = originalRespawnTime
 		fixtureReady = false
 		attackContractReady.OnServerInvoke = nil
 		lifecycleCommand.OnServerInvoke = nil
 		skillRuntimeCommand.OnServerInvoke = nil
+		autoAttackRuntimeCommand.OnServerInvoke = nil
 		if mobToCleanUp ~= nil and mobToCleanUp.Parent ~= nil and originalMobPivot ~= nil then
 			mobToCleanUp:PivotTo(originalMobPivot)
 		end

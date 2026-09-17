@@ -24,6 +24,10 @@ local lifecycleComplete = ReplicatedStorage.TestRemotes:WaitForChild("ManualAtta
 local skillRuntimeStart = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeStart") :: RemoteEvent
 local skillRuntimeCommand = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeCommand") :: RemoteFunction
 local skillRuntimeComplete = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeComplete") :: RemoteEvent
+local autoAttackRuntimeStart = ReplicatedStorage.TestRemotes:WaitForChild("AutoAttackRuntimeStart") :: RemoteEvent
+local autoAttackRuntimeCommand = ReplicatedStorage.TestRemotes:WaitForChild("AutoAttackRuntimeCommand") :: RemoteFunction
+local autoAttackRuntimeComplete = ReplicatedStorage.TestRemotes:WaitForChild("AutoAttackRuntimeComplete") :: RemoteEvent
+local autoAttackModeRequest = remotes:WaitForChild("AutoAttackModeRequest") :: RemoteEvent
 
 local skillResults: { any } = {}
 local skillRuntimeStarted = false
@@ -571,3 +575,151 @@ assert(mysticHumanoid ~= nil and mysticHumanoid.Health > damagedHealth and mysti
 
 skillRuntimeComplete:FireServer()
 print("[PASS] authoritative SkillRequest runtime contract")
+
+autoAttackRuntimeStart.OnClientEvent:Wait()
+
+local function prepareAutoTarget(): (string, Model, Humanoid)
+	local preparedEntityId = autoAttackRuntimeCommand:InvokeServer("PrepareTarget")
+	assert(typeof(preparedEntityId) == "string")
+	targetRequest:FireServer(preparedEntityId)
+	waitUntil("server-confirmed AUTO target", 3, function()
+		return player:GetAttribute(CombatConfig.SelectedTargetAttribute) == preparedEntityId
+	end)
+	for _, child in workspace:GetChildren() do
+		if child:IsA("Model") and child:GetAttribute("EntityId") == preparedEntityId then
+			local targetHumanoid = child:FindFirstChildOfClass("Humanoid")
+			assert(targetHumanoid ~= nil)
+			return preparedEntityId, child, targetHumanoid
+		end
+	end
+	error("AUTO target model was not replicated")
+end
+
+assert(player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false, "AUTO must default off")
+
+-- Even a valid selected player is not an eligible AUTO context (future PvP contract).
+local selfTargetId = "player:" .. tostring(player.UserId)
+targetRequest:FireServer(selfTargetId)
+waitUntil("server-confirmed player target", 3, function()
+	return player:GetAttribute(CombatConfig.SelectedTargetAttribute) == selfTargetId
+end)
+autoAttackModeRequest:FireServer(true)
+task.wait(0.15)
+assert(player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false, "AUTO must reject a player target")
+
+local autoTargetId, _autoTarget, autoHumanoid = prepareAutoTarget()
+local initialAutoHealth = autoHumanoid.Health
+
+-- Malformed and legacy-shaped requests cannot mutate the server-owned mode.
+autoAttackModeRequest:FireServer()
+autoAttackModeRequest:FireServer("true")
+autoAttackModeRequest:FireServer(true, false)
+task.wait(0.15)
+assert(player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false)
+assert(autoHumanoid.Health == initialAutoHealth)
+task.wait(CombatConfig.AutoAttackRequestMinIntervalSeconds)
+
+-- AUTO produces repeated basic attacks on the selected target at authoritative readiness.
+local healthEvents = 0
+local healthConnection = autoHumanoid.HealthChanged:Connect(function() healthEvents += 1 end)
+autoAttackModeRequest:FireServer(true)
+waitUntil("server-confirmed AUTO enable", 3, function()
+	return player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == true
+end)
+waitUntil("first AUTO hit", 3, function() return healthEvents >= 1 end)
+local firstAutoReadyAt = player:GetAttribute(CombatConfig.BasicAttackReadyAtAttribute)
+assert(typeof(firstAutoReadyAt) == "number")
+waitUntil("second AUTO hit", CombatConfig.BasicAttackInterval + 1, function() return healthEvents >= 2 end)
+assert(workspace:GetServerTimeNow() >= firstAutoReadyAt - 0.1, "AUTO repeated before cooldown readiness")
+
+-- A manual intent during AUTO uses the same slot; readiness produces one, not two, hits.
+local eventsBeforeManual = healthEvents
+local sharedReadyAt = player:GetAttribute(CombatConfig.BasicAttackReadyAtAttribute)
+assert(typeof(sharedReadyAt) == "number")
+while workspace:GetServerTimeNow() < sharedReadyAt - (CombatConfig.InputBufferSeconds * 0.5) do task.wait() end
+attackRequest:FireServer()
+waitUntil("shared manual/AUTO cadence hit", CombatConfig.BasicAttackInterval + 1, function()
+	return healthEvents == eventsBeforeManual + 1
+end)
+task.wait(0.15)
+assert(healthEvents == eventsBeforeManual + 1, "manual input during AUTO must not create a double hit")
+
+-- Rapid toggles mutate one mode flag and cannot create parallel server loops.
+local eventsBeforeRapidToggle = healthEvents
+autoAttackModeRequest:FireServer(false)
+autoAttackModeRequest:FireServer(true)
+autoAttackModeRequest:FireServer(false)
+autoAttackModeRequest:FireServer(true)
+waitUntil("prompt AUTO off during rapid toggles", 3, function()
+	return player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false
+end)
+task.wait(0.15)
+assert(healthEvents <= eventsBeforeRapidToggle + 1, "rapid malicious toggles must not create parallel hits")
+task.wait(CombatConfig.AutoAttackRequestMinIntervalSeconds)
+autoAttackModeRequest:FireServer(true)
+waitUntil("rate-limited AUTO can be enabled after debounce", 3, function()
+	return player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == true
+end)
+local eventsBeforeRapidToggleHit = healthEvents
+waitUntil("one hit after rapid AUTO toggles", CombatConfig.MysticBasicAttackInterval + 1, function()
+	return healthEvents > eventsBeforeRapidToggleHit
+end)
+assert(healthEvents == eventsBeforeRapidToggleHit + 1, "rapid toggles must not create parallel AUTO loops")
+task.wait(0.15)
+assert(healthEvents == eventsBeforeRapidToggleHit + 1, "parallel AUTO loops must not produce a near-simultaneous hit")
+
+-- Brief range loss keeps AUTO enabled, but causes no movement, retarget, skill, or damage.
+assert(autoAttackRuntimeCommand:InvokeServer("MoveTargetOutOfRange") == true)
+local playerRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+assert(playerRoot ~= nil and playerRoot:IsA("BasePart"))
+local playerPosition = playerRoot.Position
+local healthOutOfRange = autoHumanoid.Health
+local healCooldown = player:GetAttribute(cooldownAttribute("heal"))
+task.wait(CombatConfig.MysticBasicAttackInterval + 0.35)
+assert(player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == true)
+assert(autoHumanoid.Health == healthOutOfRange, "AUTO must not damage out of range")
+assert((playerRoot.Position - playerPosition).Magnitude < 0.5, "AUTO must not move the player")
+assert(player:GetAttribute(CombatConfig.SelectedTargetAttribute) == autoTargetId, "AUTO must not retarget")
+assert(player:GetAttribute(cooldownAttribute("heal")) == healCooldown, "AUTO must not invoke skills")
+assert(autoAttackRuntimeCommand:InvokeServer("ReturnTarget") == true)
+waitUntil("AUTO resumes against the same returned target", CombatConfig.MysticBasicAttackInterval + 1, function()
+	return autoHumanoid.Health < healthOutOfRange
+end)
+
+-- Target death/loss disables AUTO and does not select the next mob.
+assert(autoAttackRuntimeCommand:InvokeServer("KillTarget") == true)
+waitUntil("AUTO disabled after target death", 3, function()
+	return player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false
+		and player:GetAttribute(CombatConfig.SelectedTargetAttribute) == nil
+end)
+healthConnection:Disconnect()
+
+-- Removal without a damage resolve is also terminal target loss for AUTO.
+prepareAutoTarget()
+autoAttackModeRequest:FireServer(true)
+waitUntil("AUTO enabled before target removal", 3, function()
+	return player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == true
+end)
+assert(autoAttackRuntimeCommand:InvokeServer("RemoveTarget") == true)
+waitUntil("AUTO disabled after target removal", 3, function()
+	return player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false
+		and player:GetAttribute(CombatConfig.SelectedTargetAttribute) == nil
+end)
+
+-- Respawn always starts with AUTO off, even when it was enabled before death.
+prepareAutoTarget()
+autoAttackModeRequest:FireServer(true)
+waitUntil("AUTO enabled before actor death", 3, function()
+	return player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == true
+end)
+local previousCharacter = player.Character
+assert(autoAttackRuntimeCommand:InvokeServer("KillActor") == true)
+waitUntil("replacement actor with AUTO off", 12, function()
+	local character = player.Character
+	local actorHumanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+	return character ~= nil and character ~= previousCharacter and actorHumanoid ~= nil and actorHumanoid.Health > 0
+		and player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false
+end)
+
+autoAttackRuntimeComplete:FireServer()
+print("[PASS] authoritative optional PvE AUTO runtime contract")

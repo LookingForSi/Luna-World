@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
 local ActionRules = require(ReplicatedStorage.Shared.combat.ActionRules)
+local AutoAttackRules = require(ReplicatedStorage.Shared.combat.AutoAttackRules)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local CombatRules = require(ReplicatedStorage.Shared.combat.CombatRules)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
@@ -24,6 +25,7 @@ local CombatService = {}
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local targetRequest = remotes:WaitForChild("TargetRequest") :: RemoteEvent
 local attackRequest = remotes:WaitForChild("AttackRequest") :: RemoteEvent
+local autoAttackModeRequest = remotes:WaitForChild("AutoAttackModeRequest") :: RemoteEvent
 local skillRequest = remotes:WaitForChild("SkillRequest") :: RemoteEvent
 local skillResult = remotes:WaitForChild("SkillResult") :: RemoteEvent
 
@@ -37,6 +39,8 @@ type PlayerCombatState = {
 	regenerationElapsed: number,
 	cooldowns: CooldownRules.CooldownDeadlines,
 	skillSlot: SkillActionLifecycle.Slot,
+	autoAttackEnabled: boolean,
+	autoAttackNextAttemptAt: number,
 }
 
 local targetsByPlayer: { [Player]: string } = {}
@@ -47,6 +51,7 @@ local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
 local targetLifecycleConnections: { [Player]: { RBXScriptConnection } } = {}
 local lastAttackRequestAtByPlayer: { [Player]: number } = {}
 local lastSkillRequestAtByPlayer: { [Player]: number } = {}
+local lastAutoAttackRequestAtByPlayer: { [Player]: number } = {}
 local started = false
 local serviceConnections: { RBXScriptConnection } = {}
 local regenerationSchedulerElapsed = 0
@@ -56,6 +61,7 @@ local TARGET_ATTRIBUTE = CombatConfig.SelectedTargetAttribute
 local ACTION_STATE_ATTRIBUTE = CombatConfig.BasicActionStateAttribute
 local READY_AT_ATTRIBUTE = CombatConfig.BasicAttackReadyAtAttribute
 local BUFFERED_ATTRIBUTE = CombatConfig.BasicAttackBufferedAttribute
+local AUTO_ATTACK_ATTRIBUTE = CombatConfig.AutoAttackEnabledAttribute
 local ARCHETYPE_ATTRIBUTE = CombatConfig.ArchetypeAttribute
 local RESOURCE_TYPE_ATTRIBUTE = CombatConfig.ResourceTypeAttribute
 local RESOURCE_CURRENT_ATTRIBUTE = CombatConfig.ResourceCurrentAttribute
@@ -113,8 +119,8 @@ local function replicateState(player: Player, state: PlayerCombatState): ()
 	player:SetAttribute(ACTION_STATE_ATTRIBUTE, state.actionState)
 	player:SetAttribute(READY_AT_ATTRIBUTE, state.readyAt)
 	player:SetAttribute(BUFFERED_ATTRIBUTE, state.bufferedTargetId ~= nil)
+	player:SetAttribute(AUTO_ATTACK_ATTRIBUTE, state.autoAttackEnabled)
 	replicateResource(player, state)
-	replicateCooldowns(player, state)
 end
 
 local function getState(player: Player): PlayerCombatState
@@ -131,10 +137,13 @@ local function getState(player: Player): PlayerCombatState
 			regenerationElapsed = 0,
 			cooldowns = cooldownsByPlayer[player] or {},
 			skillSlot = SkillActionLifecycle.createSlot(),
+			autoAttackEnabled = false,
+			autoAttackNextAttemptAt = 0,
 		}
 		cooldownsByPlayer[player] = state.cooldowns
 		statesByPlayer[player] = state
 		replicateState(player, state)
+		replicateCooldowns(player, state)
 	end
 	return state
 end
@@ -378,6 +387,8 @@ local function cancelPendingAction(player: Player, discardSkillResult: boolean?)
 	state.actionState = "Ready"
 	state.bufferedTargetId = nil
 	state.readyAt = 0
+	state.autoAttackEnabled = false
+	state.autoAttackNextAttemptAt = 0
 	replicateState(player, state)
 	if terminalResult ~= nil and not discardSkillResult and player.Parent == Players then
 		local definition = SkillDefinitions[terminalResult.skillId]
@@ -405,6 +416,8 @@ local function clearTarget(player: Player): ()
 	local state = statesByPlayer[player]
 	if state ~= nil then
 		state.bufferedTargetId = nil
+		state.autoAttackEnabled = false
+		state.autoAttackNextAttemptAt = 0
 		replicateState(player, state)
 	end
 	setReplicatedTarget(player, nil)
@@ -418,6 +431,7 @@ local function clearPlayerState(player: Player, discardRuntimeState: boolean?): 
 	statesByPlayer[player] = nil
 	lastAttackRequestAtByPlayer[player] = nil
 	lastSkillRequestAtByPlayer[player] = nil
+	lastAutoAttackRequestAtByPlayer[player] = nil
 	if not SkillActionLifecycle.shouldPreserveCooldowns(discardRuntimeState) then cooldownsByPlayer[player] = nil end
 end
 
@@ -463,6 +477,7 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 	state.stats.resource = resourceAfterCost
 	state.actionState = "Windup"
 	state.readyAt = acceptedAt + attackInterval
+	if state.autoAttackEnabled then state.autoAttackNextAttemptAt = state.readyAt end
 	state.bufferedTargetId = nil
 	state.generation += 1
 	replicateState(player, state)
@@ -579,6 +594,48 @@ local function onAttackRequest(player: Player, ...: unknown): ()
 	end
 end
 
+local function onAutoAttackModeRequest(player: Player, ...: unknown): ()
+	local argumentCount = select("#", ...)
+	local enabled = select(1, ...)
+	if not AutoAttackRules.isExactBooleanRequest(argumentCount, enabled) then return end
+	local requestedEnabled = enabled :: boolean
+	local existingState = statesByPlayer[player]
+	if requestedEnabled == (existingState ~= nil and existingState.autoAttackEnabled) then return end
+
+	-- Explicit off is always prompt and cheap, including under hostile request traffic.
+	if not requestedEnabled then
+		if existingState == nil then return end
+		existingState.autoAttackEnabled = false
+		existingState.autoAttackNextAttemptAt = 0
+		replicateState(player, existingState)
+		return
+	end
+
+	local now = workspace:GetServerTimeNow()
+	if ActionRules.isRequestRateLimited(
+		now,
+		lastAutoAttackRequestAtByPlayer[player],
+		CombatConfig.AutoAttackRequestMinIntervalSeconds
+	) then return end
+	lastAutoAttackRequestAtByPlayer[player] = now
+	local targetId = targetsByPlayer[player]
+	local actorAlive = getLivingCharacterRoot(player) ~= nil
+	local target = if targetId ~= nil then MobService.getByEntityId(targetId) else nil
+	local hasLivingMobTarget = target ~= nil and getLivingMobRoot(target) ~= nil
+	local decision = AutoAttackRules.validateRequest(argumentCount, requestedEnabled, actorAlive, hasLivingMobTarget)
+	if not decision.accepted then return end
+	local state = statesByPlayer[player]
+	if state == nil then
+		if decision.enabled ~= true then return end
+		state = getState(player)
+	end
+
+	state.autoAttackEnabled = decision.enabled == true
+	state.autoAttackNextAttemptAt = if state.autoAttackEnabled then now else 0
+	-- Enabling only schedules server-owned attempts. It never selects, moves toward, or invokes a skill.
+	replicateState(player, state)
+end
+
 local function bindCharacter(player: Player, character: Model): ()
 	clearPlayerState(player)
 	local oldConnection = characterDeathConnections[player]
@@ -604,6 +661,7 @@ function CombatService.start(): ()
 	started = true
 	table.insert(serviceConnections, targetRequest.OnServerEvent:Connect(onTargetRequest))
 	table.insert(serviceConnections, attackRequest.OnServerEvent:Connect(onAttackRequest))
+	table.insert(serviceConnections, autoAttackModeRequest.OnServerEvent:Connect(onAutoAttackModeRequest))
 	table.insert(serviceConnections, skillRequest.OnServerEvent:Connect(onSkillRequest))
 	table.insert(serviceConnections, Players.PlayerAdded:Connect(onPlayerAdded))
 	table.insert(serviceConnections, Players.PlayerRemoving:Connect(function(player)
@@ -617,6 +675,31 @@ function CombatService.start(): ()
 	end))
 	for _, player in Players:GetPlayers() do onPlayerAdded(player) end
 	table.insert(serviceConnections, RunService.Heartbeat:Connect(function(deltaTime)
+		local now = workspace:GetServerTimeNow()
+		for player, state in statesByPlayer do
+			if state.autoAttackEnabled and now >= state.autoAttackNextAttemptAt then
+				local targetId = targetsByPlayer[player]
+				local actorAlive = getLivingCharacterRoot(player) ~= nil
+				local target = if targetId ~= nil then MobService.getByEntityId(targetId) else nil
+				local hasLivingMobTarget = target ~= nil and getLivingMobRoot(target) ~= nil
+				if AutoAttackRules.shouldStop(player.Parent == Players, actorAlive, player.Character ~= nil, hasLivingMobTarget) then
+					state.autoAttackEnabled = false
+					state.autoAttackNextAttemptAt = 0
+					replicateState(player, state)
+				elseif AutoAttackRules.shouldAttempt(now, state.autoAttackNextAttemptAt, state.actionState)
+					and targetId ~= nil
+					and getValidAttackTarget(player, targetId, nil) ~= nil
+				then
+					acceptAttack(player, targetId)
+				else
+					state.autoAttackNextAttemptAt = AutoAttackRules.nextAttemptAt(
+						now,
+						state.readyAt,
+						CombatConfig.AutoAttackRetryIntervalSeconds
+					)
+				end
+			end
+		end
 		regenerationSchedulerElapsed += deltaTime
 		if regenerationSchedulerElapsed < CombatConfig.ResourceRegenerationIntervalSeconds then return end
 		local elapsed = regenerationSchedulerElapsed
@@ -660,6 +743,7 @@ function CombatService.stop(): ()
 		player:SetAttribute(ACTION_STATE_ATTRIBUTE, nil)
 		player:SetAttribute(READY_AT_ATTRIBUTE, nil)
 		player:SetAttribute(BUFFERED_ATTRIBUTE, nil)
+		player:SetAttribute(AUTO_ATTACK_ATTRIBUTE, nil)
 		player:SetAttribute(RESOURCE_TYPE_ATTRIBUTE, nil)
 		player:SetAttribute(RESOURCE_CURRENT_ATTRIBUTE, nil)
 		player:SetAttribute(RESOURCE_MAXIMUM_ATTRIBUTE, nil)
@@ -677,6 +761,7 @@ function CombatService.stop(): ()
 	table.clear(targetLifecycleConnections)
 	table.clear(lastAttackRequestAtByPlayer)
 	table.clear(lastSkillRequestAtByPlayer)
+	table.clear(lastAutoAttackRequestAtByPlayer)
 end
 
 return CombatService

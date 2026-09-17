@@ -8,6 +8,7 @@
         "$className": "Folder",
         "TargetRequest": { "$className": "RemoteEvent" },
         "AttackRequest": { "$className": "RemoteEvent" },
+        "AutoAttackModeRequest": { "$className": "RemoteEvent" },
         "SkillRequest": { "$className": "RemoteEvent" },
         "SkillResult": { "$className": "RemoteEvent" }
       },
@@ -20,7 +21,10 @@
         "ManualAttackLifecycleComplete": { "$className": "RemoteEvent" },
         "SkillRuntimeStart": { "$className": "RemoteEvent" },
         "SkillRuntimeCommand": { "$className": "RemoteFunction" },
-        "SkillRuntimeComplete": { "$className": "RemoteEvent" }
+        "SkillRuntimeComplete": { "$className": "RemoteEvent" },
+        "AutoAttackRuntimeStart": { "$className": "RemoteEvent" },
+        "AutoAttackRuntimeCommand": { "$className": "RemoteFunction" },
+        "AutoAttackRuntimeComplete": { "$className": "RemoteEvent" }
       }
     },
     "ServerScriptService": {
