@@ -8,6 +8,7 @@ local MobService = require(script.Parent.services.MobService)
 local MobAIService = require(script.Parent.services.MobAIService)
 local ProgressionService = require(script.Parent.services.ProgressionService)
 local RespawnService = require(script.Parent.services.RespawnService)
+local StudioDebugService = require(script.Parent.services.StudioDebugService)
 
 local function findMobDefinitionById(mobId: string)
 	for _, definition in MobDefinitions do
@@ -21,6 +22,7 @@ end
 ProgressionService.start()
 CombatService.start()
 RespawnService.start()
+StudioDebugService.start()
 MobAIService.start(CombatService.requestMobBasicAttack)
 MobService.start()
 
