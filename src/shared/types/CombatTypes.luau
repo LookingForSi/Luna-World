@@ -127,8 +127,12 @@ export type MobDefinition = {
 	reacquireRadius: number,
 	leashDistance: number,
 	attackRange: number,
+	basicAttackDamage: number,
+	attackWindupSeconds: number,
+	attackIntervalSeconds: number,
 	chaseSpeed: number,
 	decisionIntervalSeconds: number,
+	restoreHealthOnReturn: boolean,
 }
 
 export type ActionResult = {

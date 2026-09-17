@@ -10,7 +10,7 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT_FILE = ROOT / "default.project.json"
 BOOTSTRAP_FILE = ROOT / "src/server/main.server.luau"
-EXPECTED_SERVICES = {"CombatService", "MobService", "ProgressionService"}
+EXPECTED_SERVICES = {"CombatService", "MobAIService", "MobService", "ProgressionService"}
 
 
 project = json.loads(PROJECT_FILE.read_text(encoding="utf-8"))

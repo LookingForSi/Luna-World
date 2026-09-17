@@ -59,6 +59,10 @@ return table.freeze({
 	MobMovementSpeedAttribute = "CombatMovementSpeed",
 	MobMovementSlowAttribute = "CombatMovementSlow",
 	MobMovementSlowUntilAttribute = "CombatMovementSlowUntil",
+	MobAIStateAttribute = "MobAIState",
+	MobAITargetAttribute = "MobAITargetUserId",
+	MobHomePositionAttribute = "MobHomePosition",
+	MobHomeArrivalDistance = 4,
 	DefenseStanceActiveAttribute = "DefenseStanceActive",
 	RapidShotActiveAttribute = "RapidShotActive",
 })

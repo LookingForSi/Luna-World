@@ -5,6 +5,7 @@ local CooldownRules = require(game.ReplicatedStorage.Shared.combat.CooldownRules
 local ResourceRules = require(game.ReplicatedStorage.Shared.combat.ResourceRules)
 local SkillRules = require(game.ReplicatedStorage.Shared.combat.SkillRules)
 local EffectRules = require(game.ReplicatedStorage.Shared.combat.EffectRules)
+local MobAIRules = require(game.ReplicatedStorage.Shared.combat.MobAIRules)
 
 return function(TestRunner)
 	TestRunner.run("manual input lifecycle accepts one request and buffers at most one", function()
@@ -91,5 +92,20 @@ return function(TestRunner)
 		assert(not EffectRules.canResolveMobAction(acceptedGeneration, currentGeneration, stunnedUntil, 20.5))
 		assert(not EffectRules.canResolveMobAction(acceptedGeneration, currentGeneration, stunnedUntil, 22), "canceled action must remain stale after stun expires")
 		assert(EffectRules.canResolveMobAction(currentGeneration, currentGeneration, stunnedUntil, 22), "a new post-stun action may resolve")
+	end)
+
+	TestRunner.run("mob AI lifecycle acquires attacks reacquires and returns without parallel state", function()
+		local state: MobAIRules.State = "Idle"
+		state = MobAIRules.nextState(state, { alive = true, hasTarget = true, detectedTarget = true, hostileAttacker = false, beyondLeash = false, inAttackRange = false, atHome = true }, "Aggressive")
+		assert(state == "Aggro")
+		state = MobAIRules.nextState(state, { alive = true, hasTarget = true, detectedTarget = false, hostileAttacker = false, beyondLeash = false, inAttackRange = false, atHome = false }, "Aggressive")
+		assert(state == "Chase")
+		state = MobAIRules.nextState(state, { alive = true, hasTarget = true, detectedTarget = false, hostileAttacker = false, beyondLeash = false, inAttackRange = true, atHome = false }, "Aggressive")
+		assert(state == "Attack")
+		assert(MobAIRules.nearestEligible({ { id = "player-a", distance = 7, eligible = true } }, 10) == "player-a")
+		state = MobAIRules.nextState(state, { alive = true, hasTarget = false, detectedTarget = false, hostileAttacker = false, beyondLeash = false, inAttackRange = false, atHome = false }, "Aggressive")
+		assert(state == "Return")
+		state = MobAIRules.nextState(state, { alive = true, hasTarget = false, detectedTarget = true, hostileAttacker = false, beyondLeash = false, inAttackRange = false, atHome = true }, "Aggressive")
+		assert(state == "Idle", "return must ignore detection until home")
 	end)
 end

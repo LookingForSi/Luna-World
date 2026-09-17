@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local CombatService = require(script.Parent.services.CombatService)
 local MobService = require(script.Parent.services.MobService)
+local MobAIService = require(script.Parent.services.MobAIService)
 local ProgressionService = require(script.Parent.services.ProgressionService)
 
 local function findMobDefinitionById(mobId: string)
@@ -17,8 +18,9 @@ local function findMobDefinitionById(mobId: string)
 end
 
 ProgressionService.start()
-MobService.start()
 CombatService.start()
+MobAIService.start(CombatService.requestMobBasicAttack)
+MobService.start()
 
 MobService.MobDied:Connect(function(killer: Player, mobId: string)
 	local definition = findMobDefinitionById(mobId)

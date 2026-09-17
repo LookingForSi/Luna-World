@@ -176,8 +176,13 @@ return function(TestRunner)
 			assertFiniteNumber(definition.reacquireRadius, prefix .. "reacquireRadius", true)
 			assertFiniteNumber(definition.leashDistance, prefix .. "leashDistance")
 			assertFiniteNumber(definition.attackRange, prefix .. "attackRange")
+			assertFiniteNumber(definition.basicAttackDamage, prefix .. "basicAttackDamage")
+			assertFiniteNumber(definition.attackWindupSeconds, prefix .. "attackWindupSeconds", true)
+			assertFiniteNumber(definition.attackIntervalSeconds, prefix .. "attackIntervalSeconds")
+			assert(definition.attackWindupSeconds < definition.attackIntervalSeconds, prefix .. "attack windup must finish before the next attack")
 			assertFiniteNumber(definition.chaseSpeed, prefix .. "chaseSpeed")
 			assertFiniteNumber(definition.decisionIntervalSeconds, prefix .. "decisionIntervalSeconds")
+			assert(type(definition.restoreHealthOnReturn) == "boolean", prefix .. "restoreHealthOnReturn must be boolean")
 		end
 	end)
 

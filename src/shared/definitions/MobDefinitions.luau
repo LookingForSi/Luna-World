@@ -18,8 +18,12 @@ local definitions: { [string]: CombatTypes.MobDefinition } = {
 		reacquireRadius = 25,
 		leashDistance = 60,
 		attackRange = 10,
+		basicAttackDamage = 8,
+		attackWindupSeconds = 0.25,
+		attackIntervalSeconds = 1.6,
 		chaseSpeed = 12,
 		decisionIntervalSeconds = 0.25,
+		restoreHealthOnReturn = true,
 	},
 	grey_wolf = {
 		-- Preserve the Milestone 0 key and id while extending its data contract.
@@ -36,8 +40,12 @@ local definitions: { [string]: CombatTypes.MobDefinition } = {
 		reacquireRadius = 40,
 		leashDistance = 75,
 		attackRange = 10,
+		basicAttackDamage = 12,
+		attackWindupSeconds = 0.25,
+		attackIntervalSeconds = 1.5,
 		chaseSpeed = 14,
 		decisionIntervalSeconds = 0.25,
+		restoreHealthOnReturn = true,
 	},
 	spider = {
 		id = "mob_spider",
@@ -53,8 +61,12 @@ local definitions: { [string]: CombatTypes.MobDefinition } = {
 		reacquireRadius = 35,
 		leashDistance = 70,
 		attackRange = 35,
+		basicAttackDamage = 10,
+		attackWindupSeconds = 0.35,
+		attackIntervalSeconds = 1.8,
 		chaseSpeed = 11,
 		decisionIntervalSeconds = 0.3,
+		restoreHealthOnReturn = true,
 	},
 }
 

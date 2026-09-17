@@ -52,6 +52,7 @@ local targetLifecycleConnections: { [Player]: { RBXScriptConnection } } = {}
 local lastAttackRequestAtByPlayer: { [Player]: number } = {}
 local lastSkillRequestAtByPlayer: { [Player]: number } = {}
 local lastAutoAttackRequestAtByPlayer: { [Player]: number } = {}
+local mobAttackReadyAt: { [Model]: number } = setmetatable({}, { __mode = "k" }) :: any
 local started = false
 local serviceConnections: { RBXScriptConnection } = {}
 local regenerationSchedulerElapsed = 0
@@ -656,6 +657,53 @@ local function onPlayerAdded(player: Player): ()
 	if player.Character ~= nil then bindCharacter(player, player.Character) end
 end
 
+-- Server-only entry point used by MobAIService. The AI proposes an action; combat
+-- owns acceptance, timing, revalidation, mitigation, and the authoritative result.
+function CombatService.requestMobBasicAttack(
+	mob: Model,
+	target: Player,
+	definition: CombatTypes.MobDefinition
+): boolean
+	local now = workspace:GetServerTimeNow()
+	local humanoid = mob:FindFirstChildOfClass("Humanoid")
+	local root = mob:FindFirstChild("HumanoidRootPart")
+	local targetRoot = getLivingCharacterRoot(target)
+	if humanoid == nil or humanoid.Health <= 0 or root == nil or not root:IsA("BasePart") or targetRoot == nil then return false end
+	if mob:GetAttribute(CombatConfig.MobStunnedAttribute) == true then return false end
+	if now < (mobAttackReadyAt[mob] or 0) then return false end
+	if (targetRoot.Position - root.Position).Magnitude > definition.attackRange + CombatConfig.RangeTolerance then return false end
+
+	mobAttackReadyAt[mob] = now + definition.attackIntervalSeconds
+	local previousGeneration = mob:GetAttribute(CombatConfig.MobActionGenerationAttribute)
+	local generation = if typeof(previousGeneration) == "number" then previousGeneration + 1 else 1
+	mob:SetAttribute(CombatConfig.MobActionGenerationAttribute, generation)
+	mob:SetAttribute(CombatConfig.MobActionStateAttribute, "Windup")
+	mob:SetAttribute(CombatConfig.MobActionInterruptibleAttribute, true)
+	task.delay(definition.attackWindupSeconds, function()
+		if mob.Parent == nil or target.Parent ~= Players then return end
+		if mob:GetAttribute(CombatConfig.MobActionGenerationAttribute) ~= generation then return end
+		local currentHumanoid = mob:FindFirstChildOfClass("Humanoid")
+		local currentRoot = mob:FindFirstChild("HumanoidRootPart")
+		local currentTargetRoot = getLivingCharacterRoot(target)
+		if currentHumanoid == nil or currentHumanoid.Health <= 0 or currentRoot == nil or not currentRoot:IsA("BasePart") or currentTargetRoot == nil then return end
+		if (currentTargetRoot.Position - currentRoot.Position).Magnitude > definition.attackRange + CombatConfig.RangeTolerance then return end
+		local targetHumanoid = target.Character and target.Character:FindFirstChildOfClass("Humanoid")
+		if targetHumanoid == nil then return end
+		local targetState = getState(target)
+		local damage = math.max(1, definition.basicAttackDamage - targetState.stats.physicalDefense)
+		targetHumanoid:TakeDamage(damage)
+		mob:SetAttribute(CombatConfig.MobActionStateAttribute, "Recovery")
+		mob:SetAttribute(CombatConfig.MobActionInterruptibleAttribute, nil)
+	end)
+	task.delay(definition.attackIntervalSeconds, function()
+		if mob.Parent ~= nil and mob:GetAttribute(CombatConfig.MobActionGenerationAttribute) == generation then
+			mob:SetAttribute(CombatConfig.MobActionStateAttribute, nil)
+			mob:SetAttribute(CombatConfig.MobActionInterruptibleAttribute, nil)
+		end
+	end)
+	return true
+end
+
 function CombatService.start(): ()
 	if started then return end
 	started = true
@@ -762,6 +810,7 @@ function CombatService.stop(): ()
 	table.clear(lastAttackRequestAtByPlayer)
 	table.clear(lastSkillRequestAtByPlayer)
 	table.clear(lastAutoAttackRequestAtByPlayer)
+	table.clear(mobAttackReadyAt)
 end
 
 return CombatService
