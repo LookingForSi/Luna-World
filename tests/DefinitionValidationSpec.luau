@@ -60,6 +60,15 @@ return function(TestRunner)
 			assert(SUPPORTED_RESOURCES[definition.resourceType], definition.id .. ".resourceType is unsupported")
 			assert(type(definition.basicAttackId) == "string" and definition.basicAttackId ~= "", definition.id .. ".basicAttackId is required")
 			assert(SkillDefinitions[definition.basicAttackId] ~= nil, definition.id .. ".basicAttackId must reference a skill")
+			assert(#definition.skillIds == 3, definition.id .. ".skillIds must define the three ordered action-bar skills")
+			local seenSkills = {}
+			for _, skillId in definition.skillIds do
+				assert(not seenSkills[skillId], definition.id .. ".skillIds must be unique")
+				seenSkills[skillId] = true
+				local skill = SkillDefinitions[skillId]
+				assert(skill ~= nil and skill.archetypeId == definition.id, definition.id .. ".skillIds must reference owned skills")
+				assert(skillId ~= definition.basicAttackId, definition.id .. ".skillIds must not duplicate basic attack")
+			end
 		end
 	end)
 

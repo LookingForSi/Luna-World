@@ -107,6 +107,7 @@ export type ArchetypeDefinition = {
 	displayName: string,
 	resourceType: ResourceType,
 	basicAttackId: string,
+	skillIds: { string },
 }
 
 export type AggressionMode = "Passive" | "Aggressive"

@@ -3,11 +3,14 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
+local GuiService = game:GetService("GuiService")
 
 local TargetController = {}
 
 local localPlayer = Players.LocalPlayer
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombatUiRules)
 local targetRequest = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TargetRequest") :: RemoteEvent
 local TARGET_ATTRIBUTE = CombatConfig.SelectedTargetAttribute
 
@@ -18,6 +21,8 @@ local descendantAddedConnection: RBXScriptConnection? = nil
 local selectedHighlight: Highlight? = nil
 local onTargetChanged: ((Model?) -> ())? = nil
 local selectedModel: Model? = nil
+local TARGET_ACTION = "LunaCycleTarget"
+local CLEAR_TARGET_ACTION = "LunaClearTarget"
 
 local function findEntityModel(instance: Instance?): Model?
 	local current = instance
@@ -25,12 +30,21 @@ local function findEntityModel(instance: Instance?): Model?
 		if current:IsA("Model") and typeof(current:GetAttribute("EntityId")) == "string" then
 			return current
 		end
+		if current:IsA("Model") then
+			local targetPlayer = Players:GetPlayerFromCharacter(current)
+			if targetPlayer ~= nil and targetPlayer ~= localPlayer then return current end
+		end
 		current = current.Parent
 	end
 	return nil
 end
 
 local function findEntityModelById(entityId: string): Model?
+	local userIdText = string.match(entityId, "^player:(%-?%d+)$")
+	if userIdText ~= nil then
+		local targetPlayer = Players:GetPlayerByUserId(tonumber(userIdText) :: number)
+		return if targetPlayer ~= nil and targetPlayer ~= localPlayer then targetPlayer.Character else nil
+	end
 	for _, descendant in workspace:GetDescendants() do
 		if descendant:IsA("Model") and descendant:GetAttribute("EntityId") == entityId then
 			return descendant
@@ -74,11 +88,9 @@ local function syncConfirmedTarget(): ()
 	showConfirmedTarget(findEntityModelById(entityId))
 end
 
-local function selectAtScreenPosition(screenPosition: Vector2): ()
+local function raycastEntity(screenPosition: Vector2): Model?
 	local camera = workspace.CurrentCamera
-	if camera == nil then
-		return
-	end
+	if camera == nil then return nil end
 
 	local ray = camera:ViewportPointToRay(screenPosition.X, screenPosition.Y)
 	local raycastParams = RaycastParams.new()
@@ -89,18 +101,71 @@ local function selectAtScreenPosition(screenPosition: Vector2): ()
 	end
 
 	local result = workspace:Raycast(ray.Origin, ray.Direction * 1000, raycastParams)
-	local model = if result ~= nil then findEntityModel(result.Instance) else nil
-	if model == nil then
-		return
-	end
+	return if result ~= nil then findEntityModel(result.Instance) else nil
+end
 
-	local entityId = model:GetAttribute("EntityId")
-	if typeof(entityId) ~= "string" then
-		return
-	end
+local function requestModel(model: Model?): ()
+	if model == nil then return end
+
+	local targetPlayer = Players:GetPlayerFromCharacter(model)
+	if targetPlayer == localPlayer then return end
+	local entityId = if targetPlayer ~= nil
+		then ClientCombatUiRules.canonicalPlayerTargetId(targetPlayer.UserId)
+		else model:GetAttribute("EntityId")
+	if typeof(entityId) ~= "string" then return end
 
 	-- Rendering waits for the server to validate and replicate the confirmed target.
 	targetRequest:FireServer(entityId)
+end
+
+function TargetController.clearTarget(): ()
+	targetRequest:FireServer("")
+end
+
+local function selectAtScreenPosition(screenPosition: Vector2, forgiveTouch: boolean): ()
+	local offsets = if forgiveTouch then ClientCombatUiRules.getTouchProbeOffsets(24) else { Vector2.zero }
+	for _, offset in offsets do
+		local model = raycastEntity(screenPosition + offset)
+		if model ~= nil then
+			requestModel(model)
+			return
+		end
+	end
+end
+
+local function requestNearestVisibleTarget(): ()
+	local character = localPlayer.Character
+	local root = if character ~= nil then character:FindFirstChild("HumanoidRootPart") else nil
+	if root == nil or not root:IsA("BasePart") then return end
+	local candidates: { { model: Model, distance: number, id: string } } = {}
+	for _, child in workspace:GetChildren() do
+		if child:IsA("Model") and child ~= character then
+			local targetPlayer = Players:GetPlayerFromCharacter(child)
+			local selectable = typeof(child:GetAttribute("EntityId")) == "string"
+				or (targetPlayer ~= nil and targetPlayer ~= localPlayer)
+			if not selectable then continue end
+			local candidateRoot = child:FindFirstChild("HumanoidRootPart")
+			local humanoid = child:FindFirstChildOfClass("Humanoid")
+			if candidateRoot ~= nil and candidateRoot:IsA("BasePart") and humanoid ~= nil and humanoid.Health > 0 then
+				local distance = (candidateRoot.Position - root.Position).Magnitude
+				local id = if targetPlayer ~= nil
+					then ClientCombatUiRules.canonicalPlayerTargetId(targetPlayer.UserId)
+					else child:GetAttribute("EntityId")
+				if typeof(id) == "string" then table.insert(candidates, { model = child, distance = distance, id = id }) end
+			end
+		end
+	end
+	table.sort(candidates, function(left, right)
+		if left.distance == right.distance then return left.id < right.id end
+		return left.distance < right.distance
+	end)
+	if #candidates == 0 then return end
+	local selectedId = localPlayer:GetAttribute(TARGET_ATTRIBUTE)
+	local nextIndex = 1
+	for index, candidate in candidates do
+		if candidate.id == selectedId then nextIndex = (index % #candidates) + 1 break end
+	end
+	requestModel(candidates[nextIndex].model) -- The server still enforces eligibility and selection range.
 end
 
 function TargetController.start(targetChanged: (Model?) -> ()): ()
@@ -112,7 +177,7 @@ function TargetController.start(targetChanged: (Model?) -> ()): ()
 		if gameProcessed or input.UserInputType ~= Enum.UserInputType.MouseButton1 then
 			return
 		end
-		selectAtScreenPosition(Vector2.new(input.Position.X, input.Position.Y))
+		selectAtScreenPosition(Vector2.new(input.Position.X, input.Position.Y), false)
 	end)
 
 	touchTapConnection = UserInputService.TouchTap:Connect(function(touchPositions: { Vector2 }, gameProcessed: boolean)
@@ -121,9 +186,23 @@ function TargetController.start(targetChanged: (Model?) -> ()): ()
 		end
 		local position = touchPositions[1]
 		if position ~= nil then
-			selectAtScreenPosition(position)
+			selectAtScreenPosition(position, true)
 		end
 	end)
+	ContextActionService:BindAction(TARGET_ACTION, function(_, state, inputObject)
+		if ClientCombatUiRules.shouldIgnoreForGuiNavigation(inputObject.UserInputType.Name, GuiService.SelectedObject ~= nil) then
+			return Enum.ContextActionResult.Pass
+		end
+		if state == Enum.UserInputState.Begin then requestNearestVisibleTarget() end
+		return Enum.ContextActionResult.Sink
+	end, false, Enum.KeyCode.Tab, Enum.KeyCode.ButtonR3)
+	ContextActionService:BindAction(CLEAR_TARGET_ACTION, function(_, state, inputObject)
+		if ClientCombatUiRules.shouldIgnoreForGuiNavigation(inputObject.UserInputType.Name, GuiService.SelectedObject ~= nil) then
+			return Enum.ContextActionResult.Pass
+		end
+		if state == Enum.UserInputState.Begin then TargetController.clearTarget() end
+		return Enum.ContextActionResult.Sink
+	end, false, Enum.KeyCode.Escape, Enum.KeyCode.ButtonL3)
 	targetAttributeConnection = localPlayer:GetAttributeChangedSignal(TARGET_ATTRIBUTE):Connect(syncConfirmedTarget)
 	descendantAddedConnection = workspace.DescendantAdded:Connect(function(descendant: Instance)
 		local entityId = localPlayer:GetAttribute(TARGET_ATTRIBUTE)
@@ -135,6 +214,8 @@ function TargetController.start(targetChanged: (Model?) -> ()): ()
 end
 
 function TargetController.stop(): ()
+	ContextActionService:UnbindAction(TARGET_ACTION)
+	ContextActionService:UnbindAction(CLEAR_TARGET_ACTION)
 	if inputBeganConnection ~= nil then
 		inputBeganConnection:Disconnect()
 		inputBeganConnection = nil

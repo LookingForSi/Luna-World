@@ -4,6 +4,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
+local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombatUiRules)
 
 local CombatHud = {}
 
@@ -14,10 +16,13 @@ local healthTextLabel: TextLabel? = nil
 local healthFill: Frame? = nil
 local xpLabel: TextLabel? = nil
 local resourceLabel: TextLabel? = nil
+local feedbackLabel: TextLabel? = nil
 local healthConnection: RBXScriptConnection? = nil
 local targetAncestryConnection: RBXScriptConnection? = nil
 local xpConnection: RBXScriptConnection? = nil
 local resourceConnections: { RBXScriptConnection } = {}
+local presentationConnection: RBXScriptConnection? = nil
+local feedbackGeneration = 0
 local currentTarget: Model? = nil
 
 local function disconnectTarget(): ()
@@ -128,6 +133,12 @@ function CombatHud.start(): ()
 	local resource = makeTextLabel(gui, "CombatResource", UDim2.new(0, 20, 1, -72))
 	resource.Size = UDim2.fromOffset(260, 28)
 	resourceLabel = resource
+	local feedback = makeTextLabel(gui, "CombatFeedback", UDim2.new(0.5, -160, 1, -122))
+	feedback.Size = UDim2.fromOffset(320, 28)
+	feedback.TextXAlignment = Enum.TextXAlignment.Center
+	feedback.TextColor3 = Color3.fromRGB(235, 185, 105)
+	feedback.Text = ""
+	feedbackLabel = feedback
 	screenGui = gui
 
 	CombatHud.setTarget(nil)
@@ -141,6 +152,19 @@ function CombatHud.start(): ()
 	} do
 		table.insert(resourceConnections, player:GetAttributeChangedSignal(attributeName):Connect(updateResource))
 	end
+	presentationConnection = ReplicatedStorage.Remotes.CombatPresentation.OnClientEvent:Connect(function(message: unknown)
+		if not CombatPresentationRules.isSupported(message) then return end
+		local record = message :: CombatPresentationRules.Message
+		if record.outcome ~= "Rejected" then return end
+		local text = ClientCombatUiRules.getRejectionText(record.reasonCode)
+		if text == nil or feedbackLabel == nil then return end
+		feedbackGeneration += 1
+		local generation = feedbackGeneration
+		feedbackLabel.Text = text
+		task.delay(2, function()
+			if generation == feedbackGeneration and feedbackLabel ~= nil then feedbackLabel.Text = "" end
+		end)
+	end)
 end
 
 function CombatHud.setTarget(target: Model?): ()
@@ -177,6 +201,7 @@ function CombatHud.setTarget(target: Model?): ()
 end
 
 function CombatHud.stop(): ()
+	feedbackGeneration += 1
 	disconnectTarget()
 	if xpConnection ~= nil then
 		xpConnection:Disconnect()
@@ -184,6 +209,8 @@ function CombatHud.stop(): ()
 	end
 	for _, connection in resourceConnections do connection:Disconnect() end
 	table.clear(resourceConnections)
+	if presentationConnection ~= nil then presentationConnection:Disconnect() end
+	presentationConnection = nil
 	if screenGui ~= nil then
 		screenGui:Destroy()
 		screenGui = nil
@@ -193,6 +220,7 @@ function CombatHud.stop(): ()
 	healthFill = nil
 	xpLabel = nil
 	resourceLabel = nil
+	feedbackLabel = nil
 end
 
 return CombatHud

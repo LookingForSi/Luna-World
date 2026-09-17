@@ -648,14 +648,22 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 	end)
 end
 
-local function onTargetRequest(player: Player, entityId: unknown): ()
+local function onTargetRequest(player: Player, ...: unknown): ()
+	if select("#", ...) ~= 1 then return end
+	local entityId = select(1, ...)
 	if typeof(entityId) ~= "string" then return end
+	-- The sole semantic clear command is one exact empty string. Other malformed
+	-- payloads remain no-ops and cannot overload target selection behavior.
+	if entityId == "" then
+		clearTarget(player)
+		return
+	end
 	local playerRoot = getLivingCharacterRoot(player)
 	if string.sub(entityId, 1, 7) == "player:" then
 		-- Task 15 will expose cross-platform player selection; this is its server-authoritative boundary.
 		local selectedPlayer = getPlayerByCanonicalTargetId(entityId)
 		local targetRoot = if selectedPlayer ~= nil then getLivingCharacterRoot(selectedPlayer) else nil
-		if playerRoot == nil or selectedPlayer == nil or targetRoot == nil then return end
+		if playerRoot == nil or selectedPlayer == nil or selectedPlayer == player or targetRoot == nil then return end
 		if not CombatRules.canSelectTarget(playerRoot.Position, targetRoot.Position, true, CombatConfig.TargetSelectionRange) then return end
 		clearTarget(player)
 		targetsByPlayer[player] = entityId
