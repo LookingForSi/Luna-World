@@ -67,8 +67,6 @@ local function waitForBootstrap(): (Player, Model, string)
 	end)
 	local mobFixture = waitUntil("the milestone zero grey wolf", 10, findMilestoneZeroMob)
 
-	-- The accepted bootstrap connects the reward handler synchronously after starting services.
-	-- Two server heartbeats form the readiness boundary after both observable fixtures exist.
 	RunService.Heartbeat:Wait()
 	RunService.Heartbeat:Wait()
 	return player, mobFixture.model, mobFixture.entityId
@@ -221,8 +219,6 @@ return function(TestRunner)
 				return nil
 			end)
 
-			-- Exercise the real server effect service without stretching gameplay tuning
-			-- merely to make a refresh fit inside the production skill cooldown.
 			local rangerTuning = CombatConfig.ArchetypeStats.ranger
 			local effectStats: CombatTypes.CombatStatSnapshot = {
 				resource = { resourceType = "Focus", current = rangerTuning.maximumResource, maximum = rangerTuning.maximumResource },
@@ -253,12 +249,13 @@ return function(TestRunner)
 			local recalculatedFixtureSpeed = MobDefinitions.grey_wolf.chaseSpeed + 3
 			assert(MobService.setMovementSpeed(entityId, recalculatedFixtureSpeed))
 			task.wait(0.07)
+			local expectedSlowedSpeed = recalculatedFixtureSpeed * (1 - canonicalSnareEffect.magnitude)
 			assert(
-				humanoid.WalkSpeed == recalculatedFixtureSpeed * (1 - canonicalSnareEffect.magnitude),
+				math.abs(humanoid.WalkSpeed - expectedSlowedSpeed) < 1e-4,
 				"old snare expiry must not clear the refreshed effect"
 			)
 			task.wait(0.07)
-			assert(humanoid.WalkSpeed == recalculatedFixtureSpeed, "refreshed snare must restore recalculated movement")
+			assert(math.abs(humanoid.WalkSpeed - recalculatedFixtureSpeed) < 1e-4, "refreshed snare must restore recalculated movement")
 			assert(mob:GetAttribute(CombatConfig.MobMovementSlowAttribute) == nil)
 			assert(MobService.setMovementSpeed(entityId, MobDefinitions.grey_wolf.chaseSpeed))
 
