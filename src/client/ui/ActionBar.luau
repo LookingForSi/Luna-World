@@ -102,14 +102,15 @@ function ActionBar.start(skillIds: { string }, onAttack: () -> (), onAutoToggle:
 	local clearButton = makeButton(frame, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.2, -4, 0, 70))
 	clearButton.Position = UDim2.new(0, 0, 0, 62)
 	autoButton = makeButton(frame, "Auto", "AUTO\nВЫКЛ", UDim2.new(0.25, -4, 0, 70))
-	(autoButton :: TextButton).Position = UDim2.new(0.21, 0, 0, 62)
+	local auto = autoButton :: TextButton
+	auto.Position = UDim2.new(0.21, 0, 0, 62)
 	local attackSize = UDim2.new(0.52, -4, 0, if UserInputService.TouchEnabled then 80 else 70)
 	attackButton = makeButton(frame, "Attack", "АТАКА", attackSize)
 	local attack = attackButton :: TextButton
 	attack.Position = UDim2.new(0.48, 0, 0, if UserInputService.TouchEnabled then 58 else 62)
 	attack.TextSize = 18
 	table.insert(buttonConnections, attack.Activated:Connect(onAttack))
-	table.insert(buttonConnections, (autoButton :: TextButton).Activated:Connect(onAutoToggle))
+	table.insert(buttonConnections, auto.Activated:Connect(onAutoToggle))
 	table.insert(buttonConnections, clearButton.Activated:Connect(onClearTarget))
 	autoConnection = player:GetAttributeChangedSignal(CombatConfig.AutoAttackEnabledAttribute):Connect(updateAuto)
 	renderConnection = RunService.RenderStepped:Connect(updateCooldowns)
