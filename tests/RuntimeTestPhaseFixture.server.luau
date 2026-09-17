@@ -1,52 +1,53 @@
 --!strict
 
--- Test-project-only stabilization between the manual lifecycle contract and the
--- skill runtime contract. The lifecycle test deliberately reuses one Grey Wolf
--- across several cancellation cases; depending on scheduler timing, a final
--- accepted basic attack can resolve just before the phase boundary and leave the
--- shared fixture damaged. Restore that fixture at the boundary so the following
--- skill-runtime contract starts from deterministic health without changing live
--- game behavior.
+-- Test-project-only adapter for the runtime contract's explicit target-removal cases.
+--
+-- The characterization script intentionally tests "target disappeared without dying".
+-- Destroying the only Grey Wolf, however, bypasses MobService's normal Died/respawn
+-- lifecycle and leaves the rest of the long runtime contract with no registered
+-- Grey Wolf to reuse. For the test project we therefore model removal as a temporary
+-- unparent/reparent: the target really leaves Workspace (so production cleanup paths
+-- are exercised), but the same server-registered model can be reused by later phases.
+-- Production gameplay code is not changed by this fixture.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
+local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local MobService = require(ServerScriptService.Server.services.MobService)
 
-local lifecycleComplete = ReplicatedStorage
-	:WaitForChild("TestRemotes")
-	:WaitForChild("ManualAttackLifecycleComplete") :: RemoteEvent
+local testRemotes = ReplicatedStorage:WaitForChild("TestRemotes")
+local skillRuntimeCommand = testRemotes:WaitForChild("SkillRuntimeCommand") :: RemoteFunction
+local autoAttackRuntimeCommand = testRemotes:WaitForChild("AutoAttackRuntimeCommand") :: RemoteFunction
 
-local pendingGreyWolfResetUntil = 0
+local function wrapTemporaryRemoval(remote: RemoteFunction): ()
+	task.spawn(function()
+		local original: any = nil
+		while remote.Parent ~= nil and original == nil do
+			original = remote.OnServerInvoke
+			if original == nil then task.wait() end
+		end
+		if original == nil then return end
 
-local function restoreGreyWolf(model: Model): boolean
-	local definition = MobService.getDefinition(model)
-	if definition == nil or definition.id ~= MobDefinitions.grey_wolf.id then return false end
-	local humanoid = model:FindFirstChildOfClass("Humanoid")
-	if humanoid == nil or humanoid.Health <= 0 then return false end
-	humanoid.Health = humanoid.MaxHealth
-	return true
+		remote.OnServerInvoke = function(sender: Player, command: unknown, ...: any): any
+			if command ~= "RemoveTarget" then
+				return original(sender, command, ...)
+			end
+
+			local entityId = sender:GetAttribute(CombatConfig.SelectedTargetAttribute)
+			assert(typeof(entityId) == "string", "RemoveTarget test command requires a selected mob")
+			local model = MobService.getByEntityId(entityId)
+			assert(model ~= nil and model.Parent ~= nil, "RemoveTarget test command requires a registered live mob")
+
+			model.Parent = nil
+			task.delay(0.5, function()
+				if model.Parent == nil then
+					model.Parent = workspace
+				end
+			end)
+			return true
+		end
+	end)
 end
 
-local function restoreExistingGreyWolf(): boolean
-	for _, model in MobService.getAll() do
-		if restoreGreyWolf(model) then return true end
-	end
-	return false
-end
-
-lifecycleComplete.OnServerEvent:Connect(function()
-	if restoreExistingGreyWolf() then
-		pendingGreyWolfResetUntil = 0
-		return
-	end
-	-- If the fixture crossed the death boundary immediately before this event,
-	-- restore the normal MobService respawn when it appears instead of spawning a
-	-- second test-only mob or mutating production respawn rules.
-	pendingGreyWolfResetUntil = os.clock() + 8
-end)
-
-MobService.MobSpawned:Connect(function(model)
-	if os.clock() > pendingGreyWolfResetUntil then return end
-	if restoreGreyWolf(model) then pendingGreyWolfResetUntil = 0 end
-end)
+wrapTemporaryRemoval(skillRuntimeCommand)
+wrapTemporaryRemoval(autoAttackRuntimeCommand)
