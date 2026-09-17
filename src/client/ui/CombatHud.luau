@@ -12,29 +12,45 @@ local CombatHud = {}
 local player = Players.LocalPlayer
 local screenGui: ScreenGui? = nil
 local targetNameLabel: TextLabel? = nil
-local healthTextLabel: TextLabel? = nil
-local healthFill: Frame? = nil
+local targetHealthTextLabel: TextLabel? = nil
+local targetHealthFill: Frame? = nil
+local playerHealthFill: Frame? = nil
+local playerResourceFill: Frame? = nil
+local playerResourceLabel: TextLabel? = nil
 local xpLabel: TextLabel? = nil
-local resourceLabel: TextLabel? = nil
 local feedbackLabel: TextLabel? = nil
-local healthConnection: RBXScriptConnection? = nil
+local targetHealthConnection: RBXScriptConnection? = nil
 local targetAncestryConnection: RBXScriptConnection? = nil
+local playerHealthConnection: RBXScriptConnection? = nil
+local playerMaxHealthConnection: RBXScriptConnection? = nil
+local characterAddedConnection: RBXScriptConnection? = nil
 local xpConnection: RBXScriptConnection? = nil
 local resourceConnections: { RBXScriptConnection } = {}
 local presentationConnection: RBXScriptConnection? = nil
 local feedbackGeneration = 0
 local currentTarget: Model? = nil
 
+local RESOURCE_NAMES = {
+	Stamina = "Выносливость",
+	Focus = "Концентрация",
+	Mana = "Мана",
+}
+
 local function disconnectTarget(): ()
-	if healthConnection ~= nil then
-		healthConnection:Disconnect()
-		healthConnection = nil
+	if targetHealthConnection ~= nil then
+		targetHealthConnection:Disconnect()
+		targetHealthConnection = nil
 	end
 	if targetAncestryConnection ~= nil then
 		targetAncestryConnection:Disconnect()
 		targetAncestryConnection = nil
 	end
 	currentTarget = nil
+end
+
+local function disconnectPlayerHealth(): ()
+	if playerHealthConnection ~= nil then playerHealthConnection:Disconnect(); playerHealthConnection = nil end
+	if playerMaxHealthConnection ~= nil then playerMaxHealthConnection:Disconnect(); playerMaxHealthConnection = nil end
 end
 
 local function updateXP(): ()
@@ -45,34 +61,46 @@ local function updateXP(): ()
 	end
 end
 
-local RESOURCE_NAMES = {
-	Stamina = "Выносливость",
-	Focus = "Концентрация",
-	Mana = "Мана",
-}
-
 local function updateResource(): ()
 	local resourceType = player:GetAttribute(CombatConfig.ResourceTypeAttribute)
 	local current = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
 	local maximum = player:GetAttribute(CombatConfig.ResourceMaximumAttribute)
-	if resourceLabel ~= nil then
-		local displayName = if typeof(resourceType) == "string" then RESOURCE_NAMES[resourceType] or resourceType else "Ресурс"
-		local currentValue = if typeof(current) == "number" then current else 0
-		local maximumValue = if typeof(maximum) == "number" then maximum else 0
-		resourceLabel.Text = string.format("%s: %d / %d", displayName, math.floor(currentValue), math.floor(maximumValue))
-	end
+	local displayName = if typeof(resourceType) == "string" then RESOURCE_NAMES[resourceType] or resourceType else "Ресурс"
+	local currentValue = if typeof(current) == "number" then current else 0
+	local maximumValue = if typeof(maximum) == "number" then maximum else 0
+	local ratio = if maximumValue > 0 then math.clamp(currentValue / maximumValue, 0, 1) else 0
+	if playerResourceLabel ~= nil then playerResourceLabel.Text = displayName end
+	if playerResourceFill ~= nil then playerResourceFill.Size = UDim2.fromScale(ratio, 1) end
 end
 
-local function updateHealth(humanoid: Humanoid): ()
+local function updateTargetHealth(humanoid: Humanoid): ()
 	local health = math.max(0, humanoid.Health)
 	local maxHealth = math.max(0, humanoid.MaxHealth)
 	local ratio = if maxHealth > 0 then math.clamp(health / maxHealth, 0, 1) else 0
-	if healthTextLabel ~= nil then
-		healthTextLabel.Text = string.format("HP: %d / %d", math.ceil(health), math.ceil(maxHealth))
+	if targetHealthTextLabel ~= nil then
+		targetHealthTextLabel.Text = string.format("HP: %d / %d", math.ceil(health), math.ceil(maxHealth))
 	end
-	if healthFill ~= nil then
-		healthFill.Size = UDim2.fromScale(ratio, 1)
+	if targetHealthFill ~= nil then
+		targetHealthFill.Size = UDim2.fromScale(ratio, 1)
 	end
+end
+
+local function updatePlayerHealth(humanoid: Humanoid): ()
+	local ratio = if humanoid.MaxHealth > 0 then math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1) else 0
+	if playerHealthFill ~= nil then playerHealthFill.Size = UDim2.fromScale(ratio, 1) end
+end
+
+local function bindPlayerCharacter(character: Model): ()
+	disconnectPlayerHealth()
+	local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 5)
+	if humanoid == nil or not humanoid:IsA("Humanoid") or player.Character ~= character then return end
+	updatePlayerHealth(humanoid)
+	playerHealthConnection = humanoid.HealthChanged:Connect(function()
+		if player.Character == character then updatePlayerHealth(humanoid) end
+	end)
+	playerMaxHealthConnection = humanoid:GetPropertyChangedSignal("MaxHealth"):Connect(function()
+		if player.Character == character then updatePlayerHealth(humanoid) end
+	end)
 end
 
 local function makeTextLabel(parent: Instance, name: string, position: UDim2): TextLabel
@@ -89,6 +117,25 @@ local function makeTextLabel(parent: Instance, name: string, position: UDim2): T
 	return label
 end
 
+local function makeStatusBar(parent: Instance, name: string, position: UDim2, fillName: string, fillColor: Color3): Frame
+	local background = Instance.new("Frame")
+	background.Name = name
+	background.Position = position
+	background.Size = UDim2.new(1, -16, 0, 14)
+	background.BackgroundColor3 = Color3.fromRGB(38, 39, 47)
+	background.BorderSizePixel = 0
+	background.ClipsDescendants = true
+	background.Parent = parent
+
+	local fill = Instance.new("Frame")
+	fill.Name = fillName
+	fill.Size = UDim2.fromScale(0, 1)
+	fill.BackgroundColor3 = fillColor
+	fill.BorderSizePixel = 0
+	fill.Parent = background
+	return fill
+end
+
 function CombatHud.start(): ()
 	CombatHud.stop()
 
@@ -97,42 +144,47 @@ function CombatHud.start(): ()
 	gui.ResetOnSpawn = false
 	gui.Parent = player:WaitForChild("PlayerGui")
 
-	local panel = Instance.new("Frame")
-	panel.Name = "TargetFrame"
-	panel.AnchorPoint = Vector2.new(0.5, 0)
-	panel.Position = UDim2.new(0.5, 0, 0, 24)
-	panel.Size = UDim2.fromOffset(280, 86)
-	panel.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
-	panel.BackgroundTransparency = 0.15
-	panel.BorderSizePixel = 0
-	panel.Parent = gui
+	local targetPanel = Instance.new("Frame")
+	targetPanel.Name = "TargetFrame"
+	targetPanel.AnchorPoint = Vector2.new(0.5, 0)
+	targetPanel.Position = UDim2.new(0.5, 0, 0, 24)
+	targetPanel.Size = UDim2.fromOffset(280, 86)
+	targetPanel.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
+	targetPanel.BackgroundTransparency = 0.15
+	targetPanel.BorderSizePixel = 0
+	targetPanel.Parent = gui
 
-	targetNameLabel = makeTextLabel(panel, "TargetName", UDim2.fromOffset(8, 4))
-	healthTextLabel = makeTextLabel(panel, "HealthText", UDim2.fromOffset(8, 28))
+	targetNameLabel = makeTextLabel(targetPanel, "TargetName", UDim2.fromOffset(8, 4))
+	targetHealthTextLabel = makeTextLabel(targetPanel, "HealthText", UDim2.fromOffset(8, 28))
+	targetHealthFill = makeStatusBar(targetPanel, "HealthBar", UDim2.fromOffset(8, 60), "Fill", Color3.fromRGB(159, 52, 62))
 
-	local healthBackground = Instance.new("Frame")
-	healthBackground.Name = "HealthBar"
-	healthBackground.Position = UDim2.fromOffset(8, 60)
-	healthBackground.Size = UDim2.new(1, -16, 0, 14)
-	healthBackground.BackgroundColor3 = Color3.fromRGB(54, 32, 36)
-	healthBackground.BorderSizePixel = 0
-	healthBackground.ClipsDescendants = true
-	healthBackground.Parent = panel
+	local playerPanel = Instance.new("Frame")
+	playerPanel.Name = "PlayerStatusFrame"
+	playerPanel.AnchorPoint = Vector2.new(0, 1)
+	playerPanel.Position = UDim2.new(0, 18, 1, -16)
+	playerPanel.Size = UDim2.fromOffset(300, 112)
+	playerPanel.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
+	playerPanel.BackgroundTransparency = 0.15
+	playerPanel.BorderSizePixel = 0
+	playerPanel.Parent = gui
 
-	local fill = Instance.new("Frame")
-	fill.Name = "Fill"
-	fill.Size = UDim2.fromScale(0, 1)
-	fill.BackgroundColor3 = Color3.fromRGB(159, 52, 62)
-	fill.BorderSizePixel = 0
-	fill.Parent = healthBackground
-	healthFill = fill
+	local hpLabel = makeTextLabel(playerPanel, "PlayerHealthLabel", UDim2.fromOffset(8, 2))
+	hpLabel.Size = UDim2.new(1, -16, 0, 20)
+	hpLabel.Text = "HP"
+	hpLabel.TextSize = 13
+	playerHealthFill = makeStatusBar(playerPanel, "PlayerHealthBar", UDim2.fromOffset(8, 24), "PlayerHealthFill", Color3.fromRGB(159, 52, 62))
 
-	local xp = makeTextLabel(gui, "SessionXP", UDim2.new(0, 20, 1, -44))
-	xp.Size = UDim2.fromOffset(200, 28)
+	local resourceLabel = makeTextLabel(playerPanel, "PlayerResourceLabel", UDim2.fromOffset(8, 42))
+	resourceLabel.Size = UDim2.new(1, -16, 0, 20)
+	resourceLabel.TextSize = 13
+	playerResourceLabel = resourceLabel
+	playerResourceFill = makeStatusBar(playerPanel, "PlayerResourceBar", UDim2.fromOffset(8, 64), "PlayerResourceFill", Color3.fromRGB(69, 108, 166))
+
+	local xp = makeTextLabel(playerPanel, "SessionXP", UDim2.fromOffset(8, 82))
+	xp.Size = UDim2.new(1, -16, 0, 24)
+	xp.TextSize = 13
 	xpLabel = xp
-	local resource = makeTextLabel(gui, "CombatResource", UDim2.new(0, 20, 1, -72))
-	resource.Size = UDim2.fromOffset(260, 28)
-	resourceLabel = resource
+
 	local feedback = makeTextLabel(gui, "CombatFeedback", UDim2.new(0.5, -160, 1, -122))
 	feedback.Size = UDim2.fromOffset(320, 28)
 	feedback.TextXAlignment = Enum.TextXAlignment.Center
@@ -144,6 +196,8 @@ function CombatHud.start(): ()
 	CombatHud.setTarget(nil)
 	updateXP()
 	updateResource()
+	if player.Character ~= nil then bindPlayerCharacter(player.Character) end
+	characterAddedConnection = player.CharacterAdded:Connect(bindPlayerCharacter)
 	xpConnection = player:GetAttributeChangedSignal("SessionXP"):Connect(updateXP)
 	for _, attributeName in {
 		CombatConfig.ResourceTypeAttribute,
@@ -170,56 +224,46 @@ end
 function CombatHud.setTarget(target: Model?): ()
 	disconnectTarget()
 
-	if targetNameLabel == nil or healthTextLabel == nil or healthFill == nil then
-		return
-	end
+	if targetNameLabel == nil or targetHealthTextLabel == nil or targetHealthFill == nil then return end
 	if target == nil then
 		targetNameLabel.Text = "No target"
-		healthTextLabel.Text = "HP: --"
-		healthFill.Size = UDim2.fromScale(0, 1)
+		targetHealthTextLabel.Text = "HP: --"
+		targetHealthFill.Size = UDim2.fromScale(0, 1)
 		return
 	end
 
 	local humanoid = target:FindFirstChildOfClass("Humanoid")
-	if humanoid == nil then
-		return
-	end
+	if humanoid == nil then return end
 
 	currentTarget = target
 	targetNameLabel.Text = target.Name
-	updateHealth(humanoid)
-	healthConnection = humanoid.HealthChanged:Connect(function()
-		if currentTarget == target then
-			updateHealth(humanoid)
-		end
+	updateTargetHealth(humanoid)
+	targetHealthConnection = humanoid.HealthChanged:Connect(function()
+		if currentTarget == target then updateTargetHealth(humanoid) end
 	end)
 	targetAncestryConnection = target.AncestryChanged:Connect(function(_, parent: Instance?)
-		if parent == nil and currentTarget == target then
-			CombatHud.setTarget(nil)
-		end
+		if parent == nil and currentTarget == target then CombatHud.setTarget(nil) end
 	end)
 end
 
 function CombatHud.stop(): ()
 	feedbackGeneration += 1
 	disconnectTarget()
-	if xpConnection ~= nil then
-		xpConnection:Disconnect()
-		xpConnection = nil
-	end
+	disconnectPlayerHealth()
+	if characterAddedConnection ~= nil then characterAddedConnection:Disconnect(); characterAddedConnection = nil end
+	if xpConnection ~= nil then xpConnection:Disconnect(); xpConnection = nil end
 	for _, connection in resourceConnections do connection:Disconnect() end
 	table.clear(resourceConnections)
 	if presentationConnection ~= nil then presentationConnection:Disconnect() end
 	presentationConnection = nil
-	if screenGui ~= nil then
-		screenGui:Destroy()
-		screenGui = nil
-	end
+	if screenGui ~= nil then screenGui:Destroy(); screenGui = nil end
 	targetNameLabel = nil
-	healthTextLabel = nil
-	healthFill = nil
+	targetHealthTextLabel = nil
+	targetHealthFill = nil
+	playerHealthFill = nil
+	playerResourceFill = nil
+	playerResourceLabel = nil
 	xpLabel = nil
-	resourceLabel = nil
 	feedbackLabel = nil
 end
 
