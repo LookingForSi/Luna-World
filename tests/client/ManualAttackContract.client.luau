@@ -43,6 +43,10 @@ local function cooldownAttribute(skillId: string): string
 	return CombatConfig.SkillCooldownAttributePrefix .. skillId
 end
 
+local function approximatelyEqual(actual: number, expected: number, epsilon: number?): boolean
+	return math.abs(actual - expected) <= (epsilon or 0.001)
+end
+
 local function waitUntil(description: string, timeoutSeconds: number, predicate: () -> boolean): ()
 	local deadline = os.clock() + timeoutSeconds
 	while not predicate() and os.clock() < deadline do
@@ -387,22 +391,29 @@ end
 local stanceHumanoid = currentLivingHumanoid()
 local baseWalkSpeed = CombatConfig.ArchetypeStats.knight.movementSpeed
 local resourceBeforeStance = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+assert(typeof(resourceBeforeStance) == "number")
 skillRequest:FireServer("defensive_stance")
 skillRequest:FireServer("defensive_stance")
 local enabledStanceResult = waitForSkillResult(5, "enabled defensive stance result")
 assert(enabledStanceResult.applied == true)
 task.wait(0.15)
 assert(#skillResults == 5, "duplicate stance request must not produce a second accepted result")
-assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == resourceBeforeStance)
+local resourceAfterStance = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+assert(typeof(resourceAfterStance) == "number")
+assert(
+	resourceAfterStance >= resourceBeforeStance
+		and resourceAfterStance <= CombatConfig.ArchetypeStats.knight.maximumResource,
+	"defensive stance must not spend Stamina while normal regeneration may continue"
+)
 assert(player.Character ~= nil and player.Character:GetAttribute(CombatConfig.DefenseStanceActiveAttribute) == true)
-assert(stanceHumanoid.WalkSpeed == baseWalkSpeed * defensiveStanceEffect.movementSpeedMultiplier)
+assert(approximatelyEqual(stanceHumanoid.WalkSpeed, baseWalkSpeed * defensiveStanceEffect.movementSpeedMultiplier))
 
 task.wait(defensiveStance.cooldownSeconds + 0.1)
 skillRequest:FireServer("defensive_stance")
 local disabledStanceResult = waitForSkillResult(6, "disabled defensive stance result")
 assert(disabledStanceResult.applied == true)
 assert(player.Character ~= nil and player.Character:GetAttribute(CombatConfig.DefenseStanceActiveAttribute) == nil)
-assert(stanceHumanoid.WalkSpeed == baseWalkSpeed)
+assert(approximatelyEqual(stanceHumanoid.WalkSpeed, baseWalkSpeed))
 
 task.wait(defensiveStance.cooldownSeconds + 0.1)
 skillRequest:FireServer("defensive_stance")
@@ -413,7 +424,7 @@ waitUntil("respawn after defensive stance death", 5, function()
 	local livingHumanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
 	return livingHumanoid ~= nil and livingHumanoid.Health > 0
 		and character:GetAttribute(CombatConfig.DefenseStanceActiveAttribute) == nil
-		and livingHumanoid.WalkSpeed == baseWalkSpeed
+		and approximatelyEqual(livingHumanoid.WalkSpeed, baseWalkSpeed)
 end)
 
 -- Ranger effects execute through the same authoritative action pipeline.
@@ -503,7 +514,7 @@ local healthBeforeSnare = snareHumanoid.Health
 skillRequest:FireServer("snare")
 assert(waitForSkillResult(10, "first snare terminal result").applied == true)
 assert(snareHumanoid.Health == healthBeforeSnare, "snare must not deal direct damage")
-assert(snareHumanoid.WalkSpeed == MobDefinitions.grey_wolf.chaseSpeed * (1 - snareEffect.magnitude))
+assert(approximatelyEqual(snareHumanoid.WalkSpeed, MobDefinitions.grey_wolf.chaseSpeed * (1 - snareEffect.magnitude)))
 assert(skillRuntimeCommand:InvokeServer("KillTarget") == true)
 waitUntil("snare cleanup after target death", 3, function()
 	return snareModel:GetAttribute(CombatConfig.MobMovementSlowAttribute) == nil
