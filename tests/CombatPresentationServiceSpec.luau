@@ -17,7 +17,10 @@ return function(TestRunner)
 	end)
 
 	TestRunner.run("rejection routing addresses only its requesting player", function()
-		local requestingPlayer = Instance.new("Player")
+		-- Server test threads are not allowed to construct Player instances directly.
+		-- deliverToPlayer treats the recipient as an opaque routing identity, so a typed
+		-- test token exercises that boundary without depending on PlayerAdded timing.
+		local requestingPlayer: Player = {} :: any
 		local deliveries = 0
 		local message = PresentationRules.create("Result", "request", "player:1", 123, {
 			outcome = "Rejected", reasonCode = "RateLimited",
@@ -27,6 +30,5 @@ return function(TestRunner)
 			assert(recipient == requestingPlayer and received.reasonCode == "RateLimited")
 		end))
 		assert(deliveries == 1)
-		requestingPlayer:Destroy()
 	end)
 end
