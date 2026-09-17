@@ -24,9 +24,9 @@ RespawnService.start()
 MobAIService.start(CombatService.requestMobBasicAttack)
 MobService.start()
 
-MobService.MobDied:Connect(function(killer: Player, mobId: string)
+MobService.MobDied:Connect(function(killer: Player?, mobId: string, _entityId: string)
 	local definition = findMobDefinitionById(mobId)
-	if definition ~= nil then
+	if definition ~= nil and killer ~= nil then
 		-- Milestone 0 intentionally awards the kill to MobService's last valid attacker;
 		-- this is session-only behavior, not the final shared-reward economy.
 		ProgressionService.awardXP(killer, definition.rewardXP)

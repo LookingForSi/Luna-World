@@ -19,6 +19,8 @@ local ArchetypeDefinitions = require(ReplicatedStorage.Shared.definitions.Archet
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local MobService = require(script.Parent.MobService)
 local CombatEffectService = require(script.Parent.CombatEffectService)
+local CombatPresentationService = require(script.Parent.CombatPresentationService)
+local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 
 local CombatService = {}
 
@@ -28,6 +30,20 @@ local attackRequest = remotes:WaitForChild("AttackRequest") :: RemoteEvent
 local autoAttackModeRequest = remotes:WaitForChild("AutoAttackModeRequest") :: RemoteEvent
 local skillRequest = remotes:WaitForChild("SkillRequest") :: RemoteEvent
 local skillResult = remotes:WaitForChild("SkillResult") :: RemoteEvent
+
+local function actorEntityId(player: Player): string
+	return "player:" .. tostring(player.UserId)
+end
+
+local function publish(kind: CombatPresentationRules.Kind, actionId: string, player: Player, fields: CombatPresentationRules.Fields?): ()
+	CombatPresentationService.publish(CombatPresentationRules.create(kind, actionId, actorEntityId(player), workspace:GetServerTimeNow(), fields))
+end
+
+local function reject(player: Player, fields: CombatPresentationRules.Fields): ()
+	CombatPresentationService.publishToPlayer(player, CombatPresentationRules.create(
+		"Result", HttpService:GenerateGUID(false), actorEntityId(player), workspace:GetServerTimeNow(), fields
+	))
+end
 
 type PlayerCombatState = {
 	readyAt: number,
@@ -41,6 +57,7 @@ type PlayerCombatState = {
 	skillSlot: SkillActionLifecycle.Slot,
 	autoAttackEnabled: boolean,
 	autoAttackNextAttemptAt: number,
+	pendingBasicActionId: string?,
 }
 
 local targetsByPlayer: { [Player]: string } = {}
@@ -140,6 +157,7 @@ local function getState(player: Player): PlayerCombatState
 			skillSlot = SkillActionLifecycle.createSlot(),
 			autoAttackEnabled = false,
 			autoAttackNextAttemptAt = 0,
+			pendingBasicActionId = nil,
 		}
 		cooldownsByPlayer[player] = state.cooldowns
 		statesByPlayer[player] = state
@@ -223,6 +241,7 @@ local function resolveSkillTarget(
 end
 
 local function acceptSkill(player: Player, definition: CombatTypes.SkillDefinition, now: number): ()
+	local actionId = HttpService:GenerateGUID(false)
 	local state = getState(player)
 	if state.actionState == "Recovery" and now >= state.readyAt then
 		state.actionState = "Ready"
@@ -230,15 +249,42 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 	end
 	local target = resolveSkillTarget(player, definition, nil)
 	local resourceAfterCost = ResourceRules.spend(state.stats.resource, definition.resourceType, definition.resourceCost)
+	local cooldownReady = CooldownRules.isReady(state.cooldowns, definition.cooldownGroup, now)
 	if not SkillRules.canAccept(
 		state.actionState,
-		CooldownRules.isReady(state.cooldowns, definition.cooldownGroup, now),
+		cooldownReady,
 		resourceAfterCost ~= nil,
 		target ~= nil
-	) then return end
-	if not CombatEffectService.isImplemented(definition) then return end
+	) then
+		local targetReason: CombatPresentationRules.ReasonCode = "InvalidTarget"
+		if target == nil then
+			local selectedTargetId = targetsByPlayer[player]
+			local selectedMob = if selectedTargetId ~= nil then MobService.getByEntityId(selectedTargetId) else nil
+			local selectedPlayer = if selectedTargetId ~= nil then getPlayerByCanonicalTargetId(selectedTargetId) else nil
+			local actorRoot = getLivingCharacterRoot(player)
+			local selectedRoot = if selectedMob ~= nil
+				then getLivingMobRoot(selectedMob)
+				elseif selectedPlayer ~= nil then getLivingCharacterRoot(selectedPlayer)
+				else nil
+			if actorRoot ~= nil and selectedRoot ~= nil
+				and (selectedRoot.Position - actorRoot.Position).Magnitude > definition.range + CombatConfig.RangeTolerance
+			then
+				targetReason = "OutOfRange"
+			end
+		end
+		local reasonCode: CombatPresentationRules.ReasonCode = if state.actionState ~= "Ready"
+			then "ForbiddenState"
+			elseif not cooldownReady then "Cooldown"
+			elseif resourceAfterCost == nil then "InsufficientResource"
+			else targetReason
+		reject(player, { skillId = definition.id, outcome = "Rejected", reasonCode = reasonCode })
+		return
+	end
+	if not CombatEffectService.isImplemented(definition) then
+		reject(player, { skillId = definition.id, outcome = "Rejected", reasonCode = "ForbiddenState" })
+		return
+	end
 
-	local actionId = HttpService:GenerateGUID(false)
 	local pendingAction = SkillActionLifecycle.begin(
 		state.skillSlot,
 		true,
@@ -246,7 +292,10 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 		definition.id,
 		target.entityId
 	)
-	if pendingAction == nil then return end
+	if pendingAction == nil then
+		reject(player, { skillId = definition.id, outcome = "Rejected", reasonCode = "ForbiddenState" })
+		return
+	end
 	local acceptedCharacter = player.Character
 	state.stats.resource = resourceAfterCost :: CombatTypes.CombatResource
 	state.cooldowns = CooldownRules.start(state.cooldowns, definition.cooldownGroup, now, definition.cooldownSeconds)
@@ -257,6 +306,12 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 	state.generation += 1
 	replicateState(player, state)
 	local generation = state.generation
+	publish("Action", actionId, player, {
+		targetEntityId = target.entityId,
+		skillId = definition.id,
+		presentationKey = definition.presentationKey,
+		outcome = "Accepted",
+	})
 
 	task.delay(definition.windupSeconds, function()
 		local currentState = statesByPlayer[player]
@@ -276,7 +331,8 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 				player,
 				currentState.stats,
 				definition,
-				resolvedTarget
+				resolvedTarget,
+				actionId
 			)
 			if executionSucceeded then
 				effectResult = executedResult
@@ -295,6 +351,25 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 			replicateState(player, currentState)
 		end
 		if terminalResult ~= nil and player.Parent == Players then
+			if effectResult.applied and effectResult.emitEffect ~= false then
+				publish("Effect", terminalResult.actionId, player, {
+					targetEntityId = terminalResult.targetEntityId,
+					skillId = terminalResult.skillId,
+					presentationKey = definition.presentationKey,
+					outcome = "Applied",
+					amount = effectResult.amount,
+					isCritical = effectResult.isCritical,
+					effectPhase = effectResult.effectPhase,
+				})
+			end
+			publish("Result", terminalResult.actionId, player, {
+				targetEntityId = terminalResult.targetEntityId,
+				skillId = terminalResult.skillId,
+				presentationKey = definition.presentationKey,
+				outcome = if terminalResult.applied then "Applied" else (terminalResult.reason or "ResolveFailed"),
+				amount = effectResult.amount,
+				isCritical = effectResult.isCritical,
+			})
 			-- Only the server-created result is sent. Client-provided damage, target lists,
 			-- timestamps and critical flags are impossible inputs to this executor.
 			local delivered, deliveryError = pcall(skillResult.FireClient, skillResult, player, {
@@ -317,6 +392,9 @@ end
 local function onSkillRequest(player: Player, ...: unknown): ()
 	local argumentCount = select("#", ...)
 	local skillId = select(1, ...)
+	-- Malformed/extra payloads are silently dropped to avoid turning forged spam
+	-- into a server-to-client presentation amplification path.
+	if argumentCount ~= 1 or typeof(skillId) ~= "string" then return end
 	local state = getState(player)
 	local definition = if typeof(skillId) == "string" then SkillDefinitions[skillId] else nil
 	local archetype = ArchetypeDefinitions[state.archetypeId]
@@ -328,10 +406,17 @@ local function onSkillRequest(player: Player, ...: unknown): ()
 		state.archetypeId,
 		definition ~= nil and archetype ~= nil and definition.id == archetype.basicAttackId
 	)
-	if not decision.accepted or definition == nil then return end
+	if not decision.accepted or definition == nil then
+		reject(player, {
+			outcome = "Rejected",
+			reasonCode = "ForbiddenState",
+		})
+		return
+	end
 
 	local now = workspace:GetServerTimeNow()
 	if ActionRules.isRequestRateLimited(now, lastSkillRequestAtByPlayer[player], CombatConfig.SkillRequestMinIntervalSeconds) then
+		reject(player, { skillId = definition.id, outcome = "Rejected", reasonCode = "RateLimited" })
 		return
 	end
 	lastSkillRequestAtByPlayer[player] = now
@@ -381,6 +466,8 @@ local function cancelPendingAction(player: Player, discardSkillResult: boolean?)
 	if state == nil then return end
 	local pendingSkill = state.skillSlot.pending
 	local terminalResult: SkillActionLifecycle.Result? = nil
+	local pendingBasicActionId = state.pendingBasicActionId
+	state.pendingBasicActionId = nil
 	if pendingSkill ~= nil then
 		terminalResult = SkillActionLifecycle.finish(state.skillSlot, pendingSkill, false, "Canceled")
 	end
@@ -391,8 +478,18 @@ local function cancelPendingAction(player: Player, discardSkillResult: boolean?)
 	state.autoAttackEnabled = false
 	state.autoAttackNextAttemptAt = 0
 	replicateState(player, state)
+	if pendingBasicActionId ~= nil and not discardSkillResult and player.Parent == Players then
+		publish("Interruption", pendingBasicActionId, player, { outcome = "Canceled", reasonCode = "ForbiddenState" })
+	end
 	if terminalResult ~= nil and not discardSkillResult and player.Parent == Players then
 		local definition = SkillDefinitions[terminalResult.skillId]
+		publish("Interruption", terminalResult.actionId, player, {
+			targetEntityId = terminalResult.targetEntityId,
+			skillId = terminalResult.skillId,
+			presentationKey = if definition ~= nil then definition.presentationKey else nil,
+			outcome = terminalResult.reason or "Canceled",
+			reasonCode = "ForbiddenState",
+		})
 		local delivered, deliveryError = pcall(skillResult.FireClient, skillResult, player, {
 				actionId = terminalResult.actionId,
 				skillId = terminalResult.skillId,
@@ -474,6 +571,8 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 	if resourceAfterCost == nil then return end
 
 	local acceptedAt = workspace:GetServerTimeNow()
+	local actionId = HttpService:GenerateGUID(false)
+	state.pendingBasicActionId = actionId
 	local acceptedCharacter = player.Character
 	state.stats.resource = resourceAfterCost
 	state.actionState = "Windup"
@@ -483,12 +582,20 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 	state.generation += 1
 	replicateState(player, state)
 	local generation = state.generation
+	publish("Action", actionId, player, {
+		targetEntityId = expectedTargetId,
+		skillId = definition.id,
+		presentationKey = definition.presentationKey,
+		outcome = "Accepted",
+	})
 
 	-- Resolve after the canonical wind-up; cooldown still starts at acceptance.
 	task.delay(definition.windupSeconds, function()
 		local currentState = statesByPlayer[player]
 		if currentState == nil or currentState ~= state or currentState.generation ~= generation then return end
 		local target = getValidAttackTarget(player, expectedTargetId, acceptedCharacter)
+		local amount: number? = nil
+		local isCritical: boolean? = nil
 		if target ~= nil then
 			local attackPower = if definition.powerSource == "MagicAttack" then state.stats.magicAttack else state.stats.physicalAttack
 			local damage = DamageRules.resolve(
@@ -499,9 +606,32 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 				CombatConfig.CriticalDamageMultiplier,
 				function(): number return criticalRandom:NextNumber() end
 			)
-			MobService.applyDamage(expectedTargetId, damage.amount, player)
+			local applied = MobService.applyDamage(expectedTargetId, damage.amount, player)
+			if applied then
+				amount = damage.amount
+				isCritical = damage.isCritical
+			end
+			if applied then
+			publish("Effect", actionId, player, {
+				targetEntityId = expectedTargetId,
+				skillId = definition.id,
+				presentationKey = definition.presentationKey,
+				outcome = "Applied",
+				amount = amount,
+				isCritical = isCritical,
+			})
+			end
 		end
+		publish("Result", actionId, player, {
+			targetEntityId = expectedTargetId,
+			skillId = definition.id,
+			presentationKey = definition.presentationKey,
+			outcome = if amount ~= nil then "Applied" else "ResolveFailed",
+			amount = amount,
+			isCritical = isCritical,
+		})
 		if statesByPlayer[player] == currentState and currentState.generation == generation then
+			currentState.pendingBasicActionId = nil
 			currentState.actionState = "Recovery"
 			replicateState(player, currentState)
 		end
@@ -575,11 +705,27 @@ local function onAttackRequest(player: Player, ...: unknown): ()
 	if select("#", ...) ~= 0 then return end
 	local now = workspace:GetServerTimeNow()
 	if ActionRules.isRequestRateLimited(now, lastAttackRequestAtByPlayer[player], CombatConfig.AttackRequestMinIntervalSeconds) then
+		reject(player, { outcome = "Rejected", reasonCode = "RateLimited" })
 		return
 	end
 	lastAttackRequestAtByPlayer[player] = now
 	local targetId = targetsByPlayer[player]
-	if targetId == nil or getValidAttackTarget(player, targetId, nil) == nil then return end
+	if targetId == nil or getValidAttackTarget(player, targetId, nil) == nil then
+		local target = if targetId ~= nil then MobService.getByEntityId(targetId) else nil
+		local targetRoot = if target ~= nil then getLivingMobRoot(target) else nil
+		local playerRoot = getLivingCharacterRoot(player)
+		local reasonCode: CombatPresentationRules.ReasonCode = if playerRoot ~= nil and targetRoot ~= nil
+			and not CombatRules.canBasicAttack(
+				playerRoot.Position,
+				targetRoot.Position,
+				true,
+				getBasicAttackDefinition(getState(player)).range + CombatConfig.RangeTolerance
+			)
+			then "OutOfRange"
+			else "InvalidTarget"
+		reject(player, { outcome = "Rejected", reasonCode = reasonCode })
+		return
+	end
 
 	local state = getState(player)
 	if state.actionState == "Recovery" and now >= state.readyAt then
@@ -592,6 +738,8 @@ local function onAttackRequest(player: Player, ...: unknown): ()
 	elseif timing.kind == "Buffer" and state.actionState == "Recovery" then
 		state.bufferedTargetId = targetId
 		replicateState(player, state)
+	else
+		reject(player, { targetEntityId = targetId, outcome = "Rejected", reasonCode = "Cooldown" })
 	end
 end
 
@@ -710,6 +858,7 @@ function CombatService.handlePlayerDeath(player: Player): ()
 	player:SetAttribute(ACTION_STATE_ATTRIBUTE, "Dead")
 	player:SetAttribute(BUFFERED_ATTRIBUTE, false)
 	player:SetAttribute(AUTO_ATTACK_ATTRIBUTE, false)
+	publish("Death", HttpService:GenerateGUID(false), player, { outcome = "Dead" })
 end
 
 function CombatService.handlePlayerRespawn(player: Player, character: Model): ()
@@ -721,6 +870,7 @@ function CombatService.handlePlayerRespawn(player: Player, character: Model): ()
 	replicateState(player, state)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if humanoid ~= nil then humanoid.Health = humanoid.MaxHealth end
+	publish("Respawn", HttpService:GenerateGUID(false), player, { outcome = "Respawned" })
 end
 
 function CombatService.start(): ()

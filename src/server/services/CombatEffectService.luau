@@ -9,6 +9,8 @@ local EffectRules = require(ReplicatedStorage.Shared.combat.EffectRules)
 local SkillRules = require(ReplicatedStorage.Shared.combat.SkillRules)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local MobService = require(script.Parent.MobService)
+local CombatPresentationService = require(script.Parent.CombatPresentationService)
+local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 
 local CombatEffectService = {}
 
@@ -22,6 +24,8 @@ export type EffectResult = {
 	applied: boolean,
 	amount: number?,
 	isCritical: boolean?,
+	effectPhase: ("Started" | "Ended")?,
+	emitEffect: boolean?,
 }
 
 type AreaTarget = { entityId: string, model: Model }
@@ -33,22 +37,33 @@ type StunState = {
 	generation: number,
 	ancestryConnection: RBXScriptConnection,
 	deathConnection: RBXScriptConnection,
+	actor: Player, actionId: string, targetEntityId: string, skillId: string, presentationKey: string,
 }
 type StanceState = {
 	defenseIncrease: number,
 	movementSpeedMultiplier: number,
 	character: Model,
 	stats: CombatTypes.CombatStatSnapshot,
+	actionId: string, skillId: string, presentationKey: string,
 }
 type RapidShotState = {
 	attackSpeedIncrease: number,
 	character: Model,
 	stats: CombatTypes.CombatStatSnapshot,
+	actionId: string, skillId: string, presentationKey: string,
 }
 type SlowState = {
 	ancestryConnection: RBXScriptConnection,
 	deathConnection: RBXScriptConnection,
+	actor: Player, actionId: string, targetEntityId: string, skillId: string, presentationKey: string,
 }
+
+local function publishEnded(actor: Player, actionId: string, targetEntityId: string, skillId: string, presentationKey: string): ()
+	CombatPresentationService.publish(CombatPresentationRules.create("Effect", actionId, "player:" .. tostring(actor.UserId), workspace:GetServerTimeNow(), {
+		targetEntityId = targetEntityId, skillId = skillId, presentationKey = presentationKey,
+		outcome = "Ended", effectPhase = "Ended",
+	}))
+end
 local stunStates: { [Model]: StunState } = {}
 local stanceStates: { [Player]: StanceState } = {}
 local rapidShotStates: { [Player]: RapidShotState } = {}
@@ -67,6 +82,7 @@ local function clearStun(model: Model, expectedGeneration: number?, restoreMovem
 	local state = stunStates[model]
 	if state == nil or (expectedGeneration ~= nil and state.generation ~= expectedGeneration) then return end
 	stunStates[model] = nil
+	publishEnded(state.actor, state.actionId, state.targetEntityId, state.skillId, state.presentationKey)
 	state.ancestryConnection:Disconnect()
 	state.deathConnection:Disconnect()
 	if model.Parent ~= nil then
@@ -76,10 +92,13 @@ local function clearStun(model: Model, expectedGeneration: number?, restoreMovem
 	end
 end
 
-local function applyStun(model: Model, durationSeconds: number): boolean
+local function applyStun(model: Model, durationSeconds: number, actor: Player, actionId: string, targetEntityId: string, skillId: string, presentationKey: string): boolean
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	if humanoid == nil or humanoid.Health <= 0 then return false end
 	local existingStun = stunStates[model]
+	if existingStun ~= nil then
+		publishEnded(existingStun.actor, existingStun.actionId, existingStun.targetEntityId, existingStun.skillId, existingStun.presentationKey)
+	end
 	local generation = if existingStun ~= nil then existingStun.generation + 1 else 1
 	local ancestryConnection = if existingStun ~= nil
 		then existingStun.ancestryConnection
@@ -95,6 +114,7 @@ local function applyStun(model: Model, durationSeconds: number): boolean
 		generation = generation,
 		ancestryConnection = ancestryConnection,
 		deathConnection = deathConnection,
+		actor = actor, actionId = actionId, targetEntityId = targetEntityId, skillId = skillId, presentationKey = presentationKey,
 	}
 	local actionGeneration = model:GetAttribute(CombatConfig.MobActionGenerationAttribute)
 	model:SetAttribute(
@@ -172,6 +192,7 @@ local function clearRapidShot(player: Player, expectedState: RapidShotState?): (
 	end
 	if state == nil then return end
 	rapidShotStates[player] = nil
+	publishEnded(player, state.actionId, "player:" .. tostring(player.UserId), state.skillId, state.presentationKey)
 	if state.character.Parent ~= nil then state.character:SetAttribute(CombatConfig.RapidShotActiveAttribute, nil) end
 	applyPlayerCalculatedStats(player, state.stats, stanceStates[player])
 end
@@ -183,6 +204,7 @@ local function clearSlow(model: Model, expectedState: SlowState?, restoreMovemen
 	end
 	if state == nil then return end
 	slowStates[model] = nil
+	publishEnded(state.actor, state.actionId, state.targetEntityId, state.skillId, state.presentationKey)
 	state.ancestryConnection:Disconnect()
 	state.deathConnection:Disconnect()
 	model:SetAttribute(CombatConfig.MobMovementSlowAttribute, nil)
@@ -192,10 +214,13 @@ local function clearSlow(model: Model, expectedState: SlowState?, restoreMovemen
 	end
 end
 
-local function applySlow(model: Model, magnitude: number, durationSeconds: number): boolean
+local function applySlow(model: Model, magnitude: number, durationSeconds: number, actor: Player, actionId: string, targetEntityId: string, skillId: string, presentationKey: string): boolean
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	if humanoid == nil or humanoid.Health <= 0 then return false end
 	local existing = slowStates[model]
+	if existing ~= nil then
+		publishEnded(existing.actor, existing.actionId, existing.targetEntityId, existing.skillId, existing.presentationKey)
+	end
 	local ancestryConnection = if existing ~= nil
 		then existing.ancestryConnection
 		else model.AncestryChanged:Connect(function(_, parent)
@@ -207,6 +232,7 @@ local function applySlow(model: Model, magnitude: number, durationSeconds: numbe
 	local state: SlowState = {
 		ancestryConnection = ancestryConnection,
 		deathConnection = deathConnection,
+		actor = actor, actionId = actionId, targetEntityId = targetEntityId, skillId = skillId, presentationKey = presentationKey,
 	}
 	slowStates[model] = state
 	model:SetAttribute(CombatConfig.MobMovementSlowAttribute, magnitude)
@@ -231,8 +257,14 @@ function CombatEffectService.clearPlayerEffects(player: Player, stats: CombatTyp
 	if stance ~= nil and stance.character.Parent ~= nil then
 		stance.character:SetAttribute(CombatConfig.DefenseStanceActiveAttribute, nil)
 	end
+	if stance ~= nil then
+		publishEnded(player, stance.actionId, "player:" .. tostring(player.UserId), stance.skillId, stance.presentationKey)
+	end
 	if rapidShot ~= nil and rapidShot.character.Parent ~= nil then
 		rapidShot.character:SetAttribute(CombatConfig.RapidShotActiveAttribute, nil)
+	end
+	if rapidShot ~= nil then
+		publishEnded(player, rapidShot.actionId, "player:" .. tostring(player.UserId), rapidShot.skillId, rapidShot.presentationKey)
 	end
 end
 
@@ -298,8 +330,10 @@ function CombatEffectService.execute(
 	actor: Player,
 	stats: CombatTypes.CombatStatSnapshot,
 	definition: CombatTypes.SkillDefinition,
-	target: EffectTarget
+	target: EffectTarget,
+	actionId: string?
 ): EffectResult
+	local presentationActionId = actionId or ("effect:" .. definition.id)
 	local effect = definition.effect
 	if effect.kind == "DirectHealing" then
 		if target.kind ~= "Player" then return { applied = false } end
@@ -331,33 +365,41 @@ function CombatEffectService.execute(
 				movementSpeedMultiplier = effect.movementSpeedMultiplier,
 				character = target.model,
 				stats = stats,
+				actionId = presentationActionId, skillId = definition.id, presentationKey = definition.presentationKey,
 			}
 			target.model:SetAttribute(CombatConfig.DefenseStanceActiveAttribute, true)
 		else
+			publishEnded(actor, existing.actionId, target.entityId, existing.skillId, existing.presentationKey)
 			stanceStates[actor] = nil
 			target.model:SetAttribute(CombatConfig.DefenseStanceActiveAttribute, nil)
 		end
 		applyPlayerCalculatedStats(actor, stats, stanceStates[actor])
-		return { applied = true }
+		return { applied = true, effectPhase = if existing == nil then "Started" else nil, emitEffect = existing == nil }
 	end
 	if effect.kind == "AttackSpeedBuff" then
 		if target.kind ~= "Player" or target.model ~= actor.Character then return { applied = false } end
 		local humanoid = target.model:FindFirstChildOfClass("Humanoid")
 		if humanoid == nil or humanoid.Health <= 0 then return { applied = false } end
+		local existingRapidShot = rapidShotStates[actor]
+		if existingRapidShot ~= nil then
+			publishEnded(actor, existingRapidShot.actionId, "player:" .. tostring(actor.UserId), existingRapidShot.skillId, existingRapidShot.presentationKey)
+		end
 		local state: RapidShotState = {
 			attackSpeedIncrease = effect.magnitude,
 			character = target.model,
 			stats = stats,
+			actionId = presentationActionId, skillId = definition.id, presentationKey = definition.presentationKey,
 		}
 		rapidShotStates[actor] = state
 		target.model:SetAttribute(CombatConfig.RapidShotActiveAttribute, true)
 		applyPlayerCalculatedStats(actor, stats, stanceStates[actor])
 		task.delay(effect.durationSeconds, function() clearRapidShot(actor, state) end)
-		return { applied = true }
+		return { applied = true, effectPhase = "Started" }
 	end
 	if effect.kind == "MovementSlow" then
 		if target.kind ~= "Mob" then return { applied = false } end
-		return { applied = applySlow(target.model, effect.magnitude, effect.durationSeconds) }
+		local applied = applySlow(target.model, effect.magnitude, effect.durationSeconds, actor, presentationActionId, target.entityId, definition.id, definition.presentationKey)
+		return { applied = applied, effectPhase = if applied then "Started" else nil }
 	end
 
 	if target.kind ~= "Mob" or (effect.kind ~= "DirectDamage" and effect.kind ~= "ShieldBash") then
@@ -377,6 +419,7 @@ function CombatEffectService.execute(
 		return { applied = false }
 	end
 	if effect.kind == "ShieldBash" then
+		local startedTemporaryEffect = false
 		local rank = getMobRank(target.model)
 		if rank ~= nil then
 			local decision = EffectRules.resolveShieldBash(
@@ -386,11 +429,12 @@ function CombatEffectService.execute(
 				target.model:GetAttribute(CombatConfig.MobActionInterruptibleAttribute) == true
 			)
 			if decision.shouldStun then
-				applyStun(target.model, effect.durationSeconds)
+				startedTemporaryEffect = applyStun(target.model, effect.durationSeconds, actor, presentationActionId, target.entityId, definition.id, definition.presentationKey)
 			elseif decision.shouldInterrupt then
 				interruptMobAction(target.model)
 			end
 		end
+		return { applied = true, amount = damage.amount, isCritical = damage.isCritical, effectPhase = if startedTemporaryEffect then "Started" else nil }
 	end
 	return { applied = true, amount = damage.amount, isCritical = damage.isCritical }
 end

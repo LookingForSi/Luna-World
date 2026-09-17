@@ -12,6 +12,7 @@ local targetRequest = remotes:WaitForChild("TargetRequest") :: RemoteEvent
 local attackRequest = remotes:WaitForChild("AttackRequest") :: RemoteEvent
 local skillRequest = remotes:WaitForChild("SkillRequest") :: RemoteEvent
 local skillResult = remotes:WaitForChild("SkillResult") :: RemoteEvent
+local combatPresentation = remotes:WaitForChild("CombatPresentation") :: RemoteEvent
 local readinessFunction = ReplicatedStorage
 	:WaitForChild("TestRemotes")
 	:WaitForChild("MilestoneZeroAttackContractReady") :: RemoteFunction
@@ -30,6 +31,7 @@ local autoAttackRuntimeComplete = ReplicatedStorage.TestRemotes:WaitForChild("Au
 local autoAttackModeRequest = remotes:WaitForChild("AutoAttackModeRequest") :: RemoteEvent
 
 local skillResults: { any } = {}
+local presentationMessages: { any } = {}
 local skillRuntimeStarted = false
 skillRuntimeStart.OnClientEvent:Connect(function()
 	skillRuntimeStarted = true
@@ -38,6 +40,20 @@ skillResult.OnClientEvent:Connect(function(result: unknown)
 	assert(typeof(result) == "table", "SkillResult must be a server result record")
 	table.insert(skillResults, result)
 end)
+combatPresentation.OnClientEvent:Connect(function(message: unknown)
+	assert(typeof(message) == "table")
+	table.insert(presentationMessages, message)
+end)
+
+local function findPresentation(skillId: string, kind: string, phase: string?): any?
+	for index = #presentationMessages, 1, -1 do
+		local message = presentationMessages[index]
+		if message.skillId == skillId and message.kind == kind and (phase == nil or message.effectPhase == phase) then
+			return message
+		end
+	end
+	return nil
+end
 
 local function cooldownAttribute(skillId: string): string
 	return CombatConfig.SkillCooldownAttributePrefix .. skillId
@@ -487,6 +503,9 @@ end)
 waitUntil("rapid shot expiry", rapidShotEffect.durationSeconds + 1, function()
 	return player.Character ~= nil and player.Character:GetAttribute(CombatConfig.RapidShotActiveAttribute) == nil
 end)
+waitUntil("rapid shot presentation end", 3, function()
+	return findPresentation("rapid_shot", "Effect", "Ended") ~= nil
+end)
 targetRequest:FireServer(rapidTargetId)
 local normalAcceptedAt = workspace:GetServerTimeNow()
 attackRequest:FireServer()
@@ -519,6 +538,9 @@ assert(skillRuntimeCommand:InvokeServer("KillTarget") == true)
 waitUntil("snare cleanup after target death", 3, function()
 	return snareModel:GetAttribute(CombatConfig.MobMovementSlowAttribute) == nil
 end)
+waitUntil("snare presentation end after cleanup", 3, function()
+	return findPresentation("snare", "Effect", "Ended") ~= nil
+end)
 
 task.wait(snare.cooldownSeconds + 0.1)
 local _, removedTargetHumanoid = prepareSkillTarget()
@@ -549,6 +571,12 @@ skillRequest:FireServer("arcane_bolt")
 local arcaneResult = waitForSkillResult(12, "arcane bolt terminal result")
 assert(arcaneResult.applied == true and arcaneResult.skillId == "arcane_bolt")
 assert(arcaneHumanoid.Health < healthBeforeArcane, "arcane bolt must apply one magical result")
+waitUntil("correlated arcane presentation", 3, function()
+	return findPresentation("arcane_bolt", "Action") ~= nil and findPresentation("arcane_bolt", "Result") ~= nil
+end)
+local arcaneActionPresentation = findPresentation("arcane_bolt", "Action")
+local arcaneResultPresentation = findPresentation("arcane_bolt", "Result")
+assert(arcaneActionPresentation.actionId == arcaneResultPresentation.actionId, "presentation result must retain accepted action id")
 local healthAfterArcane = arcaneHumanoid.Health
 task.wait(0.15)
 assert(#skillResults == 12 and arcaneHumanoid.Health == healthAfterArcane, "arcane bolt must resolve exactly once")

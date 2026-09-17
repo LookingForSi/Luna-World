@@ -9,6 +9,8 @@ local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local EffectRules = require(ReplicatedStorage.Shared.combat.EffectRules)
 local SkillRules = require(ReplicatedStorage.Shared.combat.SkillRules)
+local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
+local CombatPresentationService = require(script.Parent.CombatPresentationService)
 
 local MobService = {}
 
@@ -33,7 +35,7 @@ MobService.MobDied = mobDiedEvent.Event
 MobService.MobSpawned = mobSpawnedEvent.Event
 MobService.HostileAction = hostileActionEvent.Event
 
-local function createMob(definitionKey: string, spawnCFrame: CFrame): Model
+local function createMob(definitionKey: string, spawnCFrame: CFrame, isRespawn: boolean?): Model
 	local definition = MobDefinitions[definitionKey]
 	assert(definition ~= nil, "unknown mob definition: " .. definitionKey)
 	local entityId = HttpService:GenerateGUID(false)
@@ -64,7 +66,13 @@ local function createMob(definitionKey: string, spawnCFrame: CFrame): Model
 	model:PivotTo(spawnCFrame)
 	model.Parent = workspace
 	mobsByEntityId[entityId] = model
-	mobSpawnedEvent:Fire(model, definition, spawnCFrame)
+	mobSpawnedEvent:Fire(model, definition, spawnCFrame, isRespawn == true)
+	if isRespawn == true then
+		CombatPresentationService.publish(CombatPresentationRules.create("Respawn", HttpService:GenerateGUID(false), "mob:" .. entityId, workspace:GetServerTimeNow(), {
+			outcome = "Respawned",
+			definitionId = definition.id,
+		}))
+	end
 
 	local deathHandled = false
 	humanoid.Died:Connect(function()
@@ -79,15 +87,21 @@ local function createMob(definitionKey: string, spawnCFrame: CFrame): Model
 
 		local lastAttacker = lastAttackerByEntityId[entityId]
 		lastAttackerByEntityId[entityId] = nil
+		CombatPresentationService.publish(CombatPresentationRules.create("Death", HttpService:GenerateGUID(false), "mob:" .. entityId, workspace:GetServerTimeNow(), {
+			outcome = "Dead",
+			definitionId = definition.id,
+		}))
 		if lastAttacker ~= nil and lastAttacker.Parent == Players then
-			mobDiedEvent:Fire(lastAttacker, definition.id)
+			mobDiedEvent:Fire(lastAttacker, definition.id, entityId)
+		else
+			mobDiedEvent:Fire(nil, definition.id, entityId)
 		end
 
 		task.delay(definition.respawnSeconds, function()
 			if model.Parent ~= nil then
 				model:Destroy()
 			end
-			createMob(definitionKey, spawnCFrame)
+			createMob(definitionKey, spawnCFrame, true)
 		end)
 	end)
 
