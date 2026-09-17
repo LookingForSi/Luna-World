@@ -52,6 +52,13 @@ local selectedTarget = target :: Model
 local humanoid = selectedTarget:FindFirstChildOfClass("Humanoid")
 assert(humanoid ~= nil, "milestone zero grey wolf must have a Humanoid")
 local initialHealth = humanoid.Health
+waitUntil("default knight combat snapshot", 3, function()
+	return player:GetAttribute(CombatConfig.ArchetypeAttribute) == "knight"
+		and player:GetAttribute(CombatConfig.ResourceTypeAttribute) == "Stamina"
+		and player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == CombatConfig.ArchetypeStats.knight.maximumResource
+		and player:GetAttribute(CombatConfig.ResourceMaximumAttribute) == CombatConfig.ArchetypeStats.knight.maximumResource
+end)
+local baseAttackDamage = CombatConfig.ArchetypeStats.knight.physicalAttack
 targetRequest:FireServer(entityId)
 waitUntil("server-confirmed target selection", 3, function()
 	return player:GetAttribute("SelectedTargetEntityId") == entityId
@@ -66,8 +73,15 @@ assert(humanoid.Health == initialHealth, "legacy AttackRequest payloads must be 
 
 attackRequest:FireServer()
 waitUntil("first server-authoritative basic attack hit", 3, function()
-	return humanoid.Health == initialHealth - CombatConfig.BasicAttackDamage
+	return humanoid.Health < initialHealth
 end)
+local healthAfterFirstHit = humanoid.Health
+local firstDamage = initialHealth - healthAfterFirstHit
+assert(
+	firstDamage == baseAttackDamage
+		or firstDamage == baseAttackDamage * CombatConfig.CriticalDamageMultiplier,
+	"basic attack damage must be a server-resolved normal or critical result"
+)
 local readyAt = player:GetAttribute(CombatConfig.BasicAttackReadyAtAttribute)
 assert(typeof(readyAt) == "number", "server ready deadline must replicate")
 
@@ -77,7 +91,7 @@ attackRequest:FireServer()
 local earlyBoundary = readyAt - 0.1
 while workspace:GetServerTimeNow() < earlyBoundary do
 	assert(
-		humanoid.Health == initialHealth - CombatConfig.BasicAttackDamage,
+		humanoid.Health == healthAfterFirstHit,
 		"repeated true must not create duplicate or early damage"
 	)
 	task.wait()
@@ -91,11 +105,14 @@ attackRequest:FireServer()
 attackRequest:FireServer()
 
 waitUntil("one buffered hit on the original cadence", CombatConfig.BasicAttackInterval, function()
-	return humanoid.Health ~= initialHealth - CombatConfig.BasicAttackDamage
+	return humanoid.Health < healthAfterFirstHit
 end)
 local secondHitObservedAt = workspace:GetServerTimeNow()
+local healthAfterSecondHit = humanoid.Health
+local secondDamage = healthAfterFirstHit - healthAfterSecondHit
 assert(
-	humanoid.Health == initialHealth - (2 * CombatConfig.BasicAttackDamage),
+	secondDamage == baseAttackDamage
+		or secondDamage == baseAttackDamage * CombatConfig.CriticalDamageMultiplier,
 	"one cadence interval must apply exactly one additional hit"
 )
 assert(secondHitObservedAt >= readyAt - 0.1, "second hit occurred before the server cooldown elapsed")
@@ -103,7 +120,7 @@ assert(secondHitObservedAt <= readyAt + 0.35, "buffered request did not execute 
 
 task.wait(0.1)
 assert(
-	humanoid.Health == initialHealth - (2 * CombatConfig.BasicAttackDamage),
+	humanoid.Health == healthAfterSecondHit,
 	"repeated requests must not apply duplicate damage"
 )
 

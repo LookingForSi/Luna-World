@@ -32,6 +32,17 @@ export type CombatResource = {
 	maximum: number,
 }
 
+export type CombatStatSnapshot = {
+	resource: CombatResource,
+	resourceRegenerationPerSecond: number,
+	physicalAttack: number,
+	magicAttack: number,
+	physicalDefense: number,
+	attackSpeedMultiplier: number,
+	criticalChance: number,
+	movementSpeed: number,
+}
+
 export type DirectDamageEffect = { kind: "DirectDamage", magnitude: number }
 export type DirectHealingEffect = {
 	kind: "DirectHealing",

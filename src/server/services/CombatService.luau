@@ -2,10 +2,16 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local ActionRules = require(ReplicatedStorage.Shared.combat.ActionRules)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local CombatRules = require(ReplicatedStorage.Shared.combat.CombatRules)
+local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
+local DamageRules = require(ReplicatedStorage.Shared.combat.DamageRules)
+local ResourceRules = require(ReplicatedStorage.Shared.combat.ResourceRules)
+local ArchetypeDefinitions = require(ReplicatedStorage.Shared.definitions.ArchetypeDefinitions)
+local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local MobService = require(script.Parent.MobService)
 
 local CombatService = {}
@@ -19,6 +25,9 @@ type PlayerCombatState = {
 	actionState: "Ready" | "Windup" | "Recovery",
 	bufferedTargetId: string?,
 	generation: number,
+	archetypeId: string,
+	stats: CombatTypes.CombatStatSnapshot,
+	regenerationElapsed: number,
 }
 
 local targetsByPlayer: { [Player]: string } = {}
@@ -28,26 +37,92 @@ local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
 local targetDeathConnections: { [Player]: RBXScriptConnection } = {}
 local lastAttackRequestAtByPlayer: { [Player]: number } = {}
 local started = false
+local serviceConnections: { RBXScriptConnection } = {}
+local regenerationSchedulerElapsed = 0
+local criticalRandom = Random.new()
 
 local TARGET_ATTRIBUTE = CombatConfig.SelectedTargetAttribute
 local ACTION_STATE_ATTRIBUTE = CombatConfig.BasicActionStateAttribute
 local READY_AT_ATTRIBUTE = CombatConfig.BasicAttackReadyAtAttribute
 local BUFFERED_ATTRIBUTE = CombatConfig.BasicAttackBufferedAttribute
+local ARCHETYPE_ATTRIBUTE = CombatConfig.ArchetypeAttribute
+local RESOURCE_TYPE_ATTRIBUTE = CombatConfig.ResourceTypeAttribute
+local RESOURCE_CURRENT_ATTRIBUTE = CombatConfig.ResourceCurrentAttribute
+local RESOURCE_MAXIMUM_ATTRIBUTE = CombatConfig.ResourceMaximumAttribute
+
+local function getArchetypeId(player: Player): string
+	local requested = player:GetAttribute(ARCHETYPE_ATTRIBUTE)
+	if typeof(requested) == "string" and ArchetypeDefinitions[requested] ~= nil then
+		return requested
+	end
+	return "knight"
+end
+
+local function createStatSnapshot(archetypeId: string): CombatTypes.CombatStatSnapshot
+	local archetype = ArchetypeDefinitions[archetypeId]
+	local configured = CombatConfig.ArchetypeStats[archetypeId]
+	assert(archetype ~= nil and configured ~= nil, "combat snapshot requires a known archetype")
+	return {
+		resource = ResourceRules.create(archetype.resourceType, configured.maximumResource),
+		resourceRegenerationPerSecond = configured.resourceRegenerationPerSecond,
+		physicalAttack = configured.physicalAttack,
+		magicAttack = configured.magicAttack,
+		physicalDefense = configured.physicalDefense,
+		attackSpeedMultiplier = configured.attackSpeedMultiplier,
+		criticalChance = configured.criticalChance,
+		movementSpeed = configured.movementSpeed,
+	}
+end
+
+local function replicateResource(player: Player, state: PlayerCombatState): ()
+	player:SetAttribute(ARCHETYPE_ATTRIBUTE, state.archetypeId)
+	player:SetAttribute(RESOURCE_TYPE_ATTRIBUTE, state.stats.resource.resourceType)
+	player:SetAttribute(RESOURCE_CURRENT_ATTRIBUTE, state.stats.resource.current)
+	player:SetAttribute(RESOURCE_MAXIMUM_ATTRIBUTE, state.stats.resource.maximum)
+end
 
 local function replicateState(player: Player, state: PlayerCombatState): ()
 	player:SetAttribute(ACTION_STATE_ATTRIBUTE, state.actionState)
 	player:SetAttribute(READY_AT_ATTRIBUTE, state.readyAt)
 	player:SetAttribute(BUFFERED_ATTRIBUTE, state.bufferedTargetId ~= nil)
+	replicateResource(player, state)
 end
 
 local function getState(player: Player): PlayerCombatState
 	local state = statesByPlayer[player]
 	if state == nil then
-		state = { readyAt = 0, actionState = "Ready", bufferedTargetId = nil, generation = 0 }
+		local archetypeId = getArchetypeId(player)
+		state = {
+			readyAt = 0,
+			actionState = "Ready",
+			bufferedTargetId = nil,
+			generation = 0,
+			archetypeId = archetypeId,
+			stats = createStatSnapshot(archetypeId),
+			regenerationElapsed = 0,
+		}
 		statesByPlayer[player] = state
 		replicateState(player, state)
 	end
 	return state
+end
+
+local function getBasicAttackDefinition(state: PlayerCombatState): CombatTypes.SkillDefinition
+	local archetype = ArchetypeDefinitions[state.archetypeId]
+	assert(archetype ~= nil, "combat state has an unknown archetype")
+	local definition = SkillDefinitions[archetype.basicAttackId]
+	assert(definition ~= nil, "archetype has an unknown basic attack")
+	return definition
+end
+
+local function getBasicAttackInterval(state: PlayerCombatState): number
+	local definition = getBasicAttackDefinition(state)
+	return DamageRules.getBasicAttackInterval(
+		definition.cooldownSeconds,
+		state.stats.attackSpeedMultiplier,
+		CombatConfig.MinAttackSpeedMultiplier,
+		CombatConfig.MaxAttackSpeedMultiplier
+	)
 end
 
 local function setReplicatedTarget(player: Player, entityId: string?): ()
@@ -71,7 +146,8 @@ local function getLivingMobRoot(mob: Model): BasePart?
 end
 
 local function cancelPendingAction(player: Player): ()
-	local state = getState(player)
+	local state = statesByPlayer[player]
+	if state == nil then return end
 	state.generation += 1
 	state.actionState = "Ready"
 	state.bufferedTargetId = nil
@@ -84,8 +160,11 @@ local function clearTarget(player: Player): ()
 	if connection ~= nil then connection:Disconnect() end
 	targetDeathConnections[player] = nil
 	targetsByPlayer[player] = nil
-	getState(player).bufferedTargetId = nil
-	replicateState(player, getState(player))
+	local state = statesByPlayer[player]
+	if state ~= nil then
+		state.bufferedTargetId = nil
+		replicateState(player, state)
+	end
 	setReplicatedTarget(player, nil)
 end
 
@@ -97,6 +176,8 @@ local function clearPlayerState(player: Player): ()
 end
 
 local function getValidAttackTarget(player: Player, expectedTargetId: string, expectedCharacter: Model?): Model?
+	local state = getState(player)
+	local definition = getBasicAttackDefinition(state)
 	local character = player.Character
 	local playerRoot = getLivingCharacterRoot(player)
 	local target = MobService.getByEntityId(expectedTargetId)
@@ -110,7 +191,7 @@ local function getValidAttackTarget(player: Player, expectedTargetId: string, ex
 		playerRoot.Position,
 		targetRoot.Position,
 		targetAlive,
-		CombatConfig.BasicAttackRange + CombatConfig.RangeTolerance
+		definition.range + CombatConfig.RangeTolerance
 	)
 	local isFacing = ActionRules.isFacing(
 		playerRoot.Position,
@@ -125,23 +206,38 @@ end
 local function acceptAttack(player: Player, expectedTargetId: string): ()
 	local state = getState(player)
 	if state.actionState ~= "Ready" or getValidAttackTarget(player, expectedTargetId, nil) == nil then return end
+	local definition = getBasicAttackDefinition(state)
+	local attackInterval = getBasicAttackInterval(state)
+	-- Basic attacks are always free, but still pass through the authoritative resource boundary.
+	local resourceAfterCost = ResourceRules.spend(state.stats.resource, definition.resourceType, definition.resourceCost)
+	if resourceAfterCost == nil then return end
 
 	local acceptedAt = workspace:GetServerTimeNow()
 	local acceptedCharacter = player.Character
+	state.stats.resource = resourceAfterCost
 	state.actionState = "Windup"
-	state.readyAt = acceptedAt + CombatConfig.BasicAttackInterval
+	state.readyAt = acceptedAt + attackInterval
 	state.bufferedTargetId = nil
 	state.generation += 1
 	replicateState(player, state)
 	local generation = state.generation
 
 	-- Resolve after the canonical wind-up; cooldown still starts at acceptance.
-	task.delay(CombatConfig.BasicAttackWindupSeconds, function()
+	task.delay(definition.windupSeconds, function()
 		local currentState = statesByPlayer[player]
 		if currentState == nil or currentState ~= state or currentState.generation ~= generation then return end
 		local target = getValidAttackTarget(player, expectedTargetId, acceptedCharacter)
 		if target ~= nil then
-			MobService.applyDamage(expectedTargetId, CombatConfig.BasicAttackDamage, player)
+			local attackPower = if definition.powerSource == "MagicAttack" then state.stats.magicAttack else state.stats.physicalAttack
+			local damage = DamageRules.resolve(
+				DamageRules.getBaseAmount(attackPower, definition.effect.magnitude),
+				definition.effect.kind,
+				definition.canCrit,
+				state.stats.criticalChance,
+				CombatConfig.CriticalDamageMultiplier,
+				function(): number return criticalRandom:NextNumber() end
+			)
+			MobService.applyDamage(expectedTargetId, damage.amount, player)
 		end
 		if statesByPlayer[player] == currentState and currentState.generation == generation then
 			currentState.actionState = "Recovery"
@@ -149,7 +245,7 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 		end
 	end)
 
-	task.delay(CombatConfig.BasicAttackInterval, function()
+	task.delay(attackInterval, function()
 		local currentState = statesByPlayer[player]
 		if currentState == nil or currentState ~= state or currentState.generation ~= generation then return end
 		currentState.actionState = "Ready"
@@ -212,6 +308,7 @@ local function bindCharacter(player: Player, character: Model): ()
 	local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 10)
 	if player.Character == character and humanoid ~= nil and humanoid:IsA("Humanoid") then
 		characterDeathConnections[player] = humanoid.Died:Connect(function() clearPlayerState(player) end)
+		getState(player)
 	end
 end
 
@@ -226,10 +323,10 @@ end
 function CombatService.start(): ()
 	if started then return end
 	started = true
-	targetRequest.OnServerEvent:Connect(onTargetRequest)
-	attackRequest.OnServerEvent:Connect(onAttackRequest)
-	Players.PlayerAdded:Connect(onPlayerAdded)
-	Players.PlayerRemoving:Connect(function(player)
+	table.insert(serviceConnections, targetRequest.OnServerEvent:Connect(onTargetRequest))
+	table.insert(serviceConnections, attackRequest.OnServerEvent:Connect(onAttackRequest))
+	table.insert(serviceConnections, Players.PlayerAdded:Connect(onPlayerAdded))
+	table.insert(serviceConnections, Players.PlayerRemoving:Connect(function(player)
 		clearPlayerState(player)
 		local deathConnection = characterDeathConnections[player]
 		if deathConnection ~= nil then deathConnection:Disconnect() end
@@ -237,8 +334,58 @@ function CombatService.start(): ()
 		local addedConnection = characterAddedConnections[player]
 		if addedConnection ~= nil then addedConnection:Disconnect() end
 		characterAddedConnections[player] = nil
-	end)
+	end))
 	for _, player in Players:GetPlayers() do onPlayerAdded(player) end
+	table.insert(serviceConnections, RunService.Heartbeat:Connect(function(deltaTime)
+		regenerationSchedulerElapsed += deltaTime
+		if regenerationSchedulerElapsed < CombatConfig.ResourceRegenerationIntervalSeconds then return end
+		local elapsed = regenerationSchedulerElapsed
+		regenerationSchedulerElapsed = 0
+		for player, state in statesByPlayer do
+			local regenerated, remainder = ResourceRules.stepRegeneration(
+				state.stats.resource,
+				state.stats.resourceRegenerationPerSecond,
+				state.regenerationElapsed,
+				elapsed,
+				CombatConfig.ResourceRegenerationIntervalSeconds,
+				player.Parent == Players and getLivingCharacterRoot(player) ~= nil
+			)
+			state.regenerationElapsed = remainder
+			if regenerated.current ~= state.stats.resource.current then
+				state.stats.resource = regenerated
+				replicateResource(player, state)
+			end
+		end
+	end))
+end
+
+function CombatService.stop(): ()
+	if not started then return end
+	started = false
+	regenerationSchedulerElapsed = 0
+	for _, connection in serviceConnections do connection:Disconnect() end
+	table.clear(serviceConnections)
+	for _, state in statesByPlayer do
+		state.generation += 1
+	end
+	for _, connection in characterDeathConnections do connection:Disconnect() end
+	for _, connection in characterAddedConnections do connection:Disconnect() end
+	for _, connection in targetDeathConnections do connection:Disconnect() end
+	for _, player in Players:GetPlayers() do
+		player:SetAttribute(TARGET_ATTRIBUTE, nil)
+		player:SetAttribute(ACTION_STATE_ATTRIBUTE, nil)
+		player:SetAttribute(READY_AT_ATTRIBUTE, nil)
+		player:SetAttribute(BUFFERED_ATTRIBUTE, nil)
+		player:SetAttribute(RESOURCE_TYPE_ATTRIBUTE, nil)
+		player:SetAttribute(RESOURCE_CURRENT_ATTRIBUTE, nil)
+		player:SetAttribute(RESOURCE_MAXIMUM_ATTRIBUTE, nil)
+	end
+	table.clear(targetsByPlayer)
+	table.clear(statesByPlayer)
+	table.clear(characterDeathConnections)
+	table.clear(characterAddedConnections)
+	table.clear(targetDeathConnections)
+	table.clear(lastAttackRequestAtByPlayer)
 end
 
 return CombatService

@@ -2,7 +2,6 @@
 
 -- Values in this module are working tuning defaults, not final balance.
 return table.freeze({
-	BasicAttackDamage = 25,
 	BasicAttackRange = 12,
 	BasicAttackWindupSeconds = 0.2,
 	BasicAttackInterval = 1.2,
@@ -17,6 +16,13 @@ return table.freeze({
 	MinAttackSpeedMultiplier = 0.5,
 	MaxAttackSpeedMultiplier = 2,
 	CriticalDamageMultiplier = 1.5,
+	ResourceRegenerationIntervalSeconds = 0.25,
+	-- Working vertical-slice defaults. Progression and equipment may provide calculated snapshots later.
+	ArchetypeStats = table.freeze({
+		knight = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 5, physicalAttack = 25, magicAttack = 0, physicalDefense = 12, attackSpeedMultiplier = 1, criticalChance = 0.1, movementSpeed = 16 }),
+		ranger = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 6, physicalAttack = 23, magicAttack = 0, physicalDefense = 7, attackSpeedMultiplier = 1, criticalChance = 0.12, movementSpeed = 16 }),
+		mystic = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 4, physicalAttack = 8, magicAttack = 27, physicalDefense = 5, attackSpeedMultiplier = 1, criticalChance = 0.08, movementSpeed = 16 }),
+	}),
 	CooldownGroups = table.freeze({
 		basic_attack = true,
 		power_strike = true,
@@ -34,4 +40,8 @@ return table.freeze({
 	BasicActionStateAttribute = "BasicActionState",
 	BasicAttackReadyAtAttribute = "BasicAttackReadyAt",
 	BasicAttackBufferedAttribute = "BasicAttackBuffered",
+	ArchetypeAttribute = "ArchetypeId",
+	ResourceTypeAttribute = "CombatResourceType",
+	ResourceCurrentAttribute = "CombatResourceCurrent",
+	ResourceMaximumAttribute = "CombatResourceMaximum",
 })

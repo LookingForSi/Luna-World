@@ -1,6 +1,9 @@
 --!strict
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 
 local CombatHud = {}
 
@@ -10,9 +13,11 @@ local targetNameLabel: TextLabel? = nil
 local healthTextLabel: TextLabel? = nil
 local healthFill: Frame? = nil
 local xpLabel: TextLabel? = nil
+local resourceLabel: TextLabel? = nil
 local healthConnection: RBXScriptConnection? = nil
 local targetAncestryConnection: RBXScriptConnection? = nil
 local xpConnection: RBXScriptConnection? = nil
+local resourceConnections: { RBXScriptConnection } = {}
 local currentTarget: Model? = nil
 
 local function disconnectTarget(): ()
@@ -32,6 +37,24 @@ local function updateXP(): ()
 	local sessionXP = if typeof(value) == "number" then value else 0
 	if xpLabel ~= nil then
 		xpLabel.Text = string.format("XP: %d", sessionXP)
+	end
+end
+
+local RESOURCE_NAMES = {
+	Stamina = "Выносливость",
+	Focus = "Концентрация",
+	Mana = "Мана",
+}
+
+local function updateResource(): ()
+	local resourceType = player:GetAttribute(CombatConfig.ResourceTypeAttribute)
+	local current = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+	local maximum = player:GetAttribute(CombatConfig.ResourceMaximumAttribute)
+	if resourceLabel ~= nil then
+		local displayName = if typeof(resourceType) == "string" then RESOURCE_NAMES[resourceType] or resourceType else "Ресурс"
+		local currentValue = if typeof(current) == "number" then current else 0
+		local maximumValue = if typeof(maximum) == "number" then maximum else 0
+		resourceLabel.Text = string.format("%s: %d / %d", displayName, math.floor(currentValue), math.floor(maximumValue))
 	end
 end
 
@@ -102,11 +125,22 @@ function CombatHud.start(): ()
 	local xp = makeTextLabel(gui, "SessionXP", UDim2.new(0, 20, 1, -44))
 	xp.Size = UDim2.fromOffset(200, 28)
 	xpLabel = xp
+	local resource = makeTextLabel(gui, "CombatResource", UDim2.new(0, 20, 1, -72))
+	resource.Size = UDim2.fromOffset(260, 28)
+	resourceLabel = resource
 	screenGui = gui
 
 	CombatHud.setTarget(nil)
 	updateXP()
+	updateResource()
 	xpConnection = player:GetAttributeChangedSignal("SessionXP"):Connect(updateXP)
+	for _, attributeName in {
+		CombatConfig.ResourceTypeAttribute,
+		CombatConfig.ResourceCurrentAttribute,
+		CombatConfig.ResourceMaximumAttribute,
+	} do
+		table.insert(resourceConnections, player:GetAttributeChangedSignal(attributeName):Connect(updateResource))
+	end
 end
 
 function CombatHud.setTarget(target: Model?): ()
@@ -148,6 +182,8 @@ function CombatHud.stop(): ()
 		xpConnection:Disconnect()
 		xpConnection = nil
 	end
+	for _, connection in resourceConnections do connection:Disconnect() end
+	table.clear(resourceConnections)
 	if screenGui ~= nil then
 		screenGui:Destroy()
 		screenGui = nil
@@ -156,6 +192,7 @@ function CombatHud.stop(): ()
 	healthTextLabel = nil
 	healthFill = nil
 	xpLabel = nil
+	resourceLabel = nil
 end
 
 return CombatHud
