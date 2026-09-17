@@ -203,6 +203,18 @@ return function(TestRunner)
 			return fixture.entityId
 		end
 
+		local function temporarilyRemoveLifecycleTarget(): boolean
+			local currentMob = lifecycleMob
+			assert(currentMob ~= nil and currentMob.Parent ~= nil, "RemoveTarget requires a registered live mob")
+			currentMob.Parent = nil
+			task.delay(0.5, function()
+				if currentMob.Parent == nil then
+					currentMob.Parent = workspace
+				end
+			end)
+			return true
+		end
+
 		local ok, failure = pcall(function()
 			local player, mob, entityId = waitForBootstrap()
 			mobToCleanUp = mob
@@ -369,11 +381,7 @@ return function(TestRunner)
 					CombatService._setResourceForTest(player, maximum)
 					return true
 				elseif command == "RemoveTarget" then
-					local currentMob = lifecycleMob
-					assert(currentMob ~= nil)
-					currentMob:Destroy()
-					lifecycleMob = nil
-					return true
+					return temporarilyRemoveLifecycleTarget()
 				end
 				error("unsupported skill runtime command")
 			end
@@ -409,11 +417,7 @@ return function(TestRunner)
 					currentHumanoid.Health = 0
 					return true
 				elseif command == "RemoveTarget" then
-					local currentMob = lifecycleMob
-					assert(currentMob ~= nil)
-					currentMob:Destroy()
-					lifecycleMob = nil
-					return true
+					return temporarilyRemoveLifecycleTarget()
 				elseif command == "KillActor" then
 					local actorHumanoid = if player.Character ~= nil then player.Character:FindFirstChildOfClass("Humanoid") else nil
 					assert(actorHumanoid ~= nil)
