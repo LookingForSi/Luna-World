@@ -1,0 +1,22 @@
+{
+  "name": "LunaWorld",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "src/shared" },
+      "Remotes": {
+        "$className": "Folder",
+        "TargetRequest": { "$className": "RemoteEvent" },
+        "AttackRequest": { "$className": "RemoteEvent" }
+      }
+    },
+    "ServerScriptService": {
+      "Server": { "$path": "src/server" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": { "$path": "src/client" }
+      }
+    }
+  }
+}
