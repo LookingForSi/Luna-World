@@ -1,6 +1,9 @@
 --!strict
 
 local ActionRules = require(game.ReplicatedStorage.Shared.combat.ActionRules)
+local CooldownRules = require(game.ReplicatedStorage.Shared.combat.CooldownRules)
+local ResourceRules = require(game.ReplicatedStorage.Shared.combat.ResourceRules)
+local SkillRules = require(game.ReplicatedStorage.Shared.combat.SkillRules)
 
 return function(TestRunner)
 	TestRunner.run("manual input lifecycle accepts one request and buffers at most one", function()
@@ -44,5 +47,37 @@ return function(TestRunner)
 		end
 		assert(staleActionState == "Ready")
 		assert(ActionRules.evaluateTiming(now, readyAt, 0.2, false).kind == "Accept")
+	end)
+
+	TestRunner.run("accepted skill cost and cooldown survive a later resolve failure", function()
+		local resource = ResourceRules.create("Stamina", 100)
+		local cooldowns: CooldownRules.CooldownDeadlines = {}
+		assert(SkillRules.canAccept("Ready", CooldownRules.isReady(cooldowns, "power_strike", 10), ResourceRules.canSpend(resource, "Stamina", 20), true))
+		local spent = ResourceRules.spend(resource, "Stamina", 20)
+		assert(spent ~= nil)
+		resource = spent
+		cooldowns = CooldownRules.start(cooldowns, "power_strike", 10, 4)
+
+		-- Resolve-time target failure does not roll back acceptance state.
+		assert(not SkillRules.isEnemyTargetValid("wolf-1", "wolf-1", true, false, true, true))
+		assert(resource.current == 80)
+		assert(not CooldownRules.isReady(cooldowns, "power_strike", 13.9))
+	end)
+
+	TestRunner.run("two skill attempts cannot consume resource through one action slot", function()
+		local resource = ResourceRules.create("Focus", 100)
+		local actionState: "Ready" | "Windup" | "Recovery" = "Ready"
+		local accepted = 0
+		for _ = 1, 2 do
+			if SkillRules.canAccept(actionState, true, ResourceRules.canSpend(resource, "Focus", 20), true) then
+				local spent = ResourceRules.spend(resource, "Focus", 20)
+				assert(spent ~= nil)
+				resource = spent
+				actionState = "Windup"
+				accepted += 1
+			end
+		end
+		assert(accepted == 1)
+		assert(resource.current == 80)
 	end)
 end

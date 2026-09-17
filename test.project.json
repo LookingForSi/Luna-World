@@ -7,7 +7,9 @@
       "Remotes": {
         "$className": "Folder",
         "TargetRequest": { "$className": "RemoteEvent" },
-        "AttackRequest": { "$className": "RemoteEvent" }
+        "AttackRequest": { "$className": "RemoteEvent" },
+        "SkillRequest": { "$className": "RemoteEvent" },
+        "SkillResult": { "$className": "RemoteEvent" }
       },
       "TestRemotes": {
         "$className": "Folder",
@@ -15,7 +17,10 @@
         "MilestoneZeroAttackContractComplete": { "$className": "RemoteEvent" },
         "ManualAttackLifecycleStart": { "$className": "RemoteEvent" },
         "ManualAttackLifecycleCommand": { "$className": "RemoteFunction" },
-        "ManualAttackLifecycleComplete": { "$className": "RemoteEvent" }
+        "ManualAttackLifecycleComplete": { "$className": "RemoteEvent" },
+        "SkillRuntimeStart": { "$className": "RemoteEvent" },
+        "SkillRuntimeCommand": { "$className": "RemoteFunction" },
+        "SkillRuntimeComplete": { "$className": "RemoteEvent" }
       }
     },
     "ServerScriptService": {

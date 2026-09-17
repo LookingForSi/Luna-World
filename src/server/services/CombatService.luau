@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
 local ActionRules = require(ReplicatedStorage.Shared.combat.ActionRules)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
@@ -10,15 +11,21 @@ local CombatRules = require(ReplicatedStorage.Shared.combat.CombatRules)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local DamageRules = require(ReplicatedStorage.Shared.combat.DamageRules)
 local ResourceRules = require(ReplicatedStorage.Shared.combat.ResourceRules)
+local CooldownRules = require(ReplicatedStorage.Shared.combat.CooldownRules)
+local SkillRules = require(ReplicatedStorage.Shared.combat.SkillRules)
+local SkillActionLifecycle = require(ReplicatedStorage.Shared.combat.SkillActionLifecycle)
 local ArchetypeDefinitions = require(ReplicatedStorage.Shared.definitions.ArchetypeDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local MobService = require(script.Parent.MobService)
+local CombatEffectService = require(script.Parent.CombatEffectService)
 
 local CombatService = {}
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local targetRequest = remotes:WaitForChild("TargetRequest") :: RemoteEvent
 local attackRequest = remotes:WaitForChild("AttackRequest") :: RemoteEvent
+local skillRequest = remotes:WaitForChild("SkillRequest") :: RemoteEvent
+local skillResult = remotes:WaitForChild("SkillResult") :: RemoteEvent
 
 type PlayerCombatState = {
 	readyAt: number,
@@ -28,14 +35,18 @@ type PlayerCombatState = {
 	archetypeId: string,
 	stats: CombatTypes.CombatStatSnapshot,
 	regenerationElapsed: number,
+	cooldowns: CooldownRules.CooldownDeadlines,
+	skillSlot: SkillActionLifecycle.Slot,
 }
 
 local targetsByPlayer: { [Player]: string } = {}
 local statesByPlayer: { [Player]: PlayerCombatState } = {}
+local cooldownsByPlayer: { [Player]: CooldownRules.CooldownDeadlines } = {}
 local characterDeathConnections: { [Player]: RBXScriptConnection } = {}
 local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
 local targetDeathConnections: { [Player]: RBXScriptConnection } = {}
 local lastAttackRequestAtByPlayer: { [Player]: number } = {}
+local lastSkillRequestAtByPlayer: { [Player]: number } = {}
 local started = false
 local serviceConnections: { RBXScriptConnection } = {}
 local regenerationSchedulerElapsed = 0
@@ -49,6 +60,9 @@ local ARCHETYPE_ATTRIBUTE = CombatConfig.ArchetypeAttribute
 local RESOURCE_TYPE_ATTRIBUTE = CombatConfig.ResourceTypeAttribute
 local RESOURCE_CURRENT_ATTRIBUTE = CombatConfig.ResourceCurrentAttribute
 local RESOURCE_MAXIMUM_ATTRIBUTE = CombatConfig.ResourceMaximumAttribute
+
+local getLivingCharacterRoot: (Player) -> BasePart?
+local getLivingMobRoot: (Model) -> BasePart?
 
 local function getArchetypeId(player: Player): string
 	local requested = player:GetAttribute(ARCHETYPE_ATTRIBUTE)
@@ -100,11 +114,163 @@ local function getState(player: Player): PlayerCombatState
 			archetypeId = archetypeId,
 			stats = createStatSnapshot(archetypeId),
 			regenerationElapsed = 0,
+			cooldowns = cooldownsByPlayer[player] or {},
+			skillSlot = SkillActionLifecycle.createSlot(),
 		}
+		cooldownsByPlayer[player] = state.cooldowns
 		statesByPlayer[player] = state
 		replicateState(player, state)
 	end
 	return state
+end
+
+local function resolveSkillTarget(
+	player: Player,
+	definition: CombatTypes.SkillDefinition,
+	expectedCharacter: Model?
+): CombatEffectService.EffectTarget?
+	local character = player.Character
+	local playerRoot = getLivingCharacterRoot(player)
+	if playerRoot == nil or (expectedCharacter ~= nil and character ~= expectedCharacter) then return nil end
+
+	if definition.targetType == "Self" then
+		if not SkillRules.isTargetContextAllowed(definition.targetType, "Player", true) then return nil end
+		return { kind = "Player", entityId = tostring(player.UserId), model = character :: Model }
+	end
+	if definition.targetType == "Friendly" then
+		local effect = definition.effect
+		if effect.kind == "DirectHealing" and effect.selfCastWithoutFriendlyTarget then
+			if not SkillRules.isTargetContextAllowed(definition.targetType, "Player", true) then return nil end
+			return { kind = "Player", entityId = tostring(player.UserId), model = character :: Model }
+		end
+		return nil
+	end
+
+	local selectedTargetId = targetsByPlayer[player]
+	if selectedTargetId == nil then return nil end
+	local target = MobService.getByEntityId(selectedTargetId)
+	local targetRoot = if target ~= nil then getLivingMobRoot(target) else nil
+	if target == nil or targetRoot == nil then return nil end
+	if not SkillRules.isTargetContextAllowed(definition.targetType, "Mob", false) then return nil end
+	local inRange = ActionRules.isWithinRange(playerRoot.Position, targetRoot.Position, definition.range, CombatConfig.RangeTolerance)
+	local isFacing = not definition.requiresFacing or ActionRules.isFacing(
+		playerRoot.Position,
+		playerRoot.CFrame.LookVector,
+		targetRoot.Position,
+		CombatConfig.FacingArcDegrees
+	)
+	if not SkillRules.isEnemyTargetValid(selectedTargetId, selectedTargetId, true, true, inRange, isFacing) then
+		return nil
+	end
+	return { kind = "Mob", entityId = selectedTargetId, model = target }
+end
+
+local function acceptSkill(player: Player, definition: CombatTypes.SkillDefinition, now: number): ()
+	local state = getState(player)
+	if state.actionState == "Recovery" and now >= state.readyAt then
+		state.actionState = "Ready"
+		replicateState(player, state)
+	end
+	local target = resolveSkillTarget(player, definition, nil)
+	local resourceAfterCost = ResourceRules.spend(state.stats.resource, definition.resourceType, definition.resourceCost)
+	if not SkillRules.canAccept(
+		state.actionState,
+		CooldownRules.isReady(state.cooldowns, definition.cooldownGroup, now),
+		resourceAfterCost ~= nil,
+		target ~= nil
+	) then return end
+	if not CombatEffectService.isImplemented(definition) then return end
+
+	local actionId = HttpService:GenerateGUID(false)
+	local pendingAction = SkillActionLifecycle.begin(
+		state.skillSlot,
+		true,
+		actionId,
+		definition.id,
+		target.entityId
+	)
+	if pendingAction == nil then return end
+	local acceptedCharacter = player.Character
+	state.stats.resource = resourceAfterCost :: CombatTypes.CombatResource
+	state.cooldowns = CooldownRules.start(state.cooldowns, definition.cooldownGroup, now, definition.cooldownSeconds)
+	cooldownsByPlayer[player] = state.cooldowns
+	state.actionState = "Windup"
+	state.bufferedTargetId = nil
+	state.generation += 1
+	replicateState(player, state)
+	local generation = state.generation
+
+	task.delay(definition.windupSeconds, function()
+		local currentState = statesByPlayer[player]
+		if currentState == nil or currentState ~= state or currentState.generation ~= generation then return end
+		local resolvedTarget = resolveSkillTarget(player, definition, acceptedCharacter)
+		local effectResult: CombatEffectService.EffectResult = { applied = false }
+		if resolvedTarget ~= nil and resolvedTarget.kind == target.kind and resolvedTarget.entityId == target.entityId then
+			local executionSucceeded, executedResult = pcall(
+				CombatEffectService.execute,
+				player,
+				currentState.stats,
+				definition,
+				resolvedTarget
+			)
+			if executionSucceeded then
+				effectResult = executedResult
+			else
+				warn(string.format("Skill effect failed for %s (%s): %s", player.Name, definition.id, tostring(executedResult)))
+			end
+		end
+		local terminalResult = SkillActionLifecycle.finish(
+			currentState.skillSlot,
+			pendingAction,
+			effectResult.applied,
+			if effectResult.applied then nil else "ResolveFailed"
+		)
+		if statesByPlayer[player] == currentState and currentState.generation == generation then
+			currentState.actionState = "Ready"
+			replicateState(player, currentState)
+		end
+		if terminalResult ~= nil and player.Parent == Players then
+			-- Only the server-created result is sent. Client-provided damage, target lists,
+			-- timestamps and critical flags are impossible inputs to this executor.
+			local delivered, deliveryError = pcall(skillResult.FireClient, skillResult, player, {
+				actionId = terminalResult.actionId,
+				skillId = terminalResult.skillId,
+				targetEntityId = terminalResult.targetEntityId,
+				applied = terminalResult.applied,
+				reason = terminalResult.reason,
+				amount = effectResult.amount,
+				isCritical = effectResult.isCritical,
+				presentationKey = definition.presentationKey,
+			})
+			if not delivered then
+				warn(string.format("Skill result delivery failed for %s (%s): %s", player.Name, definition.id, tostring(deliveryError)))
+			end
+		end
+	end)
+end
+
+local function onSkillRequest(player: Player, ...: unknown): ()
+	local argumentCount = select("#", ...)
+	local skillId = select(1, ...)
+	local state = getState(player)
+	local definition = if typeof(skillId) == "string" then SkillDefinitions[skillId] else nil
+	local archetype = ArchetypeDefinitions[state.archetypeId]
+	local decision = SkillRules.validateRequest(
+		argumentCount,
+		skillId,
+		definition ~= nil,
+		if definition ~= nil then definition.archetypeId else nil,
+		state.archetypeId,
+		definition ~= nil and archetype ~= nil and definition.id == archetype.basicAttackId
+	)
+	if not decision.accepted or definition == nil then return end
+
+	local now = workspace:GetServerTimeNow()
+	if ActionRules.isRequestRateLimited(now, lastSkillRequestAtByPlayer[player], CombatConfig.SkillRequestMinIntervalSeconds) then
+		return
+	end
+	lastSkillRequestAtByPlayer[player] = now
+	acceptSkill(player, definition, now)
 end
 
 local function getBasicAttackDefinition(state: PlayerCombatState): CombatTypes.SkillDefinition
@@ -129,7 +295,7 @@ local function setReplicatedTarget(player: Player, entityId: string?): ()
 	player:SetAttribute(TARGET_ATTRIBUTE, entityId)
 end
 
-local function getLivingCharacterRoot(player: Player): BasePart?
+getLivingCharacterRoot = function(player: Player): BasePart?
 	local character = player.Character
 	if character == nil then return nil end
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -138,21 +304,40 @@ local function getLivingCharacterRoot(player: Player): BasePart?
 	return root
 end
 
-local function getLivingMobRoot(mob: Model): BasePart?
+getLivingMobRoot = function(mob: Model): BasePart?
 	local humanoid = mob:FindFirstChildOfClass("Humanoid")
 	local root = mob:FindFirstChild("HumanoidRootPart")
 	if humanoid == nil or humanoid.Health <= 0 or root == nil or not root:IsA("BasePart") then return nil end
 	return root
 end
 
-local function cancelPendingAction(player: Player): ()
+local function cancelPendingAction(player: Player, discardSkillResult: boolean?): ()
 	local state = statesByPlayer[player]
 	if state == nil then return end
+	local pendingSkill = state.skillSlot.pending
+	local terminalResult: SkillActionLifecycle.Result? = nil
+	if pendingSkill ~= nil then
+		terminalResult = SkillActionLifecycle.finish(state.skillSlot, pendingSkill, false, "Canceled")
+	end
 	state.generation += 1
 	state.actionState = "Ready"
 	state.bufferedTargetId = nil
 	state.readyAt = 0
 	replicateState(player, state)
+	if terminalResult ~= nil and not discardSkillResult and player.Parent == Players then
+		local definition = SkillDefinitions[terminalResult.skillId]
+		local delivered, deliveryError = pcall(skillResult.FireClient, skillResult, player, {
+				actionId = terminalResult.actionId,
+				skillId = terminalResult.skillId,
+				targetEntityId = terminalResult.targetEntityId,
+				applied = false,
+				reason = terminalResult.reason,
+				presentationKey = if definition ~= nil then definition.presentationKey else nil,
+			})
+		if not delivered then
+			warn(string.format("Canceled skill result delivery failed for %s: %s", player.Name, tostring(deliveryError)))
+		end
+	end
 end
 
 local function clearTarget(player: Player): ()
@@ -168,11 +353,13 @@ local function clearTarget(player: Player): ()
 	setReplicatedTarget(player, nil)
 end
 
-local function clearPlayerState(player: Player): ()
-	cancelPendingAction(player)
+local function clearPlayerState(player: Player, discardRuntimeState: boolean?): ()
+	cancelPendingAction(player, discardRuntimeState)
 	clearTarget(player)
 	statesByPlayer[player] = nil
 	lastAttackRequestAtByPlayer[player] = nil
+	lastSkillRequestAtByPlayer[player] = nil
+	if not SkillActionLifecycle.shouldPreserveCooldowns(discardRuntimeState) then cooldownsByPlayer[player] = nil end
 end
 
 local function getValidAttackTarget(player: Player, expectedTargetId: string, expectedCharacter: Model?): Model?
@@ -325,9 +512,10 @@ function CombatService.start(): ()
 	started = true
 	table.insert(serviceConnections, targetRequest.OnServerEvent:Connect(onTargetRequest))
 	table.insert(serviceConnections, attackRequest.OnServerEvent:Connect(onAttackRequest))
+	table.insert(serviceConnections, skillRequest.OnServerEvent:Connect(onSkillRequest))
 	table.insert(serviceConnections, Players.PlayerAdded:Connect(onPlayerAdded))
 	table.insert(serviceConnections, Players.PlayerRemoving:Connect(function(player)
-		clearPlayerState(player)
+		clearPlayerState(player, true)
 		local deathConnection = characterDeathConnections[player]
 		if deathConnection ~= nil then deathConnection:Disconnect() end
 		characterDeathConnections[player] = nil
@@ -379,13 +567,16 @@ function CombatService.stop(): ()
 		player:SetAttribute(RESOURCE_TYPE_ATTRIBUTE, nil)
 		player:SetAttribute(RESOURCE_CURRENT_ATTRIBUTE, nil)
 		player:SetAttribute(RESOURCE_MAXIMUM_ATTRIBUTE, nil)
+		player:SetAttribute(ARCHETYPE_ATTRIBUTE, nil)
 	end
 	table.clear(targetsByPlayer)
 	table.clear(statesByPlayer)
+	table.clear(cooldownsByPlayer)
 	table.clear(characterDeathConnections)
 	table.clear(characterAddedConnections)
 	table.clear(targetDeathConnections)
 	table.clear(lastAttackRequestAtByPlayer)
+	table.clear(lastSkillRequestAtByPlayer)
 end
 
 return CombatService

@@ -18,6 +18,9 @@ local attackContractComplete = ReplicatedStorage
 local lifecycleStart = ReplicatedStorage.TestRemotes:WaitForChild("ManualAttackLifecycleStart") :: RemoteEvent
 local lifecycleCommand = ReplicatedStorage.TestRemotes:WaitForChild("ManualAttackLifecycleCommand") :: RemoteFunction
 local lifecycleComplete = ReplicatedStorage.TestRemotes:WaitForChild("ManualAttackLifecycleComplete") :: RemoteEvent
+local skillRuntimeStart = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeStart") :: RemoteEvent
+local skillRuntimeCommand = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeCommand") :: RemoteFunction
+local skillRuntimeComplete = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeComplete") :: RemoteEvent
 
 local function waitUntil<T>(description: string, timeoutSeconds: number, readValue: () -> T?): T
 	local deadline = os.clock() + timeoutSeconds
@@ -89,12 +92,16 @@ return function(TestRunner)
 	TestRunner.run("manual attack migration preserves one-time mob death and XP reward", function()
 		local completedByPlayer: { [Player]: boolean } = {}
 		local lifecycleCompletedByPlayer: { [Player]: boolean } = {}
+		local skillRuntimeCompletedByPlayer: { [Player]: boolean } = {}
 		local fixtureReady = false
 		local completionConnection: RBXScriptConnection? = attackContractComplete.OnServerEvent:Connect(function(sender)
 			completedByPlayer[sender] = true
 		end)
 		local lifecycleCompletionConnection = lifecycleComplete.OnServerEvent:Connect(function(sender)
 			lifecycleCompletedByPlayer[sender] = true
+		end)
+		local skillRuntimeCompletionConnection = skillRuntimeComplete.OnServerEvent:Connect(function(sender)
+			skillRuntimeCompletedByPlayer[sender] = true
 		end)
 		attackContractReady.OnServerInvoke = function(_sender: Player): boolean
 			waitUntil("positioned server attack fixture", 12, function(): boolean?
@@ -108,6 +115,7 @@ return function(TestRunner)
 		local originalMobPivot: CFrame? = nil
 		local originalMobRootAnchored: boolean? = nil
 		local lifecycleMob: Model? = nil
+		local originalRespawnTime = Players.RespawnTime
 
 		local function prepareLifecycleTarget(player: Player): string
 			local fixture = waitUntil("a respawned lifecycle wolf", 10, findMilestoneZeroMob)
@@ -191,6 +199,34 @@ return function(TestRunner)
 			waitUntil("manual attack lifecycle client completion", 35, function(): boolean?
 				return if lifecycleCompletedByPlayer[player] then true else nil
 			end)
+
+			Players.RespawnTime = 0.25
+			skillRuntimeCommand.OnServerInvoke = function(sender: Player, command: unknown): any
+				assert(sender == player)
+				if command == "PrepareTarget" then
+					local preparedId = prepareLifecycleTarget(player)
+					local preparedHumanoid = if lifecycleMob ~= nil then lifecycleMob:FindFirstChildOfClass("Humanoid") else nil
+					assert(preparedHumanoid ~= nil)
+					preparedHumanoid.Health = preparedHumanoid.MaxHealth
+					return preparedId
+				elseif command == "MoveTargetOutOfRange" then
+					local currentMob = lifecycleMob
+					local playerRoot = if player.Character ~= nil then player.Character:FindFirstChild("HumanoidRootPart") else nil
+					assert(currentMob ~= nil and playerRoot ~= nil and playerRoot:IsA("BasePart"))
+					currentMob:PivotTo(playerRoot.CFrame * CFrame.new(0, 0, -200))
+					return true
+				elseif command == "KillActor" then
+					local actorHumanoid = if player.Character ~= nil then player.Character:FindFirstChildOfClass("Humanoid") else nil
+					assert(actorHumanoid ~= nil)
+					actorHumanoid.Health = 0
+					return true
+				end
+				error("unsupported skill runtime command")
+			end
+			skillRuntimeStart:FireClient(player)
+			waitUntil("authoritative skill runtime client completion", 40, function(): boolean?
+				return if skillRuntimeCompletedByPlayer[player] then true else nil
+			end)
 		end)
 
 		if deathConnection ~= nil then
@@ -202,9 +238,12 @@ return function(TestRunner)
 			completionConnection = nil
 		end
 		lifecycleCompletionConnection:Disconnect()
+		skillRuntimeCompletionConnection:Disconnect()
+		Players.RespawnTime = originalRespawnTime
 		fixtureReady = false
 		attackContractReady.OnServerInvoke = nil
 		lifecycleCommand.OnServerInvoke = nil
+		skillRuntimeCommand.OnServerInvoke = nil
 		if mobToCleanUp ~= nil and mobToCleanUp.Parent ~= nil and originalMobPivot ~= nil then
 			mobToCleanUp:PivotTo(originalMobPivot)
 		end

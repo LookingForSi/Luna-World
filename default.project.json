@@ -7,7 +7,9 @@
       "Remotes": {
         "$className": "Folder",
         "TargetRequest": { "$className": "RemoteEvent" },
-        "AttackRequest": { "$className": "RemoteEvent" }
+        "AttackRequest": { "$className": "RemoteEvent" },
+        "SkillRequest": { "$className": "RemoteEvent" },
+        "SkillResult": { "$className": "RemoteEvent" }
       }
     },
     "ServerScriptService": {

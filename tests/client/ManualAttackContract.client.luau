@@ -4,10 +4,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local targetRequest = remotes:WaitForChild("TargetRequest") :: RemoteEvent
 local attackRequest = remotes:WaitForChild("AttackRequest") :: RemoteEvent
+local skillRequest = remotes:WaitForChild("SkillRequest") :: RemoteEvent
+local skillResult = remotes:WaitForChild("SkillResult") :: RemoteEvent
 local readinessFunction = ReplicatedStorage
 	:WaitForChild("TestRemotes")
 	:WaitForChild("MilestoneZeroAttackContractReady") :: RemoteFunction
@@ -17,6 +20,19 @@ local completionEvent = ReplicatedStorage
 local lifecycleStart = ReplicatedStorage.TestRemotes:WaitForChild("ManualAttackLifecycleStart") :: RemoteEvent
 local lifecycleCommand = ReplicatedStorage.TestRemotes:WaitForChild("ManualAttackLifecycleCommand") :: RemoteFunction
 local lifecycleComplete = ReplicatedStorage.TestRemotes:WaitForChild("ManualAttackLifecycleComplete") :: RemoteEvent
+local skillRuntimeStart = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeStart") :: RemoteEvent
+local skillRuntimeCommand = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeCommand") :: RemoteFunction
+local skillRuntimeComplete = ReplicatedStorage.TestRemotes:WaitForChild("SkillRuntimeComplete") :: RemoteEvent
+
+local skillResults: { any } = {}
+local skillRuntimeStarted = false
+skillRuntimeStart.OnClientEvent:Connect(function()
+	skillRuntimeStarted = true
+end)
+skillResult.OnClientEvent:Connect(function(result: unknown)
+	assert(typeof(result) == "table", "SkillResult must be a server result record")
+	table.insert(skillResults, result)
+end)
 
 local function waitUntil(description: string, timeoutSeconds: number, predicate: () -> boolean): ()
 	local deadline = os.clock() + timeoutSeconds
@@ -209,3 +225,121 @@ end
 
 lifecycleComplete:FireServer()
 print("[PASS] milestone one manual AttackRequest runtime contract")
+
+waitUntil("skill runtime fixture start", 5, function()
+	return skillRuntimeStarted
+end)
+waitUntil("manual action slot before skill fixture", CombatConfig.BasicAttackInterval + 2, function()
+	return player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready"
+end)
+
+local function prepareSkillTarget(): (string, Humanoid)
+	local preparedEntityId = skillRuntimeCommand:InvokeServer("PrepareTarget")
+	assert(typeof(preparedEntityId) == "string")
+	targetRequest:FireServer(preparedEntityId)
+	waitUntil("server-confirmed skill target", 3, function()
+		return player:GetAttribute(CombatConfig.SelectedTargetAttribute) == preparedEntityId
+	end)
+	local preparedModel: Model? = nil
+	for _, child in workspace:GetChildren() do
+		if child:IsA("Model") and child:GetAttribute("EntityId") == preparedEntityId then
+			preparedModel = child
+			break
+		end
+	end
+	assert(preparedModel ~= nil)
+	local preparedHumanoid = preparedModel:FindFirstChildOfClass("Humanoid")
+	assert(preparedHumanoid ~= nil)
+	return preparedEntityId, preparedHumanoid
+end
+
+local function waitForSkillResult(expectedCount: number, description: string): any
+	waitUntil(description, 4, function()
+		return #skillResults >= expectedCount
+	end)
+	return skillResults[expectedCount]
+end
+
+local powerStrike = SkillDefinitions.power_strike
+local _, skillTargetHumanoid = prepareSkillTarget()
+local initialSkillHealth = skillTargetHumanoid.Health
+local initialSkillResource = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+assert(typeof(initialSkillResource) == "number")
+
+-- Extra client-owned outcome fields invalidate the whole request and mutate nothing.
+skillRequest:FireServer("power_strike", { damage = 999999, isCritical = true, timestamp = 0, targets = {} })
+task.wait(powerStrike.windupSeconds + 0.15)
+assert(#skillResults == 0)
+assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == initialSkillResource)
+assert(skillTargetHumanoid.Health == initialSkillHealth)
+
+-- One accepted request owns one action id, one cost, and one terminal result.
+skillRequest:FireServer("power_strike")
+skillRequest:FireServer("power_strike")
+waitUntil("accepted skill windup", 3, function()
+	return player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Windup"
+end)
+local firstSkillResult = waitForSkillResult(1, "one direct skill result")
+assert(typeof(firstSkillResult.actionId) == "string" and firstSkillResult.actionId ~= "")
+assert(firstSkillResult.skillId == "power_strike" and firstSkillResult.applied == true)
+assert(player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready", "state must reset before result delivery")
+local resourceAfterAcceptedSkill = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+assert(typeof(resourceAfterAcceptedSkill) == "number")
+assert(resourceAfterAcceptedSkill <= initialSkillResource)
+assert(resourceAfterAcceptedSkill >= initialSkillResource - powerStrike.resourceCost)
+assert(resourceAfterAcceptedSkill > initialSkillResource - (powerStrike.resourceCost * 2), "concurrent request spent resource twice")
+assert(skillTargetHumanoid.Health < initialSkillHealth)
+task.wait(0.15)
+assert(#skillResults == 1, "concurrent request must not create another result")
+
+-- The skill's own cooldown rejects another request without mutation.
+local afterFirstResource = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+skillRequest:FireServer("power_strike")
+task.wait(powerStrike.windupSeconds + 0.1)
+assert(#skillResults == 1)
+local resourceAfterCooldownRejection = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+assert(typeof(resourceAfterCooldownRejection) == "number" and typeof(afterFirstResource) == "number")
+assert(resourceAfterCooldownRejection > afterFirstResource - (powerStrike.resourceCost * 0.5), "cooldown rejection spent resource")
+
+task.wait(powerStrike.cooldownSeconds + 0.1)
+prepareSkillTarget()
+skillRequest:FireServer("power_strike")
+waitUntil("resolve-failure windup", 3, function()
+	return player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Windup"
+end)
+assert(skillRuntimeCommand:InvokeServer("MoveTargetOutOfRange") == true)
+local failedResult = waitForSkillResult(2, "resolve-failure terminal result")
+assert(failedResult.applied == false and failedResult.reason == "ResolveFailed")
+assert(typeof(failedResult.actionId) == "string" and failedResult.actionId ~= firstSkillResult.actionId)
+assert(player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready")
+
+-- Death cancels exactly once; the respawned CharacterAdded state retains the cooldown.
+task.wait(powerStrike.cooldownSeconds + 0.1)
+prepareSkillTarget()
+skillRequest:FireServer("power_strike")
+waitUntil("pre-death skill windup", 3, function()
+	return player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Windup"
+end)
+assert(skillRuntimeCommand:InvokeServer("KillActor") == true)
+local canceledResult = waitForSkillResult(3, "death-canceled terminal result")
+assert(canceledResult.applied == false and canceledResult.reason == "Canceled")
+task.wait(powerStrike.windupSeconds + 0.1)
+assert(#skillResults == 3, "canceled delayed resolve must not duplicate its result")
+
+waitUntil("skill fixture respawn", 5, function()
+	local character = player.Character
+	local livingHumanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+	return livingHumanoid ~= nil and livingHumanoid.Health > 0
+end)
+waitUntil("full respawn resource snapshot", 3, function()
+	return player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == CombatConfig.ArchetypeStats.knight.maximumResource
+end)
+prepareSkillTarget()
+local respawnResource = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+skillRequest:FireServer("power_strike")
+task.wait(powerStrike.windupSeconds + 0.15)
+assert(#skillResults == 3, "CharacterAdded must not erase the accepted skill cooldown")
+assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == respawnResource)
+
+skillRuntimeComplete:FireServer()
+print("[PASS] authoritative SkillRequest runtime contract")
