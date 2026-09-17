@@ -31,9 +31,9 @@ if "StudioSetArchetype" in read(DEFAULT_PROJECT):
     raise AssertionError("StudioSetArchetype must not be statically exposed by the production Rojo project")
 require(SERVER_DEBUG, "RunService:IsStudio()", "Studio archetype switching must be gated by RunService:IsStudio on the server")
 require(SERVER_DEBUG, 'Instance.new("RemoteEvent")', "Studio archetype remote must be created dynamically by the Studio-only service")
-require(SERVER_DEBUG, 'remote.Name = "StudioSetArchetype"', "Studio archetype remote name is missing")
+require(SERVER_DEBUG, 'created.Name = "StudioSetArchetype"', "Studio archetype remote name is missing")
 require(SERVER_DEBUG, "ArchetypeDefinitions[archetypeId]", "server must validate requested archetypes")
-require(SERVER_DEBUG, "CombatService.handlePlayerRespawn", "class switch must rebuild the authoritative combat snapshot")
+require(SERVER_DEBUG, "player:LoadCharacter()", "class switch must rebuild combat state through the existing character lifecycle")
 require(SERVER_MAIN, "StudioDebugService.start()", "server bootstrap must start the Studio debug service")
 
 # Client debug controls also have their own Studio guard; live clients must never render them.
