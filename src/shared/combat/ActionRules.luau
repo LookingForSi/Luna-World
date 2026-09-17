@@ -99,7 +99,10 @@ end
 
 function ActionRules.isRequestRateLimited(now: number, lastRequestAt: number?, minimumIntervalSeconds: number): boolean
 	assert(minimumIntervalSeconds >= 0, "minimumIntervalSeconds must not be negative")
-	return lastRequestAt ~= nil and now - lastRequestAt < minimumIntervalSeconds
+	-- Compare against the authoritative deadline directly. Subtracting two large
+	-- floating-point timestamps can round an exact boundary slightly downward
+	-- (for example 10.03 - 10 < 0.03), incorrectly rate-limiting the boundary.
+	return lastRequestAt ~= nil and now < lastRequestAt + minimumIntervalSeconds
 end
 
 return table.freeze(ActionRules)
