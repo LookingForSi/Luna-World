@@ -5,6 +5,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
+local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local EffectRules = require(ReplicatedStorage.Shared.combat.EffectRules)
 
 local MobService = {}
 
@@ -26,6 +28,7 @@ local function createWolf(): Model
 	model.Name = definition.displayName
 	model:SetAttribute("EntityId", entityId)
 	model:SetAttribute("MobId", definition.id)
+	model:SetAttribute(CombatConfig.MobMovementSpeedAttribute, definition.chaseSpeed)
 
 	local rootPart = Instance.new("Part")
 	rootPart.Name = "HumanoidRootPart"
@@ -40,6 +43,7 @@ local function createWolf(): Model
 	humanoid.RequiresNeck = false
 	humanoid.MaxHealth = definition.maxHealth
 	humanoid.Health = definition.maxHealth
+	humanoid.WalkSpeed = definition.chaseSpeed
 	humanoid.Parent = model
 
 	model.PrimaryPart = rootPart
@@ -105,6 +109,25 @@ function MobService.applyDamage(entityId: string, amount: number, attacker: Play
 	lastAttackerByEntityId[entityId] = attacker
 	humanoid:TakeDamage(amount)
 	return true
+end
+
+function MobService.applyCalculatedMovement(model: Model): boolean
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	local baseMovementSpeed = model:GetAttribute(CombatConfig.MobMovementSpeedAttribute)
+	if humanoid == nil or typeof(baseMovementSpeed) ~= "number" then return false end
+	humanoid.WalkSpeed = EffectRules.resolveMovementSpeed(
+		baseMovementSpeed,
+		model:GetAttribute(CombatConfig.MobStunnedAttribute) == true
+	)
+	return true
+end
+
+function MobService.setMovementSpeed(entityId: string, movementSpeed: number): boolean
+	assert(movementSpeed == movementSpeed and movementSpeed >= 0 and movementSpeed < math.huge, "movementSpeed must be finite and nonnegative")
+	local model = mobsByEntityId[entityId]
+	if model == nil then return false end
+	model:SetAttribute(CombatConfig.MobMovementSpeedAttribute, movementSpeed)
+	return MobService.applyCalculatedMovement(model)
 end
 
 return MobService

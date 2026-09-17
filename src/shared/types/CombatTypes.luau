@@ -37,9 +37,11 @@ export type CombatStatSnapshot = {
 	resourceRegenerationPerSecond: number,
 	physicalAttack: number,
 	magicAttack: number,
+	basePhysicalDefense: number,
 	physicalDefense: number,
 	attackSpeedMultiplier: number,
 	criticalChance: number,
+	baseMovementSpeed: number,
 	movementSpeed: number,
 }
 

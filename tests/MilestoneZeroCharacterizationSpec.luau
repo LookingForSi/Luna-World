@@ -224,7 +224,7 @@ return function(TestRunner)
 				error("unsupported skill runtime command")
 			end
 			skillRuntimeStart:FireClient(player)
-			waitUntil("authoritative skill runtime client completion", 40, function(): boolean?
+			waitUntil("authoritative skill runtime client completion", 55, function(): boolean?
 				return if skillRuntimeCompletedByPlayer[player] then true else nil
 			end)
 		end)

@@ -1,6 +1,8 @@
 --!strict
 
 local SkillRules = require(game.ReplicatedStorage.Shared.combat.SkillRules)
+local SkillDefinitions = require(game.ReplicatedStorage.Shared.definitions.SkillDefinitions)
+local DamageRules = require(game.ReplicatedStorage.Shared.combat.DamageRules)
 
 return function(TestRunner)
 	TestRunner.run("skill intent accepts only one string identifier", function()
@@ -49,5 +51,29 @@ return function(TestRunner)
 		assert(SkillRules.shouldSelfCastFriendly(false, true))
 		assert(not SkillRules.shouldSelfCastFriendly(false, false))
 		assert(not SkillRules.shouldSelfCastFriendly(true, true))
+	end)
+
+	TestRunner.run("power strike is one critical-capable physical result", function()
+		local definition = SkillDefinitions.power_strike
+		assert(definition.effect.kind == "DirectDamage")
+		assert(definition.powerSource == "PhysicalAttack")
+		assert(definition.canCrit)
+		local result = DamageRules.resolve(25 * definition.effect.magnitude, definition.effect.kind, definition.canCrit, 1, 1.5, function()
+			return 0
+		end)
+		assert(result.isCritical)
+		assert(result.amount == 56.25)
+	end)
+
+	TestRunner.run("shield bash is one non-critical physical result plus bounded control", function()
+		local definition = SkillDefinitions.shield_bash
+		assert(definition.effect.kind == "ShieldBash")
+		assert(definition.powerSource == "PhysicalAttack")
+		assert(not definition.canCrit)
+		local result = DamageRules.resolve(25 * definition.effect.magnitude, definition.effect.kind, definition.canCrit, 1, 1.5, function()
+			error("non-critical shield bash must not request a critical roll")
+		end)
+		assert(not result.isCritical)
+		assert(result.amount == 12.5)
 	end)
 end

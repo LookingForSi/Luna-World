@@ -4,6 +4,7 @@ local ActionRules = require(game.ReplicatedStorage.Shared.combat.ActionRules)
 local CooldownRules = require(game.ReplicatedStorage.Shared.combat.CooldownRules)
 local ResourceRules = require(game.ReplicatedStorage.Shared.combat.ResourceRules)
 local SkillRules = require(game.ReplicatedStorage.Shared.combat.SkillRules)
+local EffectRules = require(game.ReplicatedStorage.Shared.combat.EffectRules)
 
 return function(TestRunner)
 	TestRunner.run("manual input lifecycle accepts one request and buffers at most one", function()
@@ -79,5 +80,16 @@ return function(TestRunner)
 		end
 		assert(accepted == 1)
 		assert(resource.current == 80)
+	end)
+
+	TestRunner.run("ordinary shield stun invalidates a pending mob action", function()
+		local acceptedGeneration = 4
+		local stunDecision = EffectRules.resolveShieldBash("Ordinary", true, true, false)
+		assert(stunDecision.shouldStun)
+		local currentGeneration = EffectRules.invalidateMobActionGeneration(acceptedGeneration)
+		local stunnedUntil = 21.5
+		assert(not EffectRules.canResolveMobAction(acceptedGeneration, currentGeneration, stunnedUntil, 20.5))
+		assert(not EffectRules.canResolveMobAction(acceptedGeneration, currentGeneration, stunnedUntil, 22), "canceled action must remain stale after stun expires")
+		assert(EffectRules.canResolveMobAction(currentGeneration, currentGeneration, stunnedUntil, 22), "a new post-stun action may resolve")
 	end)
 end

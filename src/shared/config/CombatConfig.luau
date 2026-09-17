@@ -45,4 +45,11 @@ return table.freeze({
 	ResourceTypeAttribute = "CombatResourceType",
 	ResourceCurrentAttribute = "CombatResourceCurrent",
 	ResourceMaximumAttribute = "CombatResourceMaximum",
+	MobStunnedAttribute = "CombatStunned",
+	MobStunnedUntilAttribute = "CombatStunnedUntil",
+	MobActionStateAttribute = "CombatActionState",
+	MobActionInterruptibleAttribute = "CombatActionInterruptible",
+	MobActionGenerationAttribute = "CombatActionGeneration",
+	MobMovementSpeedAttribute = "CombatMovementSpeed",
+	DefenseStanceActiveAttribute = "DefenseStanceActive",
 })

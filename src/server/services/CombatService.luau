@@ -81,9 +81,11 @@ local function createStatSnapshot(archetypeId: string): CombatTypes.CombatStatSn
 		resourceRegenerationPerSecond = configured.resourceRegenerationPerSecond,
 		physicalAttack = configured.physicalAttack,
 		magicAttack = configured.magicAttack,
+		basePhysicalDefense = configured.physicalDefense,
 		physicalDefense = configured.physicalDefense,
 		attackSpeedMultiplier = configured.attackSpeedMultiplier,
 		criticalChance = configured.criticalChance,
+		baseMovementSpeed = configured.movementSpeed,
 		movementSpeed = configured.movementSpeed,
 	}
 end
@@ -356,6 +358,8 @@ end
 local function clearPlayerState(player: Player, discardRuntimeState: boolean?): ()
 	cancelPendingAction(player, discardRuntimeState)
 	clearTarget(player)
+	local state = statesByPlayer[player]
+	CombatEffectService.clearPlayerEffects(player, if state ~= nil then state.stats else nil)
 	statesByPlayer[player] = nil
 	lastAttackRequestAtByPlayer[player] = nil
 	lastSkillRequestAtByPlayer[player] = nil
@@ -560,6 +564,8 @@ function CombatService.stop(): ()
 	for _, connection in characterAddedConnections do connection:Disconnect() end
 	for _, connection in targetDeathConnections do connection:Disconnect() end
 	for _, player in Players:GetPlayers() do
+		local state = statesByPlayer[player]
+		CombatEffectService.clearPlayerEffects(player, if state ~= nil then state.stats else nil)
 		player:SetAttribute(TARGET_ATTRIBUTE, nil)
 		player:SetAttribute(ACTION_STATE_ATTRIBUTE, nil)
 		player:SetAttribute(READY_AT_ATTRIBUTE, nil)
@@ -569,6 +575,7 @@ function CombatService.stop(): ()
 		player:SetAttribute(RESOURCE_MAXIMUM_ATTRIBUTE, nil)
 		player:SetAttribute(ARCHETYPE_ATTRIBUTE, nil)
 	end
+	CombatEffectService.stop()
 	table.clear(targetsByPlayer)
 	table.clear(statesByPlayer)
 	table.clear(cooldownsByPlayer)

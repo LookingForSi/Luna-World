@@ -341,5 +341,63 @@ task.wait(powerStrike.windupSeconds + 0.15)
 assert(#skillResults == 3, "CharacterAdded must not erase the accepted skill cooldown")
 assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == respawnResource)
 
+-- Knight control and toggle effects remain server-owned and use the same skill executor.
+local shieldBash = SkillDefinitions.shield_bash
+local shieldBashEffect = shieldBash.effect
+assert(shieldBashEffect.kind == "ShieldBash")
+local shieldTargetId, shieldTargetHumanoid = prepareSkillTarget()
+local shieldTarget = shieldTargetHumanoid.Parent
+assert(shieldTarget ~= nil and shieldTarget:IsA("Model"))
+local healthBeforeShieldBash = shieldTargetHumanoid.Health
+skillRequest:FireServer("shield_bash")
+local shieldResult = waitForSkillResult(4, "shield bash terminal result")
+assert(shieldResult.applied == true and shieldResult.targetEntityId == shieldTargetId)
+assert(shieldTargetHumanoid.Health < healthBeforeShieldBash, "shield bash must apply one physical hit")
+assert(shieldTarget:GetAttribute(CombatConfig.MobStunnedAttribute) == true, "ordinary mob must be stunned")
+task.wait(shieldBashEffect.durationSeconds + 0.1)
+assert(shieldTarget:GetAttribute(CombatConfig.MobStunnedAttribute) == nil, "stun must expire")
+
+local defensiveStance = SkillDefinitions.defensive_stance
+local defensiveStanceEffect = defensiveStance.effect
+assert(defensiveStanceEffect.kind == "DefenseStance")
+local function currentLivingHumanoid(): Humanoid
+	local character = player.Character
+	local candidate = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+	assert(candidate ~= nil and candidate.Health > 0)
+	return candidate
+end
+
+local stanceHumanoid = currentLivingHumanoid()
+local baseWalkSpeed = CombatConfig.ArchetypeStats.knight.movementSpeed
+local resourceBeforeStance = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+skillRequest:FireServer("defensive_stance")
+skillRequest:FireServer("defensive_stance")
+local enabledStanceResult = waitForSkillResult(5, "enabled defensive stance result")
+assert(enabledStanceResult.applied == true)
+task.wait(0.15)
+assert(#skillResults == 5, "duplicate stance request must not produce a second accepted result")
+assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == resourceBeforeStance)
+assert(player.Character ~= nil and player.Character:GetAttribute(CombatConfig.DefenseStanceActiveAttribute) == true)
+assert(stanceHumanoid.WalkSpeed == baseWalkSpeed * defensiveStanceEffect.movementSpeedMultiplier)
+
+task.wait(defensiveStance.cooldownSeconds + 0.1)
+skillRequest:FireServer("defensive_stance")
+local disabledStanceResult = waitForSkillResult(6, "disabled defensive stance result")
+assert(disabledStanceResult.applied == true)
+assert(player.Character ~= nil and player.Character:GetAttribute(CombatConfig.DefenseStanceActiveAttribute) == nil)
+assert(stanceHumanoid.WalkSpeed == baseWalkSpeed)
+
+task.wait(defensiveStance.cooldownSeconds + 0.1)
+skillRequest:FireServer("defensive_stance")
+assert(waitForSkillResult(7, "re-enabled defensive stance result").applied == true)
+assert(skillRuntimeCommand:InvokeServer("KillActor") == true)
+waitUntil("respawn after defensive stance death", 5, function()
+	local character = player.Character
+	local livingHumanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+	return livingHumanoid ~= nil and livingHumanoid.Health > 0
+		and character:GetAttribute(CombatConfig.DefenseStanceActiveAttribute) == nil
+		and livingHumanoid.WalkSpeed == baseWalkSpeed
+end)
+
 skillRuntimeComplete:FireServer()
 print("[PASS] authoritative SkillRequest runtime contract")
