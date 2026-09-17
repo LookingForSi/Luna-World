@@ -2,10 +2,9 @@
 
 -- Test-project-only bridge for the runtime contract's archetype swaps.
 -- CombatService owns the replicated archetype attribute, so changing that attribute
--- while an old combat snapshot still exists is intentionally overwritten by cleanup.
--- The runtime contract needs a deterministic server-side transition between archetypes;
--- clear the old authoritative snapshot first, then restore the requested archetype so
--- the immediately following LoadCharacter() initializes the new snapshot from it.
+-- while an old combat snapshot still exists is overwritten by cleanup. The runtime
+-- contract deliberately swaps archetypes in one Studio session, so make that server-
+-- authoritative transition deterministic without changing production gameplay APIs.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -22,8 +21,17 @@ local function onArchetypeChanged(player: Player): ()
 	if requested ~= "ranger" and requested ~= "mystic" then return end
 
 	transitioning[player] = true
+	local character = player.Character
+
+	-- Clear the old authoritative snapshot before restoring the requested archetype.
+	-- Re-initialize the current character as well: the attribute signal may run either
+	-- just before or just after the runtime contract's immediately following LoadCharacter().
 	CombatService.handlePlayerDeath(player)
 	player:SetAttribute(CombatConfig.ArchetypeAttribute, requested)
+	if character ~= nil and player.Character == character then
+		CombatService.handlePlayerRespawn(player, character)
+	end
+
 	transitioning[player] = nil
 end
 
