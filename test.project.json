@@ -8,6 +8,11 @@
         "$className": "Folder",
         "TargetRequest": { "$className": "RemoteEvent" },
         "AttackRequest": { "$className": "RemoteEvent" }
+      },
+      "TestRemotes": {
+        "$className": "Folder",
+        "MilestoneZeroAttackContractReady": { "$className": "RemoteFunction" },
+        "MilestoneZeroAttackContractComplete": { "$className": "RemoteEvent" }
       }
     },
     "ServerScriptService": {
@@ -16,7 +21,10 @@
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Client": { "$path": "src/client" }
+        "Client": { "$path": "src/client" },
+        "MilestoneZeroAttackContractTest": {
+          "$path": "tests/client/MilestoneZeroAttackContract.client.luau"
+        }
       }
     }
   }
