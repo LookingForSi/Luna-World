@@ -12,11 +12,14 @@ local SkillRules = require(ReplicatedStorage.Shared.combat.SkillRules)
 
 local MobService = {}
 
-local SPAWNS = {
-	{ definitionKey = "grey_wolf", cframe = CFrame.new(0, 3, -20) },
-	{ definitionKey = "young_wolf", cframe = CFrame.new(18, 3, -20) },
-}
 local ROOT_SIZE = Vector3.new(4, 3, 6)
+local SPAWN_Y = ROOT_SIZE.Y * 0.5
+local SPAWNS = {
+	-- Keep the aggressive Wolf outside its detection radius from the default player spawn,
+	-- and separate the passive Young Wolf so the two acceptance scenarios do not interfere.
+	{ definitionKey = "grey_wolf", cframe = CFrame.new(0, SPAWN_Y, -45) },
+	{ definitionKey = "young_wolf", cframe = CFrame.new(70, SPAWN_Y, -20) },
+}
 local WOLF_COLOR = Color3.fromRGB(110, 110, 120)
 
 local mobsByEntityId: { [string]: Model } = {}
