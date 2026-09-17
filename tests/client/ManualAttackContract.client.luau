@@ -865,13 +865,28 @@ waitUntil("replacement actor with AUTO off", 12, function()
 	return character ~= nil and character ~= previousCharacter and actorHumanoid ~= nil and actorHumanoid.Health > 0
 		and player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false
 end)
+waitUntil("fully replicated respawn character and anchor", 3, function()
+	local character = player.Character
+	if character == nil then
+		return false
+	end
+
+	local actorHumanoid = character:FindFirstChildOfClass("Humanoid")
+	local root = character:FindFirstChild("HumanoidRootPart")
+	local anchor = workspace:FindFirstChild("TestLunaVillageRespawnAnchor")
+
+	return actorHumanoid ~= nil
+		and actorHumanoid.Health == actorHumanoid.MaxHealth
+		and root ~= nil
+		and root:IsA("BasePart")
+		and anchor ~= nil
+		and anchor:IsA("BasePart")
+		and (root.Position - anchor.Position).Magnitude < 8
+end)
 local respawnedCharacter = player.Character
-local respawnedHumanoid = if respawnedCharacter ~= nil then respawnedCharacter:FindFirstChildOfClass("Humanoid") else nil
-local respawnedRoot = if respawnedCharacter ~= nil then respawnedCharacter:FindFirstChild("HumanoidRootPart") else nil
-local testAnchor = workspace:FindFirstChild("TestLunaVillageRespawnAnchor")
+assert(respawnedCharacter ~= nil)
+local respawnedHumanoid = respawnedCharacter:FindFirstChildOfClass("Humanoid")
 assert(respawnedHumanoid ~= nil and respawnedHumanoid.Health == respawnedHumanoid.MaxHealth)
-assert(respawnedRoot ~= nil and respawnedRoot:IsA("BasePart") and testAnchor ~= nil and testAnchor:IsA("BasePart"))
-assert((respawnedRoot.Position - testAnchor.Position).Magnitude < 8, "respawn must use the registered settlement anchor")
 assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == player:GetAttribute(CombatConfig.ResourceMaximumAttribute))
 assert(player:GetAttribute(CombatConfig.SelectedTargetAttribute) == nil)
 assert(player:GetAttribute(CombatConfig.BasicAttackBufferedAttribute) == false)
