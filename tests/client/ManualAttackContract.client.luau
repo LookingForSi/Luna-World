@@ -109,6 +109,28 @@ waitUntil("server-confirmed target selection", 3, function()
 	return player:GetAttribute("SelectedTargetEntityId") == entityId
 end)
 
+-- A burst of individually well-formed selection requests may perform at most one
+-- selection lifecycle rebuild inside the authoritative rate-limit window.
+task.wait(CombatConfig.TargetRequestMinIntervalSeconds)
+local targetAttributeChanges = 0
+local targetSpamConnection = player:GetAttributeChangedSignal(CombatConfig.SelectedTargetAttribute):Connect(function()
+	targetAttributeChanges += 1
+end)
+for _ = 1, 10 do targetRequest:FireServer(entityId) end
+task.wait(CombatConfig.TargetRequestMinIntervalSeconds + 0.05)
+targetSpamConnection:Disconnect()
+assert(targetAttributeChanges <= 2, "target spam must not repeatedly rebuild authoritative selection")
+assert(player:GetAttribute(CombatConfig.SelectedTargetAttribute) == entityId)
+
+-- Malformed, oversized, unknown, and client-forged target payloads are inert.
+targetRequest:FireServer()
+targetRequest:FireServer(entityId, { damage = 999999 })
+targetRequest:FireServer({ entityId = entityId })
+targetRequest:FireServer(string.rep("x", 129))
+targetRequest:FireServer("unknown-session-entity")
+task.wait(0.1)
+assert(player:GetAttribute("SelectedTargetEntityId") == entityId, "invalid TargetRequest payloads must not mutate selection")
+
 -- Legacy boolean payloads must be rejected without damage.
 attackRequest:FireServer(true)
 attackRequest:FireServer(false)
@@ -295,12 +317,42 @@ local initialSkillHealth = skillTargetHumanoid.Health
 local initialSkillResource = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
 assert(typeof(initialSkillResource) == "number")
 
+-- Missing, unknown, oversized and wrong-type identifiers cannot start an action or spend resources.
+skillRequest:FireServer()
+skillRequest:FireServer("unknown_skill")
+skillRequest:FireServer(string.rep("x", 129))
+skillRequest:FireServer({ skillId = "power_strike", damage = 999999 })
+task.wait(0.1)
+assert(#skillResults == 0)
+assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == initialSkillResource)
+assert(player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready")
+
+-- Facing remains server-owned; a valid-looking skill intent cannot resolve behind the actor.
+assert(skillRuntimeCommand:InvokeServer("TurnAwayFromTarget") == true)
+local healthBeforeWrongFacing = skillTargetHumanoid.Health
+local resourceBeforeWrongFacing = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+skillRequest:FireServer("power_strike")
+task.wait(powerStrike.windupSeconds + 0.1)
+assert(#skillResults == 0)
+assert(skillTargetHumanoid.Health == healthBeforeWrongFacing)
+assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == resourceBeforeWrongFacing)
+assert(skillRuntimeCommand:InvokeServer("TurnTowardTarget") == true)
+task.wait(CombatConfig.SkillRequestMinIntervalSeconds)
+
 -- Extra client-owned outcome fields invalidate the whole request and mutate nothing.
+local cooldownBeforeForgedSkill = player:GetAttribute(cooldownAttribute("power_strike"))
+local selectedBeforeForgedSkill = player:GetAttribute(CombatConfig.SelectedTargetAttribute)
+local autoBeforeForgedSkill = player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute)
+local actionBeforeForgedSkill = player:GetAttribute(CombatConfig.BasicActionStateAttribute)
 skillRequest:FireServer("power_strike", { damage = 999999, isCritical = true, timestamp = 0, targets = {} })
 task.wait(powerStrike.windupSeconds + 0.15)
 assert(#skillResults == 0)
 assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == initialSkillResource)
 assert(skillTargetHumanoid.Health == initialSkillHealth)
+assert(player:GetAttribute(cooldownAttribute("power_strike")) == cooldownBeforeForgedSkill)
+assert(player:GetAttribute(CombatConfig.SelectedTargetAttribute) == selectedBeforeForgedSkill)
+assert(player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == autoBeforeForgedSkill)
+assert(player:GetAttribute(CombatConfig.BasicActionStateAttribute) == actionBeforeForgedSkill)
 
 -- One accepted request owns one action id, one cost, and one terminal result.
 skillRequest:FireServer("power_strike")
@@ -354,6 +406,31 @@ end)
 local preDeathCooldownDeadline = player:GetAttribute(cooldownAttribute("power_strike"))
 assert(typeof(preDeathCooldownDeadline) == "number" and preDeathCooldownDeadline > workspace:GetServerTimeNow())
 assert(skillRuntimeCommand:InvokeServer("KillActor") == true)
+waitUntil("authoritative dead combat state", 1, function()
+	return player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Dead"
+end)
+local deadCharacter = player.Character
+local deadHumanoid = if deadCharacter ~= nil then deadCharacter:FindFirstChildOfClass("Humanoid") else nil
+assert(deadHumanoid ~= nil and deadHumanoid.Health == 0)
+local deadResource = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+local deadCooldown = player:GetAttribute(cooldownAttribute("power_strike"))
+-- Requests racing the death/respawn boundary cannot resurrect stale authority or throw.
+targetRequest:FireServer("unknown-session-entity", { forged = true })
+attackRequest:FireServer({ damage = 999999, critical = true, time = 0 })
+autoAttackModeRequest:FireServer(true, { target = "forged" })
+skillRequest:FireServer("power_strike", { damage = 999999, healing = 999999, resource = 999999, areaTargets = {} })
+targetRequest:FireServer("unknown-session-entity")
+attackRequest:FireServer()
+autoAttackModeRequest:FireServer(true)
+skillRequest:FireServer("power_strike")
+task.wait(0.05)
+assert(player.Character == deadCharacter, "dead-interval audit must run before CharacterAdded")
+assert(deadHumanoid.Health == 0)
+assert(player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Dead")
+assert(player:GetAttribute(CombatConfig.SelectedTargetAttribute) == nil)
+assert(player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false)
+assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == deadResource)
+assert(player:GetAttribute(cooldownAttribute("power_strike")) == deadCooldown)
 local canceledResult = waitForSkillResult(3, "death-canceled terminal result")
 assert(canceledResult.applied == false and canceledResult.reason == "Canceled")
 task.wait(powerStrike.windupSeconds + 0.1)
@@ -367,13 +444,30 @@ end)
 waitUntil("full respawn resource snapshot", 3, function()
 	return player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == CombatConfig.ArchetypeStats.knight.maximumResource
 end)
+assert(player:GetAttribute(CombatConfig.SelectedTargetAttribute) == nil)
+assert(player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false)
+assert(player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready")
 assert(player:GetAttribute(cooldownAttribute("power_strike")) == preDeathCooldownDeadline, "character replacement must preserve the authoritative cooldown deadline")
-prepareSkillTarget()
+local insufficientTargetId, insufficientHumanoid = prepareSkillTarget()
 local respawnResource = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
 skillRequest:FireServer("power_strike")
 task.wait(powerStrike.windupSeconds + 0.15)
 assert(#skillResults == 3, "CharacterAdded must not erase the accepted skill cooldown")
 assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == respawnResource)
+
+-- The server fixture empties the authoritative snapshot; a forged client cannot bypass cost.
+assert(skillRuntimeCommand:InvokeServer("SetResourceEmpty") == true)
+local insufficientHealth = insufficientHumanoid.Health
+local insufficientCooldown = player:GetAttribute(cooldownAttribute("shield_bash"))
+skillRequest:FireServer("shield_bash")
+task.wait(SkillDefinitions.shield_bash.windupSeconds + 0.1)
+assert(#skillResults == 3 and insufficientHumanoid.Health == insufficientHealth)
+assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == 0)
+assert(player:GetAttribute(cooldownAttribute("shield_bash")) == insufficientCooldown)
+assert(player:GetAttribute(CombatConfig.SelectedTargetAttribute) == insufficientTargetId)
+assert(player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready")
+assert(skillRuntimeCommand:InvokeServer("SetResourceFull") == true)
+task.wait(CombatConfig.SkillRequestMinIntervalSeconds)
 
 -- Knight control and toggle effects remain server-owned and use the same skill executor.
 local shieldBash = SkillDefinitions.shield_bash

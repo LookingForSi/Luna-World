@@ -12,6 +12,7 @@ local CombatRules = require(ReplicatedStorage.Shared.combat.CombatRules)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local DamageRules = require(ReplicatedStorage.Shared.combat.DamageRules)
 local ResourceRules = require(ReplicatedStorage.Shared.combat.ResourceRules)
+local RemoteRequestRules = require(ReplicatedStorage.Shared.combat.RemoteRequestRules)
 local CooldownRules = require(ReplicatedStorage.Shared.combat.CooldownRules)
 local SkillRules = require(ReplicatedStorage.Shared.combat.SkillRules)
 local SkillActionLifecycle = require(ReplicatedStorage.Shared.combat.SkillActionLifecycle)
@@ -66,6 +67,7 @@ local cooldownsByPlayer: { [Player]: CooldownRules.CooldownDeadlines } = {}
 local characterDeathConnections: { [Player]: RBXScriptConnection } = {}
 local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
 local targetLifecycleConnections: { [Player]: { RBXScriptConnection } } = {}
+local lastTargetRequestAtByPlayer: { [Player]: number } = {}
 local lastAttackRequestAtByPlayer: { [Player]: number } = {}
 local lastSkillRequestAtByPlayer: { [Player]: number } = {}
 local lastAutoAttackRequestAtByPlayer: { [Player]: number } = {}
@@ -391,19 +393,28 @@ end
 
 local function onSkillRequest(player: Player, ...: unknown): ()
 	local argumentCount = select("#", ...)
-	local skillId = select(1, ...)
+	local skillId = RemoteRequestRules.validateSkillRequest(argumentCount, (select(1, ...)))
 	-- Malformed/extra payloads are silently dropped to avoid turning forged spam
 	-- into a server-to-client presentation amplification path.
-	if argumentCount ~= 1 or typeof(skillId) ~= "string" then return end
-	local state = getState(player)
-	local definition = if typeof(skillId) == "string" then SkillDefinitions[skillId] else nil
-	local archetype = ArchetypeDefinitions[state.archetypeId]
+	if skillId == nil then return end
+	-- A well-shaped request from a dead/respawning actor must not materialize a
+	-- fresh state or overwrite the authoritative Dead replication.
+	if getLivingCharacterRoot(player) == nil then return end
+	local now = workspace:GetServerTimeNow()
+	if ActionRules.isRequestRateLimited(now, lastSkillRequestAtByPlayer[player], CombatConfig.SkillRequestMinIntervalSeconds) then
+		-- Rate-limited traffic is silent so hostile spam cannot amplify presentation events.
+		return
+	end
+	lastSkillRequestAtByPlayer[player] = now
+	local definition = SkillDefinitions[skillId]
+	local archetypeId = getArchetypeId(player)
+	local archetype = ArchetypeDefinitions[archetypeId]
 	local decision = SkillRules.validateRequest(
 		argumentCount,
 		skillId,
 		definition ~= nil,
 		if definition ~= nil then definition.archetypeId else nil,
-		state.archetypeId,
+		archetypeId,
 		definition ~= nil and archetype ~= nil and definition.id == archetype.basicAttackId
 	)
 	if not decision.accepted or definition == nil then
@@ -413,13 +424,6 @@ local function onSkillRequest(player: Player, ...: unknown): ()
 		})
 		return
 	end
-
-	local now = workspace:GetServerTimeNow()
-	if ActionRules.isRequestRateLimited(now, lastSkillRequestAtByPlayer[player], CombatConfig.SkillRequestMinIntervalSeconds) then
-		reject(player, { skillId = definition.id, outcome = "Rejected", reasonCode = "RateLimited" })
-		return
-	end
-	lastSkillRequestAtByPlayer[player] = now
 	acceptSkill(player, definition, now)
 end
 
@@ -527,6 +531,7 @@ local function clearPlayerState(player: Player, discardRuntimeState: boolean?): 
 	local state = statesByPlayer[player]
 	CombatEffectService.clearPlayerEffects(player, if state ~= nil then state.stats else nil)
 	statesByPlayer[player] = nil
+	lastTargetRequestAtByPlayer[player] = nil
 	lastAttackRequestAtByPlayer[player] = nil
 	lastSkillRequestAtByPlayer[player] = nil
 	lastAutoAttackRequestAtByPlayer[player] = nil
@@ -649,15 +654,19 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 end
 
 local function onTargetRequest(player: Player, ...: unknown): ()
-	if select("#", ...) ~= 1 then return end
-	local entityId = select(1, ...)
-	if typeof(entityId) ~= "string" then return end
+	local entityId = RemoteRequestRules.validateTargetRequest(select("#", ...), (select(1, ...)))
+	if entityId == nil then return end
 	-- The sole semantic clear command is one exact empty string. Other malformed
 	-- payloads remain no-ops and cannot overload target selection behavior.
 	if entityId == "" then
+		-- Clearing is prompt and idempotent so death/UI cleanup cannot be delayed by selection spam.
+		if targetsByPlayer[player] == nil then return end
 		clearTarget(player)
 		return
 	end
+	local now = workspace:GetServerTimeNow()
+	if ActionRules.isRequestRateLimited(now, lastTargetRequestAtByPlayer[player], CombatConfig.TargetRequestMinIntervalSeconds) then return end
+	lastTargetRequestAtByPlayer[player] = now
 	local playerRoot = getLivingCharacterRoot(player)
 	if string.sub(entityId, 1, 7) == "player:" then
 		-- Task 15 will expose cross-platform player selection; this is its server-authoritative boundary.
@@ -710,7 +719,9 @@ end
 
 local function onAttackRequest(player: Player, ...: unknown): ()
 	-- The Milestone 1 contract has no payload. This explicitly rejects legacy booleans and extra arguments.
-	if select("#", ...) ~= 0 then return end
+	if not RemoteRequestRules.validateAttackRequest(select("#", ...)) then return end
+	-- Check lifecycle before rate bookkeeping and before any path can call getState.
+	if getLivingCharacterRoot(player) == nil then return end
 	local now = workspace:GetServerTimeNow()
 	if ActionRules.isRequestRateLimited(now, lastAttackRequestAtByPlayer[player], CombatConfig.AttackRequestMinIntervalSeconds) then
 		reject(player, { outcome = "Rejected", reasonCode = "RateLimited" })
@@ -753,9 +764,8 @@ end
 
 local function onAutoAttackModeRequest(player: Player, ...: unknown): ()
 	local argumentCount = select("#", ...)
-	local enabled = select(1, ...)
-	if not AutoAttackRules.isExactBooleanRequest(argumentCount, enabled) then return end
-	local requestedEnabled = enabled :: boolean
+	local requestedEnabled = RemoteRequestRules.validateAutoAttackRequest(argumentCount, (select(1, ...)))
+	if requestedEnabled == nil then return end
 	local existingState = statesByPlayer[player]
 	if requestedEnabled == (existingState ~= nil and existingState.autoAttackEnabled) then return end
 
@@ -985,9 +995,28 @@ function CombatService.stop(): ()
 	table.clear(characterAddedConnections)
 	table.clear(targetLifecycleConnections)
 	table.clear(lastAttackRequestAtByPlayer)
+	table.clear(lastTargetRequestAtByPlayer)
 	table.clear(lastSkillRequestAtByPlayer)
 	table.clear(lastAutoAttackRequestAtByPlayer)
 	table.clear(mobAttackReadyAt)
+end
+
+-- Test-project-only server seam. It is unavailable in live servers and is never
+-- reachable through a client RemoteEvent.
+function CombatService._setResourceForTest(player: Player, current: number): ()
+	assert(
+		RunService:IsStudio() and ReplicatedStorage:FindFirstChild("TestRemotes") ~= nil,
+		"combat test seam is available only in the Studio test project"
+	)
+	local state = statesByPlayer[player]
+	assert(state ~= nil, "combat test seam requires initialized player state")
+	assert(current >= 0 and current <= state.stats.resource.maximum, "combat test resource is out of bounds")
+	state.stats.resource = {
+		resourceType = state.stats.resource.resourceType,
+		current = current,
+		maximum = state.stats.resource.maximum,
+	}
+	replicateResource(player, state)
 end
 
 return CombatService

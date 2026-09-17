@@ -11,6 +11,7 @@ local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local CombatEffectService = require(ServerScriptService.Server.services.CombatEffectService)
+local CombatService = require(ServerScriptService.Server.services.CombatService)
 local MobService = require(ServerScriptService.Server.services.MobService)
 local attackContractReady = ReplicatedStorage
 	:WaitForChild("TestRemotes")
@@ -324,6 +325,17 @@ return function(TestRunner)
 					assert(currentMob ~= nil and playerRoot ~= nil and playerRoot:IsA("BasePart"))
 					currentMob:PivotTo(playerRoot.CFrame * CFrame.new(0, 0, -200))
 					return true
+				elseif command == "TurnAwayFromTarget" or command == "TurnTowardTarget" then
+					local currentMob = lifecycleMob
+					local playerRoot = if player.Character ~= nil then player.Character:FindFirstChild("HumanoidRootPart") else nil
+					local actorHumanoid = if player.Character ~= nil then player.Character:FindFirstChildOfClass("Humanoid") else nil
+					local targetRoot = if currentMob ~= nil then currentMob:FindFirstChild("HumanoidRootPart") else nil
+					assert(playerRoot ~= nil and playerRoot:IsA("BasePart") and actorHumanoid ~= nil and targetRoot ~= nil and targetRoot:IsA("BasePart"))
+					local toward = Vector3.new(targetRoot.Position.X, playerRoot.Position.Y, targetRoot.Position.Z)
+					local lookAt = if command == "TurnTowardTarget" then toward else playerRoot.Position - (toward - playerRoot.Position)
+					actorHumanoid.AutoRotate = command == "TurnTowardTarget"
+					playerRoot.CFrame = CFrame.lookAt(playerRoot.Position, lookAt)
+					return true
 				elseif command == "KillActor" then
 					local actorHumanoid = if player.Character ~= nil then player.Character:FindFirstChildOfClass("Humanoid") else nil
 					assert(actorHumanoid ~= nil)
@@ -348,6 +360,14 @@ return function(TestRunner)
 					assert(actorHumanoid ~= nil and actorHumanoid.Health > 0)
 					actorHumanoid.Health = math.max(1, actorHumanoid.MaxHealth - 40)
 					return actorHumanoid.Health
+				elseif command == "SetResourceEmpty" then
+					CombatService._setResourceForTest(player, 0)
+					return true
+				elseif command == "SetResourceFull" then
+					local maximum = player:GetAttribute(CombatConfig.ResourceMaximumAttribute)
+					assert(typeof(maximum) == "number")
+					CombatService._setResourceForTest(player, maximum)
+					return true
 				elseif command == "RemoveTarget" then
 					local currentMob = lifecycleMob
 					assert(currentMob ~= nil)

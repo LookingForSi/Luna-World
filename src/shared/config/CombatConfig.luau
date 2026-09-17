@@ -11,6 +11,7 @@ return table.freeze({
 	MysticBasicAttackInterval = 1.5,
 	InputBufferSeconds = 0.2,
 	AttackRequestMinIntervalSeconds = 0.03,
+	TargetRequestMinIntervalSeconds = 0.03,
 	SkillRequestMinIntervalSeconds = 0.03,
 	AutoAttackRequestMinIntervalSeconds = 0.05,
 	AutoAttackRetryIntervalSeconds = 0.1,
