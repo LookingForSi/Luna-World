@@ -81,4 +81,26 @@ return function(TestRunner)
 		assert(EffectRules.resolveMovementSpeed(20, true) == 0)
 		assert(EffectRules.resolveMovementSpeed(20, false) == 20)
 	end)
+
+	TestRunner.run("rapid shot changes only basic attack speed and obeys the server cap", function()
+		assert(approximatelyEqual(EffectRules.resolveAttackSpeed(1, 0.25, 2, true), 1.25))
+		assert(EffectRules.resolveAttackSpeed(1.9, 0.25, 2, true) == 2)
+		assert(EffectRules.resolveAttackSpeed(1.9, 0.25, 2, false) == 1.9)
+	end)
+
+	TestRunner.run("snare is a nonstacking movement modifier recomputed from current base speed", function()
+		assert(EffectRules.resolveMovementSpeed(20, false, 0.4) == 12)
+		assert(EffectRules.resolveMovementSpeed(30, false, 0.4) == 18)
+		assert(EffectRules.resolveMovementSpeed(30, true, 0.4) == 0)
+		assert(EffectRules.resolveMovementSpeed(30, false, nil) == 30)
+	end)
+
+	TestRunner.run("temporary effect expiry rejects stale ABA callbacks", function()
+		local oldToken = {}
+		local replacementToken = {}
+		assert(EffectRules.isCurrentEffectToken(oldToken, oldToken, true))
+		assert(not EffectRules.isCurrentEffectToken(replacementToken, oldToken, true))
+		assert(not EffectRules.isCurrentEffectToken(oldToken, oldToken, false))
+		assert(not EffectRules.isCurrentEffectToken(nil, oldToken, true))
+	end)
 end

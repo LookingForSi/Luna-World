@@ -7,7 +7,10 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local CombatRules = require(ReplicatedStorage.Shared.combat.CombatRules)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
+local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
+local CombatEffectService = require(ServerScriptService.Server.services.CombatEffectService)
 local MobService = require(ServerScriptService.Server.services.MobService)
 local attackContractReady = ReplicatedStorage
 	:WaitForChild("TestRemotes")
@@ -150,6 +153,47 @@ return function(TestRunner)
 				return nil
 			end)
 
+			-- Exercise the real server effect service without stretching gameplay tuning
+			-- merely to make a refresh fit inside the production skill cooldown.
+			local rangerTuning = CombatConfig.ArchetypeStats.ranger
+			local effectStats: CombatTypes.CombatStatSnapshot = {
+				resource = { resourceType = "Focus", current = rangerTuning.maximumResource, maximum = rangerTuning.maximumResource },
+				resourceRegenerationPerSecond = rangerTuning.resourceRegenerationPerSecond,
+				physicalAttack = rangerTuning.physicalAttack,
+				magicAttack = rangerTuning.magicAttack,
+				basePhysicalDefense = rangerTuning.physicalDefense,
+				physicalDefense = rangerTuning.physicalDefense,
+				baseAttackSpeedMultiplier = rangerTuning.attackSpeedMultiplier,
+				attackSpeedMultiplier = rangerTuning.attackSpeedMultiplier,
+				criticalChance = rangerTuning.criticalChance,
+				baseMovementSpeed = rangerTuning.movementSpeed,
+				movementSpeed = rangerTuning.movementSpeed,
+			}
+			local canonicalSnareEffect = SkillDefinitions.snare.effect
+			assert(canonicalSnareEffect.kind == "MovementSlow")
+			local shortSnare = table.clone(SkillDefinitions.snare)
+			shortSnare.effect = {
+				kind = "MovementSlow",
+				magnitude = canonicalSnareEffect.magnitude,
+				durationSeconds = 0.12,
+				refreshDurationOnReapply = true,
+			}
+			local effectTarget: CombatEffectService.EffectTarget = { kind = "Mob", entityId = entityId, model = mob }
+			assert(CombatEffectService.execute(player, effectStats, shortSnare, effectTarget).applied)
+			task.wait(0.07)
+			assert(CombatEffectService.execute(player, effectStats, shortSnare, effectTarget).applied)
+			local recalculatedFixtureSpeed = MobDefinitions.grey_wolf.chaseSpeed + 3
+			assert(MobService.setMovementSpeed(entityId, recalculatedFixtureSpeed))
+			task.wait(0.07)
+			assert(
+				humanoid.WalkSpeed == recalculatedFixtureSpeed * (1 - canonicalSnareEffect.magnitude),
+				"old snare expiry must not clear the refreshed effect"
+			)
+			task.wait(0.07)
+			assert(humanoid.WalkSpeed == recalculatedFixtureSpeed, "refreshed snare must restore recalculated movement")
+			assert(mob:GetAttribute(CombatConfig.MobMovementSlowAttribute) == nil)
+			assert(MobService.setMovementSpeed(entityId, MobDefinitions.grey_wolf.chaseSpeed))
+
 			mobRootToRestore = mobRoot
 			originalMobPivot = mob:GetPivot()
 			originalMobRootAnchored = mobRoot.Anchored
@@ -220,11 +264,27 @@ return function(TestRunner)
 					assert(actorHumanoid ~= nil)
 					actorHumanoid.Health = 0
 					return true
+				elseif command == "KillTarget" then
+					local currentMob = lifecycleMob
+					local currentHumanoid = if currentMob ~= nil then currentMob:FindFirstChildOfClass("Humanoid") else nil
+					assert(currentHumanoid ~= nil)
+					currentHumanoid.Health = 0
+					return true
+				elseif command == "BecomeRanger" then
+					player:SetAttribute(CombatConfig.ArchetypeAttribute, "ranger")
+					player:LoadCharacter()
+					return true
+				elseif command == "RemoveTarget" then
+					local currentMob = lifecycleMob
+					assert(currentMob ~= nil)
+					currentMob:Destroy()
+					lifecycleMob = nil
+					return true
 				end
 				error("unsupported skill runtime command")
 			end
 			skillRuntimeStart:FireClient(player)
-			waitUntil("authoritative skill runtime client completion", 55, function(): boolean?
+			waitUntil("authoritative skill runtime client completion", 70, function(): boolean?
 				return if skillRuntimeCompletedByPlayer[player] then true else nil
 			end)
 		end)

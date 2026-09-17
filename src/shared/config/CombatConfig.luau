@@ -51,5 +51,8 @@ return table.freeze({
 	MobActionInterruptibleAttribute = "CombatActionInterruptible",
 	MobActionGenerationAttribute = "CombatActionGeneration",
 	MobMovementSpeedAttribute = "CombatMovementSpeed",
+	MobMovementSlowAttribute = "CombatMovementSlow",
+	MobMovementSlowUntilAttribute = "CombatMovementSlowUntil",
 	DefenseStanceActiveAttribute = "DefenseStanceActive",
+	RapidShotActiveAttribute = "RapidShotActive",
 })

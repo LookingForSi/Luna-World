@@ -117,7 +117,10 @@ function MobService.applyCalculatedMovement(model: Model): boolean
 	if humanoid == nil or typeof(baseMovementSpeed) ~= "number" then return false end
 	humanoid.WalkSpeed = EffectRules.resolveMovementSpeed(
 		baseMovementSpeed,
-		model:GetAttribute(CombatConfig.MobStunnedAttribute) == true
+		model:GetAttribute(CombatConfig.MobStunnedAttribute) == true,
+		if typeof(model:GetAttribute(CombatConfig.MobMovementSlowAttribute)) == "number"
+			then model:GetAttribute(CombatConfig.MobMovementSlowAttribute) :: number
+			else nil
 	)
 	return true
 end

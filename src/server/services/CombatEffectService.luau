@@ -31,8 +31,19 @@ type StanceState = {
 	character: Model,
 	stats: CombatTypes.CombatStatSnapshot,
 }
+type RapidShotState = {
+	attackSpeedIncrease: number,
+	character: Model,
+	stats: CombatTypes.CombatStatSnapshot,
+}
+type SlowState = {
+	ancestryConnection: RBXScriptConnection,
+	deathConnection: RBXScriptConnection,
+}
 local stunStates: { [Model]: StunState } = {}
 local stanceStates: { [Player]: StanceState } = {}
+local rapidShotStates: { [Player]: RapidShotState } = {}
+local slowStates: { [Model]: SlowState } = {}
 
 local function getMobRank(model: Model): CombatTypes.MobRank?
 	local mobId = model:GetAttribute("MobId")
@@ -98,6 +109,8 @@ function CombatEffectService.isImplemented(definition: CombatTypes.SkillDefiniti
 	return definition.effect.kind == "DirectDamage"
 		or definition.effect.kind == "ShieldBash"
 		or definition.effect.kind == "DefenseStance"
+		or definition.effect.kind == "AttackSpeedBuff"
+		or definition.effect.kind == "MovementSlow"
 end
 
 local function applyPlayerCalculatedStats(
@@ -115,6 +128,13 @@ local function applyPlayerCalculatedStats(
 	)
 	stats.physicalDefense = values.physicalDefense
 	stats.movementSpeed = values.movementSpeed
+	local rapidShot = rapidShotStates[player]
+	stats.attackSpeedMultiplier = EffectRules.resolveAttackSpeed(
+		stats.baseAttackSpeedMultiplier,
+		if rapidShot ~= nil then rapidShot.attackSpeedIncrease else 0,
+		CombatConfig.MaxAttackSpeedMultiplier,
+		rapidShot ~= nil
+	)
 	if stance ~= nil and player.Character == stance.character and stance.character.Parent ~= nil then
 		local humanoid = stance.character:FindFirstChildOfClass("Humanoid")
 		if humanoid ~= nil then humanoid.WalkSpeed = values.movementSpeed end
@@ -124,19 +144,74 @@ local function applyPlayerCalculatedStats(
 	end
 end
 
+local function clearRapidShot(player: Player, expectedState: RapidShotState?): ()
+	local state = rapidShotStates[player]
+	if expectedState ~= nil and not EffectRules.isCurrentEffectToken(state, expectedState, player.Character == expectedState.character) then
+		return
+	end
+	if state == nil then return end
+	rapidShotStates[player] = nil
+	if state.character.Parent ~= nil then state.character:SetAttribute(CombatConfig.RapidShotActiveAttribute, nil) end
+	applyPlayerCalculatedStats(player, state.stats, stanceStates[player])
+end
+
+local function clearSlow(model: Model, expectedState: SlowState?, restoreMovement: boolean): ()
+	local state = slowStates[model]
+	if expectedState ~= nil and not EffectRules.isCurrentEffectToken(state, expectedState, slowStates[model] == expectedState) then
+		return
+	end
+	if state == nil then return end
+	slowStates[model] = nil
+	state.ancestryConnection:Disconnect()
+	state.deathConnection:Disconnect()
+	model:SetAttribute(CombatConfig.MobMovementSlowAttribute, nil)
+	model:SetAttribute(CombatConfig.MobMovementSlowUntilAttribute, nil)
+	if model.Parent ~= nil then
+		if restoreMovement then MobService.applyCalculatedMovement(model) end
+	end
+end
+
+local function applySlow(model: Model, magnitude: number, durationSeconds: number): boolean
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if humanoid == nil or humanoid.Health <= 0 then return false end
+	local existing = slowStates[model]
+	local ancestryConnection = if existing ~= nil
+		then existing.ancestryConnection
+		else model.AncestryChanged:Connect(function(_, parent)
+			if parent == nil then clearSlow(model, slowStates[model], false) end
+		end)
+	local deathConnection = if existing ~= nil
+		then existing.deathConnection
+		else humanoid.Died:Connect(function() clearSlow(model, slowStates[model], false) end)
+	local state: SlowState = {
+		ancestryConnection = ancestryConnection,
+		deathConnection = deathConnection,
+	}
+	slowStates[model] = state
+	model:SetAttribute(CombatConfig.MobMovementSlowAttribute, magnitude)
+	model:SetAttribute(CombatConfig.MobMovementSlowUntilAttribute, workspace:GetServerTimeNow() + durationSeconds)
+	MobService.applyCalculatedMovement(model)
+	task.delay(durationSeconds, function()
+		clearSlow(model, state, true)
+	end)
+	return true
+end
+
 function CombatEffectService.recomputePlayerModifiers(player: Player, stats: CombatTypes.CombatStatSnapshot): ()
 	applyPlayerCalculatedStats(player, stats, stanceStates[player])
 end
 
 function CombatEffectService.clearPlayerEffects(player: Player, stats: CombatTypes.CombatStatSnapshot?): ()
 	local stance = stanceStates[player]
-	if stance == nil then return end
+	local rapidShot = rapidShotStates[player]
 	stanceStates[player] = nil
-	if stats ~= nil then
-		applyPlayerCalculatedStats(player, stats, nil)
-	end
-	if stance.character.Parent ~= nil then
+	rapidShotStates[player] = nil
+	if stats ~= nil then applyPlayerCalculatedStats(player, stats, nil) end
+	if stance ~= nil and stance.character.Parent ~= nil then
 		stance.character:SetAttribute(CombatConfig.DefenseStanceActiveAttribute, nil)
+	end
+	if rapidShot ~= nil and rapidShot.character.Parent ~= nil then
+		rapidShot.character:SetAttribute(CombatConfig.RapidShotActiveAttribute, nil)
 	end
 end
 
@@ -150,6 +225,15 @@ function CombatEffectService.stop(): ()
 		local stance = stanceStates[player]
 		CombatEffectService.clearPlayerEffects(player, if stance ~= nil then stance.stats else nil)
 	end
+	local rapidPlayers = {}
+	for player in rapidShotStates do table.insert(rapidPlayers, player) end
+	for _, player in rapidPlayers do
+		local rapidShot = rapidShotStates[player]
+		CombatEffectService.clearPlayerEffects(player, if rapidShot ~= nil then rapidShot.stats else nil)
+	end
+	local slowedModels = {}
+	for model in slowStates do table.insert(slowedModels, model) end
+	for _, model in slowedModels do clearSlow(model, slowStates[model], true) end
 end
 
 function CombatEffectService.execute(
@@ -178,6 +262,25 @@ function CombatEffectService.execute(
 		end
 		applyPlayerCalculatedStats(actor, stats, stanceStates[actor])
 		return { applied = true }
+	end
+	if effect.kind == "AttackSpeedBuff" then
+		if target.kind ~= "Player" or target.model ~= actor.Character then return { applied = false } end
+		local humanoid = target.model:FindFirstChildOfClass("Humanoid")
+		if humanoid == nil or humanoid.Health <= 0 then return { applied = false } end
+		local state: RapidShotState = {
+			attackSpeedIncrease = effect.magnitude,
+			character = target.model,
+			stats = stats,
+		}
+		rapidShotStates[actor] = state
+		target.model:SetAttribute(CombatConfig.RapidShotActiveAttribute, true)
+		applyPlayerCalculatedStats(actor, stats, stanceStates[actor])
+		task.delay(effect.durationSeconds, function() clearRapidShot(actor, state) end)
+		return { applied = true }
+	end
+	if effect.kind == "MovementSlow" then
+		if target.kind ~= "Mob" then return { applied = false } end
+		return { applied = applySlow(target.model, effect.magnitude, effect.durationSeconds) }
 	end
 
 	if target.kind ~= "Mob" or (effect.kind ~= "DirectDamage" and effect.kind ~= "ShieldBash") then

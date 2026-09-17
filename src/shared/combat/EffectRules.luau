@@ -70,9 +70,35 @@ function EffectRules.resolveDefenseStance(
 	}
 end
 
-function EffectRules.resolveMovementSpeed(baseMovementSpeed: number, immobilized: boolean): number
+function EffectRules.resolveAttackSpeed(
+	baseAttackSpeedMultiplier: number,
+	increase: number,
+	maximum: number,
+	active: boolean
+): number
+	assertFiniteNonnegative(baseAttackSpeedMultiplier, "baseAttackSpeedMultiplier")
+	assertFiniteNonnegative(increase, "increase")
+	assertFiniteNonnegative(maximum, "maximum")
+	if not active then return baseAttackSpeedMultiplier end
+	return math.min(baseAttackSpeedMultiplier * (1 + increase), maximum)
+end
+
+function EffectRules.isCurrentEffectToken(currentToken: unknown, expectedToken: unknown, identityMatches: boolean): boolean
+	return currentToken ~= nil and currentToken == expectedToken and identityMatches
+end
+
+function EffectRules.resolveMovementSpeed(
+	baseMovementSpeed: number,
+	immobilized: boolean,
+	slowMagnitude: number?
+): number
 	assertFiniteNonnegative(baseMovementSpeed, "baseMovementSpeed")
-	return if immobilized then 0 else baseMovementSpeed
+	if slowMagnitude ~= nil then
+		assertFiniteNonnegative(slowMagnitude, "slowMagnitude")
+		assert(slowMagnitude <= 1, "slowMagnitude must not exceed one")
+	end
+	if immobilized then return 0 end
+	return baseMovementSpeed * (1 - (slowMagnitude or 0))
 end
 
 return table.freeze(EffectRules)

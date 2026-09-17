@@ -83,6 +83,7 @@ local function createStatSnapshot(archetypeId: string): CombatTypes.CombatStatSn
 		magicAttack = configured.magicAttack,
 		basePhysicalDefense = configured.physicalDefense,
 		physicalDefense = configured.physicalDefense,
+		baseAttackSpeedMultiplier = configured.attackSpeedMultiplier,
 		attackSpeedMultiplier = configured.attackSpeedMultiplier,
 		criticalChance = configured.criticalChance,
 		baseMovementSpeed = configured.movementSpeed,

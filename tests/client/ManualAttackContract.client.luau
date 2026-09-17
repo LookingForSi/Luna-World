@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -398,6 +399,108 @@ waitUntil("respawn after defensive stance death", 5, function()
 		and character:GetAttribute(CombatConfig.DefenseStanceActiveAttribute) == nil
 		and livingHumanoid.WalkSpeed == baseWalkSpeed
 end)
+
+-- Ranger effects execute through the same authoritative action pipeline.
+local knightCharacter = player.Character
+assert(skillRuntimeCommand:InvokeServer("BecomeRanger") == true)
+waitUntil("ranger character and combat snapshot", 8, function()
+	return player.Character ~= nil
+		and player.Character ~= knightCharacter
+		and player:GetAttribute(CombatConfig.ArchetypeAttribute) == "ranger"
+		and player:GetAttribute(CombatConfig.ResourceTypeAttribute) == "Focus"
+		and player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == CombatConfig.ArchetypeStats.ranger.maximumResource
+end)
+
+local powerShot = SkillDefinitions.power_shot
+local powerShotEffect = powerShot.effect
+assert(powerShotEffect.kind == "DirectDamage")
+local _, powerShotHumanoid = prepareSkillTarget()
+local healthBeforePowerShot = powerShotHumanoid.Health
+skillRequest:FireServer("power_shot")
+task.wait(powerShot.windupSeconds * 0.5)
+assert(powerShotHumanoid.Health == healthBeforePowerShot, "power shot must not resolve before its windup")
+local powerShotResult = waitForSkillResult(8, "power shot terminal result")
+assert(powerShotResult.applied == true and powerShotResult.skillId == "power_shot")
+local healthAfterPowerShot = powerShotHumanoid.Health
+local powerShotDamage = healthBeforePowerShot - healthAfterPowerShot
+local rangerPhysicalAttack = CombatConfig.ArchetypeStats.ranger.physicalAttack
+assert(
+	math.abs(powerShotDamage - rangerPhysicalAttack * powerShotEffect.magnitude) < 0.001
+		or math.abs(powerShotDamage - rangerPhysicalAttack * powerShotEffect.magnitude * CombatConfig.CriticalDamageMultiplier) < 0.001,
+	"power shot must produce one server-calculated physical result"
+)
+task.wait(0.15)
+assert(#skillResults == 8 and powerShotHumanoid.Health == healthAfterPowerShot, "power shot must resolve exactly once")
+
+local rapidShot = SkillDefinitions.rapid_shot
+local rapidShotEffect = rapidShot.effect
+assert(rapidShotEffect.kind == "AttackSpeedBuff")
+skillRequest:FireServer("rapid_shot")
+local rapidShotResult = waitForSkillResult(9, "rapid shot terminal result")
+assert(rapidShotResult.applied == true and rapidShotResult.amount == nil)
+assert(player.Character ~= nil and player.Character:GetAttribute(CombatConfig.RapidShotActiveAttribute) == true)
+
+local rapidTargetId = prepareSkillTarget()
+local rapidAcceptedAt = workspace:GetServerTimeNow()
+attackRequest:FireServer()
+waitUntil("rapid shot basic attack deadline", 3, function()
+	local deadline = player:GetAttribute(CombatConfig.BasicAttackReadyAtAttribute)
+	return typeof(deadline) == "number" and deadline > rapidAcceptedAt
+end)
+local rapidReadyAt = player:GetAttribute(CombatConfig.BasicAttackReadyAtAttribute)
+assert(typeof(rapidReadyAt) == "number")
+local expectedRapidInterval = CombatConfig.RangerBasicAttackInterval / math.min(
+	CombatConfig.ArchetypeStats.ranger.attackSpeedMultiplier * (1 + rapidShotEffect.magnitude),
+	CombatConfig.MaxAttackSpeedMultiplier
+)
+assert(math.abs((rapidReadyAt - rapidAcceptedAt) - expectedRapidInterval) < 0.15, "rapid shot must accelerate basic cadence")
+waitUntil("rapid basic attack recovery", CombatConfig.RangerBasicAttackInterval + 1, function()
+	return player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready"
+end)
+waitUntil("rapid shot expiry", rapidShotEffect.durationSeconds + 1, function()
+	return player.Character ~= nil and player.Character:GetAttribute(CombatConfig.RapidShotActiveAttribute) == nil
+end)
+targetRequest:FireServer(rapidTargetId)
+local normalAcceptedAt = workspace:GetServerTimeNow()
+attackRequest:FireServer()
+waitUntil("restored ranger basic attack deadline", 3, function()
+	local deadline = player:GetAttribute(CombatConfig.BasicAttackReadyAtAttribute)
+	return typeof(deadline) == "number" and deadline > normalAcceptedAt
+end)
+local normalReadyAt = player:GetAttribute(CombatConfig.BasicAttackReadyAtAttribute)
+assert(typeof(normalReadyAt) == "number")
+assert(
+	math.abs((normalReadyAt - normalAcceptedAt) - CombatConfig.RangerBasicAttackInterval) < 0.15,
+	"rapid shot expiry must restore the recalculated base cadence"
+)
+waitUntil("normal ranger basic attack recovery", CombatConfig.RangerBasicAttackInterval + 1, function()
+	return player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready"
+end)
+
+local snare = SkillDefinitions.snare
+local snareEffect = snare.effect
+assert(snareEffect.kind == "MovementSlow")
+local _, snareHumanoid = prepareSkillTarget()
+local snareModel = snareHumanoid.Parent
+assert(snareModel ~= nil and snareModel:IsA("Model"))
+local healthBeforeSnare = snareHumanoid.Health
+skillRequest:FireServer("snare")
+assert(waitForSkillResult(10, "first snare terminal result").applied == true)
+assert(snareHumanoid.Health == healthBeforeSnare, "snare must not deal direct damage")
+assert(snareHumanoid.WalkSpeed == MobDefinitions.grey_wolf.chaseSpeed * (1 - snareEffect.magnitude))
+assert(skillRuntimeCommand:InvokeServer("KillTarget") == true)
+waitUntil("snare cleanup after target death", 3, function()
+	return snareModel:GetAttribute(CombatConfig.MobMovementSlowAttribute) == nil
+end)
+
+task.wait(snare.cooldownSeconds + 0.1)
+local _, removedTargetHumanoid = prepareSkillTarget()
+local removedTarget = removedTargetHumanoid.Parent
+assert(removedTarget ~= nil and removedTarget:IsA("Model"))
+skillRequest:FireServer("snare")
+assert(waitForSkillResult(11, "removal cleanup snare result").applied == true)
+assert(skillRuntimeCommand:InvokeServer("RemoveTarget") == true)
+waitUntil("snared target removal", 3, function() return removedTarget.Parent == nil end)
 
 skillRuntimeComplete:FireServer()
 print("[PASS] authoritative SkillRequest runtime contract")
