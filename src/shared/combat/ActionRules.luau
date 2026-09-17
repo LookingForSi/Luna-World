@@ -78,4 +78,28 @@ function ActionRules.canStartAction(actionState: "Ready" | "Windup" | "Recovery"
 	return actionState == "Ready"
 end
 
+function ActionRules.canResolveAttack(
+	expectedTargetId: string,
+	currentTargetId: string?,
+	actorAlive: boolean,
+	targetAlive: boolean,
+	inRange: boolean,
+	isFacing: boolean
+): boolean
+	return currentTargetId == expectedTargetId and actorAlive and targetAlive and inRange and isFacing
+end
+
+function ActionRules.shouldInvalidatePlayerState(
+	playerConnected: boolean,
+	actorAlive: boolean,
+	characterMatches: boolean
+): boolean
+	return not playerConnected or not actorAlive or not characterMatches
+end
+
+function ActionRules.isRequestRateLimited(now: number, lastRequestAt: number?, minimumIntervalSeconds: number): boolean
+	assert(minimumIntervalSeconds >= 0, "minimumIntervalSeconds must not be negative")
+	return lastRequestAt ~= nil and now - lastRequestAt < minimumIntervalSeconds
+end
+
 return table.freeze(ActionRules)

@@ -22,8 +22,4 @@ function CombatRules.canBasicAttack(
 	return targetAlive and ActionRules.isWithinRange(playerPosition, targetPosition, attackRange, 0)
 end
 
-function CombatRules.nextAttackIntent(authoritativeActive: boolean): boolean
-	return not authoritativeActive
-end
-
 return CombatRules

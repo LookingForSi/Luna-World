@@ -1,26 +1,27 @@
 --!strict
 
 local ContextActionService = game:GetService("ContextActionService")
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatInputController = {}
 
 local ACTION_NAME = "LunaBasicAttack"
-local localPlayer = Players.LocalPlayer
-local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
-local CombatRules = require(ReplicatedStorage.Shared.combat.CombatRules)
-local ATTACKING_ATTRIBUTE = CombatConfig.BasicAttackingAttribute
 local attackRequest = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("AttackRequest") :: RemoteEvent
+local attackHeld = false
 
 local function onAttackAction(_actionName: string, inputState: Enum.UserInputState, _inputObject: InputObject): Enum.ContextActionResult
+	if inputState == Enum.UserInputState.End or inputState == Enum.UserInputState.Cancel then
+		attackHeld = false
+		return Enum.ContextActionResult.Sink
+	end
 	if inputState ~= Enum.UserInputState.Begin then
 		return Enum.ContextActionResult.Pass
 	end
+	if attackHeld then return Enum.ContextActionResult.Sink end
 
-	-- The replicated attribute is server-owned, so local input cannot retain a stale toggle.
-	local attackActive = localPlayer:GetAttribute(ATTACKING_ATTRIBUTE) == true
-	attackRequest:FireServer(CombatRules.nextAttackIntent(attackActive))
+	-- Each Begin is a one-shot intent. The server owns cooldown and buffering.
+	attackHeld = true
+	attackRequest:FireServer()
 	return Enum.ContextActionResult.Sink
 end
 
@@ -37,6 +38,7 @@ function CombatInputController.start(): ()
 end
 
 function CombatInputController.stop(): ()
+	attackHeld = false
 	ContextActionService:UnbindAction(ACTION_NAME)
 end
 

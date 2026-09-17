@@ -50,4 +50,10 @@ return function(TestRunner)
 		assert(not ActionRules.canStartAction("Windup"))
 		assert(not ActionRules.canStartAction("Recovery"))
 	end)
+
+	TestRunner.run("request rate limit uses authoritative time and permits its boundary", function()
+		assert(not ActionRules.isRequestRateLimited(10, nil, 0.03))
+		assert(ActionRules.isRequestRateLimited(10.02, 10, 0.03))
+		assert(not ActionRules.isRequestRateLimited(10.03, 10, 0.03))
+	end)
 end

@@ -15,6 +15,9 @@ local attackContractReady = ReplicatedStorage
 local attackContractComplete = ReplicatedStorage
 	:WaitForChild("TestRemotes")
 	:WaitForChild("MilestoneZeroAttackContractComplete") :: RemoteEvent
+local lifecycleStart = ReplicatedStorage.TestRemotes:WaitForChild("ManualAttackLifecycleStart") :: RemoteEvent
+local lifecycleCommand = ReplicatedStorage.TestRemotes:WaitForChild("ManualAttackLifecycleCommand") :: RemoteFunction
+local lifecycleComplete = ReplicatedStorage.TestRemotes:WaitForChild("ManualAttackLifecycleComplete") :: RemoteEvent
 
 local function waitUntil<T>(description: string, timeoutSeconds: number, readValue: () -> T?): T
 	local deadline = os.clock() + timeoutSeconds
@@ -34,9 +37,12 @@ end
 local function findMilestoneZeroMob(): { model: Model, entityId: string }?
 	for _, child in workspace:GetChildren() do
 		local entityId = child:GetAttribute("EntityId")
+		local humanoid = child:FindFirstChildOfClass("Humanoid")
 		if child:IsA("Model")
 			and child:GetAttribute("MobId") == MobDefinitions.grey_wolf.id
 			and typeof(entityId) == "string"
+			and humanoid ~= nil
+			and humanoid.Health > 0
 		then
 			return { model = child, entityId = entityId }
 		end
@@ -80,11 +86,15 @@ return function(TestRunner)
 		assert(not CombatRules.canBasicAttack(origin, boundary, false, CombatConfig.BasicAttackRange))
 	end)
 
-	TestRunner.run("milestone zero mob death and XP reward happen once", function()
+	TestRunner.run("manual attack migration preserves one-time mob death and XP reward", function()
 		local completedByPlayer: { [Player]: boolean } = {}
+		local lifecycleCompletedByPlayer: { [Player]: boolean } = {}
 		local fixtureReady = false
 		local completionConnection: RBXScriptConnection? = attackContractComplete.OnServerEvent:Connect(function(sender)
 			completedByPlayer[sender] = true
+		end)
+		local lifecycleCompletionConnection = lifecycleComplete.OnServerEvent:Connect(function(sender)
+			lifecycleCompletedByPlayer[sender] = true
 		end)
 		attackContractReady.OnServerInvoke = function(_sender: Player): boolean
 			waitUntil("positioned server attack fixture", 12, function(): boolean?
@@ -97,6 +107,23 @@ return function(TestRunner)
 		local mobRootToRestore: BasePart? = nil
 		local originalMobPivot: CFrame? = nil
 		local originalMobRootAnchored: boolean? = nil
+		local lifecycleMob: Model? = nil
+
+		local function prepareLifecycleTarget(player: Player): string
+			local fixture = waitUntil("a respawned lifecycle wolf", 10, findMilestoneZeroMob)
+			lifecycleMob = fixture.model
+			local root = fixture.model:FindFirstChild("HumanoidRootPart")
+			local playerRoot = waitUntil("living player root for lifecycle", 10, function(): BasePart?
+				local character = player.Character
+				local humanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+				local candidate = if character ~= nil then character:FindFirstChild("HumanoidRootPart") else nil
+				return if humanoid ~= nil and humanoid.Health > 0 and candidate ~= nil and candidate:IsA("BasePart") then candidate else nil
+			end)
+			assert(root ~= nil and root:IsA("BasePart"))
+			root.Anchored = true
+			fixture.model:PivotTo(playerRoot.CFrame * CFrame.new(0, 0, -(CombatConfig.BasicAttackRange * 0.5)))
+			return fixture.entityId
+		end
 
 		local ok, failure = pcall(function()
 			local player, mob, entityId = waitForBootstrap()
@@ -138,6 +165,32 @@ return function(TestRunner)
 				return if player:GetAttribute("SessionXP") == expectedXP then true else nil
 			end)
 			assert(deathCount == 1, "mob death must be observed exactly once")
+
+			lifecycleCommand.OnServerInvoke = function(sender: Player, command: unknown): any
+				assert(sender == player)
+				if command == "PrepareTarget" then
+					return prepareLifecycleTarget(player)
+				elseif command == "KillTarget" then
+					local currentMob = lifecycleMob
+					local currentHumanoid = if currentMob ~= nil then currentMob:FindFirstChildOfClass("Humanoid") else nil
+					assert(currentHumanoid ~= nil)
+					currentHumanoid.Health = 0
+					return true
+				elseif command == "KillActor" then
+					local actorHumanoid = if player.Character ~= nil then player.Character:FindFirstChildOfClass("Humanoid") else nil
+					assert(actorHumanoid ~= nil)
+					actorHumanoid.Health = 0
+					return true
+				elseif command == "ReplaceCharacter" then
+					player:LoadCharacter()
+					return true
+				end
+				error("unsupported lifecycle command")
+			end
+			lifecycleStart:FireClient(player)
+			waitUntil("manual attack lifecycle client completion", 35, function(): boolean?
+				return if lifecycleCompletedByPlayer[player] then true else nil
+			end)
 		end)
 
 		if deathConnection ~= nil then
@@ -148,8 +201,10 @@ return function(TestRunner)
 			completionConnection:Disconnect()
 			completionConnection = nil
 		end
+		lifecycleCompletionConnection:Disconnect()
 		fixtureReady = false
 		attackContractReady.OnServerInvoke = nil
+		lifecycleCommand.OnServerInvoke = nil
 		if mobToCleanUp ~= nil and mobToCleanUp.Parent ~= nil and originalMobPivot ~= nil then
 			mobToCleanUp:PivotTo(originalMobPivot)
 		end

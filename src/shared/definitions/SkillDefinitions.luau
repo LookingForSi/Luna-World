@@ -7,7 +7,7 @@ local CombatConfig = require(script.Parent.Parent.config.CombatConfig)
 local definitions: { [string]: CombatTypes.SkillDefinition } = {
 	knight_basic_attack = {
 		id = "knight_basic_attack", archetypeId = "knight", displayName = "Базовая атака", targetType = "Enemy",
-		range = CombatConfig.BasicAttackRange, requiresFacing = true, windupSeconds = 0.2, cooldownSeconds = CombatConfig.BasicAttackInterval, cooldownGroup = "basic_attack",
+		range = CombatConfig.BasicAttackRange, requiresFacing = true, windupSeconds = CombatConfig.BasicAttackWindupSeconds, cooldownSeconds = CombatConfig.BasicAttackInterval, cooldownGroup = "basic_attack",
 		resourceType = "Stamina", resourceCost = 0, powerSource = "PhysicalAttack", effect = { kind = "DirectDamage", magnitude = 1 },
 		canCrit = true, canMoveDuringWindup = true, interruptible = false, presentationKey = "knight_basic_attack",
 	},

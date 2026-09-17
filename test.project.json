@@ -12,7 +12,10 @@
       "TestRemotes": {
         "$className": "Folder",
         "MilestoneZeroAttackContractReady": { "$className": "RemoteFunction" },
-        "MilestoneZeroAttackContractComplete": { "$className": "RemoteEvent" }
+        "MilestoneZeroAttackContractComplete": { "$className": "RemoteEvent" },
+        "ManualAttackLifecycleStart": { "$className": "RemoteEvent" },
+        "ManualAttackLifecycleCommand": { "$className": "RemoteFunction" },
+        "ManualAttackLifecycleComplete": { "$className": "RemoteEvent" }
       }
     },
     "ServerScriptService": {
@@ -22,8 +25,8 @@
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": { "$path": "src/client" },
-        "MilestoneZeroAttackContractTest": {
-          "$path": "tests/client/MilestoneZeroAttackContract.client.luau"
+        "ManualAttackContractTest": {
+          "$path": "tests/client/ManualAttackContract.client.luau"
         }
       }
     }
