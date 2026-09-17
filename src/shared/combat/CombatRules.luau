@@ -2,9 +2,7 @@
 
 local CombatRules = {}
 
-local function withinRange(a: Vector3, b: Vector3, range: number): boolean
-	return (a - b).Magnitude <= range
-end
+local ActionRules = require(script.Parent.ActionRules)
 
 function CombatRules.canSelectTarget(
 	playerPosition: Vector3,
@@ -12,7 +10,7 @@ function CombatRules.canSelectTarget(
 	targetAlive: boolean,
 	selectionRange: number
 ): boolean
-	return targetAlive and withinRange(playerPosition, targetPosition, selectionRange)
+	return targetAlive and ActionRules.isWithinRange(playerPosition, targetPosition, selectionRange, 0)
 end
 
 function CombatRules.canBasicAttack(
@@ -21,7 +19,7 @@ function CombatRules.canBasicAttack(
 	targetAlive: boolean,
 	attackRange: number
 ): boolean
-	return targetAlive and withinRange(playerPosition, targetPosition, attackRange)
+	return targetAlive and ActionRules.isWithinRange(playerPosition, targetPosition, attackRange, 0)
 end
 
 function CombatRules.nextAttackIntent(authoritativeActive: boolean): boolean
