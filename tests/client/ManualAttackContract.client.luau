@@ -730,15 +730,22 @@ end
 
 assert(player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false, "AUTO must default off")
 
--- Even a valid selected player is not an eligible AUTO context (future PvP contract).
+-- The solo runtime harness has no second player. Self-target selection is forbidden,
+-- while PvP/player-context AUTO rejection itself is covered by AutoAttackRulesSpec.
+-- Verify that a player-shaped self target cannot manufacture an AUTO-eligible context.
+targetRequest:FireServer("")
+waitUntil("cleared target before solo player-context AUTO check", 3, function()
+	return player:GetAttribute(CombatConfig.SelectedTargetAttribute) == nil
+end)
+task.wait(CombatConfig.TargetRequestMinIntervalSeconds)
 local selfTargetId = "player:" .. tostring(player.UserId)
 targetRequest:FireServer(selfTargetId)
-waitUntil("server-confirmed player target", 3, function()
-	return player:GetAttribute(CombatConfig.SelectedTargetAttribute) == selfTargetId
-end)
+task.wait(0.1)
+assert(player:GetAttribute(CombatConfig.SelectedTargetAttribute) == nil, "self target must not replace authoritative selection")
 autoAttackModeRequest:FireServer(true)
 task.wait(0.15)
-assert(player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false, "AUTO must reject a player target")
+assert(player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false, "AUTO must reject a non-PvE target context")
+task.wait(CombatConfig.TargetRequestMinIntervalSeconds)
 
 local autoTargetId, _autoTarget, autoHumanoid = prepareAutoTarget()
 local initialAutoHealth = autoHumanoid.Health
