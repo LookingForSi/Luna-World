@@ -76,7 +76,9 @@ local definitions: { [string]: CombatTypes.SkillDefinition } = {
 	flame_burst = {
 		id = "flame_burst", archetypeId = "mystic", displayName = "Огненная вспышка", targetType = "EnemyArea",
 		range = 45, requiresFacing = true, windupSeconds = 0.7, cooldownSeconds = 7, cooldownGroup = "flame_burst",
-		resourceType = "Mana", resourceCost = 30, powerSource = "MagicAttack", effect = { kind = "AreaDamage", magnitude = 1.1, radius = 10 },
+		resourceType = "Mana", resourceCost = 30, powerSource = "MagicAttack", effect = {
+			kind = "AreaDamage", magnitude = 1.1, radius = 10, maximumTargets = 4,
+		},
 		canCrit = true, canMoveDuringWindup = false, interruptible = true, presentationKey = "flame_burst",
 	},
 	heal = {

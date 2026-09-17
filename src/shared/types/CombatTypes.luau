@@ -52,7 +52,7 @@ export type DirectHealingEffect = {
 	magnitude: number,
 	selfCastWithoutFriendlyTarget: boolean,
 }
-export type AreaDamageEffect = { kind: "AreaDamage", magnitude: number, radius: number }
+export type AreaDamageEffect = { kind: "AreaDamage", magnitude: number, radius: number, maximumTargets: number }
 export type ShieldBashEffect = {
 	kind: "ShieldBash",
 	magnitude: number,

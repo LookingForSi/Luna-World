@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local EffectRules = require(ReplicatedStorage.Shared.combat.EffectRules)
+local SkillRules = require(ReplicatedStorage.Shared.combat.SkillRules)
 
 local MobService = {}
 
@@ -89,6 +90,43 @@ end
 
 function MobService.getByEntityId(entityId: string): Model?
 	return mobsByEntityId[entityId]
+end
+
+function MobService.selectLivingTargetsInRadius(
+	candidateModels: { [string]: Model },
+	center: Vector3,
+	radius: number,
+	maximumTargets: number
+): { { entityId: string, model: Model } }
+	assert(radius >= 0, "radius must be nonnegative")
+	assert(maximumTargets >= 1 and maximumTargets % 1 == 0, "maximumTargets must be a positive integer")
+	local candidates: { { entityId: string, model: Model, distance: number } } = {}
+	for entityId, model in candidateModels do
+		local humanoid = model:FindFirstChildOfClass("Humanoid")
+		local root = model:FindFirstChild("HumanoidRootPart")
+		if humanoid ~= nil and humanoid.Health > 0 and root ~= nil and root:IsA("BasePart") then
+			local distance = (root.Position - center).Magnitude
+			if distance <= radius then
+				table.insert(candidates, { entityId = entityId, model = model, distance = distance })
+			end
+		end
+	end
+	local selectionCandidates: { SkillRules.AreaCandidate } = {}
+	local modelsBySelectedId: { [string]: Model } = {}
+	for _, candidate in candidates do
+		table.insert(selectionCandidates, { entityId = candidate.entityId, distance = candidate.distance })
+		modelsBySelectedId[candidate.entityId] = candidate.model
+	end
+	local selectedIds = SkillRules.selectAreaTargets(selectionCandidates, radius, maximumTargets)
+	local targets: { { entityId: string, model: Model } } = {}
+	for _, entityId in selectedIds do
+		table.insert(targets, { entityId = entityId, model = modelsBySelectedId[entityId] :: Model })
+	end
+	return targets
+end
+
+function MobService.getLivingTargetsInRadius(center: Vector3, radius: number, maximumTargets: number): { { entityId: string, model: Model } }
+	return MobService.selectLivingTargetsInRadius(mobsByEntityId, center, radius, maximumTargets)
 end
 
 function MobService.applyDamage(entityId: string, amount: number, attacker: Player): boolean

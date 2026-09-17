@@ -109,6 +109,12 @@ return function(TestRunner)
 				assertFiniteNumber(definition.effect.durationSeconds, effectPrefix .. "durationSeconds")
 				assert(definition.effect.refreshDurationOnReapply == true, effectPrefix .. "must refresh on reapply")
 			end
+			if definition.effect.kind == "AreaDamage" then
+				assertFiniteNumber(definition.effect.radius, prefix .. "effect.radius")
+				assert(definition.effect.radius > 0, prefix .. "effect.radius must be positive")
+				assertFiniteNumber(definition.effect.maximumTargets, prefix .. "effect.maximumTargets")
+				assert(definition.effect.maximumTargets >= 1 and definition.effect.maximumTargets % 1 == 0, prefix .. "effect.maximumTargets must be a positive integer")
+			end
 		end
 	end)
 

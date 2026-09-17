@@ -502,5 +502,60 @@ assert(waitForSkillResult(11, "removal cleanup snare result").applied == true)
 assert(skillRuntimeCommand:InvokeServer("RemoveTarget") == true)
 waitUntil("snared target removal", 3, function() return removedTarget.Parent == nil end)
 
+-- Mystic damage, server-selected area damage, and self-healing use the same executor.
+local rangerCharacter = player.Character
+assert(skillRuntimeCommand:InvokeServer("BecomeMystic") == true)
+waitUntil("mystic character and combat snapshot", 8, function()
+	return player.Character ~= nil
+		and player.Character ~= rangerCharacter
+		and player:GetAttribute(CombatConfig.ArchetypeAttribute) == "mystic"
+		and player:GetAttribute(CombatConfig.ResourceTypeAttribute) == "Mana"
+		and player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == CombatConfig.ArchetypeStats.mystic.maximumResource
+end)
+
+local arcaneBolt = SkillDefinitions.arcane_bolt
+local arcaneEffect = arcaneBolt.effect
+assert(arcaneEffect.kind == "DirectDamage")
+local _, arcaneHumanoid = prepareSkillTarget()
+local healthBeforeArcane = arcaneHumanoid.Health
+skillRequest:FireServer("arcane_bolt")
+local arcaneResult = waitForSkillResult(12, "arcane bolt terminal result")
+assert(arcaneResult.applied == true and arcaneResult.skillId == "arcane_bolt")
+assert(arcaneHumanoid.Health < healthBeforeArcane, "arcane bolt must apply one magical result")
+local healthAfterArcane = arcaneHumanoid.Health
+task.wait(0.15)
+assert(#skillResults == 12 and arcaneHumanoid.Health == healthAfterArcane, "arcane bolt must resolve exactly once")
+
+local flameBurst = SkillDefinitions.flame_burst
+local flameEffect = flameBurst.effect
+assert(flameEffect.kind == "AreaDamage")
+local flameTargetId, flameHumanoid = prepareSkillTarget()
+local healthBeforeFlame = flameHumanoid.Health
+local selectedBeforeMalformedPlayer = player:GetAttribute(CombatConfig.SelectedTargetAttribute)
+targetRequest:FireServer("player:" .. string.rep("9", 512))
+targetRequest:FireServer("player:not-a-user-id")
+task.wait(0.1)
+assert(player:GetAttribute(CombatConfig.SelectedTargetAttribute) == selectedBeforeMalformedPlayer, "malformed player targets must not throw or mutate selection")
+-- A target list is an extra argument and invalidates the request instead of influencing the server area query.
+skillRequest:FireServer("flame_burst", { flameTargetId })
+task.wait(flameBurst.windupSeconds + 0.1)
+assert(#skillResults == 12 and flameHumanoid.Health == healthBeforeFlame)
+skillRequest:FireServer("flame_burst")
+local flameResult = waitForSkillResult(13, "flame burst terminal result")
+assert(flameResult.applied == true and flameResult.skillId == "flame_burst")
+assert(flameHumanoid.Health < healthBeforeFlame, "server-selected flame burst area must include its living center")
+
+local heal = SkillDefinitions.heal
+local healEffect = heal.effect
+assert(healEffect.kind == "DirectHealing" and not heal.canCrit)
+local damagedHealth = skillRuntimeCommand:InvokeServer("DamageActor")
+assert(typeof(damagedHealth) == "number")
+-- The selected hostile mob is not a healing target, so Heal must fall back to the Mystic.
+skillRequest:FireServer("heal")
+local healResult = waitForSkillResult(14, "self heal terminal result")
+assert(healResult.applied == true and healResult.skillId == "heal" and healResult.isCritical == false)
+local mysticHumanoid = if player.Character ~= nil then player.Character:FindFirstChildOfClass("Humanoid") else nil
+assert(mysticHumanoid ~= nil and mysticHumanoid.Health > damagedHealth and mysticHumanoid.Health <= mysticHumanoid.MaxHealth)
+
 skillRuntimeComplete:FireServer()
 print("[PASS] authoritative SkillRequest runtime contract")

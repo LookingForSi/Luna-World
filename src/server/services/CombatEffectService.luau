@@ -6,6 +6,7 @@ local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local DamageRules = require(ReplicatedStorage.Shared.combat.DamageRules)
 local EffectRules = require(ReplicatedStorage.Shared.combat.EffectRules)
+local SkillRules = require(ReplicatedStorage.Shared.combat.SkillRules)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local MobService = require(script.Parent.MobService)
 
@@ -22,6 +23,10 @@ export type EffectResult = {
 	amount: number?,
 	isCritical: boolean?,
 }
+
+type AreaTarget = { entityId: string, model: Model }
+type AreaQuery = (Vector3, number, number) -> { AreaTarget }
+type AreaDamageApplication = (string, number, Player) -> boolean
 
 local criticalRandom = Random.new()
 type StunState = { generation: number, ancestryConnection: RBXScriptConnection }
@@ -107,6 +112,8 @@ end
 
 function CombatEffectService.isImplemented(definition: CombatTypes.SkillDefinition): boolean
 	return definition.effect.kind == "DirectDamage"
+		or definition.effect.kind == "DirectHealing"
+		or definition.effect.kind == "AreaDamage"
 		or definition.effect.kind == "ShieldBash"
 		or definition.effect.kind == "DefenseStance"
 		or definition.effect.kind == "AttackSpeedBuff"
@@ -236,6 +243,43 @@ function CombatEffectService.stop(): ()
 	for _, model in slowedModels do clearSlow(model, slowStates[model], true) end
 end
 
+function CombatEffectService.executeAreaDamage(
+	actor: Player,
+	stats: CombatTypes.CombatStatSnapshot,
+	definition: CombatTypes.SkillDefinition,
+	centerModel: Model,
+	queryTargets: AreaQuery?,
+	applyDamage: AreaDamageApplication?,
+	roll: (() -> number)?
+): EffectResult
+	local effect = definition.effect
+	if effect.kind ~= "AreaDamage" then return { applied = false } end
+	local centerRoot = centerModel:FindFirstChild("HumanoidRootPart")
+	if centerRoot == nil or not centerRoot:IsA("BasePart") then return { applied = false } end
+	local authoritativeQuery = queryTargets or MobService.getLivingTargetsInRadius
+	local authoritativeApplication = applyDamage or MobService.applyDamage
+	local targets = authoritativeQuery(centerRoot.Position, effect.radius, effect.maximumTargets)
+	local appliedCount = 0
+	local totalAmount = 0
+	local anyCritical = false
+	for _, areaTarget in targets do
+		local damage = DamageRules.resolve(
+			DamageRules.getBaseAmount(stats.magicAttack, effect.magnitude),
+			effect.kind,
+			definition.canCrit,
+			stats.criticalChance,
+			CombatConfig.CriticalDamageMultiplier,
+			roll or function(): number return criticalRandom:NextNumber() end
+		)
+		if authoritativeApplication(areaTarget.entityId, damage.amount, actor) then
+			appliedCount += 1
+			totalAmount += damage.amount
+			anyCritical = anyCritical or damage.isCritical
+		end
+	end
+	return { applied = appliedCount > 0, amount = if appliedCount > 0 then totalAmount else nil, isCritical = anyCritical }
+end
+
 function CombatEffectService.execute(
 	actor: Player,
 	stats: CombatTypes.CombatStatSnapshot,
@@ -243,6 +287,25 @@ function CombatEffectService.execute(
 	target: EffectTarget
 ): EffectResult
 	local effect = definition.effect
+	if effect.kind == "DirectHealing" then
+		if target.kind ~= "Player" then return { applied = false } end
+		local humanoid = target.model:FindFirstChildOfClass("Humanoid")
+		if humanoid == nil then return { applied = false } end
+		local healedHealth = SkillRules.resolveHealing(
+			humanoid.Health,
+			humanoid.MaxHealth,
+			DamageRules.getBaseAmount(stats.magicAttack, effect.magnitude),
+			humanoid.Health > 0
+		)
+		if healedHealth == nil then return { applied = false } end
+		local amount = healedHealth - humanoid.Health
+		humanoid.Health = healedHealth
+		return { applied = true, amount = amount, isCritical = false }
+	end
+	if effect.kind == "AreaDamage" then
+		if target.kind ~= "Mob" then return { applied = false } end
+		return CombatEffectService.executeAreaDamage(actor, stats, definition, target.model)
+	end
 	if effect.kind == "DefenseStance" then
 		if target.kind ~= "Player" or target.model ~= actor.Character then return { applied = false } end
 		local humanoid = target.model:FindFirstChildOfClass("Humanoid")

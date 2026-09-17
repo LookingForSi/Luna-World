@@ -72,6 +72,67 @@ local function waitForBootstrap(): (Player, Model, string)
 end
 
 return function(TestRunner)
+	TestRunner.run("flame burst server seam selects nearest living targets and applies each once", function()
+		local function makeCandidate(entityId: string, distance: number, alive: boolean): Model
+			local model = Instance.new("Model")
+			model.Name = entityId
+			local root = Instance.new("Part")
+			root.Name = "HumanoidRootPart"
+			root.Position = Vector3.new(distance, 0, 0)
+			root.Parent = model
+			local humanoid = Instance.new("Humanoid")
+			humanoid.MaxHealth = 100
+			humanoid.Health = if alive then 100 else 0
+			humanoid.Parent = model
+			return model
+		end
+
+		local candidates: { [string]: Model } = {
+			center = makeCandidate("center", 0, true),
+			near_1 = makeCandidate("near_1", 1, true),
+			near_2 = makeCandidate("near_2", 2, true),
+			near_3 = makeCandidate("near_3", 3, true),
+			n_plus_one = makeCandidate("n_plus_one", 4, true),
+			outside = makeCandidate("outside", 11, true),
+			dead = makeCandidate("dead", 0.5, false),
+		}
+		local config = CombatConfig.ArchetypeStats.mystic
+		local stats: CombatTypes.CombatStatSnapshot = {
+			resource = { resourceType = "Mana", current = config.maximumResource, maximum = config.maximumResource },
+			resourceRegenerationPerSecond = config.resourceRegenerationPerSecond,
+			physicalAttack = config.physicalAttack,
+			magicAttack = config.magicAttack,
+			basePhysicalDefense = config.physicalDefense,
+			physicalDefense = config.physicalDefense,
+			baseAttackSpeedMultiplier = config.attackSpeedMultiplier,
+			attackSpeedMultiplier = config.attackSpeedMultiplier,
+			criticalChance = 0,
+			baseMovementSpeed = config.movementSpeed,
+			movementSpeed = config.movementSpeed,
+		}
+		local applied: { [string]: number } = {}
+		local actor = waitUntil("an area damage test player", 10, findPlayer)
+		local result = CombatEffectService.executeAreaDamage(
+			actor,
+			stats,
+			SkillDefinitions.flame_burst,
+			candidates.center,
+			function(center: Vector3, radius: number, maximumTargets: number)
+				return MobService.selectLivingTargetsInRadius(candidates, center, radius, maximumTargets)
+			end,
+			function(entityId: string, _amount: number, attacker: Player): boolean
+				assert(attacker == actor)
+				applied[entityId] = (applied[entityId] or 0) + 1
+				return true
+			end,
+			function(): number return 0.5 end
+		)
+		assert(result.applied)
+		assert(applied.center == 1 and applied.near_1 == 1 and applied.near_2 == 1 and applied.near_3 == 1)
+		assert(applied.n_plus_one == nil and applied.outside == nil and applied.dead == nil)
+		for _, model in candidates do model:Destroy() end
+	end)
+
 	TestRunner.run("milestone zero target selection requires a living target in range", function()
 		local origin = Vector3.zero
 		local boundary = Vector3.new(CombatConfig.TargetSelectionRange, 0, 0)
@@ -274,6 +335,15 @@ return function(TestRunner)
 					player:SetAttribute(CombatConfig.ArchetypeAttribute, "ranger")
 					player:LoadCharacter()
 					return true
+				elseif command == "BecomeMystic" then
+					player:SetAttribute(CombatConfig.ArchetypeAttribute, "mystic")
+					player:LoadCharacter()
+					return true
+				elseif command == "DamageActor" then
+					local actorHumanoid = if player.Character ~= nil then player.Character:FindFirstChildOfClass("Humanoid") else nil
+					assert(actorHumanoid ~= nil and actorHumanoid.Health > 0)
+					actorHumanoid.Health = math.max(1, actorHumanoid.MaxHealth - 40)
+					return actorHumanoid.Health
 				elseif command == "RemoveTarget" then
 					local currentMob = lifecycleMob
 					assert(currentMob ~= nil)

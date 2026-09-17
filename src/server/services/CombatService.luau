@@ -44,7 +44,7 @@ local statesByPlayer: { [Player]: PlayerCombatState } = {}
 local cooldownsByPlayer: { [Player]: CooldownRules.CooldownDeadlines } = {}
 local characterDeathConnections: { [Player]: RBXScriptConnection } = {}
 local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
-local targetDeathConnections: { [Player]: RBXScriptConnection } = {}
+local targetLifecycleConnections: { [Player]: { RBXScriptConnection } } = {}
 local lastAttackRequestAtByPlayer: { [Player]: number } = {}
 local lastSkillRequestAtByPlayer: { [Player]: number } = {}
 local started = false
@@ -127,6 +127,13 @@ local function getState(player: Player): PlayerCombatState
 	return state
 end
 
+local function getPlayerByCanonicalTargetId(targetId: string): Player?
+	for _, candidate in Players:GetPlayers() do
+		if targetId == "player:" .. tostring(candidate.UserId) then return candidate end
+	end
+	return nil
+end
+
 local function resolveSkillTarget(
 	player: Player,
 	definition: CombatTypes.SkillDefinition,
@@ -142,9 +149,34 @@ local function resolveSkillTarget(
 	end
 	if definition.targetType == "Friendly" then
 		local effect = definition.effect
-		if effect.kind == "DirectHealing" and effect.selfCastWithoutFriendlyTarget then
+		local selectedTargetId = targetsByPlayer[player]
+		local selectedPlayer: Player? = nil
+		local selectedRoot: BasePart? = nil
+		local selectedIsInRange = false
+		if selectedTargetId ~= nil then
+			selectedPlayer = getPlayerByCanonicalTargetId(selectedTargetId)
+			selectedRoot = if selectedPlayer ~= nil then getLivingCharacterRoot(selectedPlayer) else nil
+			selectedIsInRange = selectedRoot ~= nil and ActionRules.isWithinRange(
+				playerRoot.Position,
+				selectedRoot.Position,
+				definition.range,
+				CombatConfig.RangeTolerance
+			)
+		end
+		local resolution = if effect.kind == "DirectHealing" then SkillRules.resolveFriendlyTarget(
+			true,
+			selectedPlayer ~= nil,
+			selectedRoot ~= nil,
+			selectedIsInRange,
+			effect.selfCastWithoutFriendlyTarget
+		) else nil
+		if resolution == "Selected" and selectedTargetId ~= nil and selectedPlayer ~= nil and selectedPlayer.Character ~= nil then
+			-- Every in-session player is friendly in v0.1; parties and PvP allegiance are outside this milestone.
+			return { kind = "Player", entityId = selectedTargetId, model = selectedPlayer.Character }
+		end
+		if resolution == "Self" then
 			if not SkillRules.isTargetContextAllowed(definition.targetType, "Player", true) then return nil end
-			return { kind = "Player", entityId = tostring(player.UserId), model = character :: Model }
+			return { kind = "Player", entityId = "player:" .. tostring(player.UserId), model = character :: Model }
 		end
 		return nil
 	end
@@ -208,7 +240,14 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 		if currentState == nil or currentState ~= state or currentState.generation ~= generation then return end
 		local resolvedTarget = resolveSkillTarget(player, definition, acceptedCharacter)
 		local effectResult: CombatEffectService.EffectResult = { applied = false }
-		if resolvedTarget ~= nil and resolvedTarget.kind == target.kind and resolvedTarget.entityId == target.entityId then
+		if resolvedTarget ~= nil and SkillRules.isAcceptedTargetIdentityCurrent(
+			target.kind,
+			target.entityId,
+			target.model,
+			resolvedTarget.kind,
+			resolvedTarget.entityId,
+			resolvedTarget.model
+		) then
 			local executionSucceeded, executedResult = pcall(
 				CombatEffectService.execute,
 				player,
@@ -344,9 +383,11 @@ local function cancelPendingAction(player: Player, discardSkillResult: boolean?)
 end
 
 local function clearTarget(player: Player): ()
-	local connection = targetDeathConnections[player]
-	if connection ~= nil then connection:Disconnect() end
-	targetDeathConnections[player] = nil
+	local connections = targetLifecycleConnections[player]
+	if connections ~= nil then
+		for _, connection in connections do connection:Disconnect() end
+	end
+	targetLifecycleConnections[player] = nil
 	targetsByPlayer[player] = nil
 	local state = statesByPlayer[player]
 	if state ~= nil then
@@ -451,6 +492,34 @@ end
 local function onTargetRequest(player: Player, entityId: unknown): ()
 	if typeof(entityId) ~= "string" then return end
 	local playerRoot = getLivingCharacterRoot(player)
+	if string.sub(entityId, 1, 7) == "player:" then
+		-- Task 15 will expose cross-platform player selection; this is its server-authoritative boundary.
+		local selectedPlayer = getPlayerByCanonicalTargetId(entityId)
+		local targetRoot = if selectedPlayer ~= nil then getLivingCharacterRoot(selectedPlayer) else nil
+		if playerRoot == nil or selectedPlayer == nil or targetRoot == nil then return end
+		if not CombatRules.canSelectTarget(playerRoot.Position, targetRoot.Position, true, CombatConfig.TargetSelectionRange) then return end
+		clearTarget(player)
+		targetsByPlayer[player] = entityId
+		setReplicatedTarget(player, entityId)
+		local selectedCharacter = selectedPlayer.Character
+		local humanoid = if selectedCharacter ~= nil then selectedCharacter:FindFirstChildOfClass("Humanoid") else nil
+		if humanoid ~= nil then
+			local connections: { RBXScriptConnection } = {}
+			table.insert(connections, humanoid.Died:Connect(function()
+				if targetsByPlayer[player] == entityId then clearTarget(player) end
+			end))
+			table.insert(connections, selectedPlayer.CharacterAdded:Connect(function()
+				if targetsByPlayer[player] == entityId then clearTarget(player) end
+			end))
+			if selectedCharacter ~= nil then
+				table.insert(connections, selectedCharacter.AncestryChanged:Connect(function(_, parent)
+					if parent == nil and targetsByPlayer[player] == entityId then clearTarget(player) end
+				end))
+			end
+			targetLifecycleConnections[player] = connections
+		end
+		return
+	end
 	local target = MobService.getByEntityId(entityId)
 	local targetRoot = if target ~= nil then getLivingMobRoot(target) else nil
 	if playerRoot == nil or target == nil or targetRoot == nil then return end
@@ -461,9 +530,14 @@ local function onTargetRequest(player: Player, entityId: unknown): ()
 	setReplicatedTarget(player, entityId)
 	local humanoid = target:FindFirstChildOfClass("Humanoid")
 	if humanoid ~= nil then
-		targetDeathConnections[player] = humanoid.Died:Connect(function()
+		local connections: { RBXScriptConnection } = {}
+		table.insert(connections, humanoid.Died:Connect(function()
 			if targetsByPlayer[player] == entityId then clearTarget(player) end
-		end)
+		end))
+		table.insert(connections, target.AncestryChanged:Connect(function(_, parent)
+			if parent == nil and targetsByPlayer[player] == entityId then clearTarget(player) end
+		end))
+		targetLifecycleConnections[player] = connections
 	end
 end
 
@@ -563,7 +637,9 @@ function CombatService.stop(): ()
 	end
 	for _, connection in characterDeathConnections do connection:Disconnect() end
 	for _, connection in characterAddedConnections do connection:Disconnect() end
-	for _, connection in targetDeathConnections do connection:Disconnect() end
+	for _, connections in targetLifecycleConnections do
+		for _, connection in connections do connection:Disconnect() end
+	end
 	for _, player in Players:GetPlayers() do
 		local state = statesByPlayer[player]
 		CombatEffectService.clearPlayerEffects(player, if state ~= nil then state.stats else nil)
@@ -582,7 +658,7 @@ function CombatService.stop(): ()
 	table.clear(cooldownsByPlayer)
 	table.clear(characterDeathConnections)
 	table.clear(characterAddedConnections)
-	table.clear(targetDeathConnections)
+	table.clear(targetLifecycleConnections)
 	table.clear(lastAttackRequestAtByPlayer)
 	table.clear(lastSkillRequestAtByPlayer)
 end
