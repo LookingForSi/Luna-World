@@ -45,6 +45,8 @@ return table.freeze({
 	ResourceTypeAttribute = "CombatResourceType",
 	ResourceCurrentAttribute = "CombatResourceCurrent",
 	ResourceMaximumAttribute = "CombatResourceMaximum",
+	-- Skill identifiers are appended to this prefix. Values are authoritative server-time deadlines.
+	SkillCooldownAttributePrefix = "CombatSkillCooldown_",
 	MobStunnedAttribute = "CombatStunned",
 	MobStunnedUntilAttribute = "CombatStunnedUntil",
 	MobActionStateAttribute = "CombatActionState",

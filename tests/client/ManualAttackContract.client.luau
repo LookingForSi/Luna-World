@@ -35,6 +35,10 @@ skillResult.OnClientEvent:Connect(function(result: unknown)
 	table.insert(skillResults, result)
 end)
 
+local function cooldownAttribute(skillId: string): string
+	return CombatConfig.SkillCooldownAttributePrefix .. skillId
+end
+
 local function waitUntil(description: string, timeoutSeconds: number, predicate: () -> boolean): ()
 	local deadline = os.clock() + timeoutSeconds
 	while not predicate() and os.clock() < deadline do
@@ -283,6 +287,8 @@ end)
 local firstSkillResult = waitForSkillResult(1, "one direct skill result")
 assert(typeof(firstSkillResult.actionId) == "string" and firstSkillResult.actionId ~= "")
 assert(firstSkillResult.skillId == "power_strike" and firstSkillResult.applied == true)
+local acceptedCooldownDeadline = player:GetAttribute(cooldownAttribute("power_strike"))
+assert(typeof(acceptedCooldownDeadline) == "number" and acceptedCooldownDeadline > workspace:GetServerTimeNow(), "server must replicate the accepted skill cooldown deadline")
 assert(player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready", "state must reset before result delivery")
 local resourceAfterAcceptedSkill = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
 assert(typeof(resourceAfterAcceptedSkill) == "number")
@@ -321,6 +327,8 @@ skillRequest:FireServer("power_strike")
 waitUntil("pre-death skill windup", 3, function()
 	return player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Windup"
 end)
+local preDeathCooldownDeadline = player:GetAttribute(cooldownAttribute("power_strike"))
+assert(typeof(preDeathCooldownDeadline) == "number" and preDeathCooldownDeadline > workspace:GetServerTimeNow())
 assert(skillRuntimeCommand:InvokeServer("KillActor") == true)
 local canceledResult = waitForSkillResult(3, "death-canceled terminal result")
 assert(canceledResult.applied == false and canceledResult.reason == "Canceled")
@@ -335,6 +343,7 @@ end)
 waitUntil("full respawn resource snapshot", 3, function()
 	return player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == CombatConfig.ArchetypeStats.knight.maximumResource
 end)
+assert(player:GetAttribute(cooldownAttribute("power_strike")) == preDeathCooldownDeadline, "character replacement must preserve the authoritative cooldown deadline")
 prepareSkillTarget()
 local respawnResource = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
 skillRequest:FireServer("power_strike")
@@ -355,8 +364,11 @@ local shieldResult = waitForSkillResult(4, "shield bash terminal result")
 assert(shieldResult.applied == true and shieldResult.targetEntityId == shieldTargetId)
 assert(shieldTargetHumanoid.Health < healthBeforeShieldBash, "shield bash must apply one physical hit")
 assert(shieldTarget:GetAttribute(CombatConfig.MobStunnedAttribute) == true, "ordinary mob must be stunned")
-task.wait(shieldBashEffect.durationSeconds + 0.1)
-assert(shieldTarget:GetAttribute(CombatConfig.MobStunnedAttribute) == nil, "stun must expire")
+assert(skillRuntimeCommand:InvokeServer("KillTarget") == true)
+waitUntil("stun cleanup on target death", 2, function()
+	return shieldTarget:GetAttribute(CombatConfig.MobStunnedAttribute) == nil
+		and shieldTarget:GetAttribute(CombatConfig.MobStunnedUntilAttribute) == nil
+end)
 
 local defensiveStance = SkillDefinitions.defensive_stance
 local defensiveStanceEffect = defensiveStance.effect

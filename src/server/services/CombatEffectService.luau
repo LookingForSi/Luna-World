@@ -29,7 +29,11 @@ type AreaQuery = (Vector3, number, number) -> { AreaTarget }
 type AreaDamageApplication = (string, number, Player) -> boolean
 
 local criticalRandom = Random.new()
-type StunState = { generation: number, ancestryConnection: RBXScriptConnection }
+type StunState = {
+	generation: number,
+	ancestryConnection: RBXScriptConnection,
+	deathConnection: RBXScriptConnection,
+}
 type StanceState = {
 	defenseIncrease: number,
 	movementSpeedMultiplier: number,
@@ -64,6 +68,7 @@ local function clearStun(model: Model, expectedGeneration: number?, restoreMovem
 	if state == nil or (expectedGeneration ~= nil and state.generation ~= expectedGeneration) then return end
 	stunStates[model] = nil
 	state.ancestryConnection:Disconnect()
+	state.deathConnection:Disconnect()
 	if model.Parent ~= nil then
 		model:SetAttribute(CombatConfig.MobStunnedAttribute, nil)
 		model:SetAttribute(CombatConfig.MobStunnedUntilAttribute, nil)
@@ -81,7 +86,16 @@ local function applyStun(model: Model, durationSeconds: number): boolean
 		else model.AncestryChanged:Connect(function(_, parent)
 			if parent == nil then clearStun(model, nil, false) end
 		end)
-	stunStates[model] = { generation = generation, ancestryConnection = ancestryConnection }
+	local deathConnection = if existingStun ~= nil
+		then existingStun.deathConnection
+		else humanoid.Died:Connect(function()
+			clearStun(model, nil, false)
+		end)
+	stunStates[model] = {
+		generation = generation,
+		ancestryConnection = ancestryConnection,
+		deathConnection = deathConnection,
+	}
 	local actionGeneration = model:GetAttribute(CombatConfig.MobActionGenerationAttribute)
 	model:SetAttribute(
 		CombatConfig.MobActionGenerationAttribute,

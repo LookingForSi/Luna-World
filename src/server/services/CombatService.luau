@@ -60,6 +60,7 @@ local ARCHETYPE_ATTRIBUTE = CombatConfig.ArchetypeAttribute
 local RESOURCE_TYPE_ATTRIBUTE = CombatConfig.ResourceTypeAttribute
 local RESOURCE_CURRENT_ATTRIBUTE = CombatConfig.ResourceCurrentAttribute
 local RESOURCE_MAXIMUM_ATTRIBUTE = CombatConfig.ResourceMaximumAttribute
+local SKILL_COOLDOWN_ATTRIBUTE_PREFIX = CombatConfig.SkillCooldownAttributePrefix
 
 local getLivingCharacterRoot: (Player) -> BasePart?
 local getLivingMobRoot: (Model) -> BasePart?
@@ -98,11 +99,22 @@ local function replicateResource(player: Player, state: PlayerCombatState): ()
 	player:SetAttribute(RESOURCE_MAXIMUM_ATTRIBUTE, state.stats.resource.maximum)
 end
 
+local function getSkillCooldownAttribute(skillId: string): string
+	return SKILL_COOLDOWN_ATTRIBUTE_PREFIX .. skillId
+end
+
+local function replicateCooldowns(player: Player, state: PlayerCombatState): ()
+	for skillId, definition in SkillDefinitions do
+		player:SetAttribute(getSkillCooldownAttribute(skillId), state.cooldowns[definition.cooldownGroup] or 0)
+	end
+end
+
 local function replicateState(player: Player, state: PlayerCombatState): ()
 	player:SetAttribute(ACTION_STATE_ATTRIBUTE, state.actionState)
 	player:SetAttribute(READY_AT_ATTRIBUTE, state.readyAt)
 	player:SetAttribute(BUFFERED_ATTRIBUTE, state.bufferedTargetId ~= nil)
 	replicateResource(player, state)
+	replicateCooldowns(player, state)
 end
 
 local function getState(player: Player): PlayerCombatState
@@ -229,6 +241,7 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 	state.stats.resource = resourceAfterCost :: CombatTypes.CombatResource
 	state.cooldowns = CooldownRules.start(state.cooldowns, definition.cooldownGroup, now, definition.cooldownSeconds)
 	cooldownsByPlayer[player] = state.cooldowns
+	replicateCooldowns(player, state)
 	state.actionState = "Windup"
 	state.bufferedTargetId = nil
 	state.generation += 1
@@ -651,6 +664,9 @@ function CombatService.stop(): ()
 		player:SetAttribute(RESOURCE_CURRENT_ATTRIBUTE, nil)
 		player:SetAttribute(RESOURCE_MAXIMUM_ATTRIBUTE, nil)
 		player:SetAttribute(ARCHETYPE_ATTRIBUTE, nil)
+		for skillId in SkillDefinitions do
+			player:SetAttribute(getSkillCooldownAttribute(skillId), nil)
+		end
 	end
 	CombatEffectService.stop()
 	table.clear(targetsByPlayer)

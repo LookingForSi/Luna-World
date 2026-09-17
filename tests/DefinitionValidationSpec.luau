@@ -190,4 +190,13 @@ return function(TestRunner)
 		assert(CombatConfig.MaxAttackSpeedMultiplier >= CombatConfig.MinAttackSpeedMultiplier)
 		assert(CombatConfig.CriticalDamageMultiplier >= 1)
 	end)
+
+	TestRunner.run("skill cooldown replication names are stable and unique", function()
+		local names = {}
+		for skillId in SkillDefinitions do
+			local attributeName = CombatConfig.SkillCooldownAttributePrefix .. skillId
+			assert(not names[attributeName], "skill cooldown attribute names must be unique")
+			names[attributeName] = true
+		end
+	end)
 end
