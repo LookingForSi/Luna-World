@@ -704,6 +704,25 @@ function CombatService.requestMobBasicAttack(
 	return true
 end
 
+-- RespawnService owns player lifecycle timing; combat owns authoritative cleanup.
+function CombatService.handlePlayerDeath(player: Player): ()
+	clearPlayerState(player)
+	player:SetAttribute(ACTION_STATE_ATTRIBUTE, "Dead")
+	player:SetAttribute(BUFFERED_ATTRIBUTE, false)
+	player:SetAttribute(AUTO_ATTACK_ATTRIBUTE, false)
+end
+
+function CombatService.handlePlayerRespawn(player: Player, character: Model): ()
+	if player.Character ~= character then return end
+	clearPlayerState(player)
+	local state = getState(player)
+	state.stats.resource = ResourceRules.restore(state.stats.resource, state.stats.resource.maximum)
+	state.regenerationElapsed = 0
+	replicateState(player, state)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid ~= nil then humanoid.Health = humanoid.MaxHealth end
+end
+
 function CombatService.start(): ()
 	if started then return end
 	started = true

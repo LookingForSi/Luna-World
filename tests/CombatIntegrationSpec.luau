@@ -6,6 +6,7 @@ local ResourceRules = require(game.ReplicatedStorage.Shared.combat.ResourceRules
 local SkillRules = require(game.ReplicatedStorage.Shared.combat.SkillRules)
 local EffectRules = require(game.ReplicatedStorage.Shared.combat.EffectRules)
 local MobAIRules = require(game.ReplicatedStorage.Shared.combat.MobAIRules)
+local RespawnRules = require(game.ReplicatedStorage.Shared.combat.RespawnRules)
 
 return function(TestRunner)
 	TestRunner.run("manual input lifecycle accepts one request and buffers at most one", function()
@@ -107,5 +108,15 @@ return function(TestRunner)
 		assert(state == "Return")
 		state = MobAIRules.nextState(state, { alive = true, hasTarget = false, detectedTarget = true, hostileAttacker = false, beyondLeash = false, inAttackRange = false, atHome = true }, "Aggressive")
 		assert(state == "Idle", "return must ignore detection until home")
+	end)
+
+	TestRunner.run("death gate and respawn resource restoration are authoritative", function()
+		local accepted, generation = RespawnRules.beginDeath(false, 8)
+		assert(accepted and generation == 9)
+		assert(not RespawnRules.beginDeath(true, generation))
+		local spent = ResourceRules.spend(ResourceRules.create("Mana", 100), "Mana", 35)
+		assert(spent ~= nil and spent.current == 65)
+		local restored = ResourceRules.restore(spent, spent.maximum)
+		assert(restored.current == restored.maximum)
 	end)
 end

@@ -724,6 +724,11 @@ waitUntil("AUTO enabled before actor death", 3, function()
 	return player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == true
 end)
 local previousCharacter = player.Character
+local xpBeforeRespawn = player:GetAttribute("SessionXP")
+local replacementCount = 0
+local replacementConnection = player.CharacterAdded:Connect(function()
+	replacementCount += 1
+end)
 assert(autoAttackRuntimeCommand:InvokeServer("KillActor") == true)
 waitUntil("replacement actor with AUTO off", 12, function()
 	local character = player.Character
@@ -731,6 +736,48 @@ waitUntil("replacement actor with AUTO off", 12, function()
 	return character ~= nil and character ~= previousCharacter and actorHumanoid ~= nil and actorHumanoid.Health > 0
 		and player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false
 end)
+local respawnedCharacter = player.Character
+local respawnedHumanoid = if respawnedCharacter ~= nil then respawnedCharacter:FindFirstChildOfClass("Humanoid") else nil
+local respawnedRoot = if respawnedCharacter ~= nil then respawnedCharacter:FindFirstChild("HumanoidRootPart") else nil
+local testAnchor = workspace:FindFirstChild("TestLunaVillageRespawnAnchor")
+assert(respawnedHumanoid ~= nil and respawnedHumanoid.Health == respawnedHumanoid.MaxHealth)
+assert(respawnedRoot ~= nil and respawnedRoot:IsA("BasePart") and testAnchor ~= nil and testAnchor:IsA("BasePart"))
+assert((respawnedRoot.Position - testAnchor.Position).Magnitude < 8, "respawn must use the registered settlement anchor")
+assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == player:GetAttribute(CombatConfig.ResourceMaximumAttribute))
+assert(player:GetAttribute(CombatConfig.SelectedTargetAttribute) == nil)
+assert(player:GetAttribute(CombatConfig.BasicAttackBufferedAttribute) == false)
+assert(player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready")
+assert(respawnedCharacter:GetAttribute(CombatConfig.DefenseStanceActiveAttribute) == nil)
+assert(player:GetAttribute("SessionXP") == xpBeforeRespawn, "death must not apply an XP penalty")
+assert(replacementCount == 1, "one death must create exactly one replacement character")
+
+-- A second consecutive death while a manual action is pending must invalidate that
+-- action and still create exactly one clean replacement.
+local secondTargetId = autoAttackRuntimeCommand:InvokeServer("PrepareTarget")
+targetRequest:FireServer(secondTargetId)
+waitUntil("second respawn selected target", 3, function()
+	return player:GetAttribute(CombatConfig.SelectedTargetAttribute) == secondTargetId
+end)
+attackRequest:FireServer()
+waitUntil("pending action before second death", 3, function()
+	return player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Windup"
+end)
+local firstRespawnCharacter = player.Character
+assert(autoAttackRuntimeCommand:InvokeServer("KillActor") == true)
+waitUntil("second clean replacement actor", 12, function()
+	local character = player.Character
+	local actorHumanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+	return character ~= nil and character ~= firstRespawnCharacter and actorHumanoid ~= nil
+		and actorHumanoid.Health == actorHumanoid.MaxHealth
+		and player:GetAttribute(CombatConfig.SelectedTargetAttribute) == nil
+		and player:GetAttribute(CombatConfig.BasicAttackBufferedAttribute) == false
+		and player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == false
+		and player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready"
+end)
+assert(replacementCount == 2, "two sequential deaths must create exactly two replacement characters")
+assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == player:GetAttribute(CombatConfig.ResourceMaximumAttribute))
+assert(player:GetAttribute("SessionXP") == xpBeforeRespawn)
+replacementConnection:Disconnect()
 
 autoAttackRuntimeComplete:FireServer()
 print("[PASS] authoritative optional PvE AUTO runtime contract")
