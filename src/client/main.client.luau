@@ -5,6 +5,7 @@ local CombatInputController = require(clientRoot.controllers.CombatInputControll
 local TargetController = require(clientRoot.controllers.TargetController)
 local CombatHud = require(clientRoot.ui.CombatHud)
 local ActionBar = require(clientRoot.ui.ActionBar)
+local StudioTestPanel = require(clientRoot.ui.StudioTestPanel)
 local MovementController = require(clientRoot.controllers.MovementController)
 local CombatPresentationController = require(clientRoot.controllers.CombatPresentationController)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,6 +16,7 @@ local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombat
 MovementController.start()
 CombatPresentationController.start()
 CombatHud.start()
+StudioTestPanel.start()
 TargetController.start(function(target: Model?)
 	CombatHud.setTarget(target)
 end)
@@ -29,6 +31,7 @@ local archetypeConnection = Players.LocalPlayer:GetAttributeChangedSignal(Combat
 
 script.Destroying:Connect(function()
 	archetypeConnection:Disconnect()
+	StudioTestPanel.stop()
 	MovementController.stop()
 	CombatPresentationController.stop()
 	CombatInputController.stop()
