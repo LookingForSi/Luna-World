@@ -7,6 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
+local HudLayout = require(script.Parent.HudLayout)
 
 local ActionBar = {}
 local player = Players.LocalPlayer
@@ -78,15 +79,10 @@ function ActionBar.start(skillIds: { string }, onAttack: () -> (), onAutoToggle:
 	local frame = Instance.new("Frame")
 	frame.Name = "PrimaryActions"
 	frame.AnchorPoint = Vector2.new(1, 1)
-	frame.Position = UDim2.new(1, -8, 1, -12)
-	frame.Size = UDim2.new(1, -16, 0, 142)
+	frame.Position = UDim2.new(1, -HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)
+	frame.Size = UDim2.fromOffset(HudLayout.ActionBarSize.X, HudLayout.ActionBarSize.Y)
 	frame.BackgroundTransparency = 1
 	frame.Parent = gui
-
-	local constraint = Instance.new("UISizeConstraint")
-	constraint.MinSize = Vector2.new(280, 142)
-	constraint.MaxSize = Vector2.new(414, 142)
-	constraint.Parent = frame
 
 	for index, skillId in skillIds do
 		local definition = SkillDefinitions[skillId]
