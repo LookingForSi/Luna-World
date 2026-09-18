@@ -8,6 +8,8 @@ local HttpService = game:GetService("HttpService")
 local ActionRules = require(ReplicatedStorage.Shared.combat.ActionRules)
 local AutoAttackRules = require(ReplicatedStorage.Shared.combat.AutoAttackRules)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
+local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
 local CombatRules = require(ReplicatedStorage.Shared.combat.CombatRules)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local DamageRules = require(ReplicatedStorage.Shared.combat.DamageRules)
@@ -455,6 +457,16 @@ local function onSkillRequest(player: Player, ...: unknown): ()
 	)
 	if not decision.accepted or definition == nil then
 		reject(player, {
+			outcome = "Rejected",
+			reasonCode = "ForbiddenState",
+		})
+		return
+	end
+	local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
+	local actorLevel = if typeof(rawLevel) == "number" then rawLevel else 1
+	if not ProgressionRules.isSkillUnlocked(skillId, actorLevel) then
+		reject(player, {
+			skillId = skillId,
 			outcome = "Rejected",
 			reasonCode = "ForbiddenState",
 		})
