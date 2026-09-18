@@ -1,7 +1,7 @@
 --!strict
 
--- Test-only world interface. Production intentionally has no fabricated coordinate fallback;
--- the Luna Village world supplies the tagged anchor when that branch is integrated.
+-- Test-only world interface. Production prefers tagged settlement anchors; the current
+-- playground additionally permits SpawnLocation as a compatibility fallback until world integration.
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
