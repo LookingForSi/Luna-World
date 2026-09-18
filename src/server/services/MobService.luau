@@ -25,11 +25,13 @@ local SPAWNS = {
 local WOLF_COLOR = Color3.fromRGB(110, 110, 120)
 
 local mobsByEntityId: { [string]: Model } = {}
+local spawnedModels: { [Model]: boolean } = {}
 local lastAttackerByEntityId: { [string]: Player } = {}
 local mobDiedEvent = Instance.new("BindableEvent")
 local mobSpawnedEvent = Instance.new("BindableEvent")
 local hostileActionEvent = Instance.new("BindableEvent")
 local started = false
+local serviceGeneration = 0
 
 MobService.MobDied = mobDiedEvent.Event
 MobService.MobSpawned = mobSpawnedEvent.Event
@@ -66,6 +68,7 @@ local function createMob(definitionKey: string, spawnCFrame: CFrame, isRespawn: 
 	model:PivotTo(spawnCFrame)
 	model.Parent = workspace
 	mobsByEntityId[entityId] = model
+	spawnedModels[model] = true
 	mobSpawnedEvent:Fire(model, definition, spawnCFrame, isRespawn == true)
 	if isRespawn == true then
 		CombatPresentationService.publish(CombatPresentationRules.create("Respawn", HttpService:GenerateGUID(false), "mob:" .. entityId, workspace:GetServerTimeNow(), {
@@ -97,9 +100,14 @@ local function createMob(definitionKey: string, spawnCFrame: CFrame, isRespawn: 
 			mobDiedEvent:Fire(nil, definition.id, entityId)
 		end
 
+		local expectedGeneration = serviceGeneration
 		task.delay(definition.respawnSeconds, function()
+			spawnedModels[model] = nil
 			if model.Parent ~= nil then
 				model:Destroy()
+			end
+			if not started or serviceGeneration ~= expectedGeneration then
+				return
 			end
 			createMob(definitionKey, spawnCFrame, true)
 		end)
@@ -113,6 +121,7 @@ function MobService.start(): ()
 		return
 	end
 	started = true
+	serviceGeneration += 1
 	for _, spawn in SPAWNS do
 		createMob(spawn.definitionKey, spawn.cframe)
 	end
@@ -222,6 +231,24 @@ function MobService.setMovementSpeed(entityId: string, movementSpeed: number): b
 	if model == nil then return false end
 	model:SetAttribute(CombatConfig.MobMovementSpeedAttribute, movementSpeed)
 	return MobService.applyCalculatedMovement(model)
+end
+
+function MobService.stop(): ()
+	if not started then return end
+	started = false
+	serviceGeneration += 1
+
+	local models = {}
+	for model in spawnedModels do
+		table.insert(models, model)
+	end
+	for _, model in models do
+		if model.Parent ~= nil then model:Destroy() end
+	end
+
+	table.clear(spawnedModels)
+	table.clear(mobsByEntityId)
+	table.clear(lastAttackerByEntityId)
 end
 
 return MobService
