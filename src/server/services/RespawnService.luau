@@ -11,12 +11,14 @@ local CombatService = require(script.Parent.CombatService)
 type PlayerRecord = {
 	generation: number,
 	pending: boolean,
+	respawning: boolean,
 	anchor: BasePart?,
 	characterConnection: RBXScriptConnection?,
 	deathConnection: RBXScriptConnection?,
 }
 
 local RespawnService = {}
+local respawnRequest = ReplicatedStorage.Remotes:WaitForChild("RespawnRequest") :: RemoteEvent
 local anchors: { [BasePart]: boolean } = {}
 local records: { [Player]: PlayerRecord } = {}
 local serviceConnections: { RBXScriptConnection } = {}
@@ -36,7 +38,7 @@ local function unregisterAnchor(instance: Instance): ()
 	if instance:IsA("BasePart") then anchors[instance] = nil end
 end
 
-local function nearestAnchor(origin: Vector3): BasePart?
+local function nearestRegisteredAnchor(origin: Vector3): BasePart?
 	local candidates: { RespawnRules.AnchorCandidate } = {}
 	local byId: { [string]: BasePart } = {}
 	for anchor in anchors do
@@ -53,9 +55,35 @@ local function nearestAnchor(origin: Vector3): BasePart?
 	return if selectedId ~= nil then byId[selectedId] else nil
 end
 
+local function nearestSpawnLocation(origin: Vector3): SpawnLocation?
+	local selected: SpawnLocation? = nil
+	local nearestDistance = math.huge
+	for _, instance in workspace:GetDescendants() do
+		if instance:IsA("SpawnLocation") then
+			local distance = (instance.Position - origin).Magnitude
+			if distance < nearestDistance then
+				nearestDistance = distance
+				selected = instance
+			end
+		end
+	end
+	return selected
+end
+
+local function nearestAnchor(origin: Vector3): BasePart?
+	-- Production worlds should provide explicit settlement/teleport anchors. A SpawnLocation
+	-- is a compatibility fallback for the current playground and protects Reset Character
+	-- from leaving a player permanently dead before the world branch is integrated.
+	return nearestRegisteredAnchor(origin) or nearestSpawnLocation(origin)
+end
+
 local function disconnectDeath(record: PlayerRecord): ()
 	if record.deathConnection ~= nil then record.deathConnection:Disconnect() end
 	record.deathConnection = nil
+end
+
+local function setPending(player: Player, pending: boolean): ()
+	player:SetAttribute(RespawnConfig.RespawnPendingAttribute, pending)
 end
 
 local function onDied(player: Player, character: Model, deathPosition: Vector3): ()
@@ -64,20 +92,24 @@ local function onDied(player: Player, character: Model, deathPosition: Vector3):
 	local accepted, generation = RespawnRules.beginDeath(record.pending, record.generation)
 	if not accepted then return end
 	record.pending = true
+	record.respawning = false
 	record.generation = generation
 	record.anchor = nearestAnchor(deathPosition)
+	setPending(player, true)
 	CombatService.handlePlayerDeath(player)
 	if record.anchor == nil then
-		record.pending = false
-		warn(string.format("Respawn blocked for %s: no registered settlement RespawnAnchor", player.Name))
-		return
+		warn(string.format("Respawn unavailable for %s: no registered RespawnAnchor or SpawnLocation", player.Name))
 	end
-	task.delay(RespawnConfig.RespawnDelaySeconds, function()
-		local current = records[player]
-		if current ~= record or not RespawnRules.isCurrentGeneration(generation, record.generation) or not record.pending then return end
-		if player.Parent ~= Players then return end
-		player:LoadCharacter()
-	end)
+end
+
+local function requestRespawn(player: Player, ...: unknown): ()
+	if select("#", ...) ~= 0 then return end
+	local record = records[player]
+	if record == nil then return end
+	local anchorAvailable = record.anchor ~= nil and record.anchor.Parent ~= nil
+	if not RespawnRules.canRequestRespawn(record.pending, record.respawning, anchorAvailable) then return end
+	record.respawning = true
+	player:LoadCharacter()
 end
 
 local function bindCharacter(player: Player, character: Model): ()
@@ -91,7 +123,9 @@ local function bindCharacter(player: Player, character: Model): ()
 		character:PivotTo(RespawnRules.spawnCFrame(record.anchor.CFrame, humanoid.HipHeight, root.Size.Y))
 	end
 	record.pending = false
+	record.respawning = false
 	record.anchor = nil
+	setPending(player, false)
 	CombatService.handlePlayerRespawn(player, character)
 	record.deathConnection = humanoid.Died:Connect(function()
 		local currentRoot = character:FindFirstChild("HumanoidRootPart")
@@ -102,8 +136,16 @@ end
 
 local function addPlayer(player: Player): ()
 	if records[player] ~= nil then return end
-	local record: PlayerRecord = { generation = 0, pending = false, anchor = nil, characterConnection = nil, deathConnection = nil }
+	local record: PlayerRecord = {
+		generation = 0,
+		pending = false,
+		respawning = false,
+		anchor = nil,
+		characterConnection = nil,
+		deathConnection = nil,
+	}
 	records[player] = record
+	setPending(player, false)
 	record.characterConnection = player.CharacterAdded:Connect(function(character) bindCharacter(player, character) end)
 	if player.Character ~= nil then
 		bindCharacter(player, player.Character)
@@ -126,8 +168,6 @@ function RespawnService.start(): ()
 	started = true
 	previousCharacterAutoLoads = Players.CharacterAutoLoads
 	Players.CharacterAutoLoads = false
-	-- Subscribe before enumeration so an anchor added during startup cannot fall between
-	-- the initial snapshot and signal registration.
 	table.insert(serviceConnections, CollectionService:GetInstanceAddedSignal(RespawnConfig.AnchorTag):Connect(registerAnchor))
 	table.insert(serviceConnections, CollectionService:GetInstanceRemovedSignal(RespawnConfig.AnchorTag):Connect(unregisterAnchor))
 	for _, instance in CollectionService:GetTagged(RespawnConfig.AnchorTag) do registerAnchor(instance) end
@@ -139,9 +179,13 @@ function RespawnService.start(): ()
 		end
 	end
 	if not hasLunaVillageAnchor then
-		-- The world branch supplies this tagged interface. Combat does not invent a coordinate fallback.
-		warn("Luna Village RespawnAnchor is not registered; deaths remain safely unrespawned until the world provides it")
+		if nearestSpawnLocation(Vector3.zero) ~= nil then
+			warn("Luna Village RespawnAnchor is not registered; using SpawnLocation compatibility fallback")
+		else
+			warn("Luna Village RespawnAnchor is not registered and no SpawnLocation fallback exists")
+		end
 	end
+	table.insert(serviceConnections, respawnRequest.OnServerEvent:Connect(requestRespawn))
 	table.insert(serviceConnections, Players.PlayerAdded:Connect(addPlayer))
 	table.insert(serviceConnections, Players.PlayerRemoving:Connect(removePlayer))
 	for _, player in Players:GetPlayers() do addPlayer(player) end
