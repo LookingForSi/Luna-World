@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
@@ -144,6 +145,10 @@ function CombatHud.start(): ()
 	gui.ResetOnSpawn = false
 	gui.Parent = player:WaitForChild("PlayerGui")
 
+	-- Keep the stock chat away from the combat/status HUD while preserving Roblox chat behavior.
+	TextChatService.ChatWindowConfiguration.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	TextChatService.ChatWindowConfiguration.VerticalAlignment = Enum.VerticalAlignment.Bottom
+
 	local targetPanel = Instance.new("Frame")
 	targetPanel.Name = "TargetFrame"
 	targetPanel.AnchorPoint = Vector2.new(0.5, 0)
@@ -160,8 +165,8 @@ function CombatHud.start(): ()
 
 	local playerPanel = Instance.new("Frame")
 	playerPanel.Name = "PlayerStatusFrame"
-	playerPanel.AnchorPoint = Vector2.new(0, 1)
-	playerPanel.Position = UDim2.new(0, 18, 1, -16)
+	playerPanel.AnchorPoint = Vector2.new(1, 0)
+	playerPanel.Position = UDim2.new(1, -18, 0, 24)
 	playerPanel.Size = UDim2.fromOffset(300, 112)
 	playerPanel.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
 	playerPanel.BackgroundTransparency = 0.15
