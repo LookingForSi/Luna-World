@@ -162,7 +162,10 @@ local function makePlayerStatusRow(
 	label.Text = labelText
 	label.TextSize = 12
 	local fill = makeStatusBar(parent, name .. "Bar", UDim2.fromOffset(8, y + 19), fillName, fillColor)
-	fill.Parent.Size = UDim2.new(1, -16, 0, 13)
+	local background = fill.Parent
+	if background ~= nil and background:IsA("Frame") then
+		background.Size = UDim2.new(1, -16, 0, 13)
+	end
 	return label, fill
 end
 
