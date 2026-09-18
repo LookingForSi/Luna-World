@@ -1,7 +1,7 @@
 # Luna World — план реализации Milestone 2: Progression, Loot & Persistence
 
 Дата: 2026-09-18  
-Статус: **Draft — готов к обсуждению после утверждения спецификации**  
+Статус: **Approved — готов к реализации**  
 Спецификация: `docs/superpowers/specs/2026-09-18-milestone-2-progression-loot-persistence-design.md`
 
 ## 1. Цель
