@@ -46,4 +46,20 @@ function ClientCombatUiRules.getTouchProbeOffsets(radius: number): { Vector2 }
 	}
 end
 
+function ClientCombatUiRules.getPointerProbeOffsets(radius: number): { Vector2 }
+	local safeRadius = math.max(0, radius)
+	local diagonal = safeRadius / math.sqrt(2)
+	return {
+		Vector2.zero,
+		Vector2.new(safeRadius, 0),
+		Vector2.new(-safeRadius, 0),
+		Vector2.new(0, safeRadius),
+		Vector2.new(0, -safeRadius),
+		Vector2.new(diagonal, diagonal),
+		Vector2.new(-diagonal, diagonal),
+		Vector2.new(diagonal, -diagonal),
+		Vector2.new(-diagonal, -diagonal),
+	}
+end
+
 return table.freeze(ClientCombatUiRules)
