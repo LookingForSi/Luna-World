@@ -28,9 +28,11 @@ Roadmap описывает порядок доказательства осно�
 - проверить Remote validation;
 - покрыть damage/validation базовыми тестами.
 
-## Milestone 1 — Combat & Skills
+## Milestone 1 — Combat & Skills — завершён 2026-09-18
 
-Добавить:
+Статус: принят владельцем после ручной Roblox Studio приёмки и stabilization gate. PvP сознательно не входит в этот milestone; CP подготовлен как отдельный будущий PvP-слой.
+
+Реализовано:
 
 - несколько типов mobs;
 - aggro/chase/leash;
@@ -42,14 +44,16 @@ Roadmap описывает порядок доказательства осно�
 
 Результат: бой уже ощущается как RPG, а не как технический hit test.
 
-### Stabilization gate M1
+### Stabilization gate M1 — пройден
 
-Проверить module boundaries Combat/Mob/Progression и multiplayer regressions.
+Проверены module boundaries Combat/Mob/Progression, multiplayer regressions, lifecycle cleanup, RemoteEvent validation и owner runtime acceptance.
 
 Отдельный обязательный balance sanity-pass трёх архетипов:
 - сравнить время убийства одинаковых PvE-целей, дистанцию риска, мобильность, расход ресурса и полезность полного набора умений;
-- особенно проверить Следопыта как потенциально доминирующий набор: Snare + Power Shot + Rapid Shot + ranged basic attack + повышенная скорость перемещения;
+- особенно проверить Следопыта как потенциально доминирующий набор: Snare + Power Shot + Rapid Shot + ranged basic attack;
 - убрать очевидный безусловный выбор одного класса, но не пытаться финализировать численный баланс до появления levels/equipment и более полного PvE-контента.
+
+Следующий активный milestone: **Milestone 2 — Progression, Loot & Persistence**.
 
 ## Milestone 2 — Progression, Loot & Persistence
 
