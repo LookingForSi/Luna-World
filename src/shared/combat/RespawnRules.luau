@@ -28,6 +28,10 @@ function RespawnRules.beginDeath(alreadyPending: boolean, generation: number): (
 	return true, generation + 1
 end
 
+function RespawnRules.canRequestRespawn(pending: boolean, alreadyRequested: boolean, anchorAvailable: boolean): boolean
+	return pending and not alreadyRequested and anchorAvailable
+end
+
 function RespawnRules.isCurrentGeneration(expected: number, current: number): boolean
 	return expected == current
 end
