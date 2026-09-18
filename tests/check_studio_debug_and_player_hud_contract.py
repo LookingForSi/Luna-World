@@ -47,13 +47,25 @@ for archetype_id in ("knight", "ranger", "mystic"):
     require(CLIENT_DEBUG, archetype_id, f"Studio class panel is missing {archetype_id}")
 require(CLIENT_MAIN, "StudioTestPanel.start()", "client bootstrap must start the Studio-only panel")
 
-# Player HUD needs two bar containers: HP and class resource. Numeric resource text is intentionally not the primary presentation.
-for token in ("PlayerHealthBar", "PlayerHealthFill", "PlayerResourceBar", "PlayerResourceFill"):
+# Player HUD has four rows: PvP-only CP, HP, archetype resource, and XP.
+for token in (
+    "CombatPointsBar",
+    "CombatPointsFill",
+    "PlayerHealthBar",
+    "PlayerHealthFill",
+    "PlayerResourceBar",
+    "PlayerResourceFill",
+    "SessionXPBar",
+    "SessionXPFill",
+):
     require(HUD, token, f"player HUD is missing {token}")
 require(HUD, "humanoid.Health / humanoid.MaxHealth", "player HP bar must be driven by the local Humanoid")
 require(HUD, "currentValue / maximumValue", "resource bar must be driven by authoritative replicated resource values")
 require(HUD, "Vector2.new(1, 0)", "player status HUD must anchor from the upper-right")
-require(HUD, "UDim2.new(1, -18, 0, 24)", "player status HUD must sit below the Roblox top bar")
+require(HUD, "HudLayout.CornerMargin", "player status HUD must use the shared corner margin")
+require(HUD, '"STM"', "knight stamina HUD abbreviation is missing")
+require(HUD, '"FCS"', "ranger focus HUD abbreviation is missing")
+require(HUD, '"MP"', "mystic mana HUD abbreviation is missing")
 
 # Grey wolf damage is deliberately above the knight's current defense so an ordinary PvE hit is visible in acceptance testing.
 require(MOBS, "basicAttackDamage = 22", "grey wolf needs visible post-mitigation damage against the knight test archetype")
