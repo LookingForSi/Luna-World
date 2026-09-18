@@ -850,6 +850,11 @@ function CombatService.requestMobBasicAttack(
 	if (targetRoot.Position - root.Position).Magnitude > definition.attackRange + CombatConfig.RangeTolerance then return false end
 
 	mobAttackReadyAt[mob] = now + definition.attackIntervalSeconds
+	local actionId = HttpService:GenerateGUID(false)
+	local rawMobEntityId = mob:GetAttribute("EntityId")
+	local mobEntityId = if typeof(rawMobEntityId) == "string" and rawMobEntityId ~= ""
+		then "mob:" .. rawMobEntityId
+		else "mob:" .. definition.id
 	local previousGeneration = mob:GetAttribute(CombatConfig.MobActionGenerationAttribute)
 	local generation = if typeof(previousGeneration) == "number" then previousGeneration + 1 else 1
 	mob:SetAttribute(CombatConfig.MobActionGenerationAttribute, generation)
@@ -868,6 +873,20 @@ function CombatService.requestMobBasicAttack(
 		local targetState = getState(target)
 		local damage = math.max(1, definition.basicAttackDamage - targetState.stats.physicalDefense)
 		targetHumanoid:TakeDamage(damage)
+		CombatPresentationService.publishToPlayer(target, CombatPresentationRules.create(
+			"Result",
+			actionId,
+			mobEntityId,
+			workspace:GetServerTimeNow(),
+			{
+				targetEntityId = actorEntityId(target),
+				presentationKey = "mob_basic_attack",
+				outcome = "Applied",
+				amount = damage,
+				isCritical = false,
+				definitionId = definition.id,
+			}
+		))
 		mob:SetAttribute(CombatConfig.MobActionStateAttribute, "Recovery")
 		mob:SetAttribute(CombatConfig.MobActionInterruptibleAttribute, nil)
 	end)
