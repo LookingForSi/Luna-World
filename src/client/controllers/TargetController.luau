@@ -122,8 +122,10 @@ function TargetController.clearTarget(): ()
 	targetRequest:FireServer("")
 end
 
-local function selectAtScreenPosition(screenPosition: Vector2, forgiveTouch: boolean): ()
-	local offsets = if forgiveTouch then ClientCombatUiRules.getTouchProbeOffsets(24) else { Vector2.zero }
+local function selectAtScreenPosition(screenPosition: Vector2, touchInput: boolean): ()
+	local offsets = if touchInput
+		then ClientCombatUiRules.getTouchProbeOffsets(24)
+		else ClientCombatUiRules.getPointerProbeOffsets(18)
 	for _, offset in offsets do
 		local model = raycastEntity(screenPosition + offset)
 		if model ~= nil then
