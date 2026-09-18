@@ -29,6 +29,7 @@ require(LAYOUT, "HudLayout.CornerMargin = 24", "all corner panels must share one
 require(LAYOUT, "function HudLayout.applyPanelStyle", "corner panels must share one visual panel style")
 
 require(HUD, "UDim2.new(1, -HudLayout.CornerMargin, 0, HudLayout.CornerMargin)", "player status must use the shared top-right anchor")
+require(HUD, "gui.IgnoreGuiInset = true", "top HUD must measure its margin from the physical viewport edge")
 require(ACTIONS, "UDim2.new(1, -HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)", "action panel must use the shared bottom-right anchor")
 require(LOG, "UDim2.new(0, HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)", "combat log must use the shared bottom-left anchor")
 
