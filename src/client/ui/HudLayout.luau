@@ -11,7 +11,7 @@ HudLayout.InnerPadding = 8
 HudLayout.RowGap = 5
 
 HudLayout.PlayerStatusSize = Vector2.new(300, 178)
-HudLayout.ActionBarSize = Vector2.new(414, 142)
+HudLayout.ActionBarSize = Vector2.new(430, 158)
 HudLayout.CombatLogSize = Vector2.new(500, 190)
 
 function HudLayout.applyPanelStyle(frame: Frame): ()
