@@ -7,6 +7,7 @@ local TextChatService = game:GetService("TextChatService")
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombatUiRules)
+local HudLayout = require(script.Parent.HudLayout)
 
 local CombatHud = {}
 
@@ -15,9 +16,11 @@ local screenGui: ScreenGui? = nil
 local targetNameLabel: TextLabel? = nil
 local targetHealthTextLabel: TextLabel? = nil
 local targetHealthFill: Frame? = nil
+local playerCombatPointsFill: Frame? = nil
 local playerHealthFill: Frame? = nil
 local playerResourceFill: Frame? = nil
 local playerResourceLabel: TextLabel? = nil
+local xpFill: Frame? = nil
 local xpLabel: TextLabel? = nil
 local feedbackLabel: TextLabel? = nil
 local targetHealthConnection: RBXScriptConnection? = nil
@@ -25,16 +28,15 @@ local targetAncestryConnection: RBXScriptConnection? = nil
 local playerHealthConnection: RBXScriptConnection? = nil
 local playerMaxHealthConnection: RBXScriptConnection? = nil
 local characterAddedConnection: RBXScriptConnection? = nil
-local xpConnection: RBXScriptConnection? = nil
-local resourceConnections: { RBXScriptConnection } = {}
+local statusConnections: { RBXScriptConnection } = {}
 local presentationConnection: RBXScriptConnection? = nil
 local feedbackGeneration = 0
 local currentTarget: Model? = nil
 
 local RESOURCE_NAMES = {
-	Stamina = "Выносливость",
-	Focus = "Концентрация",
-	Mana = "Мана",
+	Stamina = "STM",
+	Focus = "FCS",
+	Mana = "MP",
 }
 
 local function disconnectTarget(): ()
@@ -56,17 +58,28 @@ end
 
 local function updateXP(): ()
 	local value = player:GetAttribute("SessionXP")
-	local sessionXP = if typeof(value) == "number" then value else 0
-	if xpLabel ~= nil then
-		xpLabel.Text = string.format("XP: %d", sessionXP)
+	local sessionXP = if typeof(value) == "number" then math.max(0, value) else 0
+	if xpLabel ~= nil then xpLabel.Text = string.format("XP: %d", sessionXP) end
+	if xpFill ~= nil then
+		local reference = math.max(1, CombatConfig.SessionXpHudReference)
+		xpFill.Size = UDim2.fromScale(math.clamp(sessionXP / reference, 0, 1), 1)
 	end
+end
+
+local function updateCombatPoints(): ()
+	local current = player:GetAttribute(CombatConfig.CombatPointsCurrentAttribute)
+	local maximum = player:GetAttribute(CombatConfig.CombatPointsMaximumAttribute)
+	local currentValue = if typeof(current) == "number" then current else 0
+	local maximumValue = if typeof(maximum) == "number" then maximum else 0
+	local ratio = if maximumValue > 0 then math.clamp(currentValue / maximumValue, 0, 1) else 0
+	if playerCombatPointsFill ~= nil then playerCombatPointsFill.Size = UDim2.fromScale(ratio, 1) end
 end
 
 local function updateResource(): ()
 	local resourceType = player:GetAttribute(CombatConfig.ResourceTypeAttribute)
 	local current = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
 	local maximum = player:GetAttribute(CombatConfig.ResourceMaximumAttribute)
-	local displayName = if typeof(resourceType) == "string" then RESOURCE_NAMES[resourceType] or resourceType else "Ресурс"
+	local displayName = if typeof(resourceType) == "string" then RESOURCE_NAMES[resourceType] or resourceType else "RES"
 	local currentValue = if typeof(current) == "number" then current else 0
 	local maximumValue = if typeof(maximum) == "number" then maximum else 0
 	local ratio = if maximumValue > 0 then math.clamp(currentValue / maximumValue, 0, 1) else 0
@@ -81,9 +94,7 @@ local function updateTargetHealth(humanoid: Humanoid): ()
 	if targetHealthTextLabel ~= nil then
 		targetHealthTextLabel.Text = string.format("HP: %d / %d", math.ceil(health), math.ceil(maxHealth))
 	end
-	if targetHealthFill ~= nil then
-		targetHealthFill.Size = UDim2.fromScale(ratio, 1)
-	end
+	if targetHealthFill ~= nil then targetHealthFill.Size = UDim2.fromScale(ratio, 1) end
 end
 
 local function updatePlayerHealth(humanoid: Humanoid): ()
@@ -137,6 +148,24 @@ local function makeStatusBar(parent: Instance, name: string, position: UDim2, fi
 	return fill
 end
 
+local function makePlayerStatusRow(
+	parent: Frame,
+	name: string,
+	row: number,
+	labelText: string,
+	fillName: string,
+	fillColor: Color3
+): (TextLabel, Frame)
+	local y = 8 + (row - 1) * 41
+	local label = makeTextLabel(parent, name .. "Label", UDim2.fromOffset(8, y))
+	label.Size = UDim2.new(1, -16, 0, 16)
+	label.Text = labelText
+	label.TextSize = 12
+	local fill = makeStatusBar(parent, name .. "Bar", UDim2.fromOffset(8, y + 19), fillName, fillColor)
+	fill.Parent.Size = UDim2.new(1, -16, 0, 13)
+	return label, fill
+end
+
 function CombatHud.start(): ()
 	CombatHud.stop()
 
@@ -145,18 +174,16 @@ function CombatHud.start(): ()
 	gui.ResetOnSpawn = false
 	gui.Parent = player:WaitForChild("PlayerGui")
 
-	-- Keep the stock chat away from the combat/status HUD while preserving Roblox chat behavior.
+	-- Stock chat remains lower-left; the custom combat log owns its own corner-safe placement.
 	TextChatService.ChatWindowConfiguration.HorizontalAlignment = Enum.HorizontalAlignment.Left
 	TextChatService.ChatWindowConfiguration.VerticalAlignment = Enum.VerticalAlignment.Bottom
 
 	local targetPanel = Instance.new("Frame")
 	targetPanel.Name = "TargetFrame"
 	targetPanel.AnchorPoint = Vector2.new(0.5, 0)
-	targetPanel.Position = UDim2.new(0.5, 0, 0, 24)
+	targetPanel.Position = UDim2.new(0.5, 0, 0, HudLayout.CornerMargin)
 	targetPanel.Size = UDim2.fromOffset(280, 86)
-	targetPanel.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
-	targetPanel.BackgroundTransparency = 0.15
-	targetPanel.BorderSizePixel = 0
+	HudLayout.applyPanelStyle(targetPanel)
 	targetPanel.Parent = gui
 
 	targetNameLabel = makeTextLabel(targetPanel, "TargetName", UDim2.fromOffset(8, 4))
@@ -166,28 +193,53 @@ function CombatHud.start(): ()
 	local playerPanel = Instance.new("Frame")
 	playerPanel.Name = "PlayerStatusFrame"
 	playerPanel.AnchorPoint = Vector2.new(1, 0)
-	playerPanel.Position = UDim2.new(1, -18, 0, 24)
-	playerPanel.Size = UDim2.fromOffset(300, 112)
-	playerPanel.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
-	playerPanel.BackgroundTransparency = 0.15
-	playerPanel.BorderSizePixel = 0
+	playerPanel.Position = UDim2.new(1, -HudLayout.CornerMargin, 0, HudLayout.CornerMargin)
+	playerPanel.Size = UDim2.fromOffset(HudLayout.PlayerStatusSize.X, HudLayout.PlayerStatusSize.Y)
+	HudLayout.applyPanelStyle(playerPanel)
 	playerPanel.Parent = gui
 
-	local hpLabel = makeTextLabel(playerPanel, "PlayerHealthLabel", UDim2.fromOffset(8, 2))
-	hpLabel.Size = UDim2.new(1, -16, 0, 20)
+	local cpLabel
+	cpLabel, playerCombatPointsFill = makePlayerStatusRow(
+		playerPanel,
+		"CombatPoints",
+		1,
+		"CP",
+		"CombatPointsFill",
+		Color3.fromRGB(197, 157, 54)
+	)
+	cpLabel.Text = "CP"
+
+	local hpLabel
+	hpLabel, playerHealthFill = makePlayerStatusRow(
+		playerPanel,
+		"PlayerHealth",
+		2,
+		"HP",
+		"PlayerHealthFill",
+		Color3.fromRGB(159, 52, 62)
+	)
 	hpLabel.Text = "HP"
-	hpLabel.TextSize = 13
-	playerHealthFill = makeStatusBar(playerPanel, "PlayerHealthBar", UDim2.fromOffset(8, 24), "PlayerHealthFill", Color3.fromRGB(159, 52, 62))
 
-	local resourceLabel = makeTextLabel(playerPanel, "PlayerResourceLabel", UDim2.fromOffset(8, 42))
-	resourceLabel.Size = UDim2.new(1, -16, 0, 20)
-	resourceLabel.TextSize = 13
+	local resourceLabel
+	resourceLabel, playerResourceFill = makePlayerStatusRow(
+		playerPanel,
+		"PlayerResource",
+		3,
+		"RES",
+		"PlayerResourceFill",
+		Color3.fromRGB(69, 108, 166)
+	)
 	playerResourceLabel = resourceLabel
-	playerResourceFill = makeStatusBar(playerPanel, "PlayerResourceBar", UDim2.fromOffset(8, 64), "PlayerResourceFill", Color3.fromRGB(69, 108, 166))
 
-	local xp = makeTextLabel(playerPanel, "SessionXP", UDim2.fromOffset(8, 82))
-	xp.Size = UDim2.new(1, -16, 0, 24)
-	xp.TextSize = 13
+	local xp
+	xp, xpFill = makePlayerStatusRow(
+		playerPanel,
+		"SessionXP",
+		4,
+		"XP: 0",
+		"SessionXPFill",
+		Color3.fromRGB(119, 104, 178)
+	)
 	xpLabel = xp
 
 	local feedback = makeTextLabel(gui, "CombatFeedback", UDim2.new(0.5, -160, 1, -122))
@@ -200,17 +252,30 @@ function CombatHud.start(): ()
 
 	CombatHud.setTarget(nil)
 	updateXP()
+	updateCombatPoints()
 	updateResource()
 	if player.Character ~= nil then bindPlayerCharacter(player.Character) end
 	characterAddedConnection = player.CharacterAdded:Connect(bindPlayerCharacter)
-	xpConnection = player:GetAttributeChangedSignal("SessionXP"):Connect(updateXP)
+
 	for _, attributeName in {
+		"SessionXP",
+		CombatConfig.CombatPointsCurrentAttribute,
+		CombatConfig.CombatPointsMaximumAttribute,
 		CombatConfig.ResourceTypeAttribute,
 		CombatConfig.ResourceCurrentAttribute,
 		CombatConfig.ResourceMaximumAttribute,
 	} do
-		table.insert(resourceConnections, player:GetAttributeChangedSignal(attributeName):Connect(updateResource))
+		table.insert(statusConnections, player:GetAttributeChangedSignal(attributeName):Connect(function()
+			if attributeName == "SessionXP" then
+				updateXP()
+			elseif attributeName == CombatConfig.CombatPointsCurrentAttribute or attributeName == CombatConfig.CombatPointsMaximumAttribute then
+				updateCombatPoints()
+			else
+				updateResource()
+			end
+		end))
 	end
+
 	presentationConnection = ReplicatedStorage.Remotes.CombatPresentation.OnClientEvent:Connect(function(message: unknown)
 		if not CombatPresentationRules.isSupported(message) then return end
 		local record = message :: CombatPresentationRules.Message
@@ -256,18 +321,19 @@ function CombatHud.stop(): ()
 	disconnectTarget()
 	disconnectPlayerHealth()
 	if characterAddedConnection ~= nil then characterAddedConnection:Disconnect(); characterAddedConnection = nil end
-	if xpConnection ~= nil then xpConnection:Disconnect(); xpConnection = nil end
-	for _, connection in resourceConnections do connection:Disconnect() end
-	table.clear(resourceConnections)
+	for _, connection in statusConnections do connection:Disconnect() end
+	table.clear(statusConnections)
 	if presentationConnection ~= nil then presentationConnection:Disconnect() end
 	presentationConnection = nil
 	if screenGui ~= nil then screenGui:Destroy(); screenGui = nil end
 	targetNameLabel = nil
 	targetHealthTextLabel = nil
 	targetHealthFill = nil
+	playerCombatPointsFill = nil
 	playerHealthFill = nil
 	playerResourceFill = nil
 	playerResourceLabel = nil
+	xpFill = nil
 	xpLabel = nil
 	feedbackLabel = nil
 end
