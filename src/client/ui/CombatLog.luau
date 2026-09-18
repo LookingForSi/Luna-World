@@ -186,7 +186,7 @@ function CombatLog.start(): ()
 	local root = Instance.new("Frame")
 	root.Name = "CombatLogFrame"
 	root.AnchorPoint = Vector2.new(0, 1)
-	root.Position = UDim2.new(0, 18, 1, -250)
+	root.Position = UDim2.new(0, 8, 1, -8)
 	root.Size = UDim2.fromOffset(500, 190)
 	root.BackgroundColor3 = Color3.fromRGB(20, 22, 29)
 	root.BackgroundTransparency = 0.18
