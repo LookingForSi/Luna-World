@@ -23,6 +23,7 @@ local onTargetChanged: ((Model?) -> ())? = nil
 local selectedModel: Model? = nil
 local TARGET_ACTION = "LunaCycleTarget"
 local CLEAR_TARGET_ACTION = "LunaClearTarget"
+local DESKTOP_PICK_PADDING = 36
 
 local function findEntityModel(instance: Instance?): Model?
 	local current = instance
@@ -122,17 +123,93 @@ function TargetController.clearTarget(): ()
 	targetRequest:FireServer("")
 end
 
-local function selectAtScreenPosition(screenPosition: Vector2, touchInput: boolean): ()
-	local offsets = if touchInput
-		then ClientCombatUiRules.getTouchProbeOffsets(24)
-		else ClientCombatUiRules.getPointerProbeOffsets(18)
-	for _, offset in offsets do
-		local model = raycastEntity(screenPosition + offset)
-		if model ~= nil then
-			requestModel(model)
-			return
+local function getScreenBounds(model: Model): (Vector2?, Vector2?, number?)
+	local camera = workspace.CurrentCamera
+	if camera == nil then return nil, nil, nil end
+
+	local boxCFrame, boxSize = model:GetBoundingBox()
+	local half = boxSize * 0.5
+	local minX, minY = math.huge, math.huge
+	local maxX, maxY = -math.huge, -math.huge
+	local nearestDepth = math.huge
+	local projected = false
+
+	for _, x in { -1, 1 } do
+		for _, y in { -1, 1 } do
+			for _, z in { -1, 1 } do
+				local worldPoint = boxCFrame:PointToWorldSpace(Vector3.new(half.X * x, half.Y * y, half.Z * z))
+				local viewportPoint = camera:WorldToViewportPoint(worldPoint)
+				if viewportPoint.Z > 0 then
+					projected = true
+					minX = math.min(minX, viewportPoint.X)
+					minY = math.min(minY, viewportPoint.Y)
+					maxX = math.max(maxX, viewportPoint.X)
+					maxY = math.max(maxY, viewportPoint.Y)
+					nearestDepth = math.min(nearestDepth, viewportPoint.Z)
+				end
+			end
 		end
 	end
+
+	if not projected then return nil, nil, nil end
+	return Vector2.new(minX, minY), Vector2.new(maxX, maxY), nearestDepth
+end
+
+local function findForgivingScreenCandidate(screenPosition: Vector2): Model?
+	local localCharacter = localPlayer.Character
+	local bestModel: Model? = nil
+	local bestCenterDistance = math.huge
+	local bestDepth = math.huge
+
+	for _, child in workspace:GetChildren() do
+		if not child:IsA("Model") or child == localCharacter then continue end
+		local targetPlayer = Players:GetPlayerFromCharacter(child)
+		local selectable = typeof(child:GetAttribute("EntityId")) == "string"
+			or (targetPlayer ~= nil and targetPlayer ~= localPlayer)
+		if not selectable then continue end
+
+		local humanoid = child:FindFirstChildOfClass("Humanoid")
+		if humanoid == nil or humanoid.Health <= 0 then continue end
+
+		local minimum, maximum, depth = getScreenBounds(child)
+		if minimum == nil or maximum == nil or depth == nil then continue end
+		if ClientCombatUiRules.screenRectDistance(screenPosition, minimum, maximum, DESKTOP_PICK_PADDING) > 0 then
+			continue
+		end
+
+		local center = (minimum + maximum) * 0.5
+		local centerDistance = (center - screenPosition).Magnitude
+		if centerDistance < bestCenterDistance
+			or (centerDistance == bestCenterDistance and depth < bestDepth)
+		then
+			bestModel = child
+			bestCenterDistance = centerDistance
+			bestDepth = depth
+		end
+	end
+
+	return bestModel
+end
+
+local function selectAtScreenPosition(screenPosition: Vector2, touchInput: boolean): ()
+	local exact = raycastEntity(screenPosition)
+	if exact ~= nil then
+		requestModel(exact)
+		return
+	end
+
+	if touchInput then
+		for _, offset in ClientCombatUiRules.getTouchProbeOffsets(24) do
+			local model = raycastEntity(screenPosition + offset)
+			if model ~= nil then
+				requestModel(model)
+				return
+			end
+		end
+	end
+
+	local forgiving = findForgivingScreenCandidate(screenPosition)
+	if forgiving ~= nil then requestModel(forgiving) end
 end
 
 local function requestNearestVisibleTarget(): ()
