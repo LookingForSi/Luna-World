@@ -6,6 +6,8 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
+local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local HudLayout = require(script.Parent.HudLayout)
 
@@ -53,17 +55,21 @@ local function updateCooldowns(): ()
 		if definition ~= nil then
 			local readyAt = player:GetAttribute(CombatConfig.SkillCooldownAttributePrefix .. skillId)
 			local remaining = if typeof(readyAt) == "number" then math.max(0, readyAt - now) else 0
-			button.Text = if remaining > 0
-				then string.format("%s\n%.1f", definition.displayName, remaining)
+			local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
+			local level = if typeof(rawLevel) == "number" then rawLevel else 1
+			local unlocked = ProgressionRules.isSkillUnlocked(skillId, level)
+			button.Text = if not unlocked
+				then string.format("%s\nLV %d", definition.displayName, definition.unlockLevel)
+				elseif remaining > 0 then string.format("%s\n%.1f", definition.displayName, remaining)
 				else definition.displayName
-			button.BackgroundColor3 = if remaining > 0 then Color3.fromRGB(33, 35, 43) else Color3.fromRGB(42, 45, 56)
+			button.BackgroundColor3 = if not unlocked or remaining > 0 then Color3.fromRGB(33, 35, 43) else Color3.fromRGB(42, 45, 56)
 			local currentResource = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
 			local resourceType = player:GetAttribute(CombatConfig.ResourceTypeAttribute)
 			local hasResource = typeof(currentResource) == "number"
 				and resourceType == skillResourceTypes[skillId]
 				and currentResource >= definition.resourceCost
-			button.Active = hasResource
-			button.TextTransparency = if hasResource then 0 else 0.45
+			button.Active = unlocked and hasResource
+			button.TextTransparency = if unlocked and hasResource then 0 else 0.45
 		end
 	end
 end
