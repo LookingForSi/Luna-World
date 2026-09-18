@@ -26,6 +26,7 @@ require(INPUT, "navigatingGui(inputObject)", "all gamepad combat callbacks must 
 require(INPUT, "CombatInputController.stop()", "input restart must clean old bindings before rebinding")
 require(INPUT, "attackHeld", "held Attack must not emit duplicate intents")
 require(TARGET, "getTouchProbeOffsets", "touch target selection must use bounded forgiveness")
+require(TARGET, "getPointerProbeOffsets", "desktop target selection must use bounded forgiveness")
 require(TARGET, "Enum.KeyCode.ButtonR3", "gamepad must provide a target command")
 require(TARGET, "requestNearestVisibleTarget", "target cycling must remain a client candidate request")
 require(TARGET, 'targetRequest:FireServer("")', "all devices need a semantic target-clear command")
@@ -39,6 +40,10 @@ require(BAR, "SkillCooldownAttributePrefix", "skill cooldown display must use se
 require(BAR, "BasicAttackReadyAtAttribute", "Attack cooldown display must use server attributes")
 require(HUD, "CombatPresentationRules.isSupported", "rejection feedback must validate server presentation")
 require(HUD, "getRejectionText", "known server rejection reasons must be rendered")
+require(HUD, "TextChatService.ChatWindowConfiguration", "HUD must place the stock chat explicitly")
+require(HUD, "Enum.VerticalAlignment.Bottom", "chat window must live at the lower-left")
+require(HUD, "Vector2.new(1, 0)", "player status HUD must anchor from the upper-right")
+require(HUD, "UDim2.new(1, -18, 0, 24)", "player status HUD must sit below the Roblox top bar")
 
 server = (ROOT / "src/server/services/CombatService.luau").read_text(encoding="utf-8")
 if 'if entityId == "" then' not in server or 'select("#", ...)' not in server:
