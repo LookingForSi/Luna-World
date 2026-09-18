@@ -50,6 +50,11 @@ return table.freeze({
 	ResourceTypeAttribute = "CombatResourceType",
 	ResourceCurrentAttribute = "CombatResourceCurrent",
 	ResourceMaximumAttribute = "CombatResourceMaximum",
+	CombatPointsCurrentAttribute = "CombatPointsCurrent",
+	CombatPointsMaximumAttribute = "CombatPointsMaximum",
+	CombatPointsDefaultMaximum = 100,
+	-- UI-only reference until the real level/XP progression curve is implemented.
+	SessionXpHudReference = 500,
 	-- Skill identifiers are appended to this prefix. Values are authoritative server-time deadlines.
 	SkillCooldownAttributePrefix = "CombatSkillCooldown_",
 	MobStunnedAttribute = "CombatStunned",
