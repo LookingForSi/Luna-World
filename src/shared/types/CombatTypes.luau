@@ -86,6 +86,7 @@ export type SkillDefinition = {
 	id: string,
 	archetypeId: string,
 	displayName: string,
+	unlockLevel: number,
 	targetType: TargetType,
 	range: number,
 	requiresFacing: boolean,
