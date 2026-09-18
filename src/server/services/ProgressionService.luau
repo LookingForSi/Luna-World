@@ -1,6 +1,10 @@
 --!strict
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
+local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
 
 local ProgressionService = {}
 
@@ -8,7 +12,14 @@ local started = false
 local playerAddedConnection: RBXScriptConnection? = nil
 
 local function initializePlayer(player: Player): ()
-	player:SetAttribute("SessionXP", 0)
+	if typeof(player:GetAttribute(ProgressionConfig.LevelAttribute)) ~= "number" then
+		player:SetAttribute(ProgressionConfig.LevelAttribute, 1)
+	end
+	if typeof(player:GetAttribute(ProgressionConfig.ExperienceAttribute)) ~= "number" then
+		player:SetAttribute(ProgressionConfig.ExperienceAttribute, 0)
+	end
+	-- Compatibility for the Milestone 1 HUD until the real level/XP row lands.
+	player:SetAttribute("SessionXP", player:GetAttribute(ProgressionConfig.ExperienceAttribute) or 0)
 end
 
 function ProgressionService.start(): ()
@@ -33,14 +44,23 @@ function ProgressionService.stop(): ()
 end
 
 function ProgressionService.awardXP(player: Player, amount: number): ()
-	assert(amount >= 0, "XP reward must not be negative")
 	if player.Parent == nil then
 		return
 	end
 
-	local current = player:GetAttribute("SessionXP")
-	local currentXP = if typeof(current) == "number" then current else 0
-	player:SetAttribute("SessionXP", currentXP + amount)
+	local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
+	local rawXP = player:GetAttribute(ProgressionConfig.ExperienceAttribute)
+	local level = if typeof(rawLevel) == "number" then rawLevel else 1
+	local xp = if typeof(rawXP) == "number" then rawXP else 0
+	if not ProgressionRules.isValidState(level, xp) then
+		warn(string.format("Refusing XP award for invalid progression state on %s", player.Name))
+		return
+	end
+
+	local result = ProgressionRules.applyXP(level, xp, amount)
+	player:SetAttribute(ProgressionConfig.LevelAttribute, result.level)
+	player:SetAttribute(ProgressionConfig.ExperienceAttribute, result.xp)
+	player:SetAttribute("SessionXP", result.xp)
 end
 
 return ProgressionService
