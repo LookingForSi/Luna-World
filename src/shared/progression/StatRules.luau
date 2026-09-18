@@ -22,7 +22,7 @@ function StatRules.derive(
 	assert(base ~= nil and growth ~= nil and baseMaxHealth ~= nil, "unknown archetype")
 
 	local levelsAfterOne = level - 1
-	local modifiers = equipment or {}
+	local modifiers: ProgressionTypes.StatModifiers = equipment or {}
 
 	return {
 		maxHealth = baseMaxHealth + growth.maxHealth * levelsAfterOne + modifier(modifiers.maxHealth),
