@@ -28,4 +28,11 @@ return function(TestRunner)
 		local anchor = CFrame.new(10, 5, -3)
 		assert(RespawnRules.spawnCFrame(anchor, 2, 2).Position == Vector3.new(10, 8, -3))
 	end)
+	TestRunner.run("manual respawn accepts exactly one pending request with an anchor", function()
+		assert(RespawnRules.canRequestRespawn(true, false, true))
+		assert(not RespawnRules.canRequestRespawn(false, false, true))
+		assert(not RespawnRules.canRequestRespawn(true, true, true))
+		assert(not RespawnRules.canRequestRespawn(true, false, false))
+	end)
+
 end
