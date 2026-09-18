@@ -7,6 +7,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local CombatRules = require(ReplicatedStorage.Shared.combat.CombatRules)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
@@ -323,6 +324,11 @@ return function(TestRunner)
 			end)
 
 			Players.RespawnTime = 0.25
+			-- Milestone 1 skill characterization needs the full kit. Keep the earlier XP assertion at level 1,
+			-- then elevate only this Studio test fixture before skill runtime begins.
+			player:SetAttribute(ProgressionConfig.LevelAttribute, ProgressionConfig.LevelCap)
+			player:SetAttribute(ProgressionConfig.ExperienceAttribute, 0)
+			player:SetAttribute("SessionXP", 0)
 			skillRuntimeCommand.OnServerInvoke = function(sender: Player, command: unknown): any
 				assert(sender == player)
 				if command == "PrepareTarget" then
