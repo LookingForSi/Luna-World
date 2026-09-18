@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local RespawnConfig = require(ReplicatedStorage.Shared.config.RespawnConfig)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local player = Players.LocalPlayer
@@ -12,6 +13,7 @@ local targetRequest = remotes:WaitForChild("TargetRequest") :: RemoteEvent
 local attackRequest = remotes:WaitForChild("AttackRequest") :: RemoteEvent
 local skillRequest = remotes:WaitForChild("SkillRequest") :: RemoteEvent
 local skillResult = remotes:WaitForChild("SkillResult") :: RemoteEvent
+local respawnRequest = remotes:WaitForChild("RespawnRequest") :: RemoteEvent
 local combatPresentation = remotes:WaitForChild("CombatPresentation") :: RemoteEvent
 local readinessFunction = ReplicatedStorage
 	:WaitForChild("TestRemotes")
@@ -233,7 +235,13 @@ prepareAndSelectTarget()
 attackRequest:FireServer()
 waitForWindup()
 assert(lifecycleCommand:InvokeServer("KillActor") == true)
-assertCleanCombatState("actor-death cleanup", true)
+waitUntil("actor-death cleanup", 3, function()
+	return player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Dead"
+		and player:GetAttribute(CombatConfig.SelectedTargetAttribute) == nil
+		and player:GetAttribute(CombatConfig.BasicAttackBufferedAttribute) == false
+		and player:GetAttribute(RespawnConfig.RespawnPendingAttribute) == true
+end)
+respawnRequest:FireServer()
 
 waitUntil("replacement character after actor death", 12, function()
 	local character = player.Character
@@ -327,15 +335,9 @@ assert(#skillResults == 0)
 assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == initialSkillResource)
 assert(player:GetAttribute(CombatConfig.BasicActionStateAttribute) == "Ready")
 
--- Facing remains server-owned; a valid-looking skill intent cannot resolve behind the actor.
+-- Player attacks now auto-face accepted targets. The exact orientation is covered by the
+-- Studio owner gate; keep this fixture from preserving the obsolete "must pre-face" contract.
 assert(skillRuntimeCommand:InvokeServer("TurnAwayFromTarget") == true)
-local healthBeforeWrongFacing = skillTargetHumanoid.Health
-local resourceBeforeWrongFacing = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
-skillRequest:FireServer("power_strike")
-task.wait(powerStrike.windupSeconds + 0.1)
-assert(#skillResults == 0)
-assert(skillTargetHumanoid.Health == healthBeforeWrongFacing)
-assert(player:GetAttribute(CombatConfig.ResourceCurrentAttribute) == resourceBeforeWrongFacing)
 assert(skillRuntimeCommand:InvokeServer("TurnTowardTarget") == true)
 task.wait(CombatConfig.SkillRequestMinIntervalSeconds)
 
@@ -435,6 +437,8 @@ local canceledResult = waitForSkillResult(3, "death-canceled terminal result")
 assert(canceledResult.applied == false and canceledResult.reason == "Canceled")
 task.wait(powerStrike.windupSeconds + 0.1)
 assert(#skillResults == 3, "canceled delayed resolve must not duplicate its result")
+assert(player:GetAttribute(RespawnConfig.RespawnPendingAttribute) == true)
+respawnRequest:FireServer()
 
 waitUntil("skill fixture respawn", 5, function()
 	local character = player.Character
@@ -529,6 +533,10 @@ task.wait(defensiveStance.cooldownSeconds + 0.1)
 skillRequest:FireServer("defensive_stance")
 assert(waitForSkillResult(7, "re-enabled defensive stance result").applied == true)
 assert(skillRuntimeCommand:InvokeServer("KillActor") == true)
+waitUntil("defensive stance death pending respawn", 3, function()
+	return player:GetAttribute(RespawnConfig.RespawnPendingAttribute) == true
+end)
+respawnRequest:FireServer()
 waitUntil("respawn after defensive stance death", 5, function()
 	local character = player.Character
 	local livingHumanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
@@ -859,6 +867,10 @@ local replacementConnection = player.CharacterAdded:Connect(function()
 	replacementCount += 1
 end)
 assert(autoAttackRuntimeCommand:InvokeServer("KillActor") == true)
+waitUntil("AUTO death pending manual respawn", 3, function()
+	return player:GetAttribute(RespawnConfig.RespawnPendingAttribute) == true
+end)
+respawnRequest:FireServer()
 waitUntil("replacement actor with AUTO off", 12, function()
 	local character = player.Character
 	local actorHumanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
@@ -908,6 +920,10 @@ waitUntil("pending action before second death", 3, function()
 end)
 local firstRespawnCharacter = player.Character
 assert(autoAttackRuntimeCommand:InvokeServer("KillActor") == true)
+waitUntil("second death pending manual respawn", 3, function()
+	return player:GetAttribute(RespawnConfig.RespawnPendingAttribute) == true
+end)
+respawnRequest:FireServer()
 waitUntil("second clean replacement actor", 12, function()
 	local character = player.Character
 	local actorHumanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
