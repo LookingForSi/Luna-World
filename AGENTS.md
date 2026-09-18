@@ -258,6 +258,22 @@ If the owner explicitly permits deferring manual checkpoints:
 
 If a later implementation decision genuinely depends on the manual result, stop at that point instead of guessing.
 
+### 14.8 Direct repository changes when write access exists
+
+When the agent has authorized write access to this repository and the owner asks for a code, documentation, configuration, or test change, perform the change directly in the repository whenever it is safe and technically possible.
+
+Do not respond with copy-paste code snippets, manual patch instructions, or "you can change this line" guidance as the default workflow when the agent can make the edit itself. Do not ask the owner to edit source files merely to save agent effort.
+
+Owner actions should be requested only when they genuinely require owner-side interaction, such as:
+
+- Roblox Studio runtime / visual acceptance;
+- device, gamepad, or touch testing unavailable to the agent;
+- permissions, authentication, secrets, billing, or account-level actions;
+- an unresolved product/design decision that materially changes intended behavior;
+- destructive or irreversible actions requiring explicit approval.
+
+After direct edits, report concisely what changed, the branch/HEAD when useful, what automated checks were run, and only the minimum manual acceptance still required.
+
 ### 14.7 Usage-limit priority
 
 When usage limits become a constraint, optimize in this order:
