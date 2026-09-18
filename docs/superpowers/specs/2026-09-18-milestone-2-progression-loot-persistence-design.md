@@ -1,7 +1,7 @@
 # Luna World — Milestone 2: Progression, Loot & Persistence
 
 Дата: 2026-09-18  
-Статус: **Draft для обсуждения владельцем**  
+Статус: **Approved владельцем 2026-09-18**  
 Основание: `docs/ROADMAP.md`, `docs/GAME_DESIGN_V0.1.md`, принятый Milestone 1.
 
 ## 1. Цель Milestone 2
@@ -778,24 +778,18 @@ Persistent write сохраняет уже сформированное canonica
 - no silent profile reset;
 - docs/schema/changelog sync.
 
-## 18. Открытые owner-decisions
+## 18. Зафиксированные owner-decisions
 
-Документ и implementation plan можно готовить уже сейчас с рекомендуемыми defaults ниже. Перед gameplay implementation желательно зафиксировать только действительно продуктовые решения:
+Владелец утвердил рекомендуемые defaults без изменений:
 
-1. **Loot presentation**  
-   Рекомендация M2: direct-to-inventory + combat log. Ground drops оставить presentation layer на Milestone 4.  
-   Альтернатива: сразу physical ground drop.
+1. **Loot presentation** — direct-to-inventory + combat log в M2; ground drops остаются presentation layer-кандидатом на Milestone 4.
 
-2. **Inventory capacity**  
-   Рекомендация: 40 slots. Это достаточно ограниченно, но не душит vertical slice.
+2. **Inventory capacity** — 40 slots.
 
-3. **Skill unlock levels**  
-   Рекомендация: 2 / 4 / 6.
+3. **Skill unlock levels** — 2 / 4 / 6.
 
-4. **Level-up heal**  
-   Рекомендация: не full-heal; сохранять процент HP/resource.
+4. **Level-up heal** — не full-heal; сохранять процент HP/resource.
 
-5. **Equipment individuality**  
-   Рекомендация: instance IDs уже сейчас, даже без random affixes. Это немного сложнее, но сильно безопаснее для persistence и будущей эволюции.
+5. **Equipment individuality** — persistent instance IDs уже в M2, даже без random affixes.
 
 Все остальные числа считаются tuning values и не требуют отдельного owner approval перед началом реализации после утверждения общей спецификации.
