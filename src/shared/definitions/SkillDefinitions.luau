@@ -31,7 +31,7 @@ local definitions: { [string]: CombatTypes.SkillDefinition } = {
 		id = "defensive_stance", archetypeId = "knight", displayName = "Защитная стойка", targetType = "Self",
 		range = 0, requiresFacing = false, windupSeconds = 0, cooldownSeconds = 1, cooldownGroup = "defensive_stance",
 		resourceType = "Stamina", resourceCost = 0, powerSource = "None", effect = {
-			kind = "DefenseStance", magnitude = 0.3, movementSpeedMultiplier = 0.55, isToggle = true,
+			kind = "DefenseStance", magnitude = 0.3, movementSpeedMultiplier = 0.7, isToggle = true,
 		},
 		canCrit = false, canMoveDuringWindup = true, interruptible = false, presentationKey = "defensive_stance",
 	},
