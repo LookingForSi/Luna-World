@@ -19,6 +19,7 @@ def require(path: str, token: str, message: str) -> None:
 
 
 SERVER_DEBUG = "src/server/services/StudioDebugService.luau"
+COMBAT = "src/server/services/CombatService.luau"
 CLIENT_DEBUG = "src/client/ui/StudioTestPanel.luau"
 HUD = "src/client/ui/CombatHud.luau"
 MOBS = "src/shared/definitions/MobDefinitions.luau"
@@ -32,8 +33,12 @@ if "StudioSetArchetype" in read(DEFAULT_PROJECT):
 require(SERVER_DEBUG, "RunService:IsStudio()", "Studio archetype switching must be gated by RunService:IsStudio on the server")
 require(SERVER_DEBUG, 'Instance.new("RemoteEvent")', "Studio archetype remote must be created dynamically by the Studio-only service")
 require(SERVER_DEBUG, 'created.Name = "StudioSetArchetype"', "Studio archetype remote name is missing")
-require(SERVER_DEBUG, "ArchetypeDefinitions[archetypeId]", "server must validate requested archetypes")
-require(SERVER_DEBUG, "player:LoadCharacter()", "class switch must rebuild combat state through the existing character lifecycle")
+require(SERVER_DEBUG, "CombatService._setArchetypeForStudio", "Studio debug service must delegate lifecycle reset to CombatService")
+require(COMBAT, "function CombatService._setArchetypeForStudio", "CombatService Studio archetype seam is missing")
+require(COMBAT, 'assert(RunService:IsStudio()', "Studio archetype seam must hard-fail outside Studio")
+require(COMBAT, "clearPlayerState(player, true)", "class switch must discard the old authoritative combat state before respawn")
+require(COMBAT, "player:SetAttribute(ARCHETYPE_ATTRIBUTE, archetypeId)", "new archetype must be written after old combat state cleanup")
+require(COMBAT, "player:LoadCharacter()", "class switch must rebuild combat state through the existing character lifecycle")
 require(SERVER_MAIN, "StudioDebugService.start()", "server bootstrap must start the Studio debug service")
 
 # Client debug controls also have their own Studio guard; live clients must never render them.
@@ -47,6 +52,8 @@ for token in ("PlayerHealthBar", "PlayerHealthFill", "PlayerResourceBar", "Playe
     require(HUD, token, f"player HUD is missing {token}")
 require(HUD, "humanoid.Health / humanoid.MaxHealth", "player HP bar must be driven by the local Humanoid")
 require(HUD, "currentValue / maximumValue", "resource bar must be driven by authoritative replicated resource values")
+require(HUD, "Vector2.new(1, 0)", "player status HUD must anchor from the upper-right")
+require(HUD, "UDim2.new(1, -18, 0, 24)", "player status HUD must sit below the Roblox top bar")
 
 # Grey wolf damage is deliberately above the knight's current defense so an ordinary PvE hit is visible in acceptance testing.
 require(MOBS, "basicAttackDamage = 22", "grey wolf needs visible post-mitigation damage against the knight test archetype")
