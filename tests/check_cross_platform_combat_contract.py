@@ -50,5 +50,13 @@ require(HUD, "UDim2.new(1, -18, 0, 24)", "player status HUD must sit below the R
 server = (ROOT / "src/server/services/CombatService.luau").read_text(encoding="utf-8")
 if 'if entityId == "" then' not in server or 'select("#", ...)' not in server:
     raise AssertionError("server target clear must accept only one exact empty-string request")
+if "local function facePlayerTowardModel" not in server:
+    raise AssertionError("accepted player attacks must automatically face their target")
+if "local isFacing = ActionRules.isFacing(" in server:
+    raise AssertionError("player attacks must not require manual pre-facing before acceptance")
+if "facePlayerTowardModel(player, initialTarget)" not in server:
+    raise AssertionError("basic attack acceptance must rotate the actor toward its target")
+if "facePlayerTowardModel(player, target.model)" not in server:
+    raise AssertionError("facing-required skills must rotate the actor toward their accepted target")
 
 print("Cross-platform combat client contract: PASS")
