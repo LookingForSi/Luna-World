@@ -399,6 +399,10 @@ function CombatEffectService.execute(
 	if effect.kind == "MovementSlow" then
 		if target.kind ~= "Mob" then return { applied = false } end
 		local applied = applySlow(target.model, effect.magnitude, effect.durationSeconds, actor, presentationActionId, target.entityId, definition.id, definition.presentationKey)
+		if applied then
+			-- A debuff is a hostile action even when it deals no damage.
+			MobService.registerHostileAction(target.entityId, actor)
+		end
 		return { applied = applied, effectPhase = if applied then "Started" else nil }
 	end
 
