@@ -81,13 +81,20 @@ function ActionBar.start(skillIds: { string }, onAttack: () -> (), onAutoToggle:
 	frame.AnchorPoint = Vector2.new(1, 1)
 	frame.Position = UDim2.new(1, -HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)
 	frame.Size = UDim2.fromOffset(HudLayout.ActionBarSize.X, HudLayout.ActionBarSize.Y)
-	frame.BackgroundTransparency = 1
+	HudLayout.applyPanelStyle(frame)
 	frame.Parent = gui
+
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.Position = UDim2.fromOffset(HudLayout.InnerPadding, HudLayout.InnerPadding)
+	content.Size = UDim2.new(1, -HudLayout.InnerPadding * 2, 1, -HudLayout.InnerPadding * 2)
+	content.BackgroundTransparency = 1
+	content.Parent = frame
 
 	for index, skillId in skillIds do
 		local definition = SkillDefinitions[skillId]
 		if definition ~= nil then
-			local skillButton = makeButton(frame, "Skill" .. tostring(index), definition.displayName, UDim2.new(0.32, -4, 0, 54))
+			local skillButton = makeButton(content, "Skill" .. tostring(index), definition.displayName, UDim2.new(0.32, -4, 0, 54))
 			skillButton.Position = UDim2.new((index - 1) * 0.34, 0, 0, 0)
 			skillButtons[skillId] = skillButton
 			skillResourceTypes[skillId] = definition.resourceType
@@ -95,13 +102,13 @@ function ActionBar.start(skillIds: { string }, onAttack: () -> (), onAutoToggle:
 		end
 	end
 
-	local clearButton = makeButton(frame, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.2, -4, 0, 70))
+	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.2, -4, 0, 70))
 	clearButton.Position = UDim2.new(0, 0, 0, 62)
-	autoButton = makeButton(frame, "Auto", "AUTO\nВЫКЛ", UDim2.new(0.25, -4, 0, 70))
+	autoButton = makeButton(content, "Auto", "AUTO\nВЫКЛ", UDim2.new(0.25, -4, 0, 70))
 	local auto = autoButton :: TextButton
 	auto.Position = UDim2.new(0.21, 0, 0, 62)
 	local attackSize = UDim2.new(0.52, -4, 0, if UserInputService.TouchEnabled then 80 else 70)
-	attackButton = makeButton(frame, "Attack", "АТАКА", attackSize)
+	attackButton = makeButton(content, "Attack", "АТАКА", attackSize)
 	local attack = attackButton :: TextButton
 	attack.Position = UDim2.new(0.48, 0, 0, if UserInputService.TouchEnabled then 58 else 62)
 	attack.TextSize = 18
