@@ -172,6 +172,15 @@ function MobService.getLivingTargetsInRadius(center: Vector3, radius: number, ma
 	return MobService.selectLivingTargetsInRadius(mobsByEntityId, center, radius, maximumTargets)
 end
 
+function MobService.registerHostileAction(entityId: string, attacker: Player): boolean
+	local model = mobsByEntityId[entityId]
+	if model == nil or attacker.Parent ~= Players then return false end
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if humanoid == nil or humanoid.Health <= 0 then return false end
+	hostileActionEvent:Fire(model, attacker)
+	return true
+end
+
 function MobService.applyDamage(entityId: string, amount: number, attacker: Player): boolean
 	assert(amount >= 0, "damage must not be negative")
 
@@ -188,7 +197,7 @@ function MobService.applyDamage(entityId: string, amount: number, attacker: Play
 	-- Damage values and attribution are accepted only through this server-owned API.
 	-- The attacker is intentionally retained in server memory, never replicated.
 	lastAttackerByEntityId[entityId] = attacker
-	hostileActionEvent:Fire(model, attacker)
+	MobService.registerHostileAction(entityId, attacker)
 	humanoid:TakeDamage(amount)
 	return true
 end
