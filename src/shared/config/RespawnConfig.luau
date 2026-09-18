@@ -6,5 +6,6 @@ return table.freeze({
 	SettlementIdAttribute = "SettlementId",
 	AnchorIdAttribute = "RespawnAnchorId",
 	LunaVillageSettlementId = "luna_village",
-	RespawnDelaySeconds = 3,
+	RespawnPendingAttribute = "RespawnPending",
+	RespawnDelaySeconds = 0,
 })
