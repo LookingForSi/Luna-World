@@ -63,6 +63,7 @@ require(HUD, "humanoid.Health / humanoid.MaxHealth", "player HP bar must be driv
 require(HUD, "currentValue / maximumValue", "resource bar must be driven by authoritative replicated resource values")
 require(HUD, "Vector2.new(1, 0)", "player status HUD must anchor from the upper-right")
 require(HUD, "HudLayout.CornerMargin", "player status HUD must use the shared corner margin")
+require(HUD, "gui.IgnoreGuiInset = true", "player status top margin must not include the Roblox top inset")
 require(HUD, '"STM"', "knight stamina HUD abbreviation is missing")
 require(HUD, '"FCS"', "ranger focus HUD abbreviation is missing")
 require(HUD, '"MP"', "mystic mana HUD abbreviation is missing")
