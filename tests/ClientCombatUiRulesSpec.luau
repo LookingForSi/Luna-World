@@ -41,16 +41,11 @@ return function(TestRunner)
 		for _, offset in offsets do assert(offset.Magnitude <= 24) end
 	end)
 
-	TestRunner.run("desktop target forgiveness covers diagonals without exceeding its radius", function()
-		local offsets = Rules.getPointerProbeOffsets(18)
-		assert(#offsets == 9 and offsets[1] == Vector2.zero)
-		local hasPositiveDiagonal = false
-		local hasNegativeDiagonal = false
-		for _, offset in offsets do
-			assert(offset.Magnitude <= 18.001)
-			if offset.X > 0 and offset.Y > 0 then hasPositiveDiagonal = true end
-			if offset.X < 0 and offset.Y < 0 then hasNegativeDiagonal = true end
-		end
-		assert(hasPositiveDiagonal and hasNegativeDiagonal)
+	TestRunner.run("screen target forgiveness measures distance to an expanded silhouette rectangle", function()
+		local minimum = Vector2.new(100, 100)
+		local maximum = Vector2.new(200, 200)
+		assert(Rules.screenRectDistance(Vector2.new(150, 150), minimum, maximum, 0) == 0)
+		assert(Rules.screenRectDistance(Vector2.new(215, 150), minimum, maximum, 20) == 0)
+		assert(math.abs(Rules.screenRectDistance(Vector2.new(230, 150), minimum, maximum, 20) - 10) < 0.001)
 	end)
 end
