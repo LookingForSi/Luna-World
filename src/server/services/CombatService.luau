@@ -176,6 +176,17 @@ local function getPlayerByCanonicalTargetId(targetId: string): Player?
 	return nil
 end
 
+local function facePlayerTowardModel(player: Player, target: Model): ()
+	local character = player.Character
+	local root = if character ~= nil then character:FindFirstChild("HumanoidRootPart") else nil
+	local targetRoot = target:FindFirstChild("HumanoidRootPart")
+	if root == nil or not root:IsA("BasePart") or targetRoot == nil or not targetRoot:IsA("BasePart") then return end
+	local origin = root.Position
+	local horizontalTarget = Vector3.new(targetRoot.Position.X, origin.Y, targetRoot.Position.Z)
+	if (horizontalTarget - origin).Magnitude <= 0.001 then return end
+	root.CFrame = CFrame.lookAt(origin, horizontalTarget)
+end
+
 local function resolveSkillTarget(
 	player: Player,
 	definition: CombatTypes.SkillDefinition,
@@ -230,13 +241,8 @@ local function resolveSkillTarget(
 	if target == nil or targetRoot == nil then return nil end
 	if not SkillRules.isTargetContextAllowed(definition.targetType, "Mob", false) then return nil end
 	local inRange = ActionRules.isWithinRange(playerRoot.Position, targetRoot.Position, definition.range, CombatConfig.RangeTolerance)
-	local isFacing = not definition.requiresFacing or ActionRules.isFacing(
-		playerRoot.Position,
-		playerRoot.CFrame.LookVector,
-		targetRoot.Position,
-		CombatConfig.FacingArcDegrees
-	)
-	if not SkillRules.isEnemyTargetValid(selectedTargetId, selectedTargetId, true, true, inRange, isFacing) then
+	-- Player actions auto-face a valid target; manual pre-facing is not an eligibility requirement.
+	if not SkillRules.isEnemyTargetValid(selectedTargetId, selectedTargetId, true, true, inRange, true) then
 		return nil
 	end
 	return { kind = "Mob", entityId = selectedTargetId, model = target }
@@ -287,6 +293,10 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 		return
 	end
 
+	if definition.requiresFacing and target.kind == "Mob" then
+		facePlayerTowardModel(player, target.model)
+	end
+
 	local pendingAction = SkillActionLifecycle.begin(
 		state.skillSlot,
 		true,
@@ -328,6 +338,9 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 			resolvedTarget.entityId,
 			resolvedTarget.model
 		) then
+			if definition.requiresFacing and resolvedTarget.kind == "Mob" then
+				facePlayerTowardModel(player, resolvedTarget.model)
+			end
 			local executionSucceeded, executedResult = pcall(
 				CombatEffectService.execute,
 				player,
@@ -556,19 +569,15 @@ local function getValidAttackTarget(player: Player, expectedTargetId: string, ex
 		targetAlive,
 		definition.range + CombatConfig.RangeTolerance
 	)
-	local isFacing = ActionRules.isFacing(
-		playerRoot.Position,
-		playerRoot.CFrame.LookVector,
-		targetRoot.Position,
-		CombatConfig.FacingArcDegrees
-	)
-	if not ActionRules.canResolveAttack(expectedTargetId, targetsByPlayer[player], actorAlive, targetAlive, inRange, isFacing) then return nil end
+	if not ActionRules.canResolveAttack(expectedTargetId, targetsByPlayer[player], actorAlive, targetAlive, inRange, true) then return nil end
 	return target
 end
 
 local function acceptAttack(player: Player, expectedTargetId: string): ()
 	local state = getState(player)
-	if state.actionState ~= "Ready" or getValidAttackTarget(player, expectedTargetId, nil) == nil then return end
+	local initialTarget = getValidAttackTarget(player, expectedTargetId, nil)
+	if state.actionState ~= "Ready" or initialTarget == nil then return end
+	facePlayerTowardModel(player, initialTarget)
 	local definition = getBasicAttackDefinition(state)
 	local attackInterval = getBasicAttackInterval(state)
 	-- Basic attacks are always free, but still pass through the authoritative resource boundary.
@@ -602,6 +611,7 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 		local amount: number? = nil
 		local isCritical: boolean? = nil
 		if target ~= nil then
+			facePlayerTowardModel(player, target)
 			local attackPower = if definition.powerSource == "MagicAttack" then state.stats.magicAttack else state.stats.physicalAttack
 			local damage = DamageRules.resolve(
 				DamageRules.getBaseAmount(attackPower, definition.effect.magnitude),
