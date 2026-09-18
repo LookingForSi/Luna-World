@@ -3,8 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
-local ArchetypeDefinitions = require(ReplicatedStorage.Shared.definitions.ArchetypeDefinitions)
+local CombatService = require(script.Parent.CombatService)
 
 local StudioDebugService = {}
 
@@ -32,12 +31,8 @@ function StudioDebugService.start(): ()
 	started = true
 	remote = createRemote()
 	connection = (remote :: RemoteEvent).OnServerEvent:Connect(function(player: Player, archetypeId: unknown, ...)
-		if select("#", ...) ~= 0 then return end
-		if typeof(archetypeId) ~= "string" or ArchetypeDefinitions[archetypeId] == nil then return end
-		player:SetAttribute(CombatConfig.ArchetypeAttribute, archetypeId)
-		-- A fresh character lets the existing authoritative respawn/combat lifecycle rebuild
-		-- stats, resources, cooldown state and UI-facing attributes from the new archetype.
-		player:LoadCharacter()
+		if select("#", ...) ~= 0 or typeof(archetypeId) ~= "string" then return end
+		CombatService._setArchetypeForStudio(player, archetypeId)
 	end)
 end
 
