@@ -258,6 +258,18 @@ If the owner explicitly permits deferring manual checkpoints:
 
 If a later implementation decision genuinely depends on the manual result, stop at that point instead of guessing.
 
+### 14.7 Usage-limit priority
+
+When usage limits become a constraint, optimize in this order:
+
+1. remove redundant agent handoffs and duplicated reviews;
+2. batch related implementation tasks between stabilization gates;
+3. reduce repeated context loading and status narration;
+4. use lighter model/reasoning settings for mechanical work when available;
+5. preserve required tests, server-authority checks, malicious-client checks, lifecycle cleanup review, and final verification.
+
+Never save usage by skipping correctness checks that protect gameplay state, networking, persistence, or player data.
+
 ### 14.8 Direct repository changes when write access exists
 
 When the agent has authorized write access to this repository and the owner asks for a code, documentation, configuration, or test change, perform the change directly in the repository whenever it is safe and technically possible.
@@ -274,14 +286,3 @@ Owner actions should be requested only when they genuinely require owner-side in
 
 After direct edits, report concisely what changed, the branch/HEAD when useful, what automated checks were run, and only the minimum manual acceptance still required.
 
-### 14.7 Usage-limit priority
-
-When usage limits become a constraint, optimize in this order:
-
-1. remove redundant agent handoffs and duplicated reviews;
-2. batch related implementation tasks between stabilization gates;
-3. reduce repeated context loading and status narration;
-4. use lighter model/reasoning settings for mechanical work when available;
-5. preserve required tests, server-authority checks, malicious-client checks, lifecycle cleanup review, and final verification.
-
-Never save usage by skipping correctness checks that protect gameplay state, networking, persistence, or player data.
