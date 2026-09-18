@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ArchetypeDefinitions = require(ReplicatedStorage.Shared.definitions.ArchetypeDefinitions)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 
@@ -77,6 +78,8 @@ return function(TestRunner)
 			local archetype = ArchetypeDefinitions[definition.archetypeId]
 			local prefix = definition.id .. "."
 			assert(type(definition.displayName) == "string" and definition.displayName ~= "", prefix .. "displayName is required")
+			assertFiniteNumber(definition.unlockLevel, prefix .. "unlockLevel")
+			assert(definition.unlockLevel % 1 == 0 and definition.unlockLevel <= ProgressionConfig.LevelCap, prefix .. "unlockLevel must be a supported integer level")
 			assert(archetype ~= nil, prefix .. "archetypeId must reference an archetype")
 			assert(definition.resourceType == archetype.resourceType, prefix .. "resourceType must match archetype")
 			assert(SUPPORTED_TARGETS[definition.targetType], prefix .. "targetType is unsupported")
