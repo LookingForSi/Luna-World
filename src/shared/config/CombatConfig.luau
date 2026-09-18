@@ -24,7 +24,7 @@ return table.freeze({
 	ResourceRegenerationIntervalSeconds = 0.25,
 	-- Working vertical-slice defaults. Progression and equipment may provide calculated snapshots later.
 	ArchetypeStats = table.freeze({
-		knight = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 5, physicalAttack = 25, magicAttack = 0, physicalDefense = 12, attackSpeedMultiplier = 1, criticalChance = 0.1, movementSpeed = 16 }),
+		knight = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 5, physicalAttack = 25, magicAttack = 0, physicalDefense = 12, attackSpeedMultiplier = 1, criticalChance = 0.1, movementSpeed = 17 }),
 		ranger = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 6, physicalAttack = 23, magicAttack = 0, physicalDefense = 7, attackSpeedMultiplier = 1, criticalChance = 0.12, movementSpeed = 16 }),
 		mystic = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 4, physicalAttack = 8, magicAttack = 27, physicalDefense = 5, attackSpeedMultiplier = 1, criticalChance = 0.08, movementSpeed = 16 }),
 	}),
