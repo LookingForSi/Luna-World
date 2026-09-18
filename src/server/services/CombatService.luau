@@ -1001,6 +1001,17 @@ function CombatService.stop(): ()
 	table.clear(mobAttackReadyAt)
 end
 
+-- Studio-only archetype switch seam. StudioDebugService delegates here so the
+-- old authoritative state is torn down before the selected archetype is written.
+function CombatService._setArchetypeForStudio(player: Player, archetypeId: string): boolean
+	assert(RunService:IsStudio(), "Studio archetype switch is unavailable outside Studio")
+	if player.Parent ~= Players or ArchetypeDefinitions[archetypeId] == nil then return false end
+	clearPlayerState(player, true)
+	player:SetAttribute(ARCHETYPE_ATTRIBUTE, archetypeId)
+	player:LoadCharacter()
+	return true
+end
+
 -- Test-project-only server seam. It is unavailable in live servers and is never
 -- reachable through a client RemoteEvent.
 function CombatService._setResourceForTest(player: Player, current: number): ()
