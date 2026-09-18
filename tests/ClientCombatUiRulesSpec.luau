@@ -40,4 +40,17 @@ return function(TestRunner)
 		assert(#offsets == 5 and offsets[1] == Vector2.zero)
 		for _, offset in offsets do assert(offset.Magnitude <= 24) end
 	end)
+
+	TestRunner.run("desktop target forgiveness covers diagonals without exceeding its radius", function()
+		local offsets = Rules.getPointerProbeOffsets(18)
+		assert(#offsets == 9 and offsets[1] == Vector2.zero)
+		local hasPositiveDiagonal = false
+		local hasNegativeDiagonal = false
+		for _, offset in offsets do
+			assert(offset.Magnitude <= 18.001)
+			if offset.X > 0 and offset.Y > 0 then hasPositiveDiagonal = true end
+			if offset.X < 0 and offset.Y < 0 then hasNegativeDiagonal = true end
+		end
+		assert(hasPositiveDiagonal and hasNegativeDiagonal)
+	end)
 end
