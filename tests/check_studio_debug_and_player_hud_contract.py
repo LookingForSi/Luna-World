@@ -49,16 +49,16 @@ require(CLIENT_MAIN, "StudioTestPanel.start()", "client bootstrap must start the
 
 # Player HUD has four rows: PvP-only CP, HP, archetype resource, and XP.
 for token in (
-    "CombatPointsBar",
-    "CombatPointsFill",
-    "PlayerHealthBar",
-    "PlayerHealthFill",
-    "PlayerResourceBar",
-    "PlayerResourceFill",
-    "SessionXPBar",
-    "SessionXPFill",
+    '"CombatPoints"',
+    '"CombatPointsFill"',
+    '"PlayerHealth"',
+    '"PlayerHealthFill"',
+    '"PlayerResource"',
+    '"PlayerResourceFill"',
+    '"SessionXP"',
+    '"SessionXPFill"',
 ):
-    require(HUD, token, f"player HUD is missing {token}")
+    require(HUD, token, f"player HUD is missing row contract {token}")
 require(HUD, "humanoid.Health / humanoid.MaxHealth", "player HP bar must be driven by the local Humanoid")
 require(HUD, "currentValue / maximumValue", "resource bar must be driven by authoritative replicated resource values")
 require(HUD, "Vector2.new(1, 0)", "player status HUD must anchor from the upper-right")
