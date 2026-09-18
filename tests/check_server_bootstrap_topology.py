@@ -16,6 +16,7 @@ EXPECTED_SERVICES = {
     "MobService",
     "ProgressionService",
     "RespawnService",
+    "StudioDebugService",
 }
 
 
