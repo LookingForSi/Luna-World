@@ -175,6 +175,9 @@ function CombatHud.start(): ()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CombatHud"
 	gui.ResetOnSpawn = false
+	-- Use the physical viewport edge so the top-right status panel has the
+	-- same visible corner margin as the bottom-left/right HUD panels.
+	gui.IgnoreGuiInset = true
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	-- Stock chat remains lower-left; the custom combat log owns its own corner-safe placement.
