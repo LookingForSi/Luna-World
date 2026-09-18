@@ -8,6 +8,7 @@ local ClientCombatLogRules = require(ReplicatedStorage.Shared.combat.ClientComba
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local HudLayout = require(script.Parent.HudLayout)
 
 local CombatLog = {}
 
@@ -71,7 +72,9 @@ local function setExpanded(value: boolean): ()
 	expanded = value
 	if body ~= nil then body.Visible = expanded end
 	if frame ~= nil then
-		frame.Size = if expanded then UDim2.fromOffset(500, 190) else UDim2.fromOffset(128, 30)
+		frame.Size = if expanded
+			then UDim2.fromOffset(HudLayout.CombatLogSize.X, HudLayout.CombatLogSize.Y)
+			else UDim2.fromOffset(128, 30)
 	end
 	if toggleButton ~= nil then toggleButton.Text = if expanded then "БОЙ  ▲" else "БОЙ  ▼" end
 end
@@ -186,11 +189,9 @@ function CombatLog.start(): ()
 	local root = Instance.new("Frame")
 	root.Name = "CombatLogFrame"
 	root.AnchorPoint = Vector2.new(0, 1)
-	root.Position = UDim2.new(0, 8, 1, -8)
-	root.Size = UDim2.fromOffset(500, 190)
-	root.BackgroundColor3 = Color3.fromRGB(20, 22, 29)
-	root.BackgroundTransparency = 0.18
-	root.BorderSizePixel = 0
+	root.Position = UDim2.new(0, HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)
+	root.Size = UDim2.fromOffset(HudLayout.CombatLogSize.X, HudLayout.CombatLogSize.Y)
+	HudLayout.applyPanelStyle(root)
 	root.Parent = gui
 
 	local toggle = Instance.new("TextButton")
