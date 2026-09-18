@@ -86,6 +86,8 @@ local ARCHETYPE_ATTRIBUTE = CombatConfig.ArchetypeAttribute
 local RESOURCE_TYPE_ATTRIBUTE = CombatConfig.ResourceTypeAttribute
 local RESOURCE_CURRENT_ATTRIBUTE = CombatConfig.ResourceCurrentAttribute
 local RESOURCE_MAXIMUM_ATTRIBUTE = CombatConfig.ResourceMaximumAttribute
+local COMBAT_POINTS_CURRENT_ATTRIBUTE = CombatConfig.CombatPointsCurrentAttribute
+local COMBAT_POINTS_MAXIMUM_ATTRIBUTE = CombatConfig.CombatPointsMaximumAttribute
 local SKILL_COOLDOWN_ATTRIBUTE_PREFIX = CombatConfig.SkillCooldownAttributePrefix
 
 local getLivingCharacterRoot: (Player) -> BasePart?
@@ -123,6 +125,27 @@ local function replicateResource(player: Player, state: PlayerCombatState): ()
 	player:SetAttribute(RESOURCE_TYPE_ATTRIBUTE, state.stats.resource.resourceType)
 	player:SetAttribute(RESOURCE_CURRENT_ATTRIBUTE, state.stats.resource.current)
 	player:SetAttribute(RESOURCE_MAXIMUM_ATTRIBUTE, state.stats.resource.maximum)
+end
+
+local function ensureCombatPoints(player: Player): ()
+	local configuredMaximum = CombatConfig.CombatPointsDefaultMaximum
+	local maximum = player:GetAttribute(COMBAT_POINTS_MAXIMUM_ATTRIBUTE)
+	if typeof(maximum) ~= "number" or maximum <= 0 then
+		maximum = configuredMaximum
+		player:SetAttribute(COMBAT_POINTS_MAXIMUM_ATTRIBUTE, maximum)
+	end
+	local current = player:GetAttribute(COMBAT_POINTS_CURRENT_ATTRIBUTE)
+	if typeof(current) ~= "number" then
+		player:SetAttribute(COMBAT_POINTS_CURRENT_ATTRIBUTE, maximum)
+	end
+end
+
+local function restoreCombatPoints(player: Player): ()
+	ensureCombatPoints(player)
+	local maximum = player:GetAttribute(COMBAT_POINTS_MAXIMUM_ATTRIBUTE)
+	if typeof(maximum) == "number" then
+		player:SetAttribute(COMBAT_POINTS_CURRENT_ATTRIBUTE, maximum)
+	end
 end
 
 local function getSkillCooldownAttribute(skillId: string): string
@@ -828,6 +851,7 @@ end
 local function onPlayerAdded(player: Player): ()
 	if characterAddedConnections[player] ~= nil then return end
 	setReplicatedTarget(player, nil)
+	ensureCombatPoints(player)
 	replicateState(player, getState(player))
 	characterAddedConnections[player] = player.CharacterAdded:Connect(function(character) bindCharacter(player, character) end)
 	if player.Character ~= nil then bindCharacter(player, player.Character) end
@@ -915,6 +939,7 @@ function CombatService.handlePlayerRespawn(player: Player, character: Model): ()
 	state.stats.resource = ResourceRules.restore(state.stats.resource, state.stats.resource.maximum)
 	state.regenerationElapsed = 0
 	replicateState(player, state)
+	restoreCombatPoints(player)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if humanoid ~= nil then humanoid.Health = humanoid.MaxHealth end
 	publish("Respawn", HttpService:GenerateGUID(false), player, { outcome = "Respawned" })
@@ -1011,6 +1036,8 @@ function CombatService.stop(): ()
 		player:SetAttribute(RESOURCE_TYPE_ATTRIBUTE, nil)
 		player:SetAttribute(RESOURCE_CURRENT_ATTRIBUTE, nil)
 		player:SetAttribute(RESOURCE_MAXIMUM_ATTRIBUTE, nil)
+		player:SetAttribute(COMBAT_POINTS_CURRENT_ATTRIBUTE, nil)
+		player:SetAttribute(COMBAT_POINTS_MAXIMUM_ATTRIBUTE, nil)
 		player:SetAttribute(ARCHETYPE_ATTRIBUTE, nil)
 		for skillId in SkillDefinitions do
 			player:SetAttribute(getSkillCooldownAttribute(skillId), nil)
