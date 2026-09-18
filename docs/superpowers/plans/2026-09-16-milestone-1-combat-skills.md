@@ -626,6 +626,21 @@ python3 tests/check_server_bootstrap_topology.py
 
 ### Задача 19. Финальная стабилизация и проверка архитектуры этапа 1
 
+**Промежуточный проход 2026-09-18:**
+
+- подтверждено отсутствие старого runtime-состояния `IsBasicAttacking`; `AttackRequest` принимает только новый no-payload контракт и явно отклоняет legacy boolean/extra args;
+- проверены server-authoritative rate limits для Target/Attack/Skill/AUTO и state-gating ручного respawn;
+- persistence/DataVersion не затронуты;
+- `ProgressionService` получил явный `stop()` и ownership соединения `PlayerAdded`;
+- `MobService` получил `stop()`, generation guard для delayed respawn и очистку spawned/attribution state;
+- server bootstrap теперь владеет shutdown lifecycle через `game:BindToClose`;
+- добавлен статический lifecycle contract `tests/check_server_service_lifecycle_contract.py`;
+- PvP остаётся вне Milestone 1: все игроки дружественные, offensive Player→Player действия сервер отклоняет; CP пока только отдельный PvP-ready слой HUD/state;
+- первый sanity-pass баланса не выявил численного преимущества Следопыта по чистому базовому урону: его преимущество остаётся в дальности/контроле, а movement speed уже одинаков для всех трёх архетипов. Риск доминирования Следопыта сохраняется как tuning debt до более полного PvE/progression-контекста.
+
+Остаётся подтвердить после lifecycle patch один финальный restart/shutdown smoke и полный автоматизированный прогон, затем можно закрывать Task 19.
+
+
 Выполняется после функциональной приёмки и до начала этапа 2:
 
 1. Повторить все автоматизированные проверки и `1 сервер + 2 клиента`.
