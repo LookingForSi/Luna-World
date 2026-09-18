@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local ProgressionService = {}
 
 local started = false
+local playerAddedConnection: RBXScriptConnection? = nil
 
 local function initializePlayer(player: Player): ()
 	player:SetAttribute("SessionXP", 0)
@@ -16,9 +17,18 @@ function ProgressionService.start(): ()
 	end
 	started = true
 
-	Players.PlayerAdded:Connect(initializePlayer)
+	playerAddedConnection = Players.PlayerAdded:Connect(initializePlayer)
 	for _, player in Players:GetPlayers() do
 		initializePlayer(player)
+	end
+end
+
+function ProgressionService.stop(): ()
+	if not started then return end
+	started = false
+	if playerAddedConnection ~= nil then
+		playerAddedConnection:Disconnect()
+		playerAddedConnection = nil
 	end
 end
 

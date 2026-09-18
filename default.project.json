@@ -7,7 +7,12 @@
       "Remotes": {
         "$className": "Folder",
         "TargetRequest": { "$className": "RemoteEvent" },
-        "AttackRequest": { "$className": "RemoteEvent" }
+        "AttackRequest": { "$className": "RemoteEvent" },
+        "AutoAttackModeRequest": { "$className": "RemoteEvent" },
+        "SkillRequest": { "$className": "RemoteEvent" },
+        "SkillResult": { "$className": "RemoteEvent" },
+        "RespawnRequest": { "$className": "RemoteEvent" },
+        "CombatPresentation": { "$className": "RemoteEvent" }
       }
     },
     "ServerScriptService": {

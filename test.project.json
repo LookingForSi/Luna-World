@@ -7,7 +7,26 @@
       "Remotes": {
         "$className": "Folder",
         "TargetRequest": { "$className": "RemoteEvent" },
-        "AttackRequest": { "$className": "RemoteEvent" }
+        "AttackRequest": { "$className": "RemoteEvent" },
+        "AutoAttackModeRequest": { "$className": "RemoteEvent" },
+        "SkillRequest": { "$className": "RemoteEvent" },
+        "SkillResult": { "$className": "RemoteEvent" },
+        "RespawnRequest": { "$className": "RemoteEvent" },
+        "CombatPresentation": { "$className": "RemoteEvent" }
+      },
+      "TestRemotes": {
+        "$className": "Folder",
+        "MilestoneZeroAttackContractReady": { "$className": "RemoteFunction" },
+        "MilestoneZeroAttackContractComplete": { "$className": "RemoteEvent" },
+        "ManualAttackLifecycleStart": { "$className": "RemoteEvent" },
+        "ManualAttackLifecycleCommand": { "$className": "RemoteFunction" },
+        "ManualAttackLifecycleComplete": { "$className": "RemoteEvent" },
+        "SkillRuntimeStart": { "$className": "RemoteEvent" },
+        "SkillRuntimeCommand": { "$className": "RemoteFunction" },
+        "SkillRuntimeComplete": { "$className": "RemoteEvent" },
+        "AutoAttackRuntimeStart": { "$className": "RemoteEvent" },
+        "AutoAttackRuntimeCommand": { "$className": "RemoteFunction" },
+        "AutoAttackRuntimeComplete": { "$className": "RemoteEvent" }
       }
     },
     "ServerScriptService": {
@@ -16,7 +35,10 @@
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Client": { "$path": "src/client" }
+        "Client": { "$path": "src/client" },
+        "ManualAttackContractTest": {
+          "$path": "tests/client/ManualAttackContract.client.luau"
+        }
       }
     }
   }

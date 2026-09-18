@@ -17,9 +17,4 @@ return function(TestRunner)
 		assert(not CombatRules.canBasicAttack(Vector3.zero, Vector3.new(0, 0, 13), true, 12))
 	end)
 
-	TestRunner.run("attack intent follows authoritative state", function()
-		assert(CombatRules.nextAttackIntent(false), "one input should start an inactive attack")
-		assert(not CombatRules.nextAttackIntent(true), "one input should stop an active attack")
-		assert(CombatRules.nextAttackIntent(false), "one input should restart after a server-side reset")
-	end)
 end
