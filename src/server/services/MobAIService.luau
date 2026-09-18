@@ -21,6 +21,9 @@ type Record = {
 	generation: number,
 	nextDecisionAt: number,
 	decisionInFlight: boolean,
+	navigationDetour: Vector3?,
+	navigationGoal: Vector3?,
+	navigationDetourUntil: number,
 	connections: { RBXScriptConnection },
 }
 type AttackRequest = (Model, Player, CombatTypes.MobDefinition) -> boolean
@@ -31,6 +34,12 @@ local heartbeatConnection: RBXScriptConnection? = nil
 local serviceConnections: { RBXScriptConnection } = {}
 local attackRequest: AttackRequest? = nil
 local started = false
+
+local OBSTACLE_PROBE_DISTANCE = 12
+local DETOUR_CLEARANCE = 2.5
+local DETOUR_REACHED_DISTANCE = 2.5
+local DETOUR_LIFETIME_SECONDS = 3
+local DETOUR_GOAL_RESET_DISTANCE = 5
 
 local function livingRoot(player: Player): BasePart?
 	if player.Parent ~= Players then return nil end
@@ -66,6 +75,11 @@ end
 local function setState(record: Record, state: State): ()
 	local previousState = record.state
 	record.state = state
+	if state ~= "Chase" and state ~= "Return" then
+		record.navigationDetour = nil
+		record.navigationGoal = nil
+		record.navigationDetourUntil = 0
+	end
 	if MobAIRules.shouldInvalidateAction(previousState, state) then
 		local actionGeneration = record.model:GetAttribute(CombatConfig.MobActionGenerationAttribute)
 		record.model:SetAttribute(CombatConfig.MobActionGenerationAttribute, if typeof(actionGeneration) == "number" then actionGeneration + 1 else 1)
@@ -85,18 +99,102 @@ local function unregister(model: Model): ()
 	records[model] = nil
 end
 
-local function moveToward(record: Record, destination: Vector3, capturedGeneration: number): ()
+local function flatDistance(a: Vector3, b: Vector3): number
+	local delta = Vector3.new(a.X - b.X, 0, a.Z - b.Z)
+	return delta.Magnitude
+end
+
+local function obstacleHalfExtentAlong(part: BasePart, axis: Vector3): number
+	return math.abs(axis:Dot(part.CFrame.RightVector)) * (part.Size.X * 0.5)
+		+ math.abs(axis:Dot(part.CFrame.LookVector)) * (part.Size.Z * 0.5)
+end
+
+local function chooseObstacleDetour(record: Record, root: BasePart, destination: Vector3): Vector3?
+	local flatDelta = Vector3.new(destination.X - root.Position.X, 0, destination.Z - root.Position.Z)
+	local distance = flatDelta.Magnitude
+	if distance <= 0.01 then return nil end
+	local forward = flatDelta.Unit
+
+	local filter: { Instance } = { record.model }
+	if record.target ~= nil and record.target.Character ~= nil then table.insert(filter, record.target.Character) end
+	local parameters = RaycastParams.new()
+	parameters.FilterType = Enum.RaycastFilterType.Exclude
+	parameters.FilterDescendantsInstances = filter
+	parameters.IgnoreWater = true
+
+	-- Probe near the mob's feet. A simple placeholder Humanoid can physically fail
+	-- on a low ledge that Roblox's navmesh considers walkable for a normal avatar.
+	local footProbeHeight = math.max(0.25, math.min(0.75, root.Size.Y * 0.2))
+	local origin = root.Position - Vector3.new(0, root.Size.Y * 0.5 - footProbeHeight, 0)
+	local result = workspace:Raycast(origin, forward * math.min(distance, OBSTACLE_PROBE_DISTANCE), parameters)
+	if result == nil or not result.Instance:IsA("BasePart") then return nil end
+	-- Ground/slope contacts are not walls. We only detour around predominantly vertical faces.
+	if math.abs(result.Normal.Y) >= 0.65 then return nil end
+
+	local obstacle = result.Instance :: BasePart
+	local side = Vector3.new(-forward.Z, 0, forward.X)
+	local rootRadius = math.max(root.Size.X, root.Size.Z) * 0.5
+	local clearance = obstacleHalfExtentAlong(obstacle, side) + rootRadius + DETOUR_CLEARANCE
+	local center = Vector3.new(obstacle.Position.X, root.Position.Y, obstacle.Position.Z)
+	local left = center + side * clearance
+	local right = center - side * clearance
+
+	local function routeCost(point: Vector3): number
+		return flatDistance(root.Position, point) + flatDistance(point, destination)
+	end
+	return if routeCost(left) <= routeCost(right) then left else right
+end
+
+local function navigationDestination(record: Record, root: BasePart, destination: Vector3, now: number): Vector3
+	if record.navigationGoal == nil or flatDistance(record.navigationGoal, destination) > DETOUR_GOAL_RESET_DISTANCE then
+		record.navigationGoal = destination
+		record.navigationDetour = nil
+		record.navigationDetourUntil = 0
+	else
+		record.navigationGoal = destination
+	end
+
+	if record.navigationDetour ~= nil then
+		if now < record.navigationDetourUntil and flatDistance(root.Position, record.navigationDetour) > DETOUR_REACHED_DISTANCE then
+			return record.navigationDetour
+		end
+		record.navigationDetour = nil
+		record.navigationDetourUntil = 0
+	end
+
+	local detour = chooseObstacleDetour(record, root, destination)
+	if detour ~= nil then
+		record.navigationDetour = detour
+		record.navigationDetourUntil = now + DETOUR_LIFETIME_SECONDS
+		return detour
+	end
+	return destination
+end
+
+local function moveToward(record: Record, destination: Vector3, capturedGeneration: number, now: number): ()
 	local humanoid, root = mobParts(record.model)
 	if humanoid == nil or root == nil then return end
-	local path = PathfindingService:CreatePath()
-	local ok = pcall(function() path:ComputeAsync(root.Position, destination) end)
+	local moveDestination = navigationDestination(record, root, destination, now)
+	local path = PathfindingService:CreatePath({
+		AgentRadius = math.max(2, math.min(root.Size.X, root.Size.Z) * 0.5),
+		AgentHeight = math.max(4, root.Size.Y + 1),
+		AgentCanJump = false,
+		AgentCanClimb = false,
+		WaypointSpacing = 4,
+	})
+	local ok = pcall(function() path:ComputeAsync(root.Position, moveDestination) end)
 	if records[record.model] ~= record or not MobAIRules.isCurrentGeneration(capturedGeneration, record.generation) then return end
 	if ok and path.Status == Enum.PathStatus.Success then
 		local waypoints = path:GetWaypoints()
 		local waypoint = waypoints[math.min(2, #waypoints)]
-		if waypoint ~= nil then humanoid:MoveTo(waypoint.Position) return end
+		if waypoint ~= nil then
+			humanoid:MoveTo(waypoint.Position)
+			return
+		end
 	end
-	humanoid:MoveTo(destination)
+	-- A failed path may still occur on the sparse playground. The selected destination
+	-- is already obstacle-aware, so the fallback does not simply walk into the same wall.
+	humanoid:MoveTo(moveDestination)
 end
 
 local function decide(record: Record, now: number): ()
@@ -136,12 +234,12 @@ local function decide(record: Record, now: number): ()
 	local previousState = record.state
 	setState(record, nextState)
 	if nextState == "Chase" and targetRoot ~= nil then
-		moveToward(record, targetRoot.Position, capturedGeneration)
+		moveToward(record, targetRoot.Position, capturedGeneration, now)
 	elseif nextState == "Attack" and record.target ~= nil then
 		humanoid:MoveTo(root.Position)
 		if attackRequest ~= nil then attackRequest(record.model, record.target, definition) end
 	elseif nextState == "Return" then
-		moveToward(record, record.home, capturedGeneration)
+		moveToward(record, record.home, capturedGeneration, now)
 	elseif nextState == "Idle" then
 		humanoid:MoveTo(root.Position)
 		if MobAIRules.shouldRestoreHealth(previousState, nextState, definition.restoreHealthOnReturn) then humanoid.Health = humanoid.MaxHealth end
@@ -150,12 +248,33 @@ end
 
 local function register(model: Model, definition: CombatTypes.MobDefinition, homeCFrame: CFrame): ()
 	unregister(model)
-	local record: Record = { model = model, definition = definition, home = homeCFrame.Position, state = "Idle", target = nil, hostileAttacker = nil, generation = 1, nextDecisionAt = 0, decisionInFlight = false, connections = {} }
+	local record: Record = {
+		model = model,
+		definition = definition,
+		home = homeCFrame.Position,
+		state = "Idle",
+		target = nil,
+		hostileAttacker = nil,
+		generation = 1,
+		nextDecisionAt = 0,
+		decisionInFlight = false,
+		navigationDetour = nil,
+		navigationGoal = nil,
+		navigationDetourUntil = 0,
+		connections = {},
+	}
 	records[model] = record
 	setState(record, "Idle")
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
-	if humanoid ~= nil then table.insert(record.connections, humanoid.Died:Connect(function() setState(record, "Dead"); unregister(model) end)) end
-	table.insert(record.connections, model.AncestryChanged:Connect(function(_, parent) if parent == nil then unregister(model) end end))
+	if humanoid ~= nil then
+		table.insert(record.connections, humanoid.Died:Connect(function()
+			setState(record, "Dead")
+			unregister(model)
+		end))
+	end
+	table.insert(record.connections, model.AncestryChanged:Connect(function(_, parent)
+		if parent == nil then unregister(model) end
+	end))
 end
 
 function MobAIService.start(serverAttackRequest: AttackRequest): ()
