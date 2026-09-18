@@ -32,8 +32,10 @@ require(HUD, "UDim2.new(1, -HudLayout.CornerMargin, 0, HudLayout.CornerMargin)",
 require(ACTIONS, "UDim2.new(1, -HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)", "action panel must use the shared bottom-right anchor")
 require(LOG, "UDim2.new(0, HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)", "combat log must use the shared bottom-left anchor")
 
-for token in ("CombatPointsBar", "PlayerHealthBar", "PlayerResourceBar", "SessionXPBar"):
-    require(HUD, token, f"four-row player status is missing {token}")
+for token in ('"CombatPoints"', '"PlayerHealth"', '"PlayerResource"', '"SessionXP"'):
+    require(HUD, token, f"four-row player status is missing row {token}")
+for token in ('"CombatPointsFill"', '"PlayerHealthFill"', '"PlayerResourceFill"', '"SessionXPFill"'):
+    require(HUD, token, f"four-row player status is missing fill {token}")
 
 require(CONFIG, 'CombatPointsCurrentAttribute = "CombatPointsCurrent"', "CP needs a distinct replicated current-value attribute")
 require(CONFIG, 'CombatPointsMaximumAttribute = "CombatPointsMaximum"', "CP needs a distinct replicated maximum attribute")
