@@ -60,6 +60,7 @@ def blend_pad(height: np.ndarray, xs: np.ndarray, zs: np.ndarray, pad: dict) -> 
     radius = float(pad["radiusStuds"])
     blend = float(pad["blendStuds"])
     target = float(pad["targetY"])
+    mode = pad.get("mode", "set")
 
     min_x, max_x = cx - radius - blend, cx + radius + blend
     min_z, max_z = cz - radius - blend, cz + radius + blend
@@ -77,7 +78,18 @@ def blend_pad(height: np.ndarray, xs: np.ndarray, zs: np.ndarray, pad: dict) -> 
     weight = np.where(distance >= radius + blend, 0.0, weight).astype(np.float32)
 
     current = height[iz0:iz1, ix0:ix1]
-    height[iz0:iz1, ix0:ix1] = current * (1.0 - weight) + target * weight
+    candidate = current * (1.0 - weight) + target * weight
+
+    if mode == "raise":
+        result = np.maximum(current, candidate)
+    elif mode == "lower":
+        result = np.minimum(current, candidate)
+    elif mode == "set":
+        result = candidate
+    else:
+        raise ValueError(f"unsupported terrain pad mode: {mode}")
+
+    height[iz0:iz1, ix0:ix1] = result
 
 
 def blend_route(
@@ -361,7 +373,7 @@ def route_slope_stats(source: dict) -> dict:
 
 def save_manifest(source: dict, height: np.ndarray, output_dir: Path) -> None:
     manifest = {
-        "generatorVersion": 3,
+        "generatorVersion": 4,
         "artifactRevision": source.get("artifactRevision", "unversioned"),
         "worldScaleXZ": source["worldScaleXZ"],
         "boundsStuds": source["boundsStuds"],
