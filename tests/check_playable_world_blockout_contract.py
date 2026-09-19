@@ -11,6 +11,7 @@ REQUIRED_FILES = [
     ROOT / "src/server/world/WorldCompositionBlockout.luau",
     ROOT / "src/server/world/PlayableWorldBlockout.luau",
     ROOT / "src/server/world/WorldBootstrap.server.luau",
+    ROOT / "src/server/world/TraversalRecovery.luau",
     ROOT / "src/client/world-preview/ZonePresentation.client.luau",
 ]
 
@@ -37,7 +38,7 @@ def main() -> None:
     bootstrap = read(ROOT / "src/server/world/WorldBootstrap.server.luau")
     assert "PlayableWorldBlockout" in bootstrap
     assert "WorldGreyboxBuilder" not in bootstrap
-    assert "RECOVERY_Y" in bootstrap
+    assert "TraversalRecovery" in bootstrap
 
     builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
     assert 'TerrainRevision", "terrain-v05"' in builder
@@ -54,6 +55,9 @@ def main() -> None:
         "YoungWolf01",
         "RiverAndBridge",
         "BridgeApproachSouth",
+        "BridgeBankApronSouth",
+        "BridgeBankApronNorth",
+        "WaterRecovery%02d",
         "StoneCircle",
         "LunaVillageSpawn",
     ):
@@ -61,6 +65,17 @@ def main() -> None:
     assert "BillboardGui" not in south
     assert "EarlySpiderPocket" not in south
     assert "spawn_spider_meadow_pocket" not in south
+
+
+    recovery = read(ROOT / "src/server/world/TraversalRecovery.luau")
+    for token in (
+        "WaterRecovery",
+        "lastSafe",
+        "FALL_RECOVERY_Y",
+        "FloorMaterial",
+        "character:PivotTo",
+    ):
+        assert token in recovery
 
     north = read(ROOT / "src/server/world/NorthernZonesBlockout.luau")
     for token in (
