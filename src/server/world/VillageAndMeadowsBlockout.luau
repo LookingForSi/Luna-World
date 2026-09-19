@@ -173,6 +173,7 @@ local function createGroundedRoad(parent: Instance, name: string, points: { Vect
 			local authoredA = start:Lerp(finish, alpha0)
 			local authoredB = start:Lerp(finish, alpha1)
 			segmentIndex += 1
+			P.paintTerrainStrip(authoredA, authoredB, width + 6, Enum.Material.Ground)
 			P.groundedSegment(
 				folder,
 				string.format("Road%03d", segmentIndex),
@@ -226,6 +227,45 @@ local function createVillage(parent: Instance, positions: { [string]: Vector3 })
 	createSimpleNpc(village, "VillageNpc02", merchant + Vector3.new(-10, 0, 12))
 end
 
+local function createFenceLine(parent: Instance, name: string, fromPosition: Vector3, toPosition: Vector3)
+	local fence = P.model(parent, name)
+	local horizontal = Vector3.new(toPosition.X - fromPosition.X, 0, toPosition.Z - fromPosition.Z)
+	local segments = math.max(1, math.ceil(horizontal.Magnitude / 14))
+	local groundedPoints: { Vector3 } = {}
+
+	for index = 0, segments do
+		local authored = fromPosition:Lerp(toPosition, index / segments)
+		local ground = Grounding.surfaceAt(authored)
+		table.insert(groundedPoints, ground)
+		P.part(
+			fence,
+			string.format("Post%02d", index + 1),
+			Vector3.new(1.5, 6.5, 1.5),
+			CFrame.new(ground + Vector3.new(0, 3.0, 0)),
+			Enum.Material.Wood,
+			COLORS.darkTimber
+		)
+	end
+
+	for index = 1, #groundedPoints - 1 do
+		local a = groundedPoints[index]
+		local b = groundedPoints[index + 1]
+		for railIndex, y in ipairs({ 2.2, 4.5 }) do
+			P.segment(
+				fence,
+				string.format("Rail_%02d_%02d", index, railIndex),
+				a + Vector3.new(0, y, 0),
+				b + Vector3.new(0, y, 0),
+				0.65,
+				0.65,
+				Enum.Material.Wood,
+				COLORS.timber,
+				{ canCollide = false }
+			)
+		end
+	end
+end
+
 local function createFarm(parent: Instance, positions: { [string]: Vector3 }, spawns: { [string]: Vector3 })
 	local farm = P.model(parent, "MoonfallFarm")
 	farm:SetAttribute("StableId", "poi_moonfall_farm")
@@ -245,15 +285,11 @@ local function createFarm(parent: Instance, positions: { [string]: Vector3 }, sp
 	}
 	for index = 1, 4 do
 		local nextIndex = index % 4 + 1
-		P.groundedSegment(
+		createFenceLine(
 			farm,
 			string.format("PenFence%02d", index),
 			corners[index],
-			corners[nextIndex],
-			2,
-			5,
-			Enum.Material.Wood,
-			COLORS.darkTimber
+			corners[nextIndex]
 		)
 	end
 
@@ -358,6 +394,22 @@ local function createRiver(parent: Instance, positions: { [string]: Vector3 })
 		previous = current
 	end
 
+	-- Two broad sandy access points break up the otherwise continuous grass bank.
+	-- They are terrain material swaps only: geometry and the river route remain unchanged.
+	for _, beach in ipairs({
+		{ name = "RiverSandApproachWest", x = -720, bankOffset = -72 },
+		{ name = "RiverSandApproachEast", x = 650, bankOffset = 74 },
+	}) do
+		local beachCenter = Vector3.new(beach.x, 6, riverZ(beach.x) + beach.bankOffset)
+		P.replaceTerrainMaterials(
+			beachCenter,
+			Vector3.new(230, 28, 180),
+			{ Enum.Material.Grass, Enum.Material.LeafyGrass, Enum.Material.Ground },
+			Enum.Material.Sand
+		)
+		river:SetAttribute(beach.name, true)
+	end
+
 	-- The bridge is deliberately overbuilt into both banks. The dirt aprons overlap
 	-- terrain and the wider wooden approaches overlap the deck, so there is no
 	-- character-sized crack that can trap a no-jump player.
@@ -460,7 +512,12 @@ local function createSpawn(parent: Instance, positions: { [string]: Vector3 }): 
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "LunaVillageSpawn"
 	spawn.Size = Vector3.new(8, 1, 8)
-	spawn.CFrame = CFrame.new(ground + Vector3.new(0, 1.2, 0))
+	local spawnCenter = ground + Vector3.new(0, 1.2, 0)
+	local facingTarget = positions.poi_main_gate
+	spawn.CFrame = CFrame.lookAt(
+		spawnCenter,
+		Vector3.new(facingTarget.X, spawnCenter.Y, facingTarget.Z)
+	)
 	spawn.Transparency = 1
 	spawn.CanCollide = false
 	spawn.Anchored = true
