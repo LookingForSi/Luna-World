@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
 
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
@@ -64,6 +65,16 @@ function ProgressionService.awardXP(player: Player, amount: number): ()
 	player:SetAttribute(ProgressionConfig.LevelAttribute, result.level)
 	player:SetAttribute(ProgressionConfig.ExperienceAttribute, result.xp)
 	player:SetAttribute("SessionXP", result.xp)
+end
+
+function ProgressionService._setLevelForStudio(player: Player, level: number): boolean
+	assert(RunService:IsStudio(), "Studio level switch is unavailable outside Studio")
+	if player.Parent ~= Players then return false end
+	if level ~= level or level % 1 ~= 0 or level < 1 or level > ProgressionConfig.LevelCap then return false end
+	player:SetAttribute(ProgressionConfig.LevelAttribute, level)
+	player:SetAttribute(ProgressionConfig.ExperienceAttribute, 0)
+	player:SetAttribute("SessionXP", 0)
+	return true
 end
 
 function ProgressionService.awardMobXP(player: Player, baseXP: number, mobLevel: number): number
