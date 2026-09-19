@@ -25,7 +25,22 @@ Do not add copyrighted names, music, models, UI, lore, maps, characters, logos, 
 
 Do not convert the visual or gameplay direction into bright arcade / simulator / obby / gacha conventions unless an explicit product decision changes the design.
 
-## 3. Server authority is mandatory
+## 3. World traversal and elevation
+
+Luna World does not use free jumping as a normal traversal mechanic.
+
+All playable world geometry must therefore be traversable with ordinary ground movement:
+
+- never require the player to jump to enter, leave, or move between intended playable areas;
+- whenever one playable territory, terrace, road, camp, platform, or zone is raised above another, provide a continuous walkable transition such as an inclined ramp / slope / transition slab;
+- elevation changes must be intentionally connected in both directions unless a one-way transition is an explicit product decision;
+- do not leave playable ledges that allow the player to drop down but provide no ground path back;
+- stairs may be used only when their collision and step height are verified to be walkable without jumping; for greybox work, prefer explicit sloped transition geometry;
+- world-block acceptance must include a traversal check that all intended routes can be completed without jumping.
+
+This rule applies to greybox generation as well as final terrain and environment art.
+
+## 4. Server authority is mandatory
 
 The server is the source of truth for all gameplay-relevant state, including:
 
@@ -45,7 +60,7 @@ Clients may request actions and render feedback. Clients must not decide authori
 
 Every RemoteEvent / RemoteFunction handling player input must validate its arguments and the requesting player's eligibility on the server.
 
-## 4. Module boundaries
+## 5. Module boundaries
 
 Prefer small modules with one clear responsibility.
 
@@ -55,7 +70,7 @@ Public module interfaces must be understandable without reading their internals.
 
 Shared definitions belong in shared modules; server-only logic must not be moved to replicated client-visible locations.
 
-## 5. Data-driven content
+## 6. Data-driven content
 
 Items, mobs, skills, quests, classes, and progression values should be represented as data/configuration where practical rather than duplicated across scripts.
 
@@ -63,7 +78,7 @@ Do not hardcode the same balance value in multiple modules.
 
 Stable IDs are preferred over display names for persistent references.
 
-## 6. Persistence safety
+## 7. Persistence safety
 
 Persistent data has its own schema version (`DataVersion`) independent of the game release version.
 
@@ -73,7 +88,7 @@ Any breaking save-schema change requires a migration path and tests covering an 
 
 Never write transient runtime instances or Roblox objects directly into persistent data.
 
-## 7. Testing
+## 8. Testing
 
 Behavior changes require tests at the lowest practical layer.
 
@@ -86,7 +101,7 @@ For networking features, test invalid / malicious client requests as well as nor
 
 Do not remove or weaken a failing test merely to make the suite pass unless the underlying requirement was explicitly changed.
 
-## 8. Refactoring discipline
+## 9. Refactoring discipline
 
 Follow `docs/REFACTORING_POLICY.md`.
 
@@ -105,7 +120,7 @@ Between major milestones, perform a stabilization pass before starting the next 
 
 Do not carry known structural debt indefinitely because “the next feature is small”.
 
-## 9. Scope control
+## 10. Scope control
 
 v0.1 is a vertical slice. Do not add out-of-scope systems without explicit approval.
 
@@ -127,7 +142,7 @@ Examples currently out of scope:
 
 When a requested change implies one of these systems, call it out instead of silently expanding the project.
 
-## 10. Language and code style
+## 11. Language and code style
 
 - Project, product, design, architecture, roadmap, testing, versioning, release and implementation-plan documentation must be written in Russian.
 - `AGENTS.md` is the only standing exception and may remain in English so that coding agents can consume the rules consistently.
@@ -138,7 +153,7 @@ When a requested change implies one of these systems, call it out instead of sil
 - Avoid magic numbers; place tunable values in configuration.
 - Keep warnings/errors actionable and include useful context without exposing secrets.
 
-## 11. Dependencies and tooling
+## 12. Dependencies and tooling
 
 Do not introduce a third-party dependency without explaining why the Roblox platform / standard Luau code is insufficient.
 
@@ -146,7 +161,7 @@ Tool versions should be managed through the repository toolchain (Rokit where ap
 
 Do not edit Rojo-managed scripts only inside Roblox Studio. Source files in Git are authoritative.
 
-## 12. Versioning and changelog
+## 13. Versioning and changelog
 
 Follow `docs/VERSIONING.md`.
 
@@ -154,7 +169,7 @@ User-visible or behaviorally meaningful changes must be reflected in `CHANGELOG.
 
 Do not bump versions casually during intermediate edits; version changes happen as part of a release or explicitly requested milestone transition.
 
-## 13. Completion rule
+## 14. Completion rule
 
 Never claim a task, milestone, refactor, migration, or bug fix is complete without evidence from the relevant checks/tests.
 
