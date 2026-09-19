@@ -57,6 +57,19 @@ return function(TestRunner)
 		assert(unequipped.Inventory[1] == "item-1")
 	end)
 
+	TestRunner.run("unequip is blocked when all forty inventory slots are occupied", function()
+		local profile = ProfileSchema.createDefault()
+		profile.Items["equipped"] = { ItemId = "weapon_training_sword", Quantity = 1 }
+		profile.Equipment.Weapon = "equipped"
+		for index = 1, 40 do
+			local id = "bag-" .. tostring(index)
+			profile.Items[id] = { ItemId = "material_wolf_pelt", Quantity = 1 }
+			profile.Inventory[index] = id
+		end
+		local result, reason = EquipmentRules.unequip(profile, "Weapon")
+		assert(result == nil and reason == "InventoryFull")
+	end)
+
 	TestRunner.run("equip replay cannot duplicate an item", function()
 		local profile = ProfileSchema.createDefault()
 		local owned = InventoryRules.add(profile, "weapon_training_sword", 1, ids())
