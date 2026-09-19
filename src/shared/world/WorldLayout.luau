@@ -60,7 +60,7 @@ end
 local WorldLayout: WorldLayoutDefinition = {
 	Dimensions = {
 		VillageFootprint = Vector2.new(500, 440),
-		VillageElevationAboveMeadows = 36,
+		VillageElevationAboveMeadows = 50,
 		MeadowsRouteLength = 1800,
 		MoonfallRouteLength = 1880,
 	},
@@ -137,14 +137,14 @@ local WorldLayout: WorldLayoutDefinition = {
 	},
 
 	PointsOfInterest = {
-		{ id = "poi_main_gate", position = scaleXZ(0, 32, 0) },
-		{ id = "poi_training_ground", position = scaleXZ(-75, 38, -55) },
-		{ id = "poi_blacksmith", position = scaleXZ(75, 38, -65) },
-		{ id = "poi_village_square", position = scaleXZ(0, 46, -120) },
-		{ id = "poi_merchant", position = scaleXZ(68, 46, -125) },
-		{ id = "poi_residential", position = scaleXZ(-72, 46, -130) },
-		{ id = "poi_elder_house", position = scaleXZ(55, 62, -185) },
-		{ id = "poi_shrine", position = scaleXZ(-55, 62, -195) },
+		{ id = "poi_main_gate", position = scaleXZ(0, 48, 0) },
+		{ id = "poi_training_ground", position = scaleXZ(-75, 54, -55) },
+		{ id = "poi_blacksmith", position = scaleXZ(75, 54, -65) },
+		{ id = "poi_village_square", position = scaleXZ(0, 58, -120) },
+		{ id = "poi_merchant", position = scaleXZ(68, 58, -125) },
+		{ id = "poi_residential", position = scaleXZ(-72, 58, -130) },
+		{ id = "poi_elder_house", position = scaleXZ(55, 64, -185) },
+		{ id = "poi_shrine", position = scaleXZ(-55, 64, -195) },
 		{ id = "poi_moonfall_farm", position = scaleXZ(-180, 8, 365) },
 		{ id = "poi_meadow_bridge", position = scaleXZ(-35, 7, 300) },
 		{ id = "poi_stone_circle", position = scaleXZ(135, 6, 545) },
