@@ -547,7 +547,9 @@ local function createStoneCircle(parent: Instance, positions: { [string]: Vector
 end
 
 local function createSpawn(parent: Instance, positions: { [string]: Vector3 }): SpawnLocation
-	local spawnPosition = positions.poi_village_square
+	-- Keep the initial player out of the well/square center. The spawn sits on the
+	-- western edge of the square, matching the owner-marked playtest position.
+	local spawnPosition = positions.poi_village_square + Vector3.new(-34, 0, -8)
 	local ground = Grounding.surfaceAt(spawnPosition)
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "LunaVillageSpawn"
