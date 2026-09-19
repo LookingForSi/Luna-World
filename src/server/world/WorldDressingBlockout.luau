@@ -28,7 +28,7 @@ local function poiPositions(): { [string]: Vector3 }
 	return result
 end
 
-local function decorativeOptions(canCollide: boolean?): P.PartOptions
+local function decorativeOptions(canCollide: boolean?)
 	return {
 		canCollide = if canCollide == nil then true else canCollide,
 		attributes = {
@@ -374,8 +374,14 @@ local function buildUpperValley(parent: Instance, positions: { [string]: Vector3
 	local cemetery = positions.poi_old_cemetery
 	createLowStoneWall(
 		dressing,
-		"CemeteryBoundarySouth",
+		"CemeteryBoundarySouthA",
 		cemetery + Vector3.new(-145, 0, -120),
+		cemetery + Vector3.new(-42, 0, -120)
+	)
+	createLowStoneWall(
+		dressing,
+		"CemeteryBoundarySouthB",
+		cemetery + Vector3.new(42, 0, -120),
 		cemetery + Vector3.new(145, 0, -120)
 	)
 	createLowStoneWall(
