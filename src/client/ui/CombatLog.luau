@@ -8,6 +8,7 @@ local ClientCombatLogRules = require(ReplicatedStorage.Shared.combat.ClientComba
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local HudLayout = require(script.Parent.HudLayout)
 
 local CombatLog = {}
@@ -16,12 +17,18 @@ local player = Players.LocalPlayer
 local localEntityId = "player:" .. tostring(player.UserId)
 local screenGui: ScreenGui? = nil
 local frame: Frame? = nil
-local body: Frame? = nil
+local body: ScrollingFrame? = nil
 local toggleButton: TextButton? = nil
 local presentationConnection: RBXScriptConnection? = nil
+local levelConnection: RBXScriptConnection? = nil
 local expanded = true
-local entries: { string } = {}
-local MAX_ENTRIES = 9
+local entryLabels: { TextLabel } = {}
+local entrySequence = 0
+local observedLevel: number? = nil
+
+local MAX_ENTRIES = 200
+local ENTRY_HEIGHT = 18
+local AUTO_SCROLL_TOLERANCE = 24
 
 local mobNamesById: { [string]: string } = {}
 for _, definition in MobDefinitions do
@@ -43,28 +50,49 @@ local function isBasicAttack(skillId: string?): boolean
 	return skillId ~= nil and string.find(skillId, "basic_attack", 1, true) ~= nil
 end
 
-local function append(text: string): ()
-	if text == "" or body == nil then return end
-	table.insert(entries, text)
-	while #entries > MAX_ENTRIES do table.remove(entries, 1) end
+local function isNearBottom(scroller: ScrollingFrame): boolean
+	local remaining = scroller.AbsoluteCanvasSize.Y - (scroller.CanvasPosition.Y + scroller.AbsoluteWindowSize.Y)
+	return remaining <= AUTO_SCROLL_TOLERANCE
+end
 
-	for _, child in body:GetChildren() do
-		if child:IsA("TextLabel") then child:Destroy() end
+local function scrollToBottom(scroller: ScrollingFrame): ()
+	task.defer(function()
+		if body ~= scroller or scroller.Parent == nil then return end
+		scroller.CanvasPosition = Vector2.new(
+			0,
+			math.max(0, scroller.AbsoluteCanvasSize.Y - scroller.AbsoluteWindowSize.Y)
+		)
+	end)
+end
+
+local function append(text: string): ()
+	local scroller = body
+	if text == "" or scroller == nil then return end
+
+	local shouldFollow = isNearBottom(scroller)
+	entrySequence += 1
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Entry" .. tostring(entrySequence)
+	label.LayoutOrder = entrySequence
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.new(1, -18, 0, ENTRY_HEIGHT)
+	label.Font = Enum.Font.RobotoMono
+	label.TextColor3 = Color3.fromRGB(224, 224, 230)
+	label.TextSize = 13
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextTruncate = Enum.TextTruncate.AtEnd
+	label.Text = text
+	label.Parent = scroller
+	table.insert(entryLabels, label)
+
+	while #entryLabels > MAX_ENTRIES do
+		local oldest = table.remove(entryLabels, 1)
+		if oldest ~= nil then oldest:Destroy() end
 	end
 
-	for index, entry in entries do
-		local label = Instance.new("TextLabel")
-		label.Name = "Entry" .. tostring(index)
-		label.BackgroundTransparency = 1
-		label.Position = UDim2.fromOffset(8, (index - 1) * 18)
-		label.Size = UDim2.new(1, -16, 0, 18)
-		label.Font = Enum.Font.RobotoMono
-		label.TextColor3 = Color3.fromRGB(224, 224, 230)
-		label.TextSize = 13
-		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.TextTruncate = Enum.TextTruncate.AtEnd
-		label.Text = entry
-		label.Parent = body
+	if shouldFollow then
+		scrollToBottom(scroller)
 	end
 end
 
@@ -76,7 +104,7 @@ local function setExpanded(value: boolean): ()
 			then UDim2.fromOffset(HudLayout.CombatLogSize.X, HudLayout.CombatLogSize.Y)
 			else UDim2.fromOffset(128, 30)
 	end
-	if toggleButton ~= nil then toggleButton.Text = if expanded then "БОЙ  ▲" else "БОЙ  ▼" end
+	if toggleButton ~= nil then toggleButton.Text = if expanded then "ЛОГ  ▲" else "ЛОГ  ▼" end
 end
 
 local function formatOutgoingResult(message: CombatPresentationRules.Message): string?
@@ -177,6 +205,23 @@ local function onPresentation(value: unknown): ()
 	end
 end
 
+local function readLevel(): number
+	local value = player:GetAttribute(ProgressionConfig.LevelAttribute)
+	if typeof(value) ~= "number" then return 1 end
+	return math.clamp(math.floor(value), 1, ProgressionConfig.LevelCap)
+end
+
+local function onLevelChanged(): ()
+	local newLevel = readLevel()
+	local previousLevel = observedLevel
+	observedLevel = newLevel
+	if previousLevel == nil or newLevel <= previousLevel then return end
+
+	for level = previousLevel + 1, newLevel do
+		append(string.format("★ Получен уровень %d.", level))
+	end
+end
+
 function CombatLog.start(): ()
 	CombatLog.stop()
 
@@ -205,33 +250,60 @@ function CombatLog.start(): ()
 	toggle.TextSize = 13
 	toggle.Parent = root
 
-	local logBody = Instance.new("Frame")
+	local logBody = Instance.new("ScrollingFrame")
 	logBody.Name = "Entries"
 	logBody.Position = UDim2.fromOffset(0, 30)
 	logBody.Size = UDim2.new(1, 0, 1, -30)
 	logBody.BackgroundTransparency = 1
+	logBody.BorderSizePixel = 0
+	logBody.CanvasSize = UDim2.fromOffset(0, 0)
+	logBody.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	logBody.ScrollingDirection = Enum.ScrollingDirection.Y
+	logBody.ScrollBarThickness = 6
+	logBody.ScrollBarImageColor3 = Color3.fromRGB(116, 121, 136)
+	logBody.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
 	logBody.Parent = root
+
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, 8)
+	padding.PaddingRight = UDim.new(0, 4)
+	padding.PaddingTop = UDim.new(0, 4)
+	padding.PaddingBottom = UDim.new(0, 4)
+	padding.Parent = logBody
+
+	local layout = Instance.new("UIListLayout")
+	layout.Name = "EntryLayout"
+	layout.FillDirection = Enum.FillDirection.Vertical
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 0)
+	layout.Parent = logBody
 
 	screenGui = gui
 	frame = root
 	body = logBody
 	toggleButton = toggle
-	table.clear(entries)
+	table.clear(entryLabels)
+	entrySequence = 0
+	observedLevel = readLevel()
 	setExpanded(true)
 
 	toggle.Activated:Connect(function()
 		setExpanded(not expanded)
 	end)
 	presentationConnection = ReplicatedStorage.Remotes.CombatPresentation.OnClientEvent:Connect(onPresentation)
+	levelConnection = player:GetAttributeChangedSignal(ProgressionConfig.LevelAttribute):Connect(onLevelChanged)
 end
 
 function CombatLog.stop(): ()
 	if presentationConnection ~= nil then presentationConnection:Disconnect(); presentationConnection = nil end
+	if levelConnection ~= nil then levelConnection:Disconnect(); levelConnection = nil end
 	if screenGui ~= nil then screenGui:Destroy(); screenGui = nil end
 	frame = nil
 	body = nil
 	toggleButton = nil
-	table.clear(entries)
+	table.clear(entryLabels)
+	entrySequence = 0
+	observedLevel = nil
 	expanded = true
 end
 
