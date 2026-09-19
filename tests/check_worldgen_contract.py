@@ -37,7 +37,7 @@ def main() -> None:
 
     assert data["version"] == 1
     assert data["worldScaleXZ"] == 2.0
-    assert data["resolution"] == {"width": 1024, "height": 2048}
+    assert data["resolution"] == {"width": 650, "height": 1200}
 
     bounds = data["boundsStuds"]
     assert bounds["maxX"] - bounds["minX"] == 2600
