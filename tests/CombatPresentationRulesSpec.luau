@@ -4,7 +4,7 @@ local PresentationRules = require(game.ReplicatedStorage.Shared.combat.CombatPre
 
 return function(TestRunner)
 	TestRunner.run("presentation messages use a stable public shape", function()
-		for _, kind in { "Action", "Result", "Interruption", "Effect", "Death", "Respawn" } do
+		for _, kind in { "Action", "Result", "Interruption", "Effect", "Death", "Respawn", "Reward" } do
 			local message = PresentationRules.create(kind, "action-1", "player:1", 123, {
 				targetEntityId = "mob:1",
 				skillId = "power_strike",
