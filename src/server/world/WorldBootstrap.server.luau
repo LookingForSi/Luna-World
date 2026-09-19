@@ -26,6 +26,11 @@ local worldSpawn = spawnInstance :: SpawnLocation
 local zoneTriggers = zoneTriggersInstance :: Folder
 local safetyStateByPlayer: { [Player]: SafetyState } = {}
 
+local managedWorldRaycast = RaycastParams.new()
+managedWorldRaycast.FilterType = Enum.RaycastFilterType.Include
+managedWorldRaycast.FilterDescendantsInstances = { world }
+managedWorldRaycast.IgnoreWater = true
+
 local function getCharacterRoot(player: Player): BasePart?
 	local character = player.Character
 	if character == nil then
@@ -49,7 +54,20 @@ local function pointInsideTriggerXZ(trigger: BasePart, worldPosition: Vector3, i
 	return math.abs(localPosition.X) <= halfX and math.abs(localPosition.Z) <= halfZ
 end
 
+local function hasManagedGroundBelow(worldPosition: Vector3): boolean
+	local result = workspace:Raycast(
+		worldPosition,
+		Vector3.new(0, -48, 0),
+		managedWorldRaycast
+	)
+	return result ~= nil
+end
+
 local function isSafeWorldPosition(worldPosition: Vector3, inset: number): boolean
+	if not hasManagedGroundBelow(worldPosition) then
+		return false
+	end
+
 	for _, child in ipairs(zoneTriggers:GetChildren()) do
 		if child:IsA("BasePart") and pointInsideTriggerXZ(child, worldPosition, inset) then
 			local minSafeY = child:GetAttribute("MinSafeY")
@@ -103,10 +121,9 @@ local function configurePlayer(player: Player)
 		end)
 	end)
 
-	if player.Character ~= nil then
-		task.defer(function()
-			placeCharacterAtWorldSpawn(player.Character :: Model)
-		end)
+	local existingCharacter = player.Character
+	if existingCharacter ~= nil then
+		task.defer(placeCharacterAtWorldSpawn, existingCharacter)
 	end
 end
 
