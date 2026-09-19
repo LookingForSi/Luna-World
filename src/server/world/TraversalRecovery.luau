@@ -130,7 +130,8 @@ function TraversalRecovery.start(worldRoot: Instance, spawn: SpawnLocation)
 
 				local fellOut = rootPart.Position.Y < FALL_RECOVERY_Y
 				local fellIntoRiver = isInsideWaterHazard(hazards, rootPart.Position)
-				if fellOut or fellIntoRiver then
+				local swimming = humanoid:GetState() == Enum.HumanoidStateType.Swimming
+				if fellOut or fellIntoRiver or swimming then
 					character:PivotTo(lastSafe[player] or spawnCFrame())
 					clearVelocity(rootPart)
 				elseif isSafeGroundedPosition(humanoid, rootPart, hazards) then
