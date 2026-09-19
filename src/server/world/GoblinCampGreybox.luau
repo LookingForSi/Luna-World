@@ -92,9 +92,9 @@ local function createApproach(parent: Instance)
 			string.format("GoblinSlope%02d", index),
 			from - Vector3.new(0, 4, 0),
 			to - Vector3.new(0, 4, 0),
-			170,
+			255,
 			8,
-			36
+			54
 		)
 		groundSection.Material = Enum.Material.Grass
 		groundSection.Color = COLORS.ground

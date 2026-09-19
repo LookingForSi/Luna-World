@@ -76,13 +76,13 @@ function GreyboxPrimitives.createMarker(
 	marker.Size = MARKER_SIZE
 	marker.Position = position
 	marker.Shape = Enum.PartType.Ball
-	marker.Material = Enum.Material.Neon
+	marker.Material = Enum.Material.SmoothPlastic
 	marker.Color = MARKER_COLOR
+	marker.Transparency = 1
 	marker.Anchored = true
 	marker.CanCollide = false
 	marker:SetAttribute("StableId", name)
 	applyAttributes(marker, attributes)
-	GreyboxPrimitives.createLabel(marker, name, MARKER_LABEL_MAX_DISTANCE)
 	marker.Parent = parent
 
 	return marker

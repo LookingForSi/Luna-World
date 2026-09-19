@@ -99,7 +99,7 @@ local function createTrail(
 			to - Vector3.new(0, 5, 0),
 			groundWidth,
 			10,
-			36
+			54
 		)
 		groundSection.Material = Enum.Material.Grass
 		groundSection.Color = COLORS.ground
@@ -249,8 +249,8 @@ function SpiderHollowGreybox.build(parent: Instance): Model
 	local model = createModel(parent, MODEL_NAME, nil)
 	model:SetAttribute("ZoneId", ZONE_ID)
 
-	createTrail(model, "Descent", WorldLayout.SpiderHollowRoute, 180, 13)
-	createTrail(model, "Return", WorldLayout.SpiderReturnRoute, 120, 11)
+	createTrail(model, "Descent", WorldLayout.SpiderHollowRoute, 270, 14)
+	createTrail(model, "Return", WorldLayout.SpiderReturnRoute, 180, 12)
 	createHollow(model, getPoi("poi_spider_hollow"))
 	createCaveMouth(model, getPoi("poi_spider_cave_mouth"))
 	createSpawnMarkers(model)

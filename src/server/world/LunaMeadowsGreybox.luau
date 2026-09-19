@@ -24,12 +24,12 @@ local REQUIRED_POI_IDS = {
 }
 
 local GROUND = {
-	width = 440,
+	width = 660,
 	thickness = 8,
 }
 
 local ROAD = {
-	width = 20,
+	width = 24,
 	thickness = 1,
 }
 
@@ -185,7 +185,7 @@ local function createMeadowGround(parent: Instance)
 			WorldLayout.Route[index + 1] + verticalOffset,
 			GROUND.width,
 			GROUND.thickness,
-			56
+			84
 		)
 		section.Material = Enum.Material.Grass
 		section.Color = COLORS.ground
@@ -337,18 +337,28 @@ local function createFutureNpcMarkers(parent: Instance, farmPosition: Vector3)
 			string.format("FutureNpcMarker%02d", index),
 			farmPosition + offset,
 			Vector3.new(3, 6, 3),
-			Enum.Material.Neon,
+			Enum.Material.SmoothPlastic,
 			COLORS.npcMarker
 		)
 		marker.CanCollide = false
+		marker.Transparency = 0.45
 		marker:SetAttribute("Purpose", "FutureNPC")
-		GreyboxPrimitives.createLabel(marker, "Future NPC")
+		GreyboxPrimitives.createLabel(marker, "Future NPC", 30)
 	end
 end
 
 local function createFarm(parent: Instance, definition: PointOfInterestDefinition)
 	local farm = createModel(parent, "Farm")
 	farm:SetAttribute("StableId", definition.id)
+
+	createColoredBlock(
+		farm,
+		"FarmGroundPad",
+		Vector3.new(230, 6, 190),
+		CFrame.new(definition.position - Vector3.new(0, 3, 0)),
+		Enum.Material.Grass,
+		COLORS.ground
+	)
 
 	createGroundedBlock(
 		farm,
@@ -395,6 +405,15 @@ local function createStoneCircle(parent: Instance, definition: PointOfInterestDe
 	local stoneCircle = createModel(parent, "StoneCircle")
 	stoneCircle:SetAttribute("StableId", definition.id)
 
+	createColoredBlock(
+		stoneCircle,
+		"StoneCircleGroundPad",
+		Vector3.new(110, 6, 110),
+		CFrame.new(definition.position - Vector3.new(0, 3, 0)),
+		Enum.Material.Grass,
+		COLORS.ground
+	)
+
 	for index = 1, STONE_CIRCLE.stoneCount do
 		local angle = (index - 1) * math.pi * 2 / STONE_CIRCLE.stoneCount
 		local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * STONE_CIRCLE.radius
@@ -413,6 +432,15 @@ end
 local function createSpiderPocket(parent: Instance, definition: SpawnMarkerDefinition)
 	local pocket = createModel(parent, "SpiderPocket")
 	pocket:SetAttribute("Purpose", "SpiderHabitatBlockout")
+
+	createColoredBlock(
+		pocket,
+		"SpiderPocketGroundPad",
+		Vector3.new(190, 6, 170),
+		CFrame.new(definition.position - Vector3.new(0, 3, 0)),
+		Enum.Material.Grass,
+		COLORS.ground
+	)
 
 	for index, offset in ipairs(SPIDER_POCKET.treeOffsets) do
 		createGroundedBlock(

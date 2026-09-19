@@ -9,9 +9,9 @@ type PointOfInterestDefinition = typeof(WorldLayout.PointsOfInterest[1])
 type SpawnMarkerDefinition = typeof(WorldLayout.SpawnMarkers[1])
 
 local MODEL_NAME = "MoonfallRoad"
-local GROUND_WIDTH = 360
+local GROUND_WIDTH = 540
 local GROUND_THICKNESS = 8
-local ROAD_WIDTH = 18
+local ROAD_WIDTH = 22
 local ROAD_THICKNESS = 1
 
 local COLORS = {
@@ -117,7 +117,7 @@ local function createRouteGeometry(parent: Instance)
 			to + groundOffset,
 			GROUND_WIDTH,
 			GROUND_THICKNESS,
-			48
+			72
 		)
 		groundSection.Material = Enum.Material.Grass
 		groundSection.Color = COLORS.ground
