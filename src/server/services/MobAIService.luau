@@ -252,7 +252,13 @@ local function decide(record: Record, now: number): ()
 		moveToward(record, targetRoot.Position, capturedGeneration, now)
 	elseif nextState == "Attack" and record.target ~= nil then
 		humanoid:MoveTo(root.Position)
-		if attackRequest ~= nil then attackRequest(record.model, record.target, definition) end
+		local accepted = if attackRequest ~= nil then attackRequest(record.model, record.target, definition) else false
+		-- The maximum attack range may belong to a cooldown ability. If that action
+		-- is unavailable, keep closing toward the basic attack instead of freezing
+		-- forever at the outer ability radius.
+		if not accepted and targetRoot ~= nil and targetDistance > definition.basicAttackRange then
+			moveToward(record, targetRoot.Position, capturedGeneration, now)
+		end
 	elseif nextState == "Return" then
 		moveToward(record, record.home, capturedGeneration, now)
 	elseif nextState == "Idle" then
