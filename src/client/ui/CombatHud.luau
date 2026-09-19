@@ -39,7 +39,6 @@ local presentationConnection: RBXScriptConnection? = nil
 local feedbackGeneration = 0
 local currentTarget: Model? = nil
 
-local STATUS_RIGHT_COLUMN = 58
 
 local RESOURCE_NAMES = {
 	Stamina = "STM",
@@ -80,7 +79,7 @@ local function updateProgression(): ()
 	local required = ProgressionRules.requiredXP(level)
 
 	if levelLabel ~= nil then
-		levelLabel.Text = tostring(level)
+		levelLabel.Text = string.format("LVL %d", level)
 	end
 	if xpValueLabel ~= nil then
 		xpValueLabel.Text = if required == nil then "MAX" else string.format("%d / %d", xp, required)
@@ -215,74 +214,47 @@ local function makePlayerStatusRow(
 	fillName: string,
 	fillColor: Color3
 ): (TextLabel, TextLabel, Frame)
-	local y = 8 + (row - 1) * 41
+	local y = 34 + (row - 1) * 37
 	local label = makeTextLabel(parent, name .. "Label", UDim2.fromOffset(8, y))
-	label.Size = UDim2.new(1, -(16 + STATUS_RIGHT_COLUMN), 0, 16)
+	label.Size = UDim2.new(1, -16, 0, 15)
 	label.Text = labelText
-	label.TextSize = 12
+	label.TextSize = 11
 
 	local valueLabel = makeTextLabel(parent, name .. "Value", UDim2.fromOffset(8, y))
-	valueLabel.Size = UDim2.new(1, -(16 + STATUS_RIGHT_COLUMN), 0, 16)
+	valueLabel.Size = UDim2.new(1, -16, 0, 15)
 	valueLabel.Text = "0 / 0"
-	valueLabel.TextSize = 12
+	valueLabel.TextSize = 11
 	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
 
 	local fill = makeStatusBar(
 		parent,
 		name .. "Bar",
-		UDim2.fromOffset(8, y + 19),
+		UDim2.fromOffset(8, y + 17),
 		fillName,
 		fillColor,
-		STATUS_RIGHT_COLUMN
+		0
 	)
 	local background = fill.Parent
 	if background ~= nil and background:IsA("Frame") then
-		background.Size = UDim2.new(1, -(16 + STATUS_RIGHT_COLUMN), 0, 13)
+		background.Size = UDim2.new(1, -16, 0, 12)
 	end
 	return label, valueLabel, fill
 end
 
-local function createLevelBadge(parent: Frame): TextLabel
-	local badge = Instance.new("Frame")
-	badge.Name = "LevelBadge"
-	badge.AnchorPoint = Vector2.new(1, 0)
-	badge.Position = UDim2.new(1, -8, 0, 8)
-	badge.Size = UDim2.fromOffset(50, 50)
-	badge.BackgroundColor3 = Color3.fromRGB(35, 38, 47)
-	badge.BorderSizePixel = 0
-	badge.Parent = parent
+local function createPlayerHeader(parent: Frame): TextLabel
+	local nameLabel = makeTextLabel(parent, "PlayerName", UDim2.fromOffset(8, 7))
+	nameLabel.Size = UDim2.new(1, -82, 0, 20)
+	nameLabel.Font = Enum.Font.GothamBold
+	nameLabel.Text = player.DisplayName
+	nameLabel.TextSize = 14
 
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(91, 97, 112)
-	stroke.Transparency = 0.15
-	stroke.Thickness = 1
-	stroke.Parent = badge
-
-	local caption = Instance.new("TextLabel")
-	caption.Name = "Caption"
-	caption.BackgroundTransparency = 1
-	caption.Position = UDim2.fromOffset(0, 3)
-	caption.Size = UDim2.new(1, 0, 0, 13)
-	caption.Font = Enum.Font.GothamMedium
-	caption.Text = "LVL"
-	caption.TextColor3 = Color3.fromRGB(174, 178, 189)
-	caption.TextSize = 10
-	caption.TextXAlignment = Enum.TextXAlignment.Center
-	caption.Parent = badge
-
-	local number = Instance.new("TextLabel")
-	number.Name = "LevelNumber"
-	number.BackgroundTransparency = 1
-	number.Position = UDim2.fromOffset(0, 14)
-	number.Size = UDim2.new(1, 0, 1, -15)
-	number.Font = Enum.Font.GothamBold
-	number.Text = "1"
-	number.TextColor3 = Color3.fromRGB(240, 240, 244)
-	number.TextSize = 25
-	number.TextXAlignment = Enum.TextXAlignment.Center
-	number.TextYAlignment = Enum.TextYAlignment.Center
-	number.Parent = badge
-	return number
+	local level = makeTextLabel(parent, "PlayerLevel", UDim2.fromOffset(8, 7))
+	level.Size = UDim2.new(1, -16, 0, 20)
+	level.Font = Enum.Font.GothamBold
+	level.Text = "LVL 1"
+	level.TextSize = 14
+	level.TextXAlignment = Enum.TextXAlignment.Right
+	return level
 end
 
 function CombatHud.start(): ()
@@ -317,7 +289,7 @@ function CombatHud.start(): ()
 	HudLayout.applyPanelStyle(playerPanel)
 	playerPanel.Parent = gui
 
-	levelLabel = createLevelBadge(playerPanel)
+	levelLabel = createPlayerHeader(playerPanel)
 
 	local cpLabel
 	cpLabel, playerCombatPointsValueLabel, playerCombatPointsFill = makePlayerStatusRow(
@@ -428,7 +400,10 @@ function CombatHud.setTarget(target: Model?): ()
 	if humanoid == nil then return end
 
 	currentTarget = target
-	targetNameLabel.Text = target.Name
+	local targetLevel = target:GetAttribute("Level")
+	targetNameLabel.Text = if typeof(targetLevel) == "number"
+		then string.format("%s · LV %d", target.Name, math.floor(targetLevel))
+		else target.Name
 	updateTargetHealth(humanoid)
 	targetHealthConnection = humanoid.HealthChanged:Connect(function()
 		if currentTarget == target then updateTargetHealth(humanoid) end
