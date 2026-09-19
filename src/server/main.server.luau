@@ -10,6 +10,9 @@ local ProgressionService = require(script.Parent.services.ProgressionService)
 local RespawnService = require(script.Parent.services.RespawnService)
 local StudioDebugService = require(script.Parent.services.StudioDebugService)
 
+local worldRoot = workspace:WaitForChild("LunaWorldPlayableBlockout", 15)
+assert(worldRoot ~= nil, "Luna World blockout failed to initialize before gameplay services")
+
 PlayerDataService.start()
 ProgressionService.start()
 CombatService.start()
