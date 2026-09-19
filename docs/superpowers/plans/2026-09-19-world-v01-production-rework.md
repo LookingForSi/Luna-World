@@ -49,13 +49,16 @@ Generator не запускается в runtime.
 - future Old Cemetery raised terrace — **RESERVED**;
 - future Fallen Shrine raised promontory — **RESERVED**.
 
-Terrain v0.4 additionally:
+Terrain v0.4 baseline:
 
 - regular terrain floor no longer reaches zero except intentional river carving;
-- vertical authoring range increased from 128 to 192 studs to avoid clipping Selene massif;
-- Goblin Camp has a raised playable shelf plus rough outer rim;
-- Spider Hollow has a lower playable core plus enclosing rim;
-- Old Cemetery/Fallen Shrine are terrain reservations only, not v0.1 gameplay zones.
+- vertical authoring range is 192 studs;
+- Goblin Camp has a centered raised playable shelf;
+- Spider Hollow has a centered lower playable core plus enclosing rim;
+- Moonfall/side-zone block is moved south toward the river;
+- Old Cemetery/Fallen Shrine are future terrain reservations south of Ancient Approach;
+- Ancient Approach is a separate broad high future reservation;
+- Selene massif remains horizon/containment, not gameplay terrain.
 
 Проверить после owner re-import:
 
@@ -63,7 +66,8 @@ Terrain v0.4 additionally:
 - Village Hill и Selene massif сохраняют approved concept silhouette;
 - Goblin Camp географически читается до props;
 - Spider Hollow читается как hollow до props;
-- future Old Cemetery/Fallen Shrine не выглядят как случайные ямы;
+- future Old Cemetery/Fallen Shrine читаются как raised side-terraces;
+- Ancient Approach читается как отдельная большая высокая зона;
 - terrain скрывает соседние зоны;
 - карты хватает по ширине вокруг маршрутов;
 - world boundary визуально объяснима.
