@@ -38,12 +38,12 @@
       "center": [
         0,
         18,
-        1020
+        900
       ],
       "size": [
         1520,
         120,
-        1800
+        1500
       ],
       "priority": 1
     },
@@ -52,13 +52,13 @@
       "displayName": "Moonfall Road",
       "center": [
         0,
-        22,
-        2760
+        24,
+        2100
       ],
       "size": [
         1120,
-        140,
-        1920
+        150,
+        1450
       ],
       "priority": 2
     },
@@ -66,14 +66,14 @@
       "id": "zone_goblin_camp",
       "displayName": "Goblin Camp",
       "center": [
-        -600,
-        66,
-        2830
+        560,
+        60,
+        2200
       ],
       "size": [
-        860,
-        140,
-        860
+        780,
+        150,
+        720
       ],
       "priority": 10
     },
@@ -81,14 +81,14 @@
       "id": "zone_spider_hollow",
       "displayName": "Spider Hollow",
       "center": [
-        600,
+        -560,
         6,
-        2880
+        2220
       ],
       "size": [
-        880,
+        800,
         120,
-        880
+        740
       ],
       "priority": 10
     }
@@ -186,80 +186,80 @@
       "id": "exit_moonfall_road",
       "position": [
         0,
-        4,
-        1800
+        6,
+        1580
       ]
     },
     {
       "id": "poi_broken_wagon",
       "position": [
-        -140,
-        9,
-        2100
+        -100,
+        10,
+        1740
       ]
     },
     {
       "id": "poi_moonfall_crossroads",
       "position": [
-        40,
-        16,
-        2440
+        0,
+        18,
+        1940
       ]
     },
     {
       "id": "poi_old_waystone",
       "position": [
-        16,
-        16,
-        2420
+        -20,
+        18,
+        1920
       ]
     },
     {
       "id": "poi_goblin_camp",
       "position": [
-        -600,
-        66,
-        2800
+        560,
+        60,
+        2200
       ]
     },
     {
       "id": "poi_goblin_lookout",
       "position": [
-        -720,
-        74,
-        3020
+        700,
+        68,
+        2370
       ]
     },
     {
       "id": "poi_spider_hollow",
       "position": [
-        600,
+        -560,
         4,
-        2840
+        2220
       ]
     },
     {
       "id": "poi_spider_cave_mouth",
       "position": [
-        720,
+        -700,
         4,
-        3060
+        2380
       ]
     },
     {
       "id": "poi_dark_woodland_gate",
       "position": [
-        40,
-        24,
-        3480
+        0,
+        30,
+        2680
       ]
     },
     {
       "id": "entry_dark_woodland",
       "position": [
         0,
-        26,
-        3680
+        36,
+        2860
       ]
     }
   ],
@@ -304,9 +304,9 @@
       "id": "spawn_goblin_scout_road",
       "mobId": "mob_goblin_scout",
       "position": [
-        -210,
-        20,
-        2570
+        180,
+        24,
+        2020
       ],
       "radius": 84,
       "zoneId": "zone_moonfall_road",
@@ -316,9 +316,9 @@
       "id": "spawn_goblin_scout_outer",
       "mobId": "mob_goblin_scout",
       "position": [
-        -440,
-        52,
-        2680
+        400,
+        48,
+        2110
       ],
       "radius": 96,
       "zoneId": "zone_goblin_camp",
@@ -328,9 +328,9 @@
       "id": "spawn_goblin_warrior_camp",
       "mobId": "mob_goblin_warrior",
       "position": [
-        -600,
-        66,
-        2860
+        560,
+        60,
+        2230
       ],
       "radius": 110,
       "zoneId": "zone_goblin_camp",
@@ -340,9 +340,9 @@
       "id": "spawn_goblin_camp_elite_future",
       "mobId": "mob_goblin_elite_future",
       "position": [
-        -700,
-        72,
-        3000
+        660,
+        66,
+        2350
       ],
       "radius": 72,
       "zoneId": "zone_goblin_camp",
@@ -352,9 +352,9 @@
       "id": "spawn_spider_hollow_outer",
       "mobId": "mob_meadow_spider",
       "position": [
-        420,
+        -380,
         10,
-        2690
+        2100
       ],
       "radius": 96,
       "zoneId": "zone_spider_hollow",
@@ -364,9 +364,9 @@
       "id": "spawn_spider_hollow_mid",
       "mobId": "mob_meadow_spider",
       "position": [
-        590,
+        -560,
         4,
-        2860
+        2230
       ],
       "radius": 110,
       "zoneId": "zone_spider_hollow",
@@ -376,9 +376,9 @@
       "id": "spawn_spider_hollow_brood",
       "mobId": "mob_brood_spider",
       "position": [
-        690,
+        -670,
         4,
-        3020
+        2360
       ],
       "radius": 88,
       "zoneId": "zone_spider_hollow",
@@ -413,167 +413,194 @@
         900
       ],
       [
-        180,
+        160,
         7,
         1120
       ],
       [
-        90,
+        80,
         6,
-        1440
+        1380
       ],
       [
         0,
-        5,
-        1800
+        6,
+        1580
       ]
     ],
     "moonfall": [
       [
         0,
-        4,
-        1800
-      ],
-      [
-        -50,
         6,
-        2020
+        1580
+      ],
+      [
+        -40,
+        8,
+        1700
       ],
       [
         -20,
-        10,
-        2220
-      ],
-      [
-        40,
-        16,
-        2440
-      ],
-      [
-        10,
-        18,
-        2680
-      ],
-      [
-        -20,
-        20,
-        2940
-      ],
-      [
-        30,
-        22,
-        3200
-      ],
-      [
-        40,
-        24,
-        3480
+        12,
+        1820
       ],
       [
         0,
-        26,
-        3680
+        18,
+        1940
+      ],
+      [
+        10,
+        22,
+        2140
+      ],
+      [
+        0,
+        25,
+        2360
+      ],
+      [
+        10,
+        28,
+        2540
+      ],
+      [
+        0,
+        30,
+        2680
+      ],
+      [
+        0,
+        36,
+        2860
       ]
     ],
     "goblin": [
       [
-        40,
-        16,
-        2440
+        0,
+        18,
+        1940
       ],
       [
-        -160,
-        22,
-        2530
+        150,
+        24,
+        2000
       ],
       [
-        -340,
+        300,
         34,
-        2630
+        2070
       ],
       [
-        -500,
-        50,
-        2740
+        430,
+        46,
+        2140
       ],
       [
-        -600,
-        66,
-        2800
+        560,
+        60,
+        2200
       ],
       [
-        -660,
-        70,
-        2920
+        630,
+        64,
+        2290
       ],
       [
-        -720,
-        74,
-        3020
+        700,
+        68,
+        2370
       ]
     ],
     "spider": [
       [
-        40,
-        16,
-        2440
+        0,
+        18,
+        1940
       ],
       [
-        210,
-        14,
-        2550
+        -160,
+        15,
+        2010
       ],
       [
-        390,
-        10,
-        2680
+        -310,
+        11,
+        2080
       ],
       [
-        540,
-        6,
-        2790
+        -450,
+        7,
+        2160
       ],
       [
-        600,
+        -560,
         4,
-        2840
+        2220
       ],
       [
-        660,
+        -630,
         4,
-        2960
+        2300
       ],
       [
-        720,
+        -700,
         4,
-        3060
+        2380
       ]
     ],
     "spider_return": [
       [
-        720,
+        -700,
         4,
-        3060
+        2380
       ],
       [
-        640,
-        5,
-        3140
+        -610,
+        6,
+        2460
       ],
       [
-        490,
-        9,
-        3190
+        -450,
+        11,
+        2500
       ],
       [
-        310,
-        15,
-        3210
+        -260,
+        19,
+        2520
       ],
       [
-        30,
-        22,
-        3200
+        10,
+        28,
+        2540
+      ]
+    ],
+    "ancient_approach": [
+      [
+        0,
+        36,
+        2860
+      ],
+      [
+        0,
+        54,
+        3040
+      ],
+      [
+        0,
+        78,
+        3220
+      ],
+      [
+        0,
+        104,
+        3400
+      ],
+      [
+        0,
+        124,
+        3540
       ]
     ]
   },
@@ -624,23 +651,23 @@
       {
         "id": "goblin_camp",
         "center": [
-          -600,
-          66,
-          2800
+          560,
+          60,
+          2200
         ],
-        "radiusStuds": 230,
-        "targetY": 66,
+        "radiusStuds": 240,
+        "targetY": 60,
         "blendStuds": 260,
         "mode": "raise"
       },
       {
         "id": "spider_hollow",
         "center": [
-          600,
+          -560,
           4,
-          2840
+          2220
         ],
-        "radiusStuds": 230,
+        "radiusStuds": 240,
         "targetY": 4,
         "blendStuds": 220,
         "mode": "lower"
@@ -675,143 +702,155 @@
         "id": "meadows_basin",
         "centerXZ": [
           0,
-          1050
+          900
         ],
         "sigmaXZ": [
-          1150,
-          850
+          1120,
+          680
         ],
-        "amplitude": -6
+        "amplitude": -5
       },
       {
         "id": "moonfall_west_shoulder",
         "centerXZ": [
           -760,
-          2100
+          1680
         ],
         "sigmaXZ": [
           430,
-          520
+          440
         ],
-        "amplitude": 12
+        "amplitude": 18
       },
       {
         "id": "moonfall_east_shoulder",
         "centerXZ": [
-          820,
-          2100
+          780,
+          1680
         ],
         "sigmaXZ": [
           430,
-          520
+          440
         ],
-        "amplitude": 12
+        "amplitude": 18
       },
       {
         "id": "goblin_massif",
         "centerXZ": [
-          -600,
-          2800
+          560,
+          2200
         ],
         "sigmaXZ": [
-          560,
-          500
+          500,
+          420
         ],
-        "amplitude": 30
+        "amplitude": 26
       },
       {
         "id": "goblin_back_ridge",
         "centerXZ": [
-          -820,
-          3090
+          820,
+          2390
         ],
         "sigmaXZ": [
-          340,
-          320
+          330,
+          300
         ],
-        "amplitude": 14
+        "amplitude": 12
       },
       {
         "id": "spider_hollow_basin",
         "centerXZ": [
-          600,
-          2840
+          -560,
+          2220
         ],
         "sigmaXZ": [
-          460,
-          440
+          450,
+          420
         ],
-        "amplitude": -18
+        "amplitude": -20
       },
       {
-        "id": "spider_east_wall",
+        "id": "spider_outer_wall",
         "centerXZ": [
-          1030,
-          2860
+          -980,
+          2240
         ],
         "sigmaXZ": [
           320,
-          620
+          560
         ],
-        "amplitude": 24
+        "amplitude": 22
       },
       {
         "id": "dark_woodland_rise",
         "centerXZ": [
           0,
-          3500
+          2730
         ],
         "sigmaXZ": [
-          850,
-          520
+          760,
+          430
         ],
-        "amplitude": 14
+        "amplitude": 18
       },
       {
         "id": "selene_horizon_massif",
         "centerXZ": [
           0,
-          4430
+          4350
         ],
         "sigmaXZ": [
           720,
-          520
+          500
         ],
-        "amplitude": 78
+        "amplitude": 76
       },
       {
         "id": "selene_left_peak",
         "centerXZ": [
-          -650,
-          4210
+          650,
+          4140
         ],
         "sigmaXZ": [
           340,
-          330
+          320
         ],
-        "amplitude": 32
+        "amplitude": 30
       },
       {
         "id": "selene_right_peak",
         "centerXZ": [
-          620,
-          4250
+          -620,
+          4160
         ],
         "sigmaXZ": [
           380,
-          340
+          330
         ],
         "amplitude": 28
+      },
+      {
+        "id": "ancient_approach_massif",
+        "centerXZ": [
+          0,
+          3500
+        ],
+        "sigmaXZ": [
+          650,
+          500
+        ],
+        "amplitude": 32
       }
     ],
     "localRings": [
       {
         "id": "spider_hollow_rim",
         "centerXZ": [
-          600,
-          2840
+          -560,
+          2220
         ],
-        "radiusStuds": 330,
+        "radiusStuds": 340,
         "sigmaStuds": 105,
         "amplitude": 20
       }
@@ -821,13 +860,13 @@
         "id": "future_old_cemetery",
         "displayName": "Old Cemetery",
         "center": [
-          -650,
-          124,
-          3740
+          560,
+          102,
+          3110
         ],
-        "radiusStuds": 210,
-        "targetY": 124,
-        "blendStuds": 240,
+        "radiusStuds": 225,
+        "targetY": 102,
+        "blendStuds": 250,
         "terrainIntent": "raised_terrace",
         "mode": "raise"
       },
@@ -835,17 +874,31 @@
         "id": "future_fallen_shrine",
         "displayName": "Fallen Shrine",
         "center": [
-          650,
-          130,
-          3760
+          -560,
+          108,
+          3140
         ],
-        "radiusStuds": 185,
-        "targetY": 130,
-        "blendStuds": 220,
+        "radiusStuds": 205,
+        "targetY": 108,
+        "blendStuds": 240,
         "terrainIntent": "raised_promontory",
+        "mode": "raise"
+      },
+      {
+        "id": "future_ancient_approach",
+        "displayName": "Ancient Approach",
+        "center": [
+          0,
+          124,
+          3540
+        ],
+        "radiusStuds": 320,
+        "targetY": 124,
+        "blendStuds": 320,
+        "terrainIntent": "broad_high_approach",
         "mode": "raise"
       }
     ]
   },
-  "artifactRevision": "terrain-v03"
+  "artifactRevision": "terrain-v04"
 }
