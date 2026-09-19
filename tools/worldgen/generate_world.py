@@ -124,17 +124,19 @@ def generate_height(source: dict) -> tuple[np.ndarray, np.ndarray]:
         + 0.8 * np.sin((x_grid + z_grid) / 310.0)
     ).astype(np.float32)
 
-    # Macro shapes: one continuous landmass with readable region silhouettes.
-    height += gaussian(x_grid, z_grid, 0, -220, 480, 420, 42)
-    height += gaussian(x_grid, z_grid, -160, -350, 650, 320, 15)
-    height += gaussian(x_grid, z_grid, 0, 880, 1100, 850, -4)
-    height += gaussian(x_grid, z_grid, -620, 2820, 470, 470, 32)
-    height += gaussian(x_grid, z_grid, -760, 3060, 330, 300, 14)
-    height += gaussian(x_grid, z_grid, 610, 2860, 430, 420, -10)
-    height += gaussian(x_grid, z_grid, 720, 3100, 280, 300, -5)
-    height += gaussian(x_grid, z_grid, 0, 3500, 850, 520, 12)
-    height += gaussian(x_grid, z_grid, -700, 2100, 400, 500, 10)
-    height += gaussian(x_grid, z_grid, 760, 2100, 420, 520, 9)
+    # Macro silhouettes are authoring data, not hard-coded terrain policy.
+    for landform in source["features"]["macroLandforms"]:
+        cx, cz = landform["centerXZ"]
+        sx, sz = landform["sigmaXZ"]
+        height += gaussian(
+            x_grid,
+            z_grid,
+            float(cx),
+            float(cz),
+            float(sx),
+            float(sz),
+            float(landform["amplitude"]),
+        )
 
     edge_x = np.minimum(x_grid - bounds["minX"], bounds["maxX"] - x_grid)
     south_edge = z_grid - bounds["minZ"]
@@ -310,7 +312,7 @@ def route_slope_stats(source: dict) -> dict:
 
 def save_manifest(source: dict, height: np.ndarray, output_dir: Path) -> None:
     manifest = {
-        "generatorVersion": 1,
+        "generatorVersion": 2,
         "worldScaleXZ": source["worldScaleXZ"],
         "boundsStuds": source["boundsStuds"],
         "resolution": source["resolution"],
