@@ -110,7 +110,7 @@ Routes не строятся плоскими Part-плитами. Generator м�
 Не начинать final art/foliage pass до принятия macro terrain и traversal.
 
 
-## Terrain v0.3 — характер зон
+## Terrain v0.4 — характер зон
 
 Вторая macro-итерация намеренно разделяет **playable core** и **silhouette**:
 
@@ -124,7 +124,7 @@ Routes не строятся плоскими Part-плитами. Generator м�
 
 ## Правило локального рельефа зоны
 
-Начиная с terrain-v03 локальный POI не должен получать свою главную высоту от края карты или от окружающего massif.
+Начиная с terrain-v04 локальный POI не должен получать свою главную высоту от края карты или от окружающего massif.
 
 Для zone-defining terrain используется направленный режим:
 
@@ -140,3 +140,22 @@ Routes не строятся плоскими Part-плитами. Generator м�
 - Fallen Shrine: будущий приподнятый promontory, центр выше ближайшего окружения.
 
 Contract-test генерирует height field и проверяет эти отношения численно, чтобы ошибка «максимум на краю зоны» не возвращалась.
+
+
+## Terrain v0.4 — recomposition северного блока
+
+После owner review северная половина мира переразложена целиком относительно реки и approved concept:
+
+- большая пустая равнина за рекой сокращена;
+- Moonfall crossroads и side-zones подтянуты южнее;
+- Goblin Camp и Spider Hollow физически поменяны местами в world coordinates, чтобы импортированный Studio-view совпадал с approved concept;
+- Goblin Camp остаётся centered raised shelf;
+- Spider Hollow остаётся centered basin;
+- future Old Cemetery и Fallen Shrine также сдвинуты южнее и размещены на соответствующих concept-side;
+- добавлен крупный `future_ancient_approach`: широкая высокая центральная площадка/подход перед Selene;
+- Ancient Approach получает собственный authoring route и больше не является узкой полосой у северной границы;
+- Selene massif остаётся дальним horizon/containment и не заменяет Ancient Approach.
+
+Целевая progression-композиция с юга на север:
+
+`river → Moonfall Road/crossroads → Goblin Camp + Spider Hollow → Dark Woodland → Old Cemetery + Fallen Shrine → Ancient Approach → Ruins of Selene horizon`.
