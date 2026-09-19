@@ -57,7 +57,7 @@ local function updateCooldowns(): ()
 			local remaining = if typeof(readyAt) == "number" then math.max(0, readyAt - now) else 0
 			local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
 			local level = if typeof(rawLevel) == "number" then rawLevel else 1
-			local unlocked = ProgressionRules.isSkillUnlocked(skillId, level)
+			local unlocked = ProgressionRules.isSkillUnlocked(definition.unlockLevel, level)
 			button.Text = if not unlocked
 				then string.format("%s\nLV %d", definition.displayName, definition.unlockLevel)
 				elseif remaining > 0 then string.format("%s\n%.1f", definition.displayName, remaining)
