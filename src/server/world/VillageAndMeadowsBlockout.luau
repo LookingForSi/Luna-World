@@ -302,7 +302,7 @@ local function createRiver(parent: Instance, positions: { [string]: Vector3 })
 
 	local WATER_SURFACE_Y = 4
 	local WATER_DEPTH = 5
-	local WATER_WIDTH = 116
+	local WATER_WIDTH = 124
 	local RECOVERY_WIDTH = 94
 	local RECOVERY_TOP_Y = 7
 
@@ -326,8 +326,10 @@ local function createRiver(parent: Instance, positions: { [string]: Vector3 })
 
 		-- Use actual Roblox Terrain water for the preview instead of a bright glass ribbon.
 		-- Short overlapping segments hide seams while keeping the authored river curve.
+		local fillCenter = Vector3.new(midpoint.X, WATER_SURFACE_Y - WATER_DEPTH / 2, midpoint.Z)
+		local fillTarget = Vector3.new(current.X, fillCenter.Y, current.Z)
 		terrain:FillBlock(
-			CFrame.lookAt(Vector3.new(midpoint.X, WATER_SURFACE_Y - WATER_DEPTH / 2, midpoint.Z), current),
+			CFrame.lookAt(fillCenter, fillTarget),
 			Vector3.new(WATER_WIDTH, WATER_DEPTH, offset.Magnitude + 12),
 			Enum.Material.Water
 		)
