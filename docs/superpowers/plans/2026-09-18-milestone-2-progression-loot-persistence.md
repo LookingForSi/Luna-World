@@ -312,6 +312,9 @@ Manual Studio/DataStore acceptance пока может быть DEFERRED, есл
 
 ## Task 10. Перевести ProgressionService с SessionXP на profile
 
+**Progression UX/tuning feedback 2026-09-19:** до persistent profile integration добавлены явные mob levels, разные base XP по типам существ и server-authoritative XP multiplier по разнице уровней. При отставании mob на 5+ levels награда становится 0; higher-level mobs дают умеренный бонус. Target HUD показывает уровень mob. AUTO уже имел binding `G / L2`, теперь он явно подписан на action bar.
+
+
 Убрать временную модель `SessionXP` как source of truth.
 
 ProgressionService:
