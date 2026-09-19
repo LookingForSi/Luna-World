@@ -2,7 +2,7 @@
 
 Дата: 2026-09-19  
 База: `terrain-v04`  
-Статус: implementation in progress  
+Статус: **IMPLEMENTED — owner traversal pending**  
 Цель: превратить принятый macro-terrain в пешком проверяемый игровой мир без попытки сделать final art.
 
 ## 1. Общие обязательные требования
@@ -224,3 +224,30 @@ Owner walks from Village spawn through the world with jump disabled and checks:
 12. Overall pacing/scale feels suitable before Blender art replacement.
 
 Only after this traversal review should terrain-v04 be considered macro-frozen for the first art pass.
+
+
+## 13. Реализованный preview pass
+
+В ветке собран runtime blockout поверх импортированного `terrain-v04`:
+
+- terrain-raycast grounding для всех крупных объектов;
+- Luna Village;
+- Moonfall Farm с farmhouse/barn/pen/овцами/NPC placeholders;
+- early wolf placeholders и early spider pocket;
+- временная water surface + collidable bridge + no-jump approaches;
+- visual roads;
+- Moonfall landmarks;
+- Goblin Camp;
+- Spider Hollow;
+- Dark Woodland threshold;
+- Old Cemetery;
+- Fallen Shrine;
+- Ancient Approach + distant Selene silhouette;
+- invisible world boundaries;
+- recovery при падении ниже мира;
+- temporary zone-entry toast;
+- jump disabled in preview, включая попытку скрыть touch jump button.
+
+Production combat/AI специально не подключены: mob figures здесь являются spatial placeholders для traversal и масштаба.
+
+Следующий gate: owner run-through по acceptance checklist раздела 12.
