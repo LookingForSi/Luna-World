@@ -63,7 +63,7 @@ local function createBoundary(root: Instance)
 end
 
 local function findManagedRoots(): { Instance }
-	local result = {}
+	local result: { Instance } = {}
 	for _, child in ipairs(workspace:GetChildren()) do
 		if child.Name == ROOT_NAME then
 			if child:GetAttribute("ManagedBy") ~= MANAGED_BY then
