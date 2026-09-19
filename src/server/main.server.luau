@@ -1,5 +1,6 @@
-local CollectionService = game:GetService("CollectionService")
 --!strict
+
+local CollectionService = game:GetService("CollectionService")
 
 local CombatService = require(script.Parent.services.CombatService)
 local MobService = require(script.Parent.services.MobService)
