@@ -29,6 +29,15 @@ def main() -> None:
     assert '"$path": "src/server/world"' in project
     assert '"$path": "src/client/world-preview"' in project
 
+    primitives = read(ROOT / "src/server/world/BlockoutPrimitives.luau")
+    for token in (
+        "embedDepth",
+        "paintTerrainStrip",
+        "replaceTerrainMaterials",
+        "Enum.Material.LeafyGrass",
+    ):
+        assert token in primitives
+
     grounding = read(ROOT / "src/server/world/TerrainGrounding.luau")
     assert "Workspace.Terrain" in grounding
     assert "workspace:Raycast" not in grounding  # use explicit Workspace service consistently
@@ -56,6 +65,9 @@ def main() -> None:
         "Sheep%02d",
         "YoungWolf01",
         "RiverAndBridge",
+        "RiverSandApproachWest",
+        "RiverSandApproachEast",
+        "CFrame.lookAt",
         "BridgeApproachSouth",
         "BridgeBankApronSouth",
         "BridgeBankApronNorth",
@@ -84,7 +96,10 @@ def main() -> None:
     for token in (
         "MoonfallRoad",
         "GoblinCamp",
+        "createGroundedBarrier",
+        '"Foundation"',
         "SpiderHollow",
+        "BasinFloorFilled",
         "DarkWoodlandThreshold",
         "OldCemetery",
         "FallenShrine",
@@ -120,12 +135,15 @@ def main() -> None:
         "UpperValleyComposition",
         "VillageWestTreeBelt",
         "FarmFieldRow",
+        "MeadowHillScree",
         "MoonfallWestScreen",
         "GoblinShelfEdge",
         "SpiderBasinRearDeadwood",
         "DarkWoodlandWestMass",
         "CemeteryRearDeadwood",
         "ShrinePromontoryRocks",
+        "FallenShrineSouthCliff",
+        "FallenShrineCliffScree",
         "ApproachOuterPillarLeft",
         "BlenderStudioAssetPass",
     ):
