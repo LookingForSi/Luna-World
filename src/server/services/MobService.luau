@@ -102,13 +102,13 @@ local function configuredWorldSpawns(): { SpawnSpec }
 	return result
 end
 
-local function removeKnownMobPlaceholders()
+local function removeMobPlaceholders()
+	-- Mob Content Pass v0.1 owns the complete open-world population. Any
+	-- presentation-only mob silhouettes from the world blockout must disappear
+	-- before authoritative entities are spawned, including obsolete reservation IDs.
 	for _, descendant in workspace:GetDescendants() do
 		if descendant:IsA("Model") and descendant:GetAttribute("Purpose") == "MobPlaceholder" then
-			local mobId = descendant:GetAttribute("MobId")
-			if typeof(mobId) == "string" and definitionKeyForId(mobId) ~= nil then
-				descendant:Destroy()
-			end
+			descendant:Destroy()
 		end
 	end
 end
@@ -224,7 +224,7 @@ function MobService.start(): ()
 	end
 	started = true
 	serviceGeneration += 1
-	removeKnownMobPlaceholders()
+	removeMobPlaceholders()
 	for _, spawn in configuredWorldSpawns() do
 		createMob(spawn)
 	end
