@@ -822,11 +822,11 @@
         "displayName": "Old Cemetery",
         "center": [
           -650,
-          88,
-          3920
+          124,
+          3740
         ],
-        "radiusStuds": 220,
-        "targetY": 88,
+        "radiusStuds": 210,
+        "targetY": 124,
         "blendStuds": 240,
         "terrainIntent": "raised_terrace",
         "mode": "raise"
@@ -836,11 +836,11 @@
         "displayName": "Fallen Shrine",
         "center": [
           650,
-          96,
-          3940
+          130,
+          3760
         ],
-        "radiusStuds": 190,
-        "targetY": 96,
+        "radiusStuds": 185,
+        "targetY": 130,
         "blendStuds": 220,
         "terrainIntent": "raised_promontory",
         "mode": "raise"
