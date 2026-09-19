@@ -45,6 +45,7 @@ local function createMob(definitionKey: string, spawnCFrame: CFrame, isRespawn: 
 	model.Name = definition.displayName
 	model:SetAttribute("EntityId", entityId)
 	model:SetAttribute("MobId", definition.id)
+	model:SetAttribute("Level", definition.level)
 	model:SetAttribute(CombatConfig.MobHomePositionAttribute, spawnCFrame.Position)
 	model:SetAttribute(CombatConfig.MobMovementSpeedAttribute, definition.chaseSpeed)
 
