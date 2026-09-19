@@ -87,7 +87,7 @@ function ProgressionRules.mobExperienceMultiplier(playerLevel: number, mobLevel:
 
 	local difference = mobLevel - playerLevel
 	if difference >= 0 then
-		return 1 + math.min(difference, 5) * 0.1
+		return 1 + math.min(difference, 5) * 0.05
 	end
 	if difference == -1 then return 0.75 end
 	if difference == -2 then return 0.5 end
