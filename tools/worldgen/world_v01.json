@@ -3,7 +3,7 @@
   "worldScaleXZ": 2,
   "heightRangeStuds": [
     0,
-    128
+    192
   ],
   "boundsStuds": {
     "minX": -1300,
@@ -67,7 +67,7 @@
       "displayName": "Goblin Camp",
       "center": [
         -600,
-        36,
+        42,
         2830
       ],
       "size": [
@@ -218,7 +218,7 @@
       "id": "poi_goblin_camp",
       "position": [
         -600,
-        30,
+        42,
         2800
       ]
     },
@@ -226,7 +226,7 @@
       "id": "poi_goblin_lookout",
       "position": [
         -720,
-        42,
+        50,
         3020
       ]
     },
@@ -317,7 +317,7 @@
       "mobId": "mob_goblin_scout",
       "position": [
         -440,
-        26,
+        34,
         2680
       ],
       "radius": 96,
@@ -329,7 +329,7 @@
       "mobId": "mob_goblin_warrior",
       "position": [
         -600,
-        30,
+        42,
         2860
       ],
       "radius": 110,
@@ -341,7 +341,7 @@
       "mobId": "mob_goblin_elite_future",
       "position": [
         -700,
-        40,
+        48,
         3000
       ],
       "radius": 72,
@@ -488,27 +488,27 @@
       ],
       [
         -340,
-        24,
+        25,
         2630
       ],
       [
         -500,
-        28,
+        32,
         2740
       ],
       [
         -600,
-        30,
+        42,
         2800
       ],
       [
         -660,
-        36,
+        46,
         2920
       ],
       [
         -720,
-        42,
+        50,
         3020
       ]
     ],
@@ -622,12 +622,12 @@
         "id": "goblin_camp",
         "center": [
           -600,
-          30,
+          42,
           2800
         ],
-        "radiusStuds": 180,
-        "targetY": 34,
-        "blendStuds": 150
+        "radiusStuds": 200,
+        "targetY": 42,
+        "blendStuds": 220
       },
       {
         "id": "spider_hollow",
@@ -636,9 +636,9 @@
           2,
           2840
         ],
-        "radiusStuds": 180,
-        "targetY": 3,
-        "blendStuds": 160
+        "radiusStuds": 190,
+        "targetY": 2,
+        "blendStuds": 180
       }
     ],
     "macroLandforms": [
@@ -797,6 +797,56 @@
           340
         ],
         "amplitude": 28
+      }
+    ],
+    "localRings": [
+      {
+        "id": "goblin_camp_outer_rampart",
+        "centerXZ": [
+          -600,
+          2800
+        ],
+        "radiusStuds": 320,
+        "sigmaStuds": 95,
+        "amplitude": 14
+      },
+      {
+        "id": "spider_hollow_rim",
+        "centerXZ": [
+          600,
+          2840
+        ],
+        "radiusStuds": 310,
+        "sigmaStuds": 90,
+        "amplitude": 16
+      }
+    ],
+    "futureTerrainReservations": [
+      {
+        "id": "future_old_cemetery",
+        "displayName": "Old Cemetery",
+        "center": [
+          -650,
+          62,
+          3920
+        ],
+        "radiusStuds": 185,
+        "targetY": 62,
+        "blendStuds": 190,
+        "terrainIntent": "raised_terrace"
+      },
+      {
+        "id": "future_fallen_shrine",
+        "displayName": "Fallen Shrine",
+        "center": [
+          650,
+          68,
+          3940
+        ],
+        "radiusStuds": 165,
+        "targetY": 68,
+        "blendStuds": 185,
+        "terrainIntent": "raised_promontory"
       }
     ]
   }
