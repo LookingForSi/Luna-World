@@ -12,8 +12,21 @@ local MovementController = require(clientRoot.controllers.MovementController)
 local CombatPresentationController = require(clientRoot.controllers.CombatPresentationController)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombatUiRules)
+
+local function disableStockHealthGui(): ()
+	for _ = 1, 5 do
+		local ok = pcall(function()
+			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+		end)
+		if ok then return end
+		task.wait(0.1)
+	end
+end
+
+disableStockHealthGui()
 
 MovementController.start()
 CombatPresentationController.start()
