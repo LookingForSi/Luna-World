@@ -275,9 +275,10 @@ local function beginAction(
 	mob:SetAttribute(CombatConfig.MobActionInterruptibleAttribute, true)
 	publishToTarget(target, "Action", actionId, actorEntityId(mob, definition), {
 		targetEntityId = targetEntityId(target),
+		skillId = ability.id,
 		presentationKey = ability.presentationKey,
 		outcome = "Accepted",
-		definitionId = ability.id,
+		definitionId = definition.id,
 	})
 
 	task.delay(ability.windupSeconds, function()
