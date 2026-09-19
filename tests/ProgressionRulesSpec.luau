@@ -54,9 +54,10 @@ return function(TestRunner)
 
 	TestRunner.run("mob xp increases modestly for higher level targets", function()
 		assert(ProgressionRules.mobExperienceMultiplier(1, 1) == 1)
-		assert(ProgressionRules.mobExperienceMultiplier(1, 2) == 1.1)
-		assert(ProgressionRules.mobExperienceMultiplier(1, 3) == 1.2)
-		assert(ProgressionRules.calculateMobXP(35, 1, 3) == 42)
+		assert(ProgressionRules.mobExperienceMultiplier(1, 2) == 1.05)
+		assert(ProgressionRules.mobExperienceMultiplier(1, 3) == 1.1)
+		assert(ProgressionRules.mobExperienceMultiplier(1, 6) == 1.25)
+		assert(ProgressionRules.calculateMobXP(35, 1, 3) == 39)
 	end)
 
 	TestRunner.run("mob xp falls sharply when the player outlevels the target", function()
