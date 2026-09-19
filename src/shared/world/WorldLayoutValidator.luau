@@ -36,15 +36,25 @@ local REQUIRED_POI_IDS = {
 
 local REQUIRED_SPAWN_IDS = {
 	"spawn_young_wolf_farm",
-	"spawn_wolf_stone_circle",
-	"spawn_spider_meadow_pocket",
-	"spawn_goblin_scout_outer",
+	"spawn_wolf_pack_south",
+	"spawn_wolf_pack_leader",
 	"spawn_goblin_scout_road",
+	"spawn_goblin_patrol_south",
 	"spawn_goblin_warrior_camp",
-	"spawn_goblin_camp_elite_future",
-	"spawn_spider_hollow_outer",
-	"spawn_spider_hollow_mid",
+	"spawn_goblin_shaman_camp",
+	"spawn_goblin_chieftain_camp",
+	"spawn_spider_hollow_swarm",
 	"spawn_spider_hollow_brood",
+	"spawn_dire_wolf_west",
+	"spawn_forest_spider_dark",
+	"spawn_skeleton_cemetery_a",
+	"spawn_skeleton_archer_cemetery",
+	"spawn_grave_guardian",
+	"spawn_fallen_acolytes",
+	"spawn_shrine_guardians",
+	"spawn_ancient_sentinels",
+	"spawn_ancient_watchers",
+	"spawn_moonbound_warden",
 }
 
 local WorldLayoutValidator = {}
@@ -223,6 +233,18 @@ function WorldLayoutValidator.validate(layout: any): (boolean, { string })
 					"spawn marker '%s' spawnEnabled must be boolean when provided",
 					tostring(spawnMarker.id or index)
 				))
+			end
+			local count = spawnMarker.count
+			if count ~= nil and (type(count) ~= "number" or count < 1 or count % 1 ~= 0 or count > 12) then
+				table.insert(errors, string.format("spawn marker '%s' count must be an integer from 1 to 12", tostring(spawnMarker.id or index)))
+			end
+			local socialGroupId = spawnMarker.socialGroupId
+			if socialGroupId ~= nil and (type(socialGroupId) ~= "string" or socialGroupId == "") then
+				table.insert(errors, string.format("spawn marker '%s' socialGroupId must be a non-empty string", tostring(spawnMarker.id or index)))
+			end
+			local patrolRadius = spawnMarker.patrolRadius
+			if patrolRadius ~= nil and (type(patrolRadius) ~= "number" or patrolRadius < 0) then
+				table.insert(errors, string.format("spawn marker '%s' patrolRadius must be nonnegative", tostring(spawnMarker.id or index)))
 			end
 
 			local zoneId = spawnMarker.zoneId
