@@ -56,6 +56,18 @@ def main() -> None:
     bridge_id = data["features"]["river"]["bridgePoiId"]
     assert bridge_id == "poi_meadow_bridge"
 
+    landforms = {entry["id"]: entry for entry in data["features"]["macroLandforms"]}
+    assert "village_hill" in landforms
+    assert "selene_horizon_massif" in landforms
+    assert landforms["village_hill"]["amplitude"] >= 45
+    assert landforms["village_hill"]["sigmaXZ"][0] >= 600
+    assert landforms["selene_horizon_massif"]["amplitude"] >= 70
+    assert landforms["selene_horizon_massif"]["centerXZ"][1] > bounds["maxZ"]
+
+    village_pad = next(entry for entry in data["features"]["terrainPads"] if entry["id"] == "village_core")
+    assert village_pad["targetY"] >= 55
+    assert village_pad["radiusStuds"] >= 180
+
     disabled_spawns = {entry["id"] for entry in data["spawns"] if not entry["spawnEnabled"]}
     assert "spawn_goblin_camp_elite_future" in disabled_spawns
     assert "spawn_spider_hollow_brood" in disabled_spawns
