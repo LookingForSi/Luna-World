@@ -1,0 +1,892 @@
+{
+  "version": 1,
+  "worldScaleXZ": 2,
+  "heightRangeStuds": [
+    0,
+    192
+  ],
+  "boundsStuds": {
+    "minX": -1300,
+    "maxX": 1300,
+    "minZ": -650,
+    "maxZ": 4150
+  },
+  "resolution": {
+    "width": 650,
+    "height": 1200
+  },
+  "waterLevelStuds": 6,
+  "zones": [
+    {
+      "id": "zone_luna_village",
+      "displayName": "Luna Village",
+      "center": [
+        0,
+        50,
+        -190
+      ],
+      "size": [
+        720,
+        140,
+        660
+      ],
+      "priority": 5
+    },
+    {
+      "id": "zone_luna_meadows",
+      "displayName": "Luna Meadows",
+      "center": [
+        0,
+        18,
+        900
+      ],
+      "size": [
+        1520,
+        120,
+        1500
+      ],
+      "priority": 1
+    },
+    {
+      "id": "zone_moonfall_road",
+      "displayName": "Moonfall Road",
+      "center": [
+        0,
+        24,
+        2100
+      ],
+      "size": [
+        1120,
+        150,
+        1450
+      ],
+      "priority": 2
+    },
+    {
+      "id": "zone_goblin_camp",
+      "displayName": "Goblin Camp",
+      "center": [
+        560,
+        60,
+        1920
+      ],
+      "size": [
+        880,
+        150,
+        810
+      ],
+      "priority": 10
+    },
+    {
+      "id": "zone_spider_hollow",
+      "displayName": "Spider Hollow",
+      "center": [
+        -560,
+        6,
+        1940
+      ],
+      "size": [
+        900,
+        120,
+        835
+      ],
+      "priority": 10
+    }
+  ],
+  "pois": [
+    {
+      "id": "poi_main_gate",
+      "position": [
+        0,
+        48,
+        0
+      ]
+    },
+    {
+      "id": "poi_training_ground",
+      "position": [
+        -150,
+        54,
+        -110
+      ]
+    },
+    {
+      "id": "poi_blacksmith",
+      "position": [
+        150,
+        54,
+        -130
+      ]
+    },
+    {
+      "id": "poi_village_square",
+      "position": [
+        0,
+        58,
+        -240
+      ]
+    },
+    {
+      "id": "poi_merchant",
+      "position": [
+        136,
+        58,
+        -250
+      ]
+    },
+    {
+      "id": "poi_residential",
+      "position": [
+        -144,
+        58,
+        -260
+      ]
+    },
+    {
+      "id": "poi_elder_house",
+      "position": [
+        110,
+        64,
+        -370
+      ]
+    },
+    {
+      "id": "poi_shrine",
+      "position": [
+        -110,
+        64,
+        -390
+      ]
+    },
+    {
+      "id": "poi_moonfall_farm",
+      "position": [
+        -360,
+        8,
+        730
+      ]
+    },
+    {
+      "id": "poi_meadow_bridge",
+      "position": [
+        -70,
+        7,
+        600
+      ]
+    },
+    {
+      "id": "poi_stone_circle",
+      "position": [
+        270,
+        6,
+        1090
+      ]
+    },
+    {
+      "id": "exit_moonfall_road",
+      "position": [
+        0,
+        6,
+        1580
+      ]
+    },
+    {
+      "id": "poi_broken_wagon",
+      "position": [
+        -100,
+        10,
+        1740
+      ]
+    },
+    {
+      "id": "poi_moonfall_crossroads",
+      "position": [
+        0,
+        18,
+        1940
+      ]
+    },
+    {
+      "id": "poi_old_waystone",
+      "position": [
+        -20,
+        18,
+        1920
+      ]
+    },
+    {
+      "id": "poi_goblin_camp",
+      "position": [
+        560,
+        60,
+        1920
+      ]
+    },
+    {
+      "id": "poi_goblin_lookout",
+      "position": [
+        720,
+        68,
+        2070
+      ]
+    },
+    {
+      "id": "poi_spider_hollow",
+      "position": [
+        -560,
+        4,
+        1940
+      ]
+    },
+    {
+      "id": "poi_spider_cave_mouth",
+      "position": [
+        -720,
+        4,
+        2060
+      ]
+    },
+    {
+      "id": "poi_dark_woodland_gate",
+      "position": [
+        0,
+        30,
+        2680
+      ]
+    },
+    {
+      "id": "entry_dark_woodland",
+      "position": [
+        0,
+        36,
+        2860
+      ]
+    }
+  ],
+  "spawns": [
+    {
+      "id": "spawn_young_wolf_farm",
+      "mobId": "mob_young_wolf",
+      "position": [
+        -220,
+        8,
+        830
+      ],
+      "radius": 110,
+      "zoneId": "zone_luna_meadows",
+      "spawnEnabled": true
+    },
+    {
+      "id": "spawn_wolf_stone_circle",
+      "mobId": "mob_grey_wolf",
+      "position": [
+        200,
+        7,
+        1170
+      ],
+      "radius": 140,
+      "zoneId": "zone_luna_meadows",
+      "spawnEnabled": true
+    },
+    {
+      "id": "spawn_goblin_scout_road",
+      "mobId": "mob_goblin_scout",
+      "position": [
+        180,
+        24,
+        1900
+      ],
+      "radius": 84,
+      "zoneId": "zone_moonfall_road",
+      "spawnEnabled": true
+    },
+    {
+      "id": "spawn_goblin_scout_outer",
+      "mobId": "mob_goblin_scout",
+      "position": [
+        400,
+        48,
+        1860
+      ],
+      "radius": 96,
+      "zoneId": "zone_goblin_camp",
+      "spawnEnabled": true
+    },
+    {
+      "id": "spawn_goblin_warrior_camp",
+      "mobId": "mob_goblin_warrior",
+      "position": [
+        560,
+        60,
+        1940
+      ],
+      "radius": 110,
+      "zoneId": "zone_goblin_camp",
+      "spawnEnabled": true
+    },
+    {
+      "id": "spawn_goblin_camp_elite_future",
+      "mobId": "mob_goblin_elite_future",
+      "position": [
+        680,
+        66,
+        2060
+      ],
+      "radius": 72,
+      "zoneId": "zone_goblin_camp",
+      "spawnEnabled": false
+    },
+    {
+      "id": "spawn_spider_hollow_outer",
+      "mobId": "mob_meadow_spider",
+      "position": [
+        -380,
+        10,
+        1860
+      ],
+      "radius": 96,
+      "zoneId": "zone_spider_hollow",
+      "spawnEnabled": true
+    },
+    {
+      "id": "spawn_spider_hollow_mid",
+      "mobId": "mob_meadow_spider",
+      "position": [
+        -560,
+        4,
+        1960
+      ],
+      "radius": 110,
+      "zoneId": "zone_spider_hollow",
+      "spawnEnabled": true
+    },
+    {
+      "id": "spawn_spider_hollow_brood",
+      "mobId": "mob_brood_spider",
+      "position": [
+        -680,
+        4,
+        2060
+      ],
+      "radius": 88,
+      "zoneId": "zone_spider_hollow",
+      "spawnEnabled": false
+    }
+  ],
+  "routes": {
+    "main": [
+      [
+        0,
+        48,
+        0
+      ],
+      [
+        0,
+        38,
+        180
+      ],
+      [
+        -40,
+        24,
+        420
+      ],
+      [
+        -70,
+        10,
+        600
+      ],
+      [
+        40,
+        8,
+        900
+      ],
+      [
+        160,
+        7,
+        1120
+      ],
+      [
+        80,
+        6,
+        1380
+      ],
+      [
+        0,
+        6,
+        1580
+      ]
+    ],
+    "moonfall": [
+      [
+        0,
+        6,
+        1580
+      ],
+      [
+        -40,
+        8,
+        1700
+      ],
+      [
+        -20,
+        12,
+        1820
+      ],
+      [
+        0,
+        18,
+        1940
+      ],
+      [
+        10,
+        22,
+        2140
+      ],
+      [
+        0,
+        25,
+        2360
+      ],
+      [
+        10,
+        28,
+        2540
+      ],
+      [
+        0,
+        30,
+        2680
+      ],
+      [
+        0,
+        36,
+        2860
+      ]
+    ],
+    "goblin": [
+      [
+        0,
+        18,
+        1940
+      ],
+      [
+        160,
+        24,
+        1925
+      ],
+      [
+        320,
+        34,
+        1915
+      ],
+      [
+        455,
+        46,
+        1915
+      ],
+      [
+        560,
+        60,
+        1920
+      ],
+      [
+        640,
+        64,
+        1990
+      ],
+      [
+        720,
+        68,
+        2070
+      ]
+    ],
+    "spider": [
+      [
+        0,
+        18,
+        1940
+      ],
+      [
+        -170,
+        15,
+        1925
+      ],
+      [
+        -330,
+        11,
+        1920
+      ],
+      [
+        -470,
+        7,
+        1930
+      ],
+      [
+        -560,
+        4,
+        1940
+      ],
+      [
+        -640,
+        4,
+        2000
+      ],
+      [
+        -720,
+        4,
+        2060
+      ]
+    ],
+    "spider_return": [
+      [
+        -720,
+        4,
+        2060
+      ],
+      [
+        -630,
+        8,
+        2150
+      ],
+      [
+        -450,
+        14,
+        2230
+      ],
+      [
+        -260,
+        22,
+        2300
+      ],
+      [
+        0,
+        25,
+        2360
+      ]
+    ],
+    "ancient_approach": [
+      [
+        0,
+        36,
+        2860
+      ],
+      [
+        0,
+        54,
+        3040
+      ],
+      [
+        0,
+        78,
+        3220
+      ],
+      [
+        0,
+        104,
+        3400
+      ],
+      [
+        0,
+        124,
+        3540
+      ]
+    ]
+  },
+  "features": {
+    "river": {
+      "bridgePoiId": "poi_meadow_bridge",
+      "waterLevelStuds": 6,
+      "halfWidthStuds": 32,
+      "bankBlendStuds": 58
+    },
+    "terrainPads": [
+      {
+        "id": "village_core",
+        "center": [
+          0,
+          58,
+          -250
+        ],
+        "radiusStuds": 190,
+        "targetY": 58,
+        "blendStuds": 220,
+        "mode": "raise"
+      },
+      {
+        "id": "farm",
+        "center": [
+          -360,
+          8,
+          730
+        ],
+        "radiusStuds": 150,
+        "targetY": 8,
+        "blendStuds": 120,
+        "mode": "set"
+      },
+      {
+        "id": "stone_circle",
+        "center": [
+          270,
+          6,
+          1090
+        ],
+        "radiusStuds": 110,
+        "targetY": 6,
+        "blendStuds": 90,
+        "mode": "set"
+      },
+      {
+        "id": "goblin_camp",
+        "center": [
+          560,
+          60,
+          1920
+        ],
+        "radiusStuds": 270,
+        "targetY": 60,
+        "blendStuds": 290,
+        "mode": "raise"
+      },
+      {
+        "id": "spider_hollow",
+        "center": [
+          -560,
+          4,
+          1940
+        ],
+        "radiusStuds": 270,
+        "targetY": 4,
+        "blendStuds": 250,
+        "mode": "lower"
+      }
+    ],
+    "macroLandforms": [
+      {
+        "id": "village_hill",
+        "centerXZ": [
+          0,
+          -260
+        ],
+        "sigmaXZ": [
+          650,
+          580
+        ],
+        "amplitude": 50
+      },
+      {
+        "id": "village_back_shoulder",
+        "centerXZ": [
+          -360,
+          -390
+        ],
+        "sigmaXZ": [
+          520,
+          360
+        ],
+        "amplitude": 18
+      },
+      {
+        "id": "meadows_basin",
+        "centerXZ": [
+          0,
+          900
+        ],
+        "sigmaXZ": [
+          1120,
+          680
+        ],
+        "amplitude": -5
+      },
+      {
+        "id": "moonfall_west_shoulder",
+        "centerXZ": [
+          -760,
+          1680
+        ],
+        "sigmaXZ": [
+          430,
+          440
+        ],
+        "amplitude": 18
+      },
+      {
+        "id": "moonfall_east_shoulder",
+        "centerXZ": [
+          780,
+          1680
+        ],
+        "sigmaXZ": [
+          430,
+          440
+        ],
+        "amplitude": 18
+      },
+      {
+        "id": "goblin_massif",
+        "centerXZ": [
+          560,
+          1920
+        ],
+        "sigmaXZ": [
+          560,
+          470
+        ],
+        "amplitude": 26
+      },
+      {
+        "id": "goblin_back_ridge",
+        "centerXZ": [
+          820,
+          2110
+        ],
+        "sigmaXZ": [
+          370,
+          340
+        ],
+        "amplitude": 12
+      },
+      {
+        "id": "spider_hollow_basin",
+        "centerXZ": [
+          -560,
+          1940
+        ],
+        "sigmaXZ": [
+          505,
+          470
+        ],
+        "amplitude": -20
+      },
+      {
+        "id": "spider_outer_wall",
+        "centerXZ": [
+          -980,
+          1960
+        ],
+        "sigmaXZ": [
+          360,
+          630
+        ],
+        "amplitude": 22
+      },
+      {
+        "id": "dark_woodland_rise",
+        "centerXZ": [
+          0,
+          2730
+        ],
+        "sigmaXZ": [
+          760,
+          430
+        ],
+        "amplitude": 18
+      },
+      {
+        "id": "selene_horizon_massif",
+        "centerXZ": [
+          0,
+          4350
+        ],
+        "sigmaXZ": [
+          720,
+          500
+        ],
+        "amplitude": 76
+      },
+      {
+        "id": "selene_left_peak",
+        "centerXZ": [
+          650,
+          4140
+        ],
+        "sigmaXZ": [
+          340,
+          320
+        ],
+        "amplitude": 30
+      },
+      {
+        "id": "selene_right_peak",
+        "centerXZ": [
+          -620,
+          4160
+        ],
+        "sigmaXZ": [
+          380,
+          330
+        ],
+        "amplitude": 28
+      },
+      {
+        "id": "ancient_approach_massif",
+        "centerXZ": [
+          0,
+          3500
+        ],
+        "sigmaXZ": [
+          650,
+          500
+        ],
+        "amplitude": 32
+      }
+    ],
+    "localRings": [
+      {
+        "id": "spider_hollow_rim",
+        "centerXZ": [
+          -560,
+          1940
+        ],
+        "radiusStuds": 385,
+        "sigmaStuds": 118,
+        "amplitude": 20
+      }
+    ],
+    "futureTerrainReservations": [
+      {
+        "id": "future_old_cemetery",
+        "displayName": "Old Cemetery",
+        "center": [
+          560,
+          102,
+          2830
+        ],
+        "radiusStuds": 255,
+        "targetY": 102,
+        "blendStuds": 280,
+        "terrainIntent": "raised_terrace",
+        "mode": "raise"
+      },
+      {
+        "id": "future_fallen_shrine",
+        "displayName": "Fallen Shrine",
+        "center": [
+          -560,
+          108,
+          2860
+        ],
+        "radiusStuds": 230,
+        "targetY": 108,
+        "blendStuds": 270,
+        "terrainIntent": "raised_promontory",
+        "mode": "raise"
+      },
+      {
+        "id": "future_ancient_approach",
+        "displayName": "Ancient Approach",
+        "center": [
+          0,
+          124,
+          3540
+        ],
+        "radiusStuds": 320,
+        "targetY": 124,
+        "blendStuds": 320,
+        "terrainIntent": "broad_high_approach",
+        "mode": "raise"
+      }
+    ]
+  },
+  "artifactRevision": "terrain-v05"
+}

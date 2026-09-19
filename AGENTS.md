@@ -37,8 +37,26 @@ All playable world geometry must therefore be traversable with ordinary ground m
 - do not leave playable ledges that allow the player to drop down but provide no ground path back;
 - stairs may be used only when their collision and step height are verified to be walkable without jumping; for greybox work, prefer explicit sloped transition geometry;
 - world-block acceptance must include a traversal check that all intended routes can be completed without jumping.
+- bridges and other crossings must overlap their bank / landing geometry enough that a character cannot fall into a seam between terrain and the crossing;
+- any intentionally non-walkable water body or deep traversal hazard must define a recovery behavior to the most recent safe grounded position; do not allow no-jump players to become trapped below a bank or inside a decorative trench;
 
 This rule applies to greybox generation as well as final terrain and environment art.
+
+### 3.1. Environment art and external asset packs
+
+Approved world geography and traversal drive the art pass, not the other way around.
+
+- Do not reshape accepted roads, encounter footprints, elevation transitions, sightlines, or zone topology merely to fit a purchased / downloaded asset pack.
+- Blender / Blender Studio / marketplace assets are modular source material. Replace accepted blockout silhouettes category by category instead of importing a prebuilt map.
+- Verify that the specific asset license permits the intended export and in-game use before committing it to the project. A subscription alone is not proof that every asset has the same license.
+- Preserve the footprint and collision intent of the accepted placeholder unless a deliberate level-design change is approved.
+- Terrain-touching architecture, fences, rocks and other structural props must visibly meet or slightly overlap the ground; visible floating gaps are acceptance failures even when collision still works.
+- Main roads and intended walking tracks must read as cleared surfaces rather than grass with a road texture underneath; suppress terrain grass/material decoration over the usable road width.
+- Encounter floors must be physically closed. Decorative depressions, caves and basins must not expose voids or create endless-fall pockets.
+- Deliberately non-traversable cliff faces may enforce routing, but their intended bypass road must remain walkable without jumping.
+- Use simple collision proxies for environment meshes. Decorative crowns, webs, foliage and small clutter should normally be non-collidable.
+- Never let decorative props create a jump requirement, hidden step, one-way ledge, narrow critical-route choke, or collision trap.
+- Keep Roblox Terrain as the primary playable landscape; MeshParts are for architecture, landmarks, rocks, roots, ruins and other modular environment art.
 
 ## 4. Server authority is mandatory
 
