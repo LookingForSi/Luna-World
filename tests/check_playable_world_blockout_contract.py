@@ -52,7 +52,7 @@ def main() -> None:
     assert "baseplate.CanCollide = false" in bootstrap
 
     builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
-    assert 'TerrainRevision", "terrain-v05"' in builder
+    assert 'TerrainRevision", "terrain-v06"' in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
     assert "WorldDressingBlockout" in builder
@@ -61,6 +61,8 @@ def main() -> None:
     south = read(ROOT / "src/server/world/VillageAndMeadowsBlockout.luau")
     for token in (
         "LunaVillage",
+        "VillagePalisadeNorthWest",
+        "VillagePalisadeSouth",
         "MoonfallFarm",
         "Sheep%02d",
         "YoungWolf01",
@@ -96,10 +98,13 @@ def main() -> None:
     for token in (
         "MoonfallRoad",
         "GoblinCamp",
-        "createGroundedBarrier",
+        "createPalisadeLine",
         '"Foundation"',
         "SpiderHollow",
+        "prepareSpiderHollowTerrain",
         "BasinFloorFilled",
+        "GoblinCemeteryLake",
+        'HazardKind = "Lake"',
         "DarkWoodlandThreshold",
         "OldCemetery",
         "FallenShrine",
@@ -134,21 +139,26 @@ def main() -> None:
         "CombatBlockComposition",
         "UpperValleyComposition",
         "VillageWestTreeBelt",
-        "FarmFieldRow",
+        "WolfRiverMixedForest",
+        "WolfGoblinMixedForest",
         "MeadowHillScree",
         "MoonfallWestScreen",
+        "GoblinCemeteryEastForest",
+        "GoblinCemeteryRoadsideForest",
         "GoblinShelfEdge",
         "SpiderBasinRearDeadwood",
         "DarkWoodlandWestMass",
         "CemeteryRearDeadwood",
         "ShrinePromontoryRocks",
-        "FallenShrineSouthCliff",
+        "shapeFallenShrineSouthCliff",
         "FallenShrineCliffScree",
         "ApproachOuterPillarLeft",
         "BlenderStudioAssetPass",
     ):
         assert token in composition
     assert "MobPlaceholder" not in composition
+    assert "FarmFieldRow" not in composition
+    assert "createCliffWall" not in composition
 
     presentation = read(ROOT / "src/client/world-preview/ZonePresentation.client.luau")
     assert "ZoneToast" in presentation
