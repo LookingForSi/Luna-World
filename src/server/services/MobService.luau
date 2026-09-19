@@ -5,24 +5,68 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
+local WorldLayout = require(ReplicatedStorage.Shared.world.WorldLayout)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local EffectRules = require(ReplicatedStorage.Shared.combat.EffectRules)
 local SkillRules = require(ReplicatedStorage.Shared.combat.SkillRules)
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local CombatPresentationService = require(script.Parent.CombatPresentationService)
+local TerrainGrounding = require(script.Parent.Parent.world.TerrainGrounding)
 
 local MobService = {}
 
 local ROOT_SIZE = Vector3.new(4, 3, 6)
 local SPAWN_Y = ROOT_SIZE.Y * 0.5
-local SPAWNS = {
-	-- Keep the aggressive Wolf outside its detection radius from the default player spawn,
-	-- and separate the passive Young Wolf so the two acceptance scenarios do not interfere.
-	{ definitionKey = "grey_wolf", cframe = CFrame.new(0, SPAWN_Y, -45) },
-	{ definitionKey = "young_wolf", cframe = CFrame.new(70, SPAWN_Y, -20) },
-}
 local WOLF_COLOR = Color3.fromRGB(110, 110, 120)
+
+type SpawnSpec = {
+	definitionKey: string,
+	cframe: CFrame,
+}
+
+local function definitionKeyForId(mobId: string): string?
+	for definitionKey, definition in MobDefinitions do
+		if definition.id == mobId then
+			return definitionKey
+		end
+	end
+	return nil
+end
+
+local function configuredWorldSpawns(): { SpawnSpec }
+	local result: { SpawnSpec } = {}
+	for _, marker in WorldLayout.SpawnMarkers do
+		if marker.spawnEnabled == false then
+			continue
+		end
+		local definitionKey = definitionKeyForId(marker.mobId)
+		-- World layout may already reserve markers for later milestones. Unknown
+		-- definition ids remain visible as blockout placeholders but do not spawn
+		-- authoritative combat entities yet.
+		if definitionKey == nil then
+			continue
+		end
+
+		local ground = TerrainGrounding.surfaceAt(marker.position)
+		table.insert(result, {
+			definitionKey = definitionKey,
+			cframe = CFrame.new(ground + Vector3.new(0, SPAWN_Y, 0)),
+		})
+	end
+	return result
+end
+
+local function removeKnownMobPlaceholders()
+	for _, descendant in workspace:GetDescendants() do
+		if descendant:IsA("Model") and descendant:GetAttribute("Purpose") == "MobPlaceholder" then
+			local mobId = descendant:GetAttribute("MobId")
+			if typeof(mobId) == "string" and definitionKeyForId(mobId) ~= nil then
+				descendant:Destroy()
+			end
+		end
+	end
+end
 
 local mobsByEntityId: { [string]: Model } = {}
 local spawnedModels: { [Model]: boolean } = {}
@@ -123,7 +167,8 @@ function MobService.start(): ()
 	end
 	started = true
 	serviceGeneration += 1
-	for _, spawn in SPAWNS do
+	removeKnownMobPlaceholders()
+	for _, spawn in configuredWorldSpawns() do
 		createMob(spawn.definitionKey, spawn.cframe)
 	end
 end
