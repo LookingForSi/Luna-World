@@ -1,6 +1,7 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local WorldLayout = require(ReplicatedStorage.Shared.world.WorldLayout)
 local Grounding = require(script.Parent.TerrainGrounding)
@@ -15,7 +16,7 @@ local COLORS = {
 	darkTimber = Color3.fromRGB(72, 54, 40),
 	roof = Color3.fromRGB(70, 65, 67),
 	road = Color3.fromRGB(122, 106, 82),
-	water = Color3.fromRGB(74, 135, 165),
+	water = Color3.fromRGB(48, 94, 108),
 	hay = Color3.fromRGB(174, 151, 76),
 	sheep = Color3.fromRGB(224, 220, 205),
 	wolf = Color3.fromRGB(96, 98, 101),
@@ -297,43 +298,107 @@ end
 local function createRiver(parent: Instance, positions: { [string]: Vector3 })
 	local river = P.model(parent, "RiverAndBridge")
 	local bridge = positions.poi_meadow_bridge
+	local terrain = Workspace.Terrain
+
+	local WATER_SURFACE_Y = 4
+	local WATER_DEPTH = 5
+	local WATER_WIDTH = 116
+	local RECOVERY_WIDTH = 94
+	local RECOVERY_TOP_Y = 7
+
+	terrain.WaterColor = COLORS.water
+	terrain.WaterTransparency = 0.28
+	terrain.WaterReflectance = 0.08
+	terrain.WaterWaveSize = 0.12
+	terrain.WaterWaveSpeed = 7
+
 	local function riverZ(x: number): number
 		return bridge.Z + 0.065 * (x - bridge.X) + 28 * math.sin((x + 180) / 280)
 	end
 
-	local previous = Vector3.new(-1240, 3.6, riverZ(-1240))
+	local previous = Vector3.new(-1240, WATER_SURFACE_Y, riverZ(-1240))
 	local index = 0
-	for x = -1080, 1240, 160 do
+	for x = -1160, 1240, 80 do
 		index += 1
-		local current = Vector3.new(x, 3.6, riverZ(x))
+		local current = Vector3.new(x, WATER_SURFACE_Y, riverZ(x))
+		local offset = current - previous
+		local midpoint = previous + offset / 2
+
+		-- Use actual Roblox Terrain water for the preview instead of a bright glass ribbon.
+		-- Short overlapping segments hide seams while keeping the authored river curve.
+		terrain:FillBlock(
+			CFrame.lookAt(Vector3.new(midpoint.X, WATER_SURFACE_Y - WATER_DEPTH / 2, midpoint.Z), current),
+			Vector3.new(WATER_WIDTH, WATER_DEPTH, offset.Magnitude + 12),
+			Enum.Material.Water
+		)
+
+		-- Invisible recovery volume. A player who falls into the river is returned to the
+		-- most recent grounded safe position rather than being trapped below the banks.
+		local recoveryCenterY = RECOVERY_TOP_Y - 12
 		P.segment(
 			river,
-			string.format("Water%02d", index),
-			previous,
-			current,
-			76,
-			0.45,
-			Enum.Material.Glass,
-			COLORS.water,
-			{ canCollide = false, transparency = 0.25, attributes = { TemporaryWater = true } }
+			string.format("WaterRecovery%02d", index),
+			Vector3.new(previous.X, recoveryCenterY, previous.Z),
+			Vector3.new(current.X, recoveryCenterY, current.Z),
+			RECOVERY_WIDTH,
+			24,
+			Enum.Material.SmoothPlastic,
+			Color3.new(1, 1, 1),
+			{
+				canCollide = false,
+				transparency = 1,
+				attributes = {
+					WaterRecovery = true,
+					WaterSurfaceY = WATER_SURFACE_Y,
+				},
+			}
 		)
 		previous = current
 	end
 
-	local southBank = Grounding.surfaceAt(bridge + Vector3.new(0, 0, -62))
-	local northBank = Grounding.surfaceAt(bridge + Vector3.new(0, 0, 62))
-	local deckCenterY = math.max(southBank.Y, northBank.Y) + 1.7
-	local deckSouth = Vector3.new(bridge.X, deckCenterY, bridge.Z - 38)
-	local deckNorth = Vector3.new(bridge.X, deckCenterY, bridge.Z + 38)
+	-- The bridge is deliberately overbuilt into both banks. The dirt aprons overlap
+	-- terrain and the wider wooden approaches overlap the deck, so there is no
+	-- character-sized crack that can trap a no-jump player.
+	local southApronOuter = bridge + Vector3.new(0, 0, -118)
+	local southApronInner = bridge + Vector3.new(0, 0, -78)
+	local northApronInner = bridge + Vector3.new(0, 0, 78)
+	local northApronOuter = bridge + Vector3.new(0, 0, 118)
 
-	P.segment(river, "BridgeDeck", deckSouth, deckNorth, 30, 2.6, Enum.Material.WoodPlanks, COLORS.timber)
+	P.groundedSegment(
+		river,
+		"BridgeBankApronSouth",
+		southApronOuter,
+		southApronInner,
+		50,
+		1.8,
+		Enum.Material.Ground,
+		COLORS.road
+	)
+	P.groundedSegment(
+		river,
+		"BridgeBankApronNorth",
+		northApronInner,
+		northApronOuter,
+		50,
+		1.8,
+		Enum.Material.Ground,
+		COLORS.road
+	)
+
+	local southBank = Grounding.surfaceAt(bridge + Vector3.new(0, 0, -86))
+	local northBank = Grounding.surfaceAt(bridge + Vector3.new(0, 0, 86))
+	local deckCenterY = math.max(southBank.Y, northBank.Y) + 2.2
+	local deckSouth = Vector3.new(bridge.X, deckCenterY, bridge.Z - 46)
+	local deckNorth = Vector3.new(bridge.X, deckCenterY, bridge.Z + 46)
+
+	P.segment(river, "BridgeDeck", deckSouth, deckNorth, 36, 3.2, Enum.Material.WoodPlanks, COLORS.timber)
 	P.segment(
 		river,
 		"BridgeApproachSouth",
-		southBank + Vector3.new(0, 1.3, 0),
+		southBank + Vector3.new(0, 1.6, 0),
 		deckSouth,
-		30,
-		2.6,
+		42,
+		3.2,
 		Enum.Material.WoodPlanks,
 		COLORS.timber
 	)
@@ -341,19 +406,19 @@ local function createRiver(parent: Instance, positions: { [string]: Vector3 })
 		river,
 		"BridgeApproachNorth",
 		deckNorth,
-		northBank + Vector3.new(0, 1.3, 0),
-		30,
-		2.6,
+		northBank + Vector3.new(0, 1.6, 0),
+		42,
+		3.2,
 		Enum.Material.WoodPlanks,
 		COLORS.timber
 	)
 
-	for _, sideX in ipairs({ -13, 13 }) do
+	for _, sideX in ipairs({ -15, 15 }) do
 		P.segment(
 			river,
 			"BridgeRail",
-			Vector3.new(bridge.X + sideX, deckCenterY + 3.5, bridge.Z - 37),
-			Vector3.new(bridge.X + sideX, deckCenterY + 3.5, bridge.Z + 37),
+			Vector3.new(bridge.X + sideX, deckCenterY + 4, bridge.Z - 45),
+			Vector3.new(bridge.X + sideX, deckCenterY + 4, bridge.Z + 45),
 			1.5,
 			3,
 			Enum.Material.Wood,
