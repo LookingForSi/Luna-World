@@ -21,6 +21,13 @@ PROJECT = text("default.project.json")
 
 if 'workspace:WaitForChild("LunaWorldPlayableBlockout", 15)' not in MAIN:
     raise AssertionError("gameplay services must wait for the world bootstrap")
+for token in (
+    'CollectionService:AddTag(worldSpawn, RespawnConfig.AnchorTag)',
+    'RespawnConfig.LunaVillageSettlementId',
+    '"luna_village_spawn"',
+):
+    if token not in MAIN:
+        raise AssertionError(f"world respawn integration missing {token}")
 
 for token in (
     "Shared.world.WorldLayout",
