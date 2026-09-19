@@ -1,100 +1,104 @@
 --!strict
 
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local CombatPresentationService = require(script.Parent.CombatPresentationService)
+local PlayerDataService = require(script.Parent.PlayerDataService)
 
 local ProgressionService = {}
 
 local started = false
-local playerAddedConnection: RBXScriptConnection? = nil
+local profileReadyConnection: RBXScriptConnection? = nil
 
-local function initializePlayer(player: Player): ()
-	if typeof(player:GetAttribute(ProgressionConfig.LevelAttribute)) ~= "number" then
-		player:SetAttribute(ProgressionConfig.LevelAttribute, 1)
-	end
-	if typeof(player:GetAttribute(ProgressionConfig.ExperienceAttribute)) ~= "number" then
-		player:SetAttribute(ProgressionConfig.ExperienceAttribute, 0)
-	end
-	-- Compatibility for the Milestone 1 HUD until the real level/XP row lands.
-	player:SetAttribute("SessionXP", player:GetAttribute(ProgressionConfig.ExperienceAttribute) or 0)
+local function replicateProgression(player: Player, level: number, xp: number): ()
+	player:SetAttribute(ProgressionConfig.LevelAttribute, level)
+	player:SetAttribute(ProgressionConfig.ExperienceAttribute, xp)
+	-- Compatibility for old M1 characterization. Removed at the M2 stabilization gate.
+	player:SetAttribute("SessionXP", xp)
+end
+
+local function initializeFromProfile(player: Player): ()
+	local profile = PlayerDataService.getProfileCopy(player)
+	if profile == nil then return end
+	replicateProgression(player, profile.Level, profile.XP)
 end
 
 function ProgressionService.start(): ()
-	if started then
-		return
-	end
+	if started then return end
 	started = true
 
-	playerAddedConnection = Players.PlayerAdded:Connect(initializePlayer)
+	profileReadyConnection = PlayerDataService.ProfileReady:Connect(initializeFromProfile)
 	for _, player in Players:GetPlayers() do
-		initializePlayer(player)
+		if PlayerDataService.isReady(player) then initializeFromProfile(player) end
 	end
 end
 
 function ProgressionService.stop(): ()
 	if not started then return end
 	started = false
-	if playerAddedConnection ~= nil then
-		playerAddedConnection:Disconnect()
-		playerAddedConnection = nil
+	if profileReadyConnection ~= nil then
+		profileReadyConnection:Disconnect()
+		profileReadyConnection = nil
 	end
 end
 
-function ProgressionService.awardXP(player: Player, amount: number): ()
-	if player.Parent == nil then
-		return
-	end
+function ProgressionService.awardXP(player: Player, amount: number): boolean
+	if player.Parent ~= Players or not PlayerDataService.isReady(player) then return false end
 
-	local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
-	local rawXP = player:GetAttribute(ProgressionConfig.ExperienceAttribute)
-	local level = if typeof(rawLevel) == "number" then rawLevel else 1
-	local xp = if typeof(rawXP) == "number" then rawXP else 0
-	if not ProgressionRules.isValidState(level, xp) then
-		warn(string.format("Refusing XP award for invalid progression state on %s", player.Name))
-		return
-	end
+	local appliedLevel: number? = nil
+	local appliedXP: number? = nil
+	local ok = PlayerDataService.mutate(player, function(profile)
+		local result = ProgressionRules.applyXP(profile.Level, profile.XP, amount)
+		profile.Level = result.level
+		profile.XP = result.xp
+		appliedLevel = result.level
+		appliedXP = result.xp
+	end)
+	if not ok or appliedLevel == nil or appliedXP == nil then return false end
 
-	local result = ProgressionRules.applyXP(level, xp, amount)
-	player:SetAttribute(ProgressionConfig.LevelAttribute, result.level)
-	player:SetAttribute(ProgressionConfig.ExperienceAttribute, result.xp)
-	player:SetAttribute("SessionXP", result.xp)
+	replicateProgression(player, appliedLevel, appliedXP)
+	return true
 end
 
 function ProgressionService._setLevelForStudio(player: Player, level: number): boolean
 	assert(RunService:IsStudio(), "Studio level switch is unavailable outside Studio")
-	if player.Parent ~= Players then return false end
+	if player.Parent ~= Players or not PlayerDataService.isReady(player) then return false end
 	if level ~= level or level % 1 ~= 0 or level < 1 or level > ProgressionConfig.LevelCap then return false end
-	player:SetAttribute(ProgressionConfig.LevelAttribute, level)
-	player:SetAttribute(ProgressionConfig.ExperienceAttribute, 0)
-	player:SetAttribute("SessionXP", 0)
+
+	local ok = PlayerDataService.mutate(player, function(profile)
+		profile.Level = level
+		profile.XP = 0
+	end)
+	if not ok then return false end
+	replicateProgression(player, level, 0)
 	return true
 end
 
 function ProgressionService.awardMobXP(player: Player, baseXP: number, mobLevel: number): number
-	local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
-	local level = if typeof(rawLevel) == "number" then rawLevel else 1
-	local reward = ProgressionRules.calculateMobXP(baseXP, level, mobLevel)
-	if reward > 0 then
-		ProgressionService.awardXP(player, reward)
-		CombatPresentationService.publishToPlayer(player, CombatPresentationRules.create(
-			"Reward",
-			HttpService:GenerateGUID(false),
-			"player:" .. tostring(player.UserId),
-			workspace:GetServerTimeNow(),
-			{
-				presentationKey = "xp",
-				outcome = "Granted",
-				amount = reward,
-			}
-		))
-	end
+	local profile = PlayerDataService.getProfileCopy(player)
+	if profile == nil then return 0 end
+
+	local reward = ProgressionRules.calculateMobXP(baseXP, profile.Level, mobLevel)
+	if reward <= 0 then return 0 end
+	if not ProgressionService.awardXP(player, reward) then return 0 end
+
+	CombatPresentationService.publishToPlayer(player, CombatPresentationRules.create(
+		"Reward",
+		HttpService:GenerateGUID(false),
+		"player:" .. tostring(player.UserId),
+		workspace:GetServerTimeNow(),
+		{
+			presentationKey = "xp",
+			outcome = "Granted",
+			amount = reward,
+		}
+	))
 	return reward
 end
 
