@@ -59,7 +59,7 @@ for token in (
     '"LevelXPFill"',
 ):
     require(HUD, token, f"player HUD is missing row contract {token}")
-require(HUD, "humanoid.Health / humanoid.MaxHealth", "player HP bar must be driven by the local Humanoid")
+require(HUD, "current / maximum", "player HP bar must be driven by the local Humanoid")
 require(HUD, "currentValue / maximumValue", "resource bar must be driven by authoritative replicated resource values")
 require(HUD, "Vector2.new(1, 0)", "player status HUD must anchor from the upper-right")
 require(HUD, "HudLayout.CornerMargin", "player status HUD must use the shared corner margin")
