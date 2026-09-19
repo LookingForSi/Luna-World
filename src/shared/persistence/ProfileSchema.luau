@@ -2,6 +2,7 @@
 
 local ArchetypeDefinitions = require(script.Parent.Parent.definitions.ArchetypeDefinitions)
 local InventoryConfig = require(script.Parent.Parent.config.InventoryConfig)
+local ItemDefinitions = require(script.Parent.Parent.definitions.ItemDefinitions)
 local ProgressionRules = require(script.Parent.Parent.progression.ProgressionRules)
 local PersistenceTypes = require(script.Parent.Parent.types.PersistenceTypes)
 
@@ -103,6 +104,10 @@ function ProfileSchema.validateCurrent(profile: unknown): (boolean, string?)
 		then
 			return fail("item record is invalid")
 		end
+		local definition = ItemDefinitions[record.ItemId]
+		if definition == nil then return fail("item record references an unknown definition") end
+		if record.Quantity > definition.maxStack then return fail("item quantity exceeds its stack limit") end
+		if not definition.stackable and record.Quantity ~= 1 then return fail("nonstackable item quantity must be one") end
 		locations[instanceId] = 0
 	end
 
@@ -137,6 +142,10 @@ function ProfileSchema.validateCurrent(profile: unknown): (boolean, string?)
 			local record = value.Items[instanceId]
 			if record.Quantity ~= 1 then
 				return fail("equipped items must have quantity one")
+			end
+			local definition = ItemDefinitions[record.ItemId]
+			if definition == nil or definition.equipmentSlot ~= slot then
+				return fail("equipped item is incompatible with its slot")
 			end
 			locations[instanceId] += 1
 		end
