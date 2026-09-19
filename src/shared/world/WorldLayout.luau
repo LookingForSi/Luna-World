@@ -283,14 +283,14 @@ local WorldLayout: WorldLayoutDefinition = {
 		},
 		{
 			id = "spawn_spider_hollow_outer",
-			mobId = "mob_meadow_spider",
+			mobId = "mob_spider",
 			position = scaleXZ(-190, 10, 930),
 			radius = scaleDistance(48),
 			zoneId = "zone_spider_hollow",
 		},
 		{
 			id = "spawn_spider_hollow_mid",
-			mobId = "mob_meadow_spider",
+			mobId = "mob_spider",
 			position = scaleXZ(-280, 4, 980),
 			radius = scaleDistance(55),
 			zoneId = "zone_spider_hollow",
