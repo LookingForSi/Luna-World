@@ -1,161 +1,157 @@
 # Worldgen v0.1
 
-Этот каталог содержит authoring-generator первого production-oriented рельефа Luna World v0.1.
+Этот каталог содержит authoring-generator production-oriented рельефа Luna World v0.1.
 
-Generator **не запускается в Roblox runtime**. Его задача — воспроизводимо построить исходный heightmap, карту мира и debug overlays, после чего heightmap импортируется в Roblox Terrain Editor и локально дорабатывается инструментами Terrain.
+Generator **не запускается в Roblox runtime**. Он воспроизводимо строит heightmap, water reference и debug maps, после чего heightmap импортируется в Roblox Terrain Editor.
 
-## Источник
+## Source of truth
 
-\`world_v01.json\` — production authoring source для macro-layout:
+`world_v01.json` — authoring source для:
 
-- масштаб X/Z;
-- bounds карты;
-- POI;
-- spawn areas;
+- world bounds и X/Z scale;
+- POI и spawn areas;
 - route graph;
 - river;
-- широкие terrain grounding areas.
+- macro landforms;
+- terrain pads;
+- future terrain reservations.
 
-Gameplay stable IDs остаются совместимыми с \`src/shared/world/WorldLayout.luau\`.
+Gameplay stable IDs синхронизируются с `src/shared/world/WorldLayout.luau`.
 
-Текущий baseline: **2×** относительно первого greybox.
+Текущий horizontal baseline: **2×** относительно первого Part-greybox.
 
 ## Установка
 
 Из корня репозитория:
 
-\`\`\`powershell
+```powershell
 python -m pip install -r tools/worldgen/requirements.txt
-\`\`\`
+```
 
 ## Генерация
 
-\`\`\`powershell
+```powershell
 python tools/worldgen/generate_world.py
-\`\`\`
+python tests/check_worldgen_contract.py
+```
 
-По умолчанию создаётся:
+Текущий artifact revision:
 
-\`artifacts/worldgen/v01/\`
+```text
+terrain-v04
+```
 
-Файлы:
+По умолчанию outputs создаются здесь:
 
-- \`world_v01_heightmap.png\` — 16-bit grayscale heightmap;
-- \`world_v01_water_mask.png\` — reference mask русла;
-- \`world_v01_topdown.png\` — сводная top-down карта;
-- \`world_v01_routes_overlay.png\` — прозрачный overlay маршрутов;
-- \`world_v01_poi_spawn_overlay.png\` — POI и spawn areas;
-- \`world_v01_zones_overlay.png\` — presentation volumes;
-- \`world_v01_manifest.json\` — параметры генерации и расчётные уклоны.
+```text
+artifacts/worldgen/v01/terrain-v04/
+```
 
-Generated PNG не являются ручным source-of-truth: при изменении \`world_v01.json\` их надо пересоздать.
+Основной файл для Roblox:
 
-## Размер первой карты
+- `world_v01_heightmap.png` — 16-bit grayscale heightmap.
+
+Дополнительные outputs:
+
+- `world_v01_water_mask.png` — reference mask русла;
+- `world_v01_topdown.png` — сводная top-down карта;
+- `world_v01_routes_overlay.png` — маршруты;
+- `world_v01_poi_spawn_overlay.png` — POI, spawn areas и future reservations;
+- `world_v01_zones_overlay.png` — zone volumes;
+- `world_v01_manifest.json` — параметры генерации и slope stats.
+
+Generated PNG не являются source-of-truth и не коммитятся. Каждый значимый terrain-pass получает отдельный `artifactRevision`.
+
+## Roblox Terrain import
 
 Authoring bounds:
 
-- X: \`-1300 .. 1300\`;
-- Z: \`-650 .. 4150\`;
+- X: `-1300 .. 1300`;
+- Z: `-650 .. 4150`;
 - размер: **2600 × 4800 studs**;
-- height range: \`0 .. 128 studs\`;
-- image resolution: **650 × 1200**.
+- height encoding: **0 .. 192 studs**;
+- heightmap resolution: **650 × 1200**.
 
-Центр import-region:
+Terrain Editor import region:
 
-- X = \`0\`;
-- Y = \`64\`;
-- Z = \`1750\`.
+```text
+Center:
+X = 0
+Y = 96
+Z = 1750
 
-Размер import-region:
+Size:
+X = 2600
+Y = 192
+Z = 4800
+```
 
-- X = \`2600\`;
-- Y = \`128\`;
-- Z = \`4800\`.
+Если Studio округляет region под voxel-grid, допустимо ближайшее кратное 4 studs. После импорта всё равно нужен runtime traversal review.
 
-Эти значения должны использоваться как исходные при импорте heightmap в Roblox Terrain Editor. Если Studio округляет region под voxel-grid, допускается ближайшее кратное 4 studs; после импорта надо повторно проверить bridge/road anchors.
-
-## Что уже формирует v1
-
-Macro terrain:
-
-- высокий Luna Village hill;
-- плавный спуск Village → Meadows;
-- широкая Meadows basin;
-- реальное русло через Meadows в районе моста;
-- Moonfall Road spine;
-- выраженная приподнятая Goblin Camp shelf с внешним rough rim;
-- пониженный Spider Hollow с отдельным enclosing rim;
-- Dark Woodland approach;
-- future terrain reservations под Old Cemetery и Fallen Shrine — как приподнятые площадки, но пока без gameplay zones;
-- высокие natural boundary ridges по внешнему периметру с проходом в сторону будущего Dark Woodland;
-- крупный Selene horizon massif за северной границей playable area.
-
-Routes не строятся плоскими Part-плитами. Generator мягко формирует terrain вокруг centerline и target elevation, поэтому переходы остаются частью земли.
-
-## Ограничения v1
-
-Это macro-terrain pass, а не final terrain.
-
-После импорта в Studio ещё обязательны:
-
-- Terrain Smooth/Sculpt вокруг ключевых точек;
-- реальный Terrain Water по water mask/reference;
-- формирование берегов;
-- проверка bridge approaches;
-- forest/cliff containment;
-- grounding зданий/props через terrain surface;
-- no-jump traversal acceptance;
-- mobile/gamepad runtime test.
-
-Не начинать final art/foliage pass до принятия macro terrain и traversal.
-
-
-## Terrain v0.4 — характер зон
-
-Вторая macro-итерация намеренно разделяет **playable core** и **silhouette**:
-
-- Goblin Camp имеет относительно спокойное внутреннее поле боя, но сидит на поднятой shelf и окружён rough terrain rim. Позже этот силуэт усиливается палисадом, huts, кострами и rock kit.
-- Spider Hollow имеет проходимое ядро, но находится в заметной чаше с отдельным rim. Позже граница усиливается rocks, roots, dark trees и web kit.
-- Old Cemetery и Fallen Shrine пока **не входят в gameplay scope v0.1**. Generator резервирует для них terrain silhouette из approved concept, чтобы дальнейшее расширение мира не потребовало ломать Selene-side geography.
-- regular terrain имеет authoring floor выше нуля; к низкой отметке опускается только специально вырезанное русло. Это предотвращает случайные holes в Terrain import.
-
-Высота import-region увеличена до 192 studs, потому что Selene massif больше не должен обрезаться верхней границей heightmap.
-
-
-## Правило локального рельефа зоны
-
-Начиная с terrain-v04 локальный POI не должен получать свою главную высоту от края карты или от окружающего massif.
-
-Для zone-defining terrain используется направленный режим:
-
-- `raise` — центр зоны может только подниматься к заданной высоте и никогда не вырезает яму в уже высоком macro terrain;
-- `lower` — центр зоны может только опускаться и используется для hollow/basin;
-- `set` — допустим только для небольших технических площадок, где абсолютная высота действительно нужна.
-
-Обязательная семантика текущих зон:
-
-- Goblin Camp: локальный максимум / высокая боевая shelf находится в центре camp;
-- Spider Hollow: локальный минимум находится в центре hollow, вокруг него читается rim;
-- Old Cemetery: будущая приподнятая терраса, центр выше ближайшего окружения;
-- Fallen Shrine: будущий приподнятый promontory, центр выше ближайшего окружения.
-
-Contract-test генерирует height field и проверяет эти отношения численно, чтобы ошибка «максимум на краю зоны» не возвращалась.
-
-
-## Terrain v0.4 — recomposition северного блока
-
-После owner review северная половина мира переразложена целиком относительно реки и approved concept:
-
-- большая пустая равнина за рекой сокращена;
-- Moonfall crossroads и side-zones подтянуты южнее;
-- Goblin Camp и Spider Hollow физически поменяны местами в world coordinates, чтобы импортированный Studio-view совпадал с approved concept;
-- Goblin Camp остаётся centered raised shelf;
-- Spider Hollow остаётся centered basin;
-- future Old Cemetery и Fallen Shrine также сдвинуты южнее и размещены на соответствующих concept-side;
-- добавлен крупный `future_ancient_approach`: широкая высокая центральная площадка/подход перед Selene;
-- Ancient Approach получает собственный authoring route и больше не является узкой полосой у северной границы;
-- Selene massif остаётся дальним horizon/containment и не заменяет Ancient Approach.
+## Terrain v0.4 — композиция
 
 Целевая progression-композиция с юга на север:
 
-`river → Moonfall Road/crossroads → Goblin Camp + Spider Hollow → Dark Woodland → Old Cemetery + Fallen Shrine → Ancient Approach → Ruins of Selene horizon`.
+```text
+Luna Village
+  ↓
+Luna Meadows / river
+  ↓
+Moonfall Road / crossroads
+ ↙                     ↘
+Goblin Camp       Spider Hollow
+          ↓
+     Dark Woodland
+ ↙                     ↘
+Old Cemetery      Fallen Shrine
+          ↓
+    Ancient Approach
+          ↓
+ Ruins of Selene horizon
+```
+
+Terrain-v04 исправляет северный блок после owner review:
+
+- сокращена крупная пустая равнина после реки;
+- Moonfall crossroads и encounter-зоны подтянуты южнее;
+- Goblin Camp и Spider Hollow поменяны сторонами относительно terrain-v03, чтобы imported Studio-view совпадал с approved concept;
+- Old Cemetery и Fallen Shrine тоже подтянуты южнее и сохранены на concept-side;
+- Ancient Approach теперь отдельная **крупная высокая центральная зона**, а не часть северней границы;
+- Selene massif остаётся distant horizon/containment.
+
+## Правило локального экстремума
+
+Zone-defining terrain обязан иметь главный локальный экстремум в intended gameplay pocket.
+
+Поддерживаются режимы:
+
+- `raise` — только поднимать к target, никогда не вырезать яму в уже высокой земле;
+- `lower` — только опускать;
+- `set` — задавать абсолютную высоту; используется только там, где это действительно нужно.
+
+Текущий contract:
+
+- Goblin Camp — centered raised shelf;
+- Spider Hollow — centered basin с более высоким rim;
+- Old Cemetery — centered raised future terrace;
+- Fallen Shrine — centered raised future promontory;
+- Ancient Approach — centered broad high future approach.
+
+Automated contract генерирует height field и численно проверяет эти отношения.
+
+## Что ещё не final
+
+Это production blockout macro-terrain, а не art pass.
+
+После принятия geography обязательны:
+
+- Terrain Smooth/Sculpt локальных стыков;
+- реальный Terrain Water;
+- bridge approaches;
+- forest/cliff containment;
+- grounding зданий/props;
+- modular Blender kit;
+- no-jump runtime traversal;
+- desktop/gamepad/mobile acceptance.
+
+Не начинать final foliage/material polish до принятия macro terrain и traversal.
