@@ -34,7 +34,7 @@ Generator не запускается в runtime.
 
 ## 4. Phase 2 — macro terrain
 
-Статус: **terrain v0.3 implemented, owner re-import pending**.
+Статус: **terrain v0.4 implemented, owner re-import pending**.
 
 Создать единый landscape:
 
@@ -49,7 +49,7 @@ Generator не запускается в runtime.
 - future Old Cemetery raised terrace — **RESERVED**;
 - future Fallen Shrine raised promontory — **RESERVED**.
 
-Terrain v0.3 additionally:
+Terrain v0.4 additionally:
 
 - regular terrain floor no longer reaches zero except intentional river carving;
 - vertical authoring range increased from 128 to 192 studs to avoid clipping Selene massif;
@@ -156,7 +156,7 @@ Owner test:
 Не тратить время на финальные материалы/foliage до этого checkpoint.
 
 
-## Terrain v0.3 — centered encounter forms
+## Terrain v0.4 — centered encounter forms
 
 Реализовано после owner review:
 
@@ -166,3 +166,29 @@ Owner test:
 - Old Cemetery и Fallen Shrine сдвинуты внутрь карты и формируются как raised future terraces;
 - artifact output переведён на `terrain-v03`;
 - contract-test теперь генерирует actual height field и проверяет, что Goblin/Cemetery/Shrine выше ближайшего окружения, а Spider Hollow ниже rim.
+
+
+## Terrain v0.4 — north-block recomposition
+
+Статус: **implemented, owner re-import pending**.
+
+Owner feedback converted into implementation requirements:
+
+- убрать крупную пустую равнину между river transition и meaningful encounter terrain;
+- сдвинуть Moonfall crossroads + Goblin/Spider block южнее;
+- поменять Goblin Camp / Spider Hollow сторонами относительно terrain-v03;
+- сдвинуть Old Cemetery / Fallen Shrine южнее и сохранить approved concept orientation;
+- создать отдельный крупный высокий Ancient Approach;
+- не использовать северную границу/Selene massif как замену Ancient Approach.
+
+Реализовано:
+
+- Moonfall exit: Z≈1580;
+- crossroads: Z≈1940;
+- Goblin/Spider cores: Z≈2200;
+- Dark Woodland threshold: Z≈2680–2860;
+- Old Cemetery/Fallen Shrine: Z≈3110–3140;
+- Ancient Approach: Z≈3540;
+- Selene massif остаётся за/у дальней северной границы как horizon;
+- added `ancient_approach` authoring route;
+- contract-test фиксирует spacing, sides и centered extrema.
