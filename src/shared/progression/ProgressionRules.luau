@@ -81,4 +81,26 @@ function ProgressionRules.isSkillUnlocked(requiredLevel: number, level: number):
 	return level >= requiredLevel
 end
 
+function ProgressionRules.mobExperienceMultiplier(playerLevel: number, mobLevel: number): number
+	assert(isFiniteNumber(playerLevel) and playerLevel % 1 == 0 and playerLevel >= 1, "playerLevel must be a positive integer")
+	assert(isFiniteNumber(mobLevel) and mobLevel % 1 == 0 and mobLevel >= 1, "mobLevel must be a positive integer")
+
+	local difference = mobLevel - playerLevel
+	if difference >= 0 then
+		return 1 + math.min(difference, 5) * 0.1
+	end
+	if difference == -1 then return 0.75 end
+	if difference == -2 then return 0.5 end
+	if difference == -3 then return 0.25 end
+	if difference == -4 then return 0.1 end
+	return 0
+end
+
+function ProgressionRules.calculateMobXP(baseXP: number, playerLevel: number, mobLevel: number): number
+	assert(isFiniteNumber(baseXP) and baseXP >= 0 and baseXP % 1 == 0, "baseXP must be a nonnegative integer")
+	local multiplier = ProgressionRules.mobExperienceMultiplier(playerLevel, mobLevel)
+	if multiplier <= 0 or baseXP == 0 then return 0 end
+	return math.max(1, math.round(baseXP * multiplier))
+end
+
 return table.freeze(ProgressionRules)
