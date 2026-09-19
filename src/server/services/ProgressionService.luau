@@ -63,4 +63,14 @@ function ProgressionService.awardXP(player: Player, amount: number): ()
 	player:SetAttribute("SessionXP", result.xp)
 end
 
+function ProgressionService.awardMobXP(player: Player, baseXP: number, mobLevel: number): number
+	local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
+	local level = if typeof(rawLevel) == "number" then rawLevel else 1
+	local reward = ProgressionRules.calculateMobXP(baseXP, level, mobLevel)
+	if reward > 0 then
+		ProgressionService.awardXP(player, reward)
+	end
+	return reward
+end
+
 return ProgressionService
