@@ -40,6 +40,18 @@ All playable world geometry must therefore be traversable with ordinary ground m
 
 This rule applies to greybox generation as well as final terrain and environment art.
 
+### 3.1. Environment art and external asset packs
+
+Approved world geography and traversal drive the art pass, not the other way around.
+
+- Do not reshape accepted roads, encounter footprints, elevation transitions, sightlines, or zone topology merely to fit a purchased / downloaded asset pack.
+- Blender / Blender Studio / marketplace assets are modular source material. Replace accepted blockout silhouettes category by category instead of importing a prebuilt map.
+- Verify that the specific asset license permits the intended export and in-game use before committing it to the project. A subscription alone is not proof that every asset has the same license.
+- Preserve the footprint and collision intent of the accepted placeholder unless a deliberate level-design change is approved.
+- Use simple collision proxies for environment meshes. Decorative crowns, webs, foliage and small clutter should normally be non-collidable.
+- Never let decorative props create a jump requirement, hidden step, one-way ledge, narrow critical-route choke, or collision trap.
+- Keep Roblox Terrain as the primary playable landscape; MeshParts are for architecture, landmarks, rocks, roots, ruins and other modular environment art.
+
 ## 4. Server authority is mandatory
 
 The server is the source of truth for all gameplay-relevant state, including:
