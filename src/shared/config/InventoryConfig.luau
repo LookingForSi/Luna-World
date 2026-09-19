@@ -10,6 +10,9 @@ end
 return table.freeze({
 	Capacity = 40,
 	DefaultStackLimit = 99,
+	MaxIdentifierLength = 128,
+	ActionRequestMinIntervalSeconds = 0.08,
+	SnapshotRequestMinIntervalSeconds = 0.25,
 	ConsumableCooldownSeconds = 5,
 	EquipmentSlots = slots,
 	EquipmentSlotSet = table.freeze(slotSet),
