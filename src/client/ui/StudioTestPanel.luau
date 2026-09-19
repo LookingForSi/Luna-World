@@ -49,10 +49,13 @@ function StudioTestPanel.start(): ()
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	local candidate = remotes:WaitForChild("StudioSetArchetype", 5)
 	local levelCandidate = remotes:WaitForChild("StudioSetLevel", 5)
+	local testItemsCandidate = remotes:WaitForChild("StudioGrantTestItems", 5)
 	if candidate == nil or not candidate:IsA("RemoteEvent") then return end
 	if levelCandidate == nil or not levelCandidate:IsA("RemoteEvent") then return end
+	if testItemsCandidate == nil or not testItemsCandidate:IsA("RemoteEvent") then return end
 	local remote = candidate :: RemoteEvent
 	local levelRemote = levelCandidate :: RemoteEvent
+	local testItemsRemote = testItemsCandidate :: RemoteEvent
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "StudioTestPanel"
@@ -62,7 +65,7 @@ function StudioTestPanel.start(): ()
 	local frame = Instance.new("Frame")
 	frame.Name = "ArchetypeSwitcher"
 	frame.Position = UDim2.fromOffset(18, 82)
-	frame.Size = UDim2.fromOffset(300, 104)
+	frame.Size = UDim2.fromOffset(300, 142)
 	frame.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
 	frame.BackgroundTransparency = 0.12
 	frame.BorderSizePixel = 0
@@ -127,6 +130,12 @@ function StudioTestPanel.start(): ()
 	end))
 	table.insert(buttonConnections, levelMax.Activated:Connect(function()
 		levelRemote:FireServer(ProgressionConfig.LevelCap)
+	end))
+
+	local testItems = makeLevelButton("GrantTestItems", "ТЕСТ ЛУТ +", 8, 140)
+	testItems.Position = UDim2.fromOffset(8, 104)
+	table.insert(buttonConnections, testItems.Activated:Connect(function()
+		testItemsRemote:FireServer()
 	end))
 
 	archetypeAttributeConnection = player:GetAttributeChangedSignal(CombatConfig.ArchetypeAttribute):Connect(updateSelection)
