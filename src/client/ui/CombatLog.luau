@@ -104,7 +104,7 @@ local function setExpanded(value: boolean): ()
 			then UDim2.fromOffset(HudLayout.CombatLogSize.X, HudLayout.CombatLogSize.Y)
 			else UDim2.fromOffset(128, 30)
 	end
-	if toggleButton ~= nil then toggleButton.Text = if expanded then "ЛОГ  ▲" else "ЛОГ  ▼" end
+	if toggleButton ~= nil then toggleButton.Text = if expanded then "Лог  ▲" else "Лог  ▼" end
 end
 
 local function formatOutgoingResult(message: CombatPresentationRules.Message): string?
