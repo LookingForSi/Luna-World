@@ -181,7 +181,7 @@ end
 local function createSpider(parent: Instance, name: string, position: Vector3, scale: number)
 	local model = P.model(parent, name)
 	model:SetAttribute("Purpose", "MobPlaceholder")
-	model:SetAttribute("MobId", "mob_meadow_spider")
+	model:SetAttribute("MobId", "mob_spider")
 	local ground = Grounding.surfaceAt(position)
 	P.part(
 		model,
