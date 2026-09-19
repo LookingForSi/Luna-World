@@ -178,6 +178,10 @@ local function onPresentation(value: unknown): ()
 	if not ClientCombatLogRules.isRelevant(message, localEntityId) then return end
 
 	if message.actorEntityId == localEntityId then
+		if message.kind == "Reward" and message.outcome == "Granted" and message.presentationKey == "xp" and message.amount ~= nil then
+			append(string.format("Получено %s XP.", ClientCombatLogRules.formatAmount(message.amount)))
+			return
+		end
 		if message.kind == "Action" and message.outcome == "Accepted" then
 			if not isBasicAttack(message.skillId) then append("▶ " .. skillName(message.skillId)) end
 			return
