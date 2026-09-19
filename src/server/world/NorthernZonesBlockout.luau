@@ -62,28 +62,28 @@ local function createGroundedRoad(parent: Instance, name: string, points: { Vect
 	end
 end
 
-local function createGroundedBarrier(
+local function createPalisadeLine(
 	parent: Instance,
 	name: string,
 	fromPosition: Vector3,
 	toPosition: Vector3,
-	height: number,
-	maxSegmentLength: number
+	postHeight: number
 )
-	local barrier = P.model(parent, name)
+	local wall = P.model(parent, name)
 	local horizontal = Vector3.new(toPosition.X - fromPosition.X, 0, toPosition.Z - fromPosition.Z)
-	local segments = math.max(1, math.ceil(horizontal.Magnitude / maxSegmentLength))
+	local postSpacing = 6.5
+	local segments = math.max(1, math.ceil(horizontal.Magnitude / postSpacing))
 
-	for index = 1, segments do
-		local a = fromPosition:Lerp(toPosition, (index - 1) / segments)
-		local b = fromPosition:Lerp(toPosition, index / segments)
-		P.groundedSegment(
-			barrier,
-			string.format("Section%02d", index),
-			a,
-			b,
-			2.5,
-			height,
+	for index = 0, segments do
+		local alpha = index / segments
+		local authored = fromPosition:Lerp(toPosition, alpha)
+		local ground = Grounding.surfaceAt(authored)
+		local height = postHeight + ((index % 4) - 1.5) * 0.7
+		P.part(
+			wall,
+			string.format("Stake%03d", index + 1),
+			Vector3.new(3.0, height, 3.0),
+			CFrame.new(ground + Vector3.new(0, height / 2 - 0.5, 0)),
 			Enum.Material.Wood,
 			COLORS.darkTimber
 		)
@@ -255,13 +255,12 @@ local function createGoblinCamp(parent: Instance, positions: { [string]: Vector3
 		{ center + Vector3.new(-halfX, 0, halfZ), center + Vector3.new(halfX, 0, halfZ) },
 	}
 	for index, endpoints in ipairs(fenceSegments) do
-		createGroundedBarrier(
+		createPalisadeLine(
 			camp,
 			string.format("Palisade%02d", index),
 			endpoints[1],
 			endpoints[2],
-			8,
-			28
+			18
 		)
 	end
 
@@ -301,21 +300,27 @@ local function createGoblinCamp(parent: Instance, positions: { [string]: Vector3
 	)
 end
 
+local function prepareSpiderHollowTerrain(positions: { [string]: Vector3 })
+	local center = positions.poi_spider_hollow
+	local floorTopY = center.Y + 8
+	Workspace.Terrain:FillBlock(
+		CFrame.new(center.X, floorTopY - 12, center.Z),
+		Vector3.new(820, 24, 700),
+		Enum.Material.Ground
+	)
+	Workspace.Terrain:FillBlock(
+		CFrame.new(center.X - 250, floorTopY - 11, center.Z + 170),
+		Vector3.new(360, 22, 300),
+		Enum.Material.Ground
+	)
+end
+
 local function createSpiderHollow(parent: Instance, positions: { [string]: Vector3 })
 	local hollow = P.model(parent, "SpiderHollow")
 	hollow:SetAttribute("ZoneId", "zone_spider_hollow")
+	hollow:SetAttribute("BasinFloorFilled", true)
 	local center = positions.poi_spider_hollow
 	local cave = positions.poi_spider_cave_mouth
-
-	-- The imported heightmap intentionally forms a basin here, but earlier revisions
-	-- contained a terrain void in its center. Fill only the encounter floor so the
-	-- hollow remains low while becoming a real walkable combat arena.
-	Workspace.Terrain:FillBlock(
-		CFrame.new(center.X, center.Y - 6, center.Z),
-		Vector3.new(430, 12, 340),
-		Enum.Material.Ground
-	)
-	hollow:SetAttribute("BasinFloorFilled", true)
 
 	for index, offset in ipairs({
 		Vector3.new(-135, 0, -45),
@@ -375,13 +380,14 @@ local function createMoonfallLandmarks(parent: Instance, positions: { [string]: 
 	local props = P.model(parent, "MoonfallLandmarks")
 	local wagon = positions.poi_broken_wagon
 	P.groundedPart(props, "BrokenWagonBody", wagon, Vector3.new(18, 5, 10), Enum.Material.WoodPlanks, COLORS.timber)
-	for _, dx in ipairs({ -8, 8 }) do
-		local ground = Grounding.surfaceAt(wagon + Vector3.new(dx, 0, 0))
+	for index, dx in ipairs({ -8, 8 }) do
+		local wheelPosition = wagon + Vector3.new(dx, 0, 5)
+		local ground = Grounding.surfaceAt(wheelPosition)
 		local wheel = P.part(
 			props,
-			"BrokenWheel",
+			string.format("BrokenWheel%02d", index),
 			Vector3.new(1.5, 10, 10),
-			CFrame.new(ground + Vector3.new(dx, 5, 5)) * CFrame.Angles(0, 0, math.rad(90)),
+			CFrame.new(ground + Vector3.new(0, 4.2, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 			Enum.Material.Wood,
 			COLORS.darkTimber,
 			{ canCollide = false, shape = Enum.PartType.Cylinder }
@@ -394,6 +400,57 @@ local function createMoonfallLandmarks(parent: Instance, positions: { [string]: 
 
 	local crossroads = positions.poi_moonfall_crossroads
 	P.groundedPart(props, "CrossroadsPost", crossroads + Vector3.new(12, 0, -8), Vector3.new(3, 13, 3), Enum.Material.Wood, COLORS.darkTimber)
+end
+
+local function createGoblinCemeteryLake(parent: Instance, positions: { [string]: Vector3 })
+	local lake = P.model(parent, "GoblinCemeteryLake")
+	lake:SetAttribute("Purpose", "TraversalBarrier")
+	local terrain = Workspace.Terrain
+
+	local goblin = positions.poi_goblin_camp
+	local cemetery = positions.poi_old_cemetery
+	local center = goblin:Lerp(cemetery, 0.52) + Vector3.new(85, 0, 0)
+	local ground = Grounding.surfaceAt(center)
+	local waterSurfaceY = ground.Y - 3
+
+	local lobes = {
+		{ offset = Vector3.new(-90, 0, -35), size = Vector3.new(420, 32, 300), yaw = -8 },
+		{ offset = Vector3.new(90, 0, 45), size = Vector3.new(430, 32, 320), yaw = 10 },
+		{ offset = Vector3.new(10, 0, 145), size = Vector3.new(330, 32, 240), yaw = -3 },
+	}
+
+	for index, spec in ipairs(lobes) do
+		local position = center + spec.offset
+		local rotation = CFrame.Angles(0, math.rad(spec.yaw), 0)
+		terrain:FillBlock(
+			CFrame.new(position.X, waterSurfaceY + 7, position.Z) * rotation,
+			spec.size,
+			Enum.Material.Air
+		)
+		terrain:FillBlock(
+			CFrame.new(position.X, waterSurfaceY - 4, position.Z) * rotation,
+			Vector3.new(spec.size.X, 10, spec.size.Z),
+			Enum.Material.Water
+		)
+
+		P.part(
+			lake,
+			string.format("WaterRecovery%02d", index),
+			Vector3.new(spec.size.X - 10, 24, spec.size.Z - 10),
+			CFrame.new(position.X, waterSurfaceY - 2, position.Z) * rotation,
+			Enum.Material.SmoothPlastic,
+			Color3.new(1, 1, 1),
+			{
+				canCollide = false,
+				transparency = 1,
+				attributes = {
+					WaterRecovery = true,
+					WaterSurfaceY = waterSurfaceY,
+					HazardKind = "Lake",
+				},
+			}
+		)
+	end
 end
 
 local function createDarkWoodland(parent: Instance, positions: { [string]: Vector3 })
@@ -523,6 +580,7 @@ end
 
 function NorthernZonesBlockout.build(parent: Instance)
 	local positions = poiPositions()
+	prepareSpiderHollowTerrain(positions)
 	local north = P.model(parent, "NorthWorld")
 
 	createGroundedRoad(north, "MoonfallRoad", WorldLayout.MoonfallRoadRoute, 22)
@@ -534,6 +592,7 @@ function NorthernZonesBlockout.build(parent: Instance)
 	createMoonfallLandmarks(north, positions)
 	createGoblinCamp(north, positions)
 	createSpiderHollow(north, positions)
+	createGoblinCemeteryLake(north, positions)
 	createDarkWoodland(north, positions)
 	createCemetery(north, positions)
 	createShrine(north, positions)
