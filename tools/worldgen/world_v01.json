@@ -67,7 +67,7 @@
       "displayName": "Goblin Camp",
       "center": [
         -600,
-        42,
+        66,
         2830
       ],
       "size": [
@@ -82,7 +82,7 @@
       "displayName": "Spider Hollow",
       "center": [
         600,
-        8,
+        6,
         2880
       ],
       "size": [
@@ -218,7 +218,7 @@
       "id": "poi_goblin_camp",
       "position": [
         -600,
-        42,
+        66,
         2800
       ]
     },
@@ -226,7 +226,7 @@
       "id": "poi_goblin_lookout",
       "position": [
         -720,
-        50,
+        74,
         3020
       ]
     },
@@ -234,7 +234,7 @@
       "id": "poi_spider_hollow",
       "position": [
         600,
-        2,
+        4,
         2840
       ]
     },
@@ -242,7 +242,7 @@
       "id": "poi_spider_cave_mouth",
       "position": [
         720,
-        0,
+        4,
         3060
       ]
     },
@@ -317,7 +317,7 @@
       "mobId": "mob_goblin_scout",
       "position": [
         -440,
-        34,
+        52,
         2680
       ],
       "radius": 96,
@@ -329,7 +329,7 @@
       "mobId": "mob_goblin_warrior",
       "position": [
         -600,
-        42,
+        66,
         2860
       ],
       "radius": 110,
@@ -341,7 +341,7 @@
       "mobId": "mob_goblin_elite_future",
       "position": [
         -700,
-        48,
+        72,
         3000
       ],
       "radius": 72,
@@ -353,7 +353,7 @@
       "mobId": "mob_meadow_spider",
       "position": [
         420,
-        7,
+        10,
         2690
       ],
       "radius": 96,
@@ -365,7 +365,7 @@
       "mobId": "mob_meadow_spider",
       "position": [
         590,
-        2,
+        4,
         2860
       ],
       "radius": 110,
@@ -377,7 +377,7 @@
       "mobId": "mob_brood_spider",
       "position": [
         690,
-        0,
+        4,
         3020
       ],
       "radius": 88,
@@ -483,32 +483,32 @@
       ],
       [
         -160,
-        19,
+        22,
         2530
       ],
       [
         -340,
-        25,
+        34,
         2630
       ],
       [
         -500,
-        32,
+        50,
         2740
       ],
       [
         -600,
-        42,
+        66,
         2800
       ],
       [
         -660,
-        46,
+        70,
         2920
       ],
       [
         -720,
-        50,
+        74,
         3020
       ]
     ],
@@ -520,49 +520,49 @@
       ],
       [
         210,
-        12,
+        14,
         2550
       ],
       [
         390,
-        7,
+        10,
         2680
       ],
       [
         540,
-        3,
+        6,
         2790
       ],
       [
         600,
-        2,
+        4,
         2840
       ],
       [
         660,
-        1,
+        4,
         2960
       ],
       [
         720,
-        0,
+        4,
         3060
       ]
     ],
     "spider_return": [
       [
         720,
-        0,
+        4,
         3060
       ],
       [
         640,
-        3,
+        5,
         3140
       ],
       [
         490,
-        8,
+        9,
         3190
       ],
       [
@@ -594,7 +594,8 @@
         ],
         "radiusStuds": 190,
         "targetY": 58,
-        "blendStuds": 220
+        "blendStuds": 220,
+        "mode": "raise"
       },
       {
         "id": "farm",
@@ -605,7 +606,8 @@
         ],
         "radiusStuds": 150,
         "targetY": 8,
-        "blendStuds": 120
+        "blendStuds": 120,
+        "mode": "set"
       },
       {
         "id": "stone_circle",
@@ -616,29 +618,32 @@
         ],
         "radiusStuds": 110,
         "targetY": 6,
-        "blendStuds": 90
+        "blendStuds": 90,
+        "mode": "set"
       },
       {
         "id": "goblin_camp",
         "center": [
           -600,
-          42,
+          66,
           2800
         ],
-        "radiusStuds": 200,
-        "targetY": 42,
-        "blendStuds": 220
+        "radiusStuds": 230,
+        "targetY": 66,
+        "blendStuds": 260,
+        "mode": "raise"
       },
       {
         "id": "spider_hollow",
         "center": [
           600,
-          2,
+          4,
           2840
         ],
-        "radiusStuds": 190,
-        "targetY": 2,
-        "blendStuds": 180
+        "radiusStuds": 230,
+        "targetY": 4,
+        "blendStuds": 220,
+        "mode": "lower"
       }
     ],
     "macroLandforms": [
@@ -705,38 +710,38 @@
       {
         "id": "goblin_massif",
         "centerXZ": [
-          -650,
-          2820
+          -600,
+          2800
         ],
         "sigmaXZ": [
-          500,
-          470
+          560,
+          500
         ],
-        "amplitude": 38
+        "amplitude": 30
       },
       {
         "id": "goblin_back_ridge",
         "centerXZ": [
           -820,
-          3070
+          3090
         ],
         "sigmaXZ": [
           340,
           320
         ],
-        "amplitude": 20
+        "amplitude": 14
       },
       {
         "id": "spider_hollow_basin",
         "centerXZ": [
-          620,
-          2860
+          600,
+          2840
         ],
         "sigmaXZ": [
-          430,
-          420
+          460,
+          440
         ],
-        "amplitude": -12
+        "amplitude": -18
       },
       {
         "id": "spider_east_wall",
@@ -801,24 +806,14 @@
     ],
     "localRings": [
       {
-        "id": "goblin_camp_outer_rampart",
-        "centerXZ": [
-          -600,
-          2800
-        ],
-        "radiusStuds": 320,
-        "sigmaStuds": 95,
-        "amplitude": 14
-      },
-      {
         "id": "spider_hollow_rim",
         "centerXZ": [
           600,
           2840
         ],
-        "radiusStuds": 310,
-        "sigmaStuds": 90,
-        "amplitude": 16
+        "radiusStuds": 330,
+        "sigmaStuds": 105,
+        "amplitude": 20
       }
     ],
     "futureTerrainReservations": [
@@ -827,28 +822,30 @@
         "displayName": "Old Cemetery",
         "center": [
           -650,
-          62,
+          88,
           3920
         ],
-        "radiusStuds": 185,
-        "targetY": 62,
-        "blendStuds": 190,
-        "terrainIntent": "raised_terrace"
+        "radiusStuds": 220,
+        "targetY": 88,
+        "blendStuds": 240,
+        "terrainIntent": "raised_terrace",
+        "mode": "raise"
       },
       {
         "id": "future_fallen_shrine",
         "displayName": "Fallen Shrine",
         "center": [
           650,
-          68,
+          96,
           3940
         ],
-        "radiusStuds": 165,
-        "targetY": 68,
-        "blendStuds": 185,
-        "terrainIntent": "raised_promontory"
+        "radiusStuds": 190,
+        "targetY": 96,
+        "blendStuds": 220,
+        "terrainIntent": "raised_promontory",
+        "mode": "raise"
       }
     ]
   },
-  "artifactRevision": "terrain-v02"
+  "artifactRevision": "terrain-v03"
 }
