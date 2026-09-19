@@ -1,6 +1,6 @@
 # Luna World — ТЗ на production-rework мира v0.1
 
-Статус: **draft for owner review — 2026-09-19**.
+Статус: **approved for implementation — 2026-09-19**.
 
 ## 1. Цель
 
@@ -69,9 +69,9 @@ Production terrain и архитектура не должны зависеть 
 
 ## 3. Размер и масштаб
 
-Принять текущий увеличенный горизонтальный масштаб как новый baseline:
+Принять увеличенный горизонтальный масштаб как новый baseline:
 
-- world X/Z spacing = примерно **1.5×** относительно первого greybox;
+- world X/Z spacing = **2×** относительно первого greybox;
 - здания и персонажи не масштабируются;
 - ширина main roads ориентировочно 20–28 studs;
 - secondary paths 12–18 studs;
@@ -358,6 +358,8 @@ Developer debug:
 - вода создаётся Terrain Water.
 
 Heightmap должен покрывать весь текущий v0.1 world-block одним непрерывным landscape.
+
+Для первой production-карты принять authoring bounds **2600 × 4800 studs** и heightmap **1024 × 2048**, чтобы сохранять достаточную детализацию при масштабе 2×.
 
 ### Stage C — architecture / landmarks
 
