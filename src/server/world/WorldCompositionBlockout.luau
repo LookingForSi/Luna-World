@@ -1,6 +1,7 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local WorldLayout = require(ReplicatedStorage.Shared.world.WorldLayout)
 local Grounding = require(script.Parent.TerrainGrounding)
@@ -202,30 +203,6 @@ local function createSilhouetteHouse(
 	)
 end
 
-local function createFieldStrip(
-	parent: Instance,
-	name: string,
-	fromPosition: Vector3,
-	toPosition: Vector3,
-	width: number
-)
-	P.groundedSegment(
-		parent,
-		name,
-		fromPosition,
-		toPosition,
-		width,
-		0.16,
-		Enum.Material.Ground,
-		COLORS.field,
-		{
-			canCollide = false,
-			transparency = 0.2,
-			attributes = attrs("field_strip"),
-		}
-	)
-end
-
 local function createRuinPillar(
 	parent: Instance,
 	name: string,
@@ -248,27 +225,105 @@ local function createRuinPillar(
 	pillar.CFrame *= CFrame.Angles(math.rad((position.Z % 5) - 2), math.rad((position.X + position.Z) % 20 - 10), math.rad(2))
 end
 
-local function createCliffWall(parent: Instance, name: string, center: Vector3)
-	local cliff = P.model(parent, name)
-	cliff:SetAttribute("ReplacementCategory", "cliff_wall")
+local function createPine(parent: Instance, name: string, position: Vector3, height: number)
+	local model = P.model(parent, name)
+	model:SetAttribute("ReplacementCategory", "conifer")
+	local ground = Grounding.surfaceAt(position)
 
-	for index, xOffset in ipairs({ -192, -96, 0, 96, 192 }) do
-		local height = 68 + (index % 3) * 9
-		P.groundedPart(
-			cliff,
-			string.format("Face%02d", index),
-			center + Vector3.new(xOffset, 0, 0),
-			Vector3.new(104, height, 38),
-			Enum.Material.Rock,
-			COLORS.stone,
+	P.part(
+		model,
+		"Trunk",
+		Vector3.new(3.8, height, 3.8),
+		CFrame.new(ground + Vector3.new(0, height / 2 - 0.5, 0)),
+		Enum.Material.Wood,
+		COLORS.darkTimber,
+		{ canCollide = true, attributes = attrs("conifer") }
+	)
+
+	for layer = 1, 3 do
+		local width = 18 - (layer - 1) * 4
+		local y = height * 0.48 + (layer - 1) * 6.5
+		P.part(
+			model,
+			string.format("Crown%02d", layer),
+			Vector3.new(width, 10, width),
+			CFrame.new(ground + Vector3.new(0, y, 0)),
+			Enum.Material.Grass,
+			COLORS.darkFoliage,
 			{
-				canCollide = true,
-				attributes = attrs("cliff_wall"),
+				canCollide = false,
+				shape = Enum.PartType.Ball,
+				attributes = attrs("conifer"),
 			}
 		)
 	end
 end
 
+local function createMixedForestPatch(
+	parent: Instance,
+	name: string,
+	center: Vector3,
+	halfX: number,
+	halfZ: number,
+	count: number
+)
+	local forest = P.model(parent, name)
+	forest:SetAttribute("ReplacementCategory", "mixed_forest")
+	local columns = math.max(2, math.ceil(math.sqrt(count)))
+
+	for index = 1, count do
+		local col = (index - 1) % columns
+		local row = math.floor((index - 1) / columns)
+		local rows = math.max(1, math.ceil(count / columns))
+		local u = if columns == 1 then 0 else col / (columns - 1) * 2 - 1
+		local v = if rows == 1 then 0 else row / (rows - 1) * 2 - 1
+		local jitterX = math.sin(index * 2.17) * math.min(28, halfX * 0.12)
+		local jitterZ = math.cos(index * 1.61) * math.min(28, halfZ * 0.12)
+		local pos = center + Vector3.new(u * halfX + jitterX, 0, v * halfZ + jitterZ)
+
+		if index % 3 == 0 or index % 7 == 0 then
+			createPine(forest, string.format("Pine%03d", index), pos, 30 + (index % 5) * 4)
+		else
+			createTree(
+				forest,
+				string.format("Broadleaf%03d", index),
+				pos,
+				27 + (index % 5) * 4,
+				0.88 + (index % 4) * 0.08,
+				false
+			)
+		end
+	end
+end
+
+local function shapeFallenShrineSouthCliff(shrine: Vector3)
+	local terrain = Workspace.Terrain
+	local summit = Grounding.surfaceAt(shrine)
+	local southSample = Grounding.surfaceAt(shrine + Vector3.new(0, 0, -390))
+	local lowerY = math.min(southSample.Y, summit.Y - 46)
+	local faceBaseZ = shrine.Z - 245
+	local carveTopY = summit.Y + 24
+	local carveHeight = math.max(32, carveTopY - lowerY)
+
+	-- Remove the former climbable grassy ramp while keeping the low southern
+	-- terrain. The resulting cut is then backed by Terrain Rock, not Parts.
+	terrain:FillBlock(
+		CFrame.new(shrine.X, lowerY + carveHeight / 2, faceBaseZ - 120),
+		Vector3.new(600, carveHeight, 250),
+		Enum.Material.Air
+	)
+
+	for index, xOffset in ipairs({ -240, -120, 0, 120, 240 }) do
+		local faceZ = faceBaseZ + ((index % 3) - 1) * 12
+		local width = 132
+		local height = summit.Y - lowerY + 8
+		terrain:FillBlock(
+			CFrame.new(shrine.X + xOffset, lowerY + height / 2, faceZ + 22),
+			Vector3.new(width, height, 58),
+			Enum.Material.Rock
+		)
+	end
+end
 local function buildVillageHill(parent: Instance, p: { [string]: Vector3 })
 	local village = P.model(parent, "VillageHillComposition")
 	local square = p.poi_village_square
@@ -345,15 +400,22 @@ local function buildFarmAndMeadows(parent: Instance, p: { [string]: Vector3 })
 		0.72
 	)
 
-	for index, x in ipairs({ -180, -120, -60, 65, 125, 185 }) do
-		createFieldStrip(
-			meadows,
-			string.format("FarmFieldRow%02d", index),
-			farm + Vector3.new(x, 0, -185),
-			farm + Vector3.new(x + 18, 0, 170),
-			11
-		)
-	end
+	createMixedForestPatch(
+		meadows,
+		"WolfRiverMixedForest",
+		circle + Vector3.new(35, 0, -255),
+		245,
+		135,
+		28
+	)
+	createMixedForestPatch(
+		meadows,
+		"WolfGoblinMixedForest",
+		circle + Vector3.new(250, 0, 420),
+		300,
+		290,
+		36
+	)
 
 	createTreeBelt(
 		meadows,
@@ -426,6 +488,23 @@ local function buildCombatBlock(parent: Instance, p: { [string]: Vector3 })
 		35
 	)
 
+	createMixedForestPatch(
+		combat,
+		"GoblinCemeteryForest",
+		goblin:Lerp(p.poi_old_cemetery, 0.5) + Vector3.new(305, 0, 10),
+		315,
+		405,
+		46
+	)
+	createMixedForestPatch(
+		combat,
+		"GoblinOuterForest",
+		goblin + Vector3.new(300, 0, 80),
+		250,
+		230,
+		28
+	)
+
 	createRockLine(
 		combat,
 		"GoblinShelfEdge",
@@ -485,22 +564,16 @@ local function buildUpperValley(parent: Instance, p: { [string]: Vector3 })
 	local shrine = p.poi_fallen_shrine
 	local approach = p.poi_ancient_approach
 
-	-- Fallen Shrine sits on a deliberate promontory. Its south face is an
-	-- intentionally non-traversable rock wall so the player must use the road.
-	P.replaceTerrainMaterials(
-		shrine + Vector3.new(0, 0, -250),
-		Vector3.new(500, 34, 210),
-		{ Enum.Material.Grass, Enum.Material.LeafyGrass },
-		Enum.Material.Rock
-	)
-	createCliffWall(upper, "FallenShrineSouthCliff", shrine + Vector3.new(0, 0, -265))
+	-- Fallen Shrine sits on a real terrain promontory: the gentle southern
+	-- grass ramp is carved away and replaced by a steep rock face.
+	shapeFallenShrineSouthCliff(shrine)
 	createRockLine(
 		upper,
 		"FallenShrineCliffScree",
-		shrine + Vector3.new(-230, 0, -305),
-		shrine + Vector3.new(230, 0, -305),
-		12,
-		0.82
+		shrine + Vector3.new(-250, 0, -355),
+		shrine + Vector3.new(250, 0, -350),
+		14,
+		0.78
 	)
 
 	P.replaceTerrainMaterials(
