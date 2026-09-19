@@ -464,7 +464,7 @@ local function onSkillRequest(player: Player, ...: unknown): ()
 	end
 	local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
 	local actorLevel = if typeof(rawLevel) == "number" then rawLevel else 1
-	if not ProgressionRules.isSkillUnlocked(skillId, actorLevel) then
+	if not ProgressionRules.isSkillUnlocked(definition.unlockLevel, actorLevel) then
 		reject(player, {
 			skillId = skillId,
 			outcome = "Rejected",
