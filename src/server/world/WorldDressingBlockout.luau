@@ -8,6 +8,12 @@ local P = require(script.Parent.BlockoutPrimitives)
 
 local WorldDressingBlockout = {}
 
+type RockSpec = {
+	offset: Vector3,
+	size: Vector3,
+	yaw: number,
+}
+
 local COLORS = {
 	stone = Color3.fromRGB(88, 90, 86),
 	lightStone = Color3.fromRGB(122, 123, 116),
@@ -53,17 +59,18 @@ end
 
 local function createRockCluster(parent: Instance, name: string, center: Vector3, scale: number)
 	local cluster = P.model(parent, name)
-	for index, entry in ipairs({
-		{ Vector3.new(-12, 0, -5), Vector3.new(13, 9, 11), -18 },
-		{ Vector3.new(1, 0, 5), Vector3.new(9, 7, 8), 22 },
-		{ Vector3.new(13, 0, -2), Vector3.new(7, 5, 9), 48 },
-	}) do
+	local rocks: { RockSpec } = {
+		{ offset = Vector3.new(-12, 0, -5), size = Vector3.new(13, 9, 11), yaw = -18 },
+		{ offset = Vector3.new(1, 0, 5), size = Vector3.new(9, 7, 8), yaw = 22 },
+		{ offset = Vector3.new(13, 0, -2), size = Vector3.new(7, 5, 9), yaw = 48 },
+	}
+	for index, entry in ipairs(rocks) do
 		createRock(
 			cluster,
 			string.format("Rock%02d", index),
-			center + (entry[1] :: Vector3) * scale,
-			(entry[2] :: Vector3) * scale,
-			entry[3] :: number
+			center + entry.offset * scale,
+			entry.size * scale,
+			entry.yaw
 		)
 	end
 end
