@@ -490,11 +490,19 @@ local function buildCombatBlock(parent: Instance, p: { [string]: Vector3 })
 
 	createMixedForestPatch(
 		combat,
-		"GoblinCemeteryForest",
-		goblin:Lerp(p.poi_old_cemetery, 0.5) + Vector3.new(305, 0, 10),
-		315,
-		405,
-		46
+		"GoblinCemeteryEastForest",
+		goblin:Lerp(p.poi_old_cemetery, 0.5) + Vector3.new(540, 0, 10),
+		165,
+		400,
+		30
+	)
+	createMixedForestPatch(
+		combat,
+		"GoblinCemeteryRoadsideForest",
+		goblin:Lerp(p.poi_old_cemetery, 0.5) + Vector3.new(-300, 0, 5),
+		170,
+		360,
+		26
 	)
 	createMixedForestPatch(
 		combat,
