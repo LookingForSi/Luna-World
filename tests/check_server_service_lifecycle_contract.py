@@ -21,6 +21,7 @@ def require(path: str, token: str, message: str) -> None:
 MAIN = "src/server/main.server.luau"
 MOBS = "src/server/services/MobService.luau"
 PROGRESSION = "src/server/services/ProgressionService.luau"
+PLAYER_DATA = "src/server/services/PlayerDataService.luau"
 
 require(MAIN, "game:BindToClose", "server bootstrap must own process-lifetime cleanup")
 for token in (
@@ -30,6 +31,7 @@ for token in (
     "MobService.stop()",
     "CombatService.stop()",
     "ProgressionService.stop()",
+    "PlayerDataService.stop()",
 ):
     require(MAIN, token, f"server shutdown is missing {token}")
 
@@ -39,8 +41,11 @@ require(MOBS, "if not started or serviceGeneration ~= expectedGeneration then", 
 require(MOBS, "table.clear(spawnedModels)", "MobService stop must forget spawned models")
 require(MOBS, "table.clear(lastAttackerByEntityId)", "MobService stop must clear attribution state")
 
-require(PROGRESSION, "playerAddedConnection", "ProgressionService must own its PlayerAdded connection")
+require(PROGRESSION, "profileReadyConnection", "ProgressionService must own its profile-ready connection")
 require(PROGRESSION, "function ProgressionService.stop()", "ProgressionService must expose lifecycle cleanup")
-require(PROGRESSION, "playerAddedConnection:Disconnect()", "ProgressionService stop must disconnect PlayerAdded")
+require(PROGRESSION, "profileReadyConnection:Disconnect()", "ProgressionService stop must disconnect profile-ready events")
+require(PLAYER_DATA, "function PlayerDataService.stop()", "PlayerDataService must expose lifecycle cleanup")
+require(PLAYER_DATA, "playerRemovingConnection:Disconnect()", "PlayerDataService stop must disconnect player lifecycle events")
+require(PLAYER_DATA, "releasePlayer(player)", "PlayerDataService shutdown must release active profile leases")
 
 print("Server service lifecycle contract: PASS")
