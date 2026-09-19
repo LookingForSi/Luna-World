@@ -40,10 +40,11 @@ for token in ('"CombatPoints"', '"PlayerHealth"', '"PlayerResource"', '"LevelXP"
 for token in ('"CombatPointsFill"', '"PlayerHealthFill"', '"PlayerResourceFill"', '"LevelXPFill"'):
     require(HUD, token, f"four-row player status is missing fill {token}")
 
-require(HUD, '"LevelBadge"', "player status must include a dedicated level badge")
-require(HUD, '"LevelNumber"', "level badge must render the current level number")
+require(HUD, '"PlayerName"', "player status header must render the character name")
+require(HUD, '"PlayerLevel"', "player status header must render the current level")
 require(HUD, "ProgressionRules.requiredXP(level)", "XP bar must use the current level threshold")
 require(HUD, "formatStatusNumber(currentValue)", "status rows must expose exact current values")
+require(HUD, "UDim2.new(1, -16, 0, 12)", "player status progress bars must use the full panel width")
 require(CLIENT_MAIN, "SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)", "stock Roblox health bar must be hidden")
 
 require(CONFIG, 'CombatPointsCurrentAttribute = "CombatPointsCurrent"', "CP needs a distinct replicated current-value attribute")
