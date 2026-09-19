@@ -88,7 +88,7 @@ Z = 4800
 
 Если Studio округляет region под voxel-grid, допустимо ближайшее кратное 4 studs. После импорта всё равно нужен runtime traversal review.
 
-## Terrain v0.4 — композиция
+## Terrain v0.5 — композиция
 
 Целевая progression-композиция с юга на север:
 
