@@ -76,6 +76,7 @@ def main() -> None:
         "WaterRecovery%02d",
         "StoneCircle",
         "LunaVillageSpawn",
+        "Vector3.new(-34, 0, -8)",
     ):
         assert token in south
     assert "BillboardGui" not in south
