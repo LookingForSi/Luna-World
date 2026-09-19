@@ -1,6 +1,6 @@
 # Luna World — план реализации production-rework мира v0.1
 
-Статус: **draft — 2026-09-19**.
+Статус: **implementation in progress — 2026-09-19**.
 
 ## 1. Рабочая ветка
 
@@ -13,22 +13,24 @@ Base: текущий approved/prototyped world layout.
 ## 2. Phase 0 — freeze prototype contract
 
 - зафиксировать текущие stable IDs;
-- зафиксировать scale 1.5× как baseline;
+- зафиксировать scale **2×** как baseline;
 - сохранить route topology;
 - отметить PR #9 как geometry prototype;
-- добавить top-down coordinate export / debug map.
+- добавить top-down coordinate export / debug map — **DONE**;
 
 ## 3. Phase 1 — authoring pipeline
 
 Создать authoring-tooling:
 
-- world-source config;
-- deterministic heightmap generator;
+- world-source config — **DONE**;
+- deterministic heightmap generator — **DONE**;
 - optional colormap generator;
-- route/POI/spawn overlay PNG;
-- README с точными Roblox Terrain import settings.
+- route/POI/spawn overlay PNG — **DONE**;
+- README с точными Roblox Terrain import settings — **DONE**;
 
 Generator не запускается в runtime.
+
+Первая версия generator формирует карту 2600 × 4800 studs, 16-bit heightmap 1024 × 2048, water mask, top-down и overlays. Следующий checkpoint — owner import в Terrain Editor и runtime traversal review.
 
 ## 4. Phase 2 — macro terrain
 
