@@ -137,6 +137,24 @@ Luna World не использует свободный прыжок как но
 
 Если игрок всё же вышел за playable area или провалился, recovery возвращает его на последнюю безопасную точку.
 
+## 6.1. Локальный экстремум зоны
+
+Если terrain должен визуально определять encounter/POI, его главная локальная форма обязана быть **центрирована на intended gameplay pocket**, а не на краю карты или случайном neighbouring massif.
+
+- raised zone: локальный максимум/плато находится в центре gameplay zone;
+- hollow/basin: локальный минимум находится в центре gameplay zone;
+- perimeter ridge может обрамлять basin, но не должен случайно становиться главным рельефом raised zone;
+- edge mountains служат containment/horizon и не заменяют локальную форму POI;
+- raised terrain shaping не должен понижать уже существующий macro terrain;
+- lowered terrain shaping не должен поднимать центр впадины;
+- automated worldgen contract должен проверять знак и величину разницы между center и ближайшим окружением.
+
+Для текущего блока:
+- Goblin Camp — centered raised shelf;
+- Spider Hollow — centered basin;
+- future Old Cemetery — centered raised terrace;
+- future Fallen Shrine — centered raised promontory.
+
 ## 7. Grounding contract для объектов
 
 Нельзя задавать production Y-position здания/NPC исключительно вручную и предполагать, что земля останется на той же высоте.
