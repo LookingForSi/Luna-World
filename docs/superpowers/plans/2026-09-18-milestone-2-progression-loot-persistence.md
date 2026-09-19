@@ -583,6 +583,9 @@ Gamepad/mobile semantic actions подключить через существу
 
 ## Task 22. Real level/XP HUD
 
+**Combat log UX feedback 2026-09-19:** панель переименована из «БОЙ» в «ЛОГ», переведена на вертикально прокручиваемый history view (до 200 записей), live-follow не сбивает пользователя, если он прокрутил историю вверх, а server-replicated level-up добавляет запись «Получен уровень N».
+
+
 **Частично выполнено досрочно 2026-09-19 по owner UX feedback:** временный `SessionXpHudReference` удалён из HUD; XP теперь считается относительно текущего level threshold, добавлен отдельный level badge, точные current/maximum значения CP/HP/resource и отключён дублирующий Roblox stock health bar. Combat-log rewards из этого task остаются до появления loot/Luna.
 
 Заменить временный `SessionXpHudReference`.
