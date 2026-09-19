@@ -7,6 +7,7 @@ local P = require(script.Parent.BlockoutPrimitives)
 local VillageAndMeadowsBlockout = require(script.Parent.VillageAndMeadowsBlockout)
 local NorthernZonesBlockout = require(script.Parent.NorthernZonesBlockout)
 local WorldDressingBlockout = require(script.Parent.WorldDressingBlockout)
+local WorldCompositionBlockout = require(script.Parent.WorldCompositionBlockout)
 
 local ROOT_NAME = "LunaWorldPlayableBlockout"
 local MANAGED_BY = "PlayableWorldBlockout"
@@ -92,6 +93,7 @@ function PlayableWorldBlockout.rebuild(): (Model, SpawnLocation)
 	local spawn = VillageAndMeadowsBlockout.build(root)
 	NorthernZonesBlockout.build(root)
 	WorldDressingBlockout.build(root)
+	WorldCompositionBlockout.build(root)
 	createBoundary(root)
 
 	root.Parent = workspace
