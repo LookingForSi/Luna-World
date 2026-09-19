@@ -1,0 +1,27 @@
+{
+  "name": "LunaWorldPreview",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "World": {
+        "$path": "src/server/world"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "WorldPreview": {
+          "$path": "src/client/world-preview"
+        }
+      }
+    }
+  }
+}

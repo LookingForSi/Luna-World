@@ -1,0 +1,24 @@
+{
+  "name": "LunaWorldTests",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "World": {
+        "$path": "src/server/world"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "WorldTests": {
+        "$path": "tests/world"
+      }
+    }
+  }
+}
