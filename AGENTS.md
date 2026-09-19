@@ -37,6 +37,8 @@ All playable world geometry must therefore be traversable with ordinary ground m
 - do not leave playable ledges that allow the player to drop down but provide no ground path back;
 - stairs may be used only when their collision and step height are verified to be walkable without jumping; for greybox work, prefer explicit sloped transition geometry;
 - world-block acceptance must include a traversal check that all intended routes can be completed without jumping.
+- bridges and other crossings must overlap their bank / landing geometry enough that a character cannot fall into a seam between terrain and the crossing;
+- any intentionally non-walkable water body or deep traversal hazard must define a recovery behavior to the most recent safe grounded position; do not allow no-jump players to become trapped below a bank or inside a decorative trench;
 
 This rule applies to greybox generation as well as final terrain and environment art.
 
