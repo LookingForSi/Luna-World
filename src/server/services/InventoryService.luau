@@ -162,6 +162,10 @@ function InventoryService.consume(player: Player, instanceId: string): (boolean,
 
 	local restored = 0
 	if effect.kind == "HealHP" then
+		if humanoid.Parent == nil or humanoid.Health <= 0 then
+			InventoryService.grantItem(player, record.ItemId, 1)
+			return false, "Dead"
+		end
 		local before = humanoid.Health
 		humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + effect.amount)
 		restored = humanoid.Health - before
