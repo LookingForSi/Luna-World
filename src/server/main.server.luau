@@ -31,7 +31,7 @@ local mobDiedConnection = MobService.MobDied:Connect(function(killer: Player?, m
 	if definition ~= nil and killer ~= nil then
 		-- Milestone 0 intentionally awards the kill to MobService's last valid attacker;
 		-- this is session-only behavior, not the final shared-reward economy.
-		ProgressionService.awardXP(killer, definition.rewardXP)
+		ProgressionService.awardMobXP(killer, definition.rewardXP, definition.level)
 	end
 end)
 
