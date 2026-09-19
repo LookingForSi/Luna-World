@@ -359,7 +359,7 @@ Developer debug:
 
 Heightmap должен покрывать весь текущий v0.1 world-block одним непрерывным landscape.
 
-Для первой production-карты принять authoring bounds **2600 × 4800 studs** и heightmap **1024 × 2048**, чтобы сохранять достаточную детализацию при масштабе 2×.
+Для первой production-карты принять authoring bounds **2600 × 4800 studs** и heightmap **650 × 1200**, чтобы сохранять достаточную детализацию при масштабе 2×.
 
 ### Stage C — architecture / landmarks
 
