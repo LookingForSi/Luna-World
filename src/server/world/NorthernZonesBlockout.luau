@@ -207,11 +207,11 @@ local function createGoblinCamp(parent: Instance, positions: { [string]: Vector3
 	local camp = P.model(parent, "GoblinCamp")
 	camp:SetAttribute("ZoneId", "zone_goblin_camp")
 	local center = positions.poi_goblin_camp
-	local halfX, halfZ = 122, 98
+	local halfX, halfZ = 137, 110
 
 	local fenceSegments = {
-		{ center + Vector3.new(-halfX, 0, -halfZ), center + Vector3.new(-44, 0, -halfZ) },
-		{ center + Vector3.new(44, 0, -halfZ), center + Vector3.new(halfX, 0, -halfZ) },
+		{ center + Vector3.new(-halfX, 0, -halfZ), center + Vector3.new(-50, 0, -halfZ) },
+		{ center + Vector3.new(50, 0, -halfZ), center + Vector3.new(halfX, 0, -halfZ) },
 		{ center + Vector3.new(-halfX, 0, -halfZ), center + Vector3.new(-halfX, 0, halfZ) },
 		{ center + Vector3.new(halfX, 0, -halfZ), center + Vector3.new(halfX, 0, halfZ) },
 		{ center + Vector3.new(-halfX, 0, halfZ), center + Vector3.new(halfX, 0, halfZ) },
@@ -229,9 +229,9 @@ local function createGoblinCamp(parent: Instance, positions: { [string]: Vector3
 		)
 	end
 
-	createHut(camp, "Hut01", center + Vector3.new(-58, 0, 20), 18)
-	createHut(camp, "Hut02", center + Vector3.new(56, 0, 34), -22)
-	createHut(camp, "Hut03", center + Vector3.new(40, 0, -48), 10)
+	createHut(camp, "Hut01", center + Vector3.new(-65, 0, 22), 18)
+	createHut(camp, "Hut02", center + Vector3.new(63, 0, 38), -22)
+	createHut(camp, "Hut03", center + Vector3.new(45, 0, -54), 10)
 
 	local ground = Grounding.surfaceAt(center)
 	P.part(
@@ -245,9 +245,9 @@ local function createGoblinCamp(parent: Instance, positions: { [string]: Vector3
 	)
 
 	for index, offset in ipairs({
-		Vector3.new(-25, 0, -15),
-		Vector3.new(24, 0, 12),
-		Vector3.new(-8, 0, 48),
+		Vector3.new(-28, 0, -17),
+		Vector3.new(27, 0, 14),
+		Vector3.new(-9, 0, 54),
 	}) do
 		createGoblin(camp, string.format("Goblin%02d", index), center + offset)
 	end
@@ -272,14 +272,14 @@ local function createSpiderHollow(parent: Instance, positions: { [string]: Vecto
 	local cave = positions.poi_spider_cave_mouth
 
 	for index, offset in ipairs({
-		Vector3.new(-120, 0, -40),
-		Vector3.new(-92, 0, 86),
-		Vector3.new(-35, 0, 118),
-		Vector3.new(72, 0, 104),
-		Vector3.new(118, 0, 38),
-		Vector3.new(110, 0, -78),
-		Vector3.new(40, 0, -122),
-		Vector3.new(-70, 0, -112),
+		Vector3.new(-135, 0, -45),
+		Vector3.new(-104, 0, 97),
+		Vector3.new(-39, 0, 133),
+		Vector3.new(81, 0, 117),
+		Vector3.new(133, 0, 43),
+		Vector3.new(124, 0, -88),
+		Vector3.new(45, 0, -137),
+		Vector3.new(-79, 0, -126),
 	}) do
 		createRock(
 			hollow,
@@ -290,10 +290,10 @@ local function createSpiderHollow(parent: Instance, positions: { [string]: Vecto
 	end
 
 	for index, offset in ipairs({
-		Vector3.new(-82, 0, 38),
-		Vector3.new(66, 0, 54),
-		Vector3.new(38, 0, -74),
-		Vector3.new(-52, 0, -66),
+		Vector3.new(-92, 0, 43),
+		Vector3.new(74, 0, 61),
+		Vector3.new(43, 0, -83),
+		Vector3.new(-59, 0, -74),
 	}) do
 		createTree(hollow, string.format("DeadTree%02d", index), center + offset, 26 + index * 2, true)
 	end
@@ -320,9 +320,9 @@ local function createSpiderHollow(parent: Instance, positions: { [string]: Vecto
 		web:SetAttribute("Decorative", true)
 	end
 
-	createSpider(hollow, "Spider01", center + Vector3.new(-24, 0, -8), 1)
-	createSpider(hollow, "Spider02", center + Vector3.new(30, 0, 22), 1.1)
-	createSpider(hollow, "Spider03", center + Vector3.new(4, 0, 58), 0.9)
+	createSpider(hollow, "Spider01", center + Vector3.new(-27, 0, -9), 1)
+	createSpider(hollow, "Spider02", center + Vector3.new(34, 0, 25), 1.1)
+	createSpider(hollow, "Spider03", center + Vector3.new(5, 0, 65), 0.9)
 end
 
 local function createMoonfallLandmarks(parent: Instance, positions: { [string]: Vector3 })
@@ -383,7 +383,7 @@ local function createCemetery(parent: Instance, positions: { [string]: Vector3 }
 	for row = -1, 1 do
 		for col = -2, 2 do
 			local index = (row + 1) * 5 + col + 3
-			local pos = center + Vector3.new(col * 28, 0, row * 34)
+			local pos = center + Vector3.new(col * 32, 0, row * 38)
 			local grave = P.groundedPart(
 				cemetery,
 				string.format("Grave%02d", index),
@@ -396,7 +396,7 @@ local function createCemetery(parent: Instance, positions: { [string]: Vector3 }
 		end
 	end
 
-	local mausoleum = center + Vector3.new(0, 0, 90)
+	local mausoleum = center + Vector3.new(0, 0, 102)
 	P.groundedPart(cemetery, "Mausoleum", mausoleum, Vector3.new(46, 24, 32), Enum.Material.Limestone, COLORS.ancientStone)
 	local mausoleumGround = Grounding.surfaceAt(mausoleum)
 	P.part(
@@ -415,13 +415,13 @@ local function createShrine(parent: Instance, positions: { [string]: Vector3 })
 	shrine:SetAttribute("ZoneId", "zone_fallen_shrine")
 	local center = positions.poi_fallen_shrine
 
-	P.groundedPart(shrine, "ShrinePlatform", center, Vector3.new(100, 1.2, 90), Enum.Material.Cobblestone, COLORS.ancientStone, { canCollide = false })
+	P.groundedPart(shrine, "ShrinePlatform", center, Vector3.new(112, 1.2, 102), Enum.Material.Cobblestone, COLORS.ancientStone, { canCollide = false })
 	for index, offset in ipairs({
-		Vector3.new(-38, 0, -26),
-		Vector3.new(0, 0, -32),
-		Vector3.new(38, 0, -26),
-		Vector3.new(-36, 0, 28),
-		Vector3.new(36, 0, 28),
+		Vector3.new(-43, 0, -29),
+		Vector3.new(0, 0, -36),
+		Vector3.new(43, 0, -29),
+		Vector3.new(-41, 0, 32),
+		Vector3.new(41, 0, 32),
 	}) do
 		P.groundedPart(
 			shrine,
@@ -432,7 +432,7 @@ local function createShrine(parent: Instance, positions: { [string]: Vector3 })
 			COLORS.ancientStone
 		)
 	end
-	P.groundedPart(shrine, "Altar", center + Vector3.new(0, 0, 18), Vector3.new(22, 7, 14), Enum.Material.Marble, COLORS.ancientStone)
+	P.groundedPart(shrine, "Altar", center + Vector3.new(0, 0, 20), Vector3.new(22, 7, 14), Enum.Material.Marble, COLORS.ancientStone)
 end
 
 local function createAncientApproach(parent: Instance, positions: { [string]: Vector3 })
