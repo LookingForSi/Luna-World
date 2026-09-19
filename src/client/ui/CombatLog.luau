@@ -7,6 +7,7 @@ local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPr
 local ClientCombatLogRules = require(ReplicatedStorage.Shared.combat.ClientCombatLogRules)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
+local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local HudLayout = require(script.Parent.HudLayout)
@@ -178,9 +179,28 @@ local function onPresentation(value: unknown): ()
 	if not ClientCombatLogRules.isRelevant(message, localEntityId) then return end
 
 	if message.actorEntityId == localEntityId then
-		if message.kind == "Reward" and message.outcome == "Granted" and message.presentationKey == "xp" and message.amount ~= nil then
-			append(string.format("Получено %s XP.", ClientCombatLogRules.formatAmount(message.amount)))
-			return
+		if message.kind == "Reward" and message.amount ~= nil then
+			local amount = ClientCombatLogRules.formatAmount(message.amount)
+			if message.outcome == "Granted" and message.presentationKey == "xp" then
+				append(string.format("Получено %s XP.", amount))
+				return
+			end
+			if message.outcome == "Granted" and message.presentationKey == "luna" then
+				append(string.format("Получено %s Luna.", amount))
+				return
+			end
+			if message.definitionId ~= nil then
+				local item = ItemDefinitions[message.definitionId]
+				local itemName = if item ~= nil then item.displayName else message.definitionId
+				if message.outcome == "Granted" and message.presentationKey == "loot_item" then
+					append(string.format("Добыча: %s ×%s.", itemName, amount))
+					return
+				end
+				if message.outcome == "Rejected" and message.presentationKey == "loot_item_full" then
+					append(string.format("Инвентарь полон: %s ×%s не получен.", itemName, amount))
+					return
+				end
+			end
 		end
 		if message.kind == "Action" and message.outcome == "Accepted" then
 			if not isBasicAttack(message.skillId) then append("▶ " .. skillName(message.skillId)) end
