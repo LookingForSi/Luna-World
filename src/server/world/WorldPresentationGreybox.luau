@@ -63,6 +63,7 @@ local function createZoneTriggers(parent: Instance)
 		trigger:SetAttribute("ZoneId", volume.zoneId)
 		trigger:SetAttribute("DisplayName", zone.displayName)
 		trigger:SetAttribute("Priority", volume.priority)
+		trigger:SetAttribute("MinSafeY", volume.minSafeY)
 		trigger.Parent = folder
 	end
 end

@@ -196,6 +196,9 @@ function WorldLayoutValidator.validate(layout: any): (boolean, { string })
 		if type(zoneVolume.priority) ~= "number" then
 			table.insert(errors, string.format("ZoneVolumes[%d] priority must be numeric", index))
 		end
+		if type(zoneVolume.minSafeY) ~= "number" then
+			table.insert(errors, string.format("ZoneVolumes[%d] minSafeY must be numeric", index))
+		end
 	end
 
 	for _, requiredZoneId in ipairs(REQUIRED_ZONE_IDS) do

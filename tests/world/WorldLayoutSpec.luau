@@ -82,10 +82,29 @@ function WorldLayoutSpec.register(runner: Runner)
 		end
 	end)
 
+	runner:test("world horizontal distances are enlarged", function()
+		assert(WorldLayout.Dimensions.MeadowsRouteLength == 1350)
+		assert(WorldLayout.Dimensions.MoonfallRouteLength == 1410)
+		local roadExit = findPoi(WorldLayout, "exit_moonfall_road")
+		assert(roadExit.position.Z == 1350)
+	end)
+
 	runner:test("zone presentation volume with unknown zone fails", function()
 		local layout = deepClone(WorldLayout)
 		layout.ZoneVolumes[1].zoneId = "zone_missing"
 		assertInvalid(layout, "must reference an existing zone")
+	end)
+
+	runner:test("zone presentation volumes define safe floors", function()
+		for _, volume in ipairs(WorldLayout.ZoneVolumes) do
+			assert(type(volume.minSafeY) == "number")
+		end
+	end)
+
+	runner:test("invalid safe floor fails", function()
+		local layout = deepClone(WorldLayout)
+		layout.ZoneVolumes[1].minSafeY = "ground"
+		assertInvalid(layout, "minSafeY must be numeric")
 	end)
 
 	runner:test("non-positive radius fails", function()
