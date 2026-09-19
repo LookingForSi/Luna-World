@@ -286,3 +286,15 @@ Owner actions should be requested only when they genuinely require owner-side in
 
 After direct edits, report concisely what changed, the branch/HEAD when useful, what automated checks were run, and only the minimum manual acceptance still required.
 
+
+## 15. World blockout integration constraints
+
+The accepted v0.1 world topology is now a gameplay dependency, not a disposable preview.
+
+- Terrain-touching architecture, fences, rocks, bridges and structural props must visibly meet or slightly overlap the ground. Visible floating gaps are acceptance failures even when collision still works.
+- Main roads and intended walking tracks must read as cleared surfaces rather than grass with a road texture underneath.
+- Encounter floors must be physically closed. Decorative depressions, caves and basins must not expose voids or endless-fall pockets.
+- Water hazards use the shared traversal-recovery behavior; adding another water body must not create a second independent death/teleport contract.
+- Deliberately non-traversable cliff faces may enforce routing, but their intended bypass road must remain walkable without jumping.
+- WorldLayout.SpawnMarkers is the integration seam for authoritative mob placement. Do not restore hard-coded playground spawn coordinates in MobService.
+- World blockout mob models are presentation placeholders only. Once a matching authoritative mob definition exists, the gameplay service owns the real entity and the corresponding placeholder must not coexist visually.
