@@ -38,6 +38,7 @@ def main() -> None:
     assert data["version"] == 1
     assert data["worldScaleXZ"] == 2.0
     assert data["resolution"] == {"width": 650, "height": 1200}
+    assert data["heightRangeStuds"] == [0, 192]
 
     bounds = data["boundsStuds"]
     assert bounds["maxX"] - bounds["minX"] == 2600
@@ -67,6 +68,24 @@ def main() -> None:
     village_pad = next(entry for entry in data["features"]["terrainPads"] if entry["id"] == "village_core")
     assert village_pad["targetY"] >= 55
     assert village_pad["radiusStuds"] >= 180
+
+    terrain_pads = {entry["id"]: entry for entry in data["features"]["terrainPads"]}
+    assert terrain_pads["goblin_camp"]["targetY"] >= 40
+    assert terrain_pads["spider_hollow"]["targetY"] <= 3
+
+    rings = {entry["id"]: entry for entry in data["features"]["localRings"]}
+    assert rings["goblin_camp_outer_rampart"]["amplitude"] >= 12
+    assert rings["spider_hollow_rim"]["amplitude"] >= 14
+
+    future = {entry["id"]: entry for entry in data["features"]["futureTerrainReservations"]}
+    assert future["future_old_cemetery"]["terrainIntent"] == "raised_terrace"
+    assert future["future_fallen_shrine"]["terrainIntent"] == "raised_promontory"
+    assert future["future_old_cemetery"]["targetY"] >= 60
+    assert future["future_fallen_shrine"]["targetY"] >= 65
+
+    zone_ids = {entry["id"] for entry in data["zones"]}
+    assert "zone_old_cemetery" not in zone_ids
+    assert "zone_fallen_shrine" not in zone_ids
 
     disabled_spawns = {entry["id"] for entry in data["spawns"] if not entry["spawnEnabled"]}
     assert "spawn_goblin_camp_elite_future" in disabled_spawns
