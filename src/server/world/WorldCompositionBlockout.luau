@@ -363,16 +363,16 @@ local function buildCombatBlock(parent: Instance, p: { [string]: Vector3 })
 	createTreeBelt(
 		combat,
 		"MoonfallWestScreen",
-		crossroads + Vector3.new(-390, 0, -210),
-		crossroads + Vector3.new(-470, 0, 200),
+		crossroads + Vector3.new(-780, 0, -230),
+		crossroads + Vector3.new(-840, 0, 230),
 		10,
 		35
 	)
 	createTreeBelt(
 		combat,
 		"MoonfallEastScreen",
-		crossroads + Vector3.new(390, 0, -210),
-		crossroads + Vector3.new(470, 0, 200),
+		crossroads + Vector3.new(780, 0, -230),
+		crossroads + Vector3.new(840, 0, 230),
 		10,
 		35
 	)
@@ -380,8 +380,8 @@ local function buildCombatBlock(parent: Instance, p: { [string]: Vector3 })
 	createRockLine(
 		combat,
 		"GoblinShelfEdge",
-		goblin + Vector3.new(175, 0, -190),
-		goblin + Vector3.new(260, 0, 190),
+		goblin + Vector3.new(250, 0, -190),
+		goblin + Vector3.new(330, 0, 190),
 		7,
 		1.15
 	)
@@ -405,10 +405,10 @@ local function buildCombatBlock(parent: Instance, p: { [string]: Vector3 })
 	createTreeBelt(
 		combat,
 		"SpiderBasinRearDeadwood",
-		spider + Vector3.new(-195, 0, 225),
-		spider + Vector3.new(210, 0, 245),
-		9,
-		35,
+		spider + Vector3.new(-300, 0, 250),
+		spider + Vector3.new(-160, 0, 320),
+		8,
+		24,
 		true
 	)
 
