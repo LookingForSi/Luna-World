@@ -197,6 +197,7 @@ def generate_height(source: dict) -> tuple[np.ndarray, np.ndarray]:
         "goblin": (22.0, 80.0),
         "spider": (22.0, 75.0),
         "spider_return": (20.0, 70.0),
+        "ancient_approach": (30.0, 120.0),
     }
     for route_name, (core, blend) in route_parameters.items():
         blend_route(height, xs, zs, source["routes"][route_name], core, blend)
@@ -274,6 +275,7 @@ def save_topdown(source: dict, height: np.ndarray, water_mask: np.ndarray, outpu
         "goblin": (190, 115, 80, 240),
         "spider": (165, 145, 185, 240),
         "spider_return": (145, 125, 165, 210),
+        "ancient_approach": (220, 210, 150, 235),
     }
     for route_name, points in source["routes"].items():
         route_draw.line(
@@ -373,7 +375,7 @@ def route_slope_stats(source: dict) -> dict:
 
 def save_manifest(source: dict, height: np.ndarray, output_dir: Path) -> None:
     manifest = {
-        "generatorVersion": 4,
+        "generatorVersion": 5,
         "artifactRevision": source.get("artifactRevision", "unversioned"),
         "worldScaleXZ": source["worldScaleXZ"],
         "boundsStuds": source["boundsStuds"],
