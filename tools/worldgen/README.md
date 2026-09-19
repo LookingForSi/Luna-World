@@ -58,7 +58,7 @@ Authoring bounds:
 - Z: \`-650 .. 4150\`;
 - размер: **2600 × 4800 studs**;
 - height range: \`0 .. 128 studs\`;
-- image resolution: **1024 × 2048**.
+- image resolution: **650 × 1200**.
 
 Центр import-region:
 
