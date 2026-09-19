@@ -61,7 +61,7 @@ def main() -> None:
     assert data["worldScaleXZ"] == 2.0
     assert data["resolution"] == {"width": 650, "height": 1200}
     assert data["heightRangeStuds"] == [0, 192]
-    assert data["artifactRevision"] == "terrain-v04"
+    assert data["artifactRevision"] == "terrain-v05"
 
     bounds = data["boundsStuds"]
     assert bounds["maxX"] - bounds["minX"] == 2600
@@ -97,15 +97,18 @@ def main() -> None:
     assert terrain_pads["goblin_camp"]["mode"] == "raise"
     assert terrain_pads["goblin_camp"]["targetY"] >= 58
     assert terrain_pads["goblin_camp"]["center"][0] > 0
-    assert terrain_pads["goblin_camp"]["center"][2] <= 2250
+    assert terrain_pads["goblin_camp"]["center"][2] <= 1950
+    assert terrain_pads["goblin_camp"]["radiusStuds"] >= 270
     assert terrain_pads["spider_hollow"]["mode"] == "lower"
     assert terrain_pads["spider_hollow"]["targetY"] <= 4
     assert terrain_pads["spider_hollow"]["center"][0] < 0
-    assert terrain_pads["spider_hollow"]["center"][2] <= 2250
+    assert terrain_pads["spider_hollow"]["center"][2] <= 1950
+    assert terrain_pads["spider_hollow"]["radiusStuds"] >= 270
 
     rings = {entry["id"]: entry for entry in data["features"]["localRings"]}
     assert "goblin_camp_outer_rampart" not in rings
     assert rings["spider_hollow_rim"]["amplitude"] >= 18
+    assert rings["spider_hollow_rim"]["radiusStuds"] >= 380
 
     future = {entry["id"]: entry for entry in data["features"]["futureTerrainReservations"]}
     assert future["future_old_cemetery"]["terrainIntent"] == "raised_terrace"
@@ -116,9 +119,11 @@ def main() -> None:
     assert future["future_ancient_approach"]["mode"] == "raise"
     assert future["future_old_cemetery"]["center"][0] > 0
     assert future["future_fallen_shrine"]["center"][0] < 0
-    assert future["future_old_cemetery"]["center"][2] < 3200
-    assert future["future_fallen_shrine"]["center"][2] < 3200
-    assert future["future_ancient_approach"]["center"][2] > 3400
+    assert future["future_old_cemetery"]["center"][2] <= 2850
+    assert future["future_fallen_shrine"]["center"][2] <= 2880
+    assert future["future_ancient_approach"]["center"][2] == 3540
+    assert future["future_ancient_approach"]["center"][2] - future["future_old_cemetery"]["center"][2] >= 650
+    assert future["future_ancient_approach"]["center"][2] - future["future_fallen_shrine"]["center"][2] >= 650
     assert future["future_ancient_approach"]["radiusStuds"] >= 300
     assert future["future_ancient_approach"]["targetY"] >= 120
 
@@ -135,11 +140,20 @@ def main() -> None:
 
     # North-of-river content must start promptly instead of leaving a huge flat dead field.
     assert crossroads_z - river_z <= 1400
-    assert max(goblin_z, spider_z) - crossroads_z <= 350
+    assert max(goblin_z, spider_z) - crossroads_z <= 30
+    assert min(goblin_z, spider_z) >= crossroads_z - 30
+
+    # Owner traversal correction: the lower combat pair sits close to the
+    # crossroads/river side of the northern valley rather than drifting north.
+    assert goblin_z <= 1950
+    assert spider_z <= 1950
 
     # Approved concept orientation in the imported Studio view.
     assert poi_by_id["poi_goblin_camp"]["position"][0] > 0
     assert poi_by_id["poi_spider_hollow"]["position"][0] < 0
+
+    spawn_ids = {entry["id"] for entry in data["spawns"]}
+    assert "spawn_spider_meadow_pocket" not in spawn_ids
 
     disabled_spawns = {entry["id"] for entry in data["spawns"] if not entry["spawnEnabled"]}
     assert "spawn_goblin_camp_elite_future" in disabled_spawns
