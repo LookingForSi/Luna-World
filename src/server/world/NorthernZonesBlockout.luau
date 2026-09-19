@@ -1,6 +1,7 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local WorldLayout = require(ReplicatedStorage.Shared.world.WorldLayout)
 local Grounding = require(script.Parent.TerrainGrounding)
@@ -45,6 +46,7 @@ local function createGroundedRoad(parent: Instance, name: string, points: { Vect
 			local a = start:Lerp(finish, (step - 1) / divisions)
 			local b = start:Lerp(finish, step / divisions)
 			segmentIndex += 1
+			P.paintTerrainStrip(a, b, width + 6, material or Enum.Material.Ground)
 			P.groundedSegment(
 				folder,
 				string.format("Segment%03d", segmentIndex),
@@ -57,6 +59,34 @@ local function createGroundedRoad(parent: Instance, name: string, points: { Vect
 				{ canCollide = false, attributes = { DecorativeRoad = true } }
 			)
 		end
+	end
+end
+
+local function createGroundedBarrier(
+	parent: Instance,
+	name: string,
+	fromPosition: Vector3,
+	toPosition: Vector3,
+	height: number,
+	maxSegmentLength: number
+)
+	local barrier = P.model(parent, name)
+	local horizontal = Vector3.new(toPosition.X - fromPosition.X, 0, toPosition.Z - fromPosition.Z)
+	local segments = math.max(1, math.ceil(horizontal.Magnitude / maxSegmentLength))
+
+	for index = 1, segments do
+		local a = fromPosition:Lerp(toPosition, (index - 1) / segments)
+		local b = fromPosition:Lerp(toPosition, index / segments)
+		P.groundedSegment(
+			barrier,
+			string.format("Section%02d", index),
+			a,
+			b,
+			2.5,
+			height,
+			Enum.Material.Wood,
+			COLORS.darkTimber
+		)
 	end
 end
 
@@ -182,6 +212,14 @@ end
 
 local function createHut(parent: Instance, name: string, position: Vector3, yaw: number)
 	local model = P.model(parent, name)
+	P.groundedPart(
+		model,
+		"Foundation",
+		position,
+		Vector3.new(32, 5, 26),
+		Enum.Material.Rock,
+		COLORS.darkStone
+	)
 	local body = P.groundedPart(
 		model,
 		"Body",
@@ -217,15 +255,13 @@ local function createGoblinCamp(parent: Instance, positions: { [string]: Vector3
 		{ center + Vector3.new(-halfX, 0, halfZ), center + Vector3.new(halfX, 0, halfZ) },
 	}
 	for index, endpoints in ipairs(fenceSegments) do
-		P.groundedSegment(
+		createGroundedBarrier(
 			camp,
 			string.format("Palisade%02d", index),
 			endpoints[1],
 			endpoints[2],
-			2.5,
 			8,
-			Enum.Material.Wood,
-			COLORS.darkTimber
+			28
 		)
 	end
 
@@ -270,6 +306,16 @@ local function createSpiderHollow(parent: Instance, positions: { [string]: Vecto
 	hollow:SetAttribute("ZoneId", "zone_spider_hollow")
 	local center = positions.poi_spider_hollow
 	local cave = positions.poi_spider_cave_mouth
+
+	-- The imported heightmap intentionally forms a basin here, but earlier revisions
+	-- contained a terrain void in its center. Fill only the encounter floor so the
+	-- hollow remains low while becoming a real walkable combat arena.
+	Workspace.Terrain:FillBlock(
+		CFrame.new(center.X, center.Y - 6, center.Z),
+		Vector3.new(430, 12, 340),
+		Enum.Material.Ground
+	)
+	hollow:SetAttribute("BasinFloorFilled", true)
 
 	for index, offset in ipairs({
 		Vector3.new(-135, 0, -45),
@@ -461,13 +507,13 @@ local function createAncientApproach(parent: Instance, positions: { [string]: Ve
 	P.part(approach, "SeleneGateLintel", Vector3.new(110, 12, 20), CFrame.new(northGround + Vector3.new(0, 52, 0)), Enum.Material.Limestone, COLORS.ancientStone)
 
 	local horizon = positions.poi_selene_horizon
-	local horizonGround = Grounding.surfaceAt(horizon)
 	for index, x in ipairs({ -95, 0, 95 }) do
-		P.part(
+		local monolithPosition = horizon + Vector3.new(x, 0, 0)
+		P.groundedPart(
 			approach,
 			string.format("SeleneHorizonMonolith%02d", index),
+			monolithPosition,
 			Vector3.new(18, 75 + index * 12, 18),
-			CFrame.new(horizonGround + Vector3.new(x, 40 + index * 6, 0)),
 			Enum.Material.Slate,
 			COLORS.darkStone,
 			{ canCollide = false, transparency = 0.18, attributes = { DistantSilhouette = true } }
