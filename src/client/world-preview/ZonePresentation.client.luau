@@ -53,7 +53,9 @@ subtitle.TextTransparency = 1
 subtitle.Text = ""
 subtitle.Parent = banner
 
-local zoneById = {}
+type ZoneDefinition = typeof(WorldLayout.Zones[1])
+
+local zoneById: { [string]: ZoneDefinition } = {}
 for _, zone in ipairs(WorldLayout.Zones) do
 	zoneById[zone.id] = zone
 end
