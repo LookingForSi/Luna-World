@@ -7,6 +7,7 @@ REQUIRED_FILES = [
     ROOT / "src/server/world/BlockoutPrimitives.luau",
     ROOT / "src/server/world/VillageAndMeadowsBlockout.luau",
     ROOT / "src/server/world/NorthernZonesBlockout.luau",
+    ROOT / "src/server/world/WorldDressingBlockout.luau",
     ROOT / "src/server/world/PlayableWorldBlockout.luau",
     ROOT / "src/server/world/WorldBootstrap.server.luau",
     ROOT / "src/client/world-preview/ZonePresentation.client.luau",
@@ -41,6 +42,7 @@ def main() -> None:
     assert 'TerrainRevision", "terrain-v05"' in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
+    assert "WorldDressingBlockout" in builder
 
     south = read(ROOT / "src/server/world/VillageAndMeadowsBlockout.luau")
     for token in (
@@ -71,6 +73,23 @@ def main() -> None:
     ):
         assert token in north
     assert "BillboardGui" not in north
+
+    dressing = read(ROOT / "src/server/world/WorldDressingBlockout.luau")
+    for token in (
+        "EnvironmentDressing",
+        "VillageRetainingWallWest",
+        "FarmRoadFenceA",
+        "MoonfallBrokenFenceWest",
+        "GoblinSupplyCrates",
+        "SpiderDeadTree",
+        "CemeteryBoundarySouth",
+        "ShrineRubble",
+        "ApproachRuinedWallLeft",
+        'ArtReplacementTarget", "BlenderModularKits"',
+    ):
+        assert token in dressing
+    assert "MobPlaceholder" not in dressing
+    assert "spawn_spider_meadow_pocket" not in dressing
 
     presentation = read(ROOT / "src/client/world-preview/ZonePresentation.client.luau")
     assert "ZoneToast" in presentation
