@@ -42,6 +42,18 @@ def gaussian(
 ) -> np.ndarray:
     return amplitude * np.exp(-(((x_grid - cx) / sx) ** 2 + ((z_grid - cz) / sz) ** 2) / 2.0)
 
+def gaussian_ring(
+    x_grid: np.ndarray,
+    z_grid: np.ndarray,
+    cx: float,
+    cz: float,
+    radius: float,
+    sigma: float,
+    amplitude: float,
+) -> np.ndarray:
+    distance = np.sqrt((x_grid - cx) ** 2 + (z_grid - cz) ** 2)
+    return amplitude * np.exp(-((distance - radius) / sigma) ** 2 / 2.0)
+
 
 def blend_pad(height: np.ndarray, xs: np.ndarray, zs: np.ndarray, pad: dict) -> None:
     cx, _, cz = pad["center"]
@@ -138,6 +150,18 @@ def generate_height(source: dict) -> tuple[np.ndarray, np.ndarray]:
             float(landform["amplitude"]),
         )
 
+    for ring in source["features"].get("localRings", []):
+        cx, cz = ring["centerXZ"]
+        height += gaussian_ring(
+            x_grid,
+            z_grid,
+            float(cx),
+            float(cz),
+            float(ring["radiusStuds"]),
+            float(ring["sigmaStuds"]),
+            float(ring["amplitude"]),
+        )
+
     edge_x = np.minimum(x_grid - bounds["minX"], bounds["maxX"] - x_grid)
     south_edge = z_grid - bounds["minZ"]
     north_edge = bounds["maxZ"] - z_grid
@@ -152,6 +176,9 @@ def generate_height(source: dict) -> tuple[np.ndarray, np.ndarray]:
     for pad in source["features"]["terrainPads"]:
         blend_pad(height, xs, zs, pad)
 
+    for reservation in source["features"].get("futureTerrainReservations", []):
+        blend_pad(height, xs, zs, reservation)
+
     route_parameters = {
         "main": (26.0, 110.0),
         "moonfall": (24.0, 95.0),
@@ -161,6 +188,9 @@ def generate_height(source: dict) -> tuple[np.ndarray, np.ndarray]:
     }
     for route_name, (core, blend) in route_parameters.items():
         blend_route(height, xs, zs, source["routes"][route_name], core, blend)
+
+    # Regular terrain must never collapse to the import floor. The river is carved after this.
+    height = np.maximum(height, 4.0)
 
     bridge_id = source["features"]["river"]["bridgePoiId"]
     bridge = next(poi for poi in source["pois"] if poi["id"] == bridge_id)
@@ -210,13 +240,13 @@ def save_topdown(source: dict, height: np.ndarray, water_mask: np.ndarray, outpu
     grad_z, grad_x = np.gradient(height, dz, dx)
     shade = np.clip(0.78 + (-grad_x * 0.25 - grad_z * 0.15), 0.5, 1.15)
 
-    normalized = np.clip(height / 70.0, 0.0, 1.0)
+    normalized = np.clip(height / 120.0, 0.0, 1.0)
     rgb = np.zeros((*height.shape, 3), dtype=np.float32)
     rgb[..., 0] = 82.0 + 68.0 * normalized
     rgb[..., 1] = 118.0 - 30.0 * normalized
     rgb[..., 2] = 70.0 - 15.0 * normalized
 
-    rock = height > 55.0
+    rock = height > 78.0
     rgb[rock] = np.array([120.0, 116.0, 105.0], dtype=np.float32)
     rgb *= shade[..., None]
     rgb = np.clip(rgb, 0, 255).astype(np.uint8)
@@ -269,6 +299,25 @@ def save_topdown(source: dict, height: np.ndarray, water_mask: np.ndarray, outpu
             outline=color,
             width=2,
         )
+
+    for reservation in source["features"].get("futureTerrainReservations", []):
+        x, _, z = reservation["center"]
+        px, py = world_to_pixel(source, x, z)
+        radius_px = max(
+            5,
+            round(reservation["radiusStuds"] / world_width * resolution["width"]),
+        )
+        poi_draw.ellipse(
+            (px - radius_px, py - radius_px, px + radius_px, py + radius_px),
+            outline=(180, 120, 230, 220),
+            width=2,
+        )
+        poi_draw.text(
+            (px + radius_px + 4, py - 7),
+            reservation["displayName"] + " (future)",
+            fill=(230, 205, 255, 235),
+        )
+
     poi_overlay.save(output_dir / "world_v01_poi_spawn_overlay.png")
 
     zone_overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
@@ -312,7 +361,7 @@ def route_slope_stats(source: dict) -> dict:
 
 def save_manifest(source: dict, height: np.ndarray, output_dir: Path) -> None:
     manifest = {
-        "generatorVersion": 2,
+        "generatorVersion": 3,
         "worldScaleXZ": source["worldScaleXZ"],
         "boundsStuds": source["boundsStuds"],
         "resolution": source["resolution"],
