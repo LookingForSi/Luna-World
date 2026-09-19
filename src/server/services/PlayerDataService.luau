@@ -112,8 +112,11 @@ local function saveSession(player: Player, release: boolean): boolean
 		else activeStore:save(player.UserId, session.token, snapshot, now())
 
 	if not result.ok then
-		if release then setState(player, session, "Error") end
+		setState(player, session, "Error")
 		warn(string.format("Player profile %s failed for %s: %s", if release then "release" else "save", player.Name, result.reason))
+		if not release and not RunService:IsStudio() and player.Parent == Players then
+			player:Kick("Не удалось безопасно сохранить данные персонажа. Сессия остановлена для защиты прогресса.")
+		end
 		return false
 	end
 
