@@ -178,7 +178,9 @@ Action bar показывает locked state.
 
 **Commit:** `feat: add level based stat growth`
 
-### Gate A — progression review
+### Gate A — progression review — PASS 2026-09-19
+
+Owner runtime/TestRunner evidence: **142 passed, 0 failed**. Базовый combat loop, progression rules, profile/migration/lease unit specs и M1 runtime characterization прошли без regression.
 
 Независимо проверить:
 
@@ -580,6 +582,8 @@ Gamepad/mobile semantic actions подключить через существу
 **Commit:** `feat: add inventory and equipment interface`
 
 ## Task 22. Real level/XP HUD
+
+**Частично выполнено досрочно 2026-09-19 по owner UX feedback:** временный `SessionXpHudReference` удалён из HUD; XP теперь считается относительно текущего level threshold, добавлен отдельный level badge, точные current/maximum значения CP/HP/resource и отключён дублирующий Roblox stock health bar. Combat-log rewards из этого task остаются до появления loot/Luna.
 
 Заменить временный `SessionXpHudReference`.
 
