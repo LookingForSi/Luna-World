@@ -98,7 +98,7 @@
       "id": "poi_main_gate",
       "position": [
         0,
-        32,
+        48,
         0
       ]
     },
@@ -106,7 +106,7 @@
       "id": "poi_training_ground",
       "position": [
         -150,
-        38,
+        54,
         -110
       ]
     },
@@ -114,7 +114,7 @@
       "id": "poi_blacksmith",
       "position": [
         150,
-        38,
+        54,
         -130
       ]
     },
@@ -122,7 +122,7 @@
       "id": "poi_village_square",
       "position": [
         0,
-        46,
+        58,
         -240
       ]
     },
@@ -130,7 +130,7 @@
       "id": "poi_merchant",
       "position": [
         136,
-        46,
+        58,
         -250
       ]
     },
@@ -138,7 +138,7 @@
       "id": "poi_residential",
       "position": [
         -144,
-        46,
+        58,
         -260
       ]
     },
@@ -146,7 +146,7 @@
       "id": "poi_elder_house",
       "position": [
         110,
-        62,
+        64,
         -370
       ]
     },
@@ -154,7 +154,7 @@
       "id": "poi_shrine",
       "position": [
         -110,
-        62,
+        64,
         -390
       ]
     },
@@ -389,42 +389,42 @@
     "main": [
       [
         0,
-        32,
+        48,
         0
       ],
       [
         0,
-        20,
+        38,
         180
       ],
       [
         -40,
-        11,
+        24,
         420
       ],
       [
         -70,
-        7,
+        10,
         600
       ],
       [
         40,
-        6,
+        8,
         900
       ],
       [
         180,
-        6,
+        7,
         1120
       ],
       [
         90,
-        5,
+        6,
         1440
       ],
       [
         0,
-        4,
+        5,
         1800
       ]
     ],
@@ -589,12 +589,12 @@
         "id": "village_core",
         "center": [
           0,
-          46,
-          -240
+          58,
+          -250
         ],
-        "radiusStuds": 250,
-        "targetY": 46,
-        "blendStuds": 160
+        "radiusStuds": 190,
+        "targetY": 58,
+        "blendStuds": 220
       },
       {
         "id": "farm",
@@ -625,9 +625,9 @@
           30,
           2800
         ],
-        "radiusStuds": 150,
-        "targetY": 30,
-        "blendStuds": 130
+        "radiusStuds": 180,
+        "targetY": 34,
+        "blendStuds": 150
       },
       {
         "id": "spider_hollow",
@@ -636,9 +636,167 @@
           2,
           2840
         ],
-        "radiusStuds": 160,
-        "targetY": 2,
-        "blendStuds": 140
+        "radiusStuds": 180,
+        "targetY": 3,
+        "blendStuds": 160
+      }
+    ],
+    "macroLandforms": [
+      {
+        "id": "village_hill",
+        "centerXZ": [
+          0,
+          -260
+        ],
+        "sigmaXZ": [
+          650,
+          580
+        ],
+        "amplitude": 50
+      },
+      {
+        "id": "village_back_shoulder",
+        "centerXZ": [
+          -360,
+          -390
+        ],
+        "sigmaXZ": [
+          520,
+          360
+        ],
+        "amplitude": 18
+      },
+      {
+        "id": "meadows_basin",
+        "centerXZ": [
+          0,
+          1050
+        ],
+        "sigmaXZ": [
+          1150,
+          850
+        ],
+        "amplitude": -6
+      },
+      {
+        "id": "moonfall_west_shoulder",
+        "centerXZ": [
+          -760,
+          2100
+        ],
+        "sigmaXZ": [
+          430,
+          520
+        ],
+        "amplitude": 12
+      },
+      {
+        "id": "moonfall_east_shoulder",
+        "centerXZ": [
+          820,
+          2100
+        ],
+        "sigmaXZ": [
+          430,
+          520
+        ],
+        "amplitude": 12
+      },
+      {
+        "id": "goblin_massif",
+        "centerXZ": [
+          -650,
+          2820
+        ],
+        "sigmaXZ": [
+          500,
+          470
+        ],
+        "amplitude": 38
+      },
+      {
+        "id": "goblin_back_ridge",
+        "centerXZ": [
+          -820,
+          3070
+        ],
+        "sigmaXZ": [
+          340,
+          320
+        ],
+        "amplitude": 20
+      },
+      {
+        "id": "spider_hollow_basin",
+        "centerXZ": [
+          620,
+          2860
+        ],
+        "sigmaXZ": [
+          430,
+          420
+        ],
+        "amplitude": -12
+      },
+      {
+        "id": "spider_east_wall",
+        "centerXZ": [
+          1030,
+          2860
+        ],
+        "sigmaXZ": [
+          320,
+          620
+        ],
+        "amplitude": 24
+      },
+      {
+        "id": "dark_woodland_rise",
+        "centerXZ": [
+          0,
+          3500
+        ],
+        "sigmaXZ": [
+          850,
+          520
+        ],
+        "amplitude": 14
+      },
+      {
+        "id": "selene_horizon_massif",
+        "centerXZ": [
+          0,
+          4430
+        ],
+        "sigmaXZ": [
+          720,
+          520
+        ],
+        "amplitude": 78
+      },
+      {
+        "id": "selene_left_peak",
+        "centerXZ": [
+          -650,
+          4210
+        ],
+        "sigmaXZ": [
+          340,
+          330
+        ],
+        "amplitude": 32
+      },
+      {
+        "id": "selene_right_peak",
+        "centerXZ": [
+          620,
+          4250
+        ],
+        "sigmaXZ": [
+          380,
+          340
+        ],
+        "amplitude": 28
       }
     ]
   }
