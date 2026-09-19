@@ -105,13 +105,14 @@ local function saveSession(player: Player, release: boolean): boolean
 	if session == nil or activeStore == nil or session.profile == nil then return false end
 	if session.state ~= "Ready" and session.state ~= "Saving" then return false end
 
-	setState(player, session, "Saving")
+	local snapshot = ProfileSchema.clone(session.profile)
+	if release then setState(player, session, "Saving") end
 	local result = if release
-		then activeStore:release(player.UserId, session.token, session.profile, now())
-		else activeStore:save(player.UserId, session.token, session.profile, now())
+		then activeStore:release(player.UserId, session.token, snapshot, now())
+		else activeStore:save(player.UserId, session.token, snapshot, now())
 
 	if not result.ok then
-		setState(player, session, "Error")
+		if release then setState(player, session, "Error") end
 		warn(string.format("Player profile %s failed for %s: %s", if release then "release" else "save", player.Name, result.reason))
 		return false
 	end
@@ -119,8 +120,6 @@ local function saveSession(player: Player, release: boolean): boolean
 	if release then
 		setState(player, session, "Released")
 		session.profile = nil
-	else
-		setState(player, session, "Ready")
 	end
 	return true
 end
