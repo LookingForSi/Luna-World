@@ -13,7 +13,7 @@ def text(path: str) -> str:
 MOBS = text("src/shared/definitions/MobDefinitions.luau")
 SERVICE = text("src/server/services/MobService.luau")
 PROGRESSION = text("src/shared/progression/ProgressionRules.luau")
-MAIN = text("src/server/main.server.luau")
+LOOT = text("src/server/services/LootService.luau")
 HUD = text("src/client/ui/CombatHud.luau")
 
 for token in ("level = 1", "level = 2", "level = 3"):
@@ -32,7 +32,7 @@ for token in (
     if token not in PROGRESSION:
         raise AssertionError(f"level-scaled XP rule is missing {token}")
 
-if "awardMobXP(killer, definition.rewardXP, definition.level)" not in MAIN:
+if "ProgressionService.awardMobXP(killer, definition.rewardXP, definition.level)" not in LOOT:
     raise AssertionError("mob death reward must use base XP and mob level")
 
 if 'target:GetAttribute("Level")' not in HUD or '"LV %d · %s"' not in HUD:
