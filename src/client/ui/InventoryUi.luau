@@ -110,12 +110,16 @@ end
 local function updateDetails(): ()
 	local entry, slot = selectedEntry()
 	local details = detailsLabel
-	if details == nil then return end
+	local equip = equipButton
+	local unequip = unequipButton
+	local use = useButton
+	local discard = discardButton
+	if details == nil or equip == nil or unequip == nil or use == nil or discard == nil then return end
 
-	equipButton.Visible = false
-	unequipButton.Visible = false
-	useButton.Visible = false
-	discardButton.Visible = false
+	equip.Visible = false
+	unequip.Visible = false
+	use.Visible = false
+	discard.Visible = false
 
 	if entry == nil or typeof(entry.itemId) ~= "string" then
 		details.Text = "Выберите предмет."
@@ -149,11 +153,11 @@ local function updateDetails(): ()
 
 	details.Text = table.concat(lines, "\n")
 	if selectedKind == "Equipment" then
-		unequipButton.Visible = true
+		unequip.Visible = true
 	else
-		equipButton.Visible = definition.equipmentSlot ~= nil
-		useButton.Visible = definition.category == "Consumable"
-		discardButton.Visible = true
+		equip.Visible = definition.equipmentSlot ~= nil
+		use.Visible = definition.category == "Consumable"
+		discard.Visible = true
 	end
 end
 
