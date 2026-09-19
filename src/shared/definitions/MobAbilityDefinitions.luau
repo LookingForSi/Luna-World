@@ -35,7 +35,7 @@ local definitions: { [string]: CombatTypes.MobAbilityDefinition } = {
 	goblin_battle_cry = ability({
 		id = "goblin_battle_cry", displayName = "Боевой клич", kind = "SelfDamageBuff",
 		damageType = "Physical", range = 16, damage = 0, windupSeconds = 0.7, cooldownSeconds = 24,
-		presentationKey = "mob_battle_cry", durationSeconds = 10, damageMultiplier = 1.30,
+		presentationKey = "mob_battle_cry", durationSeconds = 10, damageMultiplier = 1.30, healthBelowFraction = 0.60,
 	}),
 	spider_venom_spit = ability({
 		id = "spider_venom_spit", displayName = "Ядовитый плевок", kind = "DamageOverTime",
@@ -110,7 +110,7 @@ local definitions: { [string]: CombatTypes.MobAbilityDefinition } = {
 	warden_enrage = ability({
 		id = "warden_enrage", displayName = "Пробуждение стража", kind = "SelfDamageBuff",
 		damageType = "Physical", range = 18, damage = 0, windupSeconds = 0.8, cooldownSeconds = 28,
-		presentationKey = "mob_warden_enrage", durationSeconds = 12, damageMultiplier = 1.35,
+		presentationKey = "mob_warden_enrage", durationSeconds = 12, damageMultiplier = 1.35, healthBelowFraction = 0.50,
 	}),
 }
 
