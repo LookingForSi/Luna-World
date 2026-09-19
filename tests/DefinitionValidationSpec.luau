@@ -29,6 +29,7 @@ local SUPPORTED_MOB_ATTACK_KINDS = { Melee = true, Ranged = true }
 local SUPPORTED_MOB_DAMAGE_TYPES = { Physical = true, Magic = true }
 local SUPPORTED_MOB_ABILITY_KINDS = {
 	DirectDamage = true,
+	AreaDamage = true,
 	DamageOverTime = true,
 	Crippling = true,
 	AllyDamageBuff = true,
