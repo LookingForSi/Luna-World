@@ -28,6 +28,10 @@ export type SpawnMarkerDefinition = {
 	radius: number,
 	zoneId: string,
 	spawnEnabled: boolean?,
+	count: number?,
+	socialGroupId: string?,
+	patrolRadius: number?,
+	patrolCycleSeconds: number?,
 }
 
 export type WorldLayoutDefinition = {
@@ -116,28 +120,24 @@ local WorldLayout: WorldLayoutDefinition = {
 			displayName = "Dark Woodland",
 			levelMin = 6,
 			levelMax = 8,
-			future = true,
 		},
 		{
 			id = "zone_old_cemetery",
 			displayName = "Old Cemetery",
 			levelMin = 7,
 			levelMax = 9,
-			future = true,
 		},
 		{
 			id = "zone_fallen_shrine",
 			displayName = "Fallen Shrine",
 			levelMin = 7,
 			levelMax = 9,
-			future = true,
 		},
 		{
 			id = "zone_ancient_approach",
 			displayName = "Ancient Approach",
 			levelMin = 8,
 			levelMax = 10,
-			future = true,
 		},
 	},
 
@@ -238,71 +238,52 @@ local WorldLayout: WorldLayoutDefinition = {
 	},
 
 	SpawnMarkers = {
-		{
-			id = "spawn_young_wolf_farm",
-			mobId = "mob_young_wolf",
-			position = scaleXZ(-110, 8, 415),
-			radius = scaleDistance(55),
-			zoneId = "zone_luna_meadows",
-		},
-		{
-			id = "spawn_wolf_stone_circle",
-			mobId = "mob_grey_wolf",
-			position = scaleXZ(100, 7, 585),
-			radius = scaleDistance(70),
-			zoneId = "zone_luna_meadows",
-		},
-		{
-			id = "spawn_goblin_scout_road",
-			mobId = "mob_goblin_scout",
-			position = scaleXZ(90, 24, 950),
-			radius = scaleDistance(42),
-			zoneId = "zone_moonfall_road",
-		},
-		{
-			id = "spawn_goblin_scout_outer",
-			mobId = "mob_goblin_scout",
-			position = scaleXZ(200, 48, 930),
-			radius = scaleDistance(48),
-			zoneId = "zone_goblin_camp",
-		},
-		{
-			id = "spawn_goblin_warrior_camp",
-			mobId = "mob_goblin_warrior",
-			position = scaleXZ(280, 60, 970),
-			radius = scaleDistance(55),
-			zoneId = "zone_goblin_camp",
-		},
-		{
-			id = "spawn_goblin_camp_elite_future",
-			mobId = "mob_goblin_elite_future",
-			position = scaleXZ(340, 66, 1030),
-			radius = scaleDistance(36),
-			zoneId = "zone_goblin_camp",
-			spawnEnabled = false,
-		},
-		{
-			id = "spawn_spider_hollow_outer",
-			mobId = "mob_spider",
-			position = scaleXZ(-190, 10, 930),
-			radius = scaleDistance(48),
-			zoneId = "zone_spider_hollow",
-		},
-		{
-			id = "spawn_spider_hollow_mid",
-			mobId = "mob_spider",
-			position = scaleXZ(-280, 4, 980),
-			radius = scaleDistance(55),
-			zoneId = "zone_spider_hollow",
-		},
-		{
-			id = "spawn_spider_hollow_brood",
-			mobId = "mob_brood_spider",
-			position = scaleXZ(-340, 4, 1030),
-			radius = scaleDistance(44),
-			zoneId = "zone_spider_hollow",
-			spawnEnabled = false,
-		},
+		-- Farm / Meadows: intentionally non-social starter wolves.
+		{ id = "spawn_young_wolf_farm", mobId = "mob_young_wolf", position = scaleXZ(-170, 8, 375), radius = scaleDistance(72), zoneId = "zone_luna_meadows", count = 6, patrolRadius = scaleDistance(28), patrolCycleSeconds = 8 },
+
+		-- Stone Circle: three small linked wolf pairs plus a leader.
+		{ id = "spawn_wolf_pack_south", mobId = "mob_grey_wolf", position = scaleXZ(105, 7, 555), radius = scaleDistance(32), zoneId = "zone_luna_meadows", count = 2, socialGroupId = "wolf_pack_south", patrolRadius = scaleDistance(24), patrolCycleSeconds = 7 },
+		{ id = "spawn_wolf_pack_east", mobId = "mob_grey_wolf", position = scaleXZ(155, 7, 590), radius = scaleDistance(32), zoneId = "zone_luna_meadows", count = 2, socialGroupId = "wolf_pack_east", patrolRadius = scaleDistance(24), patrolCycleSeconds = 7 },
+		{ id = "spawn_wolf_pack_north", mobId = "mob_grey_wolf", position = scaleXZ(115, 7, 625), radius = scaleDistance(28), zoneId = "zone_luna_meadows", count = 2, socialGroupId = "wolf_pack_north", patrolRadius = scaleDistance(22), patrolCycleSeconds = 7 },
+		{ id = "spawn_wolf_pack_leader", mobId = "mob_wolf_pack_leader", position = scaleXZ(140, 8, 610), radius = scaleDistance(18), zoneId = "zone_luna_meadows", socialGroupId = "wolf_pack_north", patrolRadius = scaleDistance(16), patrolCycleSeconds = 9 },
+
+		-- Moonfall Road warning patrol.
+		{ id = "spawn_goblin_scout_road", mobId = "mob_goblin_scout", position = scaleXZ(70, 22, 900), radius = scaleDistance(34), zoneId = "zone_moonfall_road", count = 2, socialGroupId = "goblin_road_patrol", patrolRadius = scaleDistance(48), patrolCycleSeconds = 10 },
+
+		-- Goblin Camp: four paired perimeter patrols plus interior groups.
+		{ id = "spawn_goblin_patrol_south", mobId = "mob_goblin_scout", position = scaleXZ(215, 48, 900), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_south", patrolRadius = scaleDistance(48), patrolCycleSeconds = 10 },
+		{ id = "spawn_goblin_patrol_east", mobId = "mob_goblin_scout", position = scaleXZ(345, 58, 945), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_east", patrolRadius = scaleDistance(42), patrolCycleSeconds = 10 },
+		{ id = "spawn_goblin_patrol_north", mobId = "mob_goblin_scout", position = scaleXZ(305, 62, 1040), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_north", patrolRadius = scaleDistance(44), patrolCycleSeconds = 10 },
+		{ id = "spawn_goblin_patrol_west", mobId = "mob_goblin_scout", position = scaleXZ(205, 54, 1000), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_west", patrolRadius = scaleDistance(40), patrolCycleSeconds = 10 },
+		{ id = "spawn_goblin_scout_inner", mobId = "mob_goblin_scout", position = scaleXZ(265, 60, 955), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_gate_group" },
+		{ id = "spawn_goblin_warrior_camp", mobId = "mob_goblin_warrior", position = scaleXZ(300, 61, 980), radius = scaleDistance(26), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_courtyard" },
+		{ id = "spawn_goblin_shaman_camp", mobId = "mob_goblin_shaman", position = scaleXZ(285, 62, 1010), radius = scaleDistance(14), zoneId = "zone_goblin_camp", socialGroupId = "goblin_courtyard" },
+		{ id = "spawn_goblin_chieftain_camp", mobId = "mob_goblin_chieftain", position = scaleXZ(330, 65, 1020), radius = scaleDistance(12), zoneId = "zone_goblin_camp", socialGroupId = "goblin_chief_group" },
+
+		-- Spider Hollow: deliberately no socialGroupId.
+		{ id = "spawn_spider_hollow_swarm", mobId = "mob_spider", position = scaleXZ(-280, 5, 970), radius = scaleDistance(82), zoneId = "zone_spider_hollow", count = 8, patrolRadius = scaleDistance(16), patrolCycleSeconds = 11 },
+		{ id = "spawn_spider_hollow_brood", mobId = "mob_brood_spider", position = scaleXZ(-345, 5, 1025), radius = scaleDistance(34), zoneId = "zone_spider_hollow", count = 2, patrolRadius = scaleDistance(12), patrolCycleSeconds = 12 },
+
+		-- Dark Woodland.
+		{ id = "spawn_dire_wolf_west", mobId = "mob_dire_wolf", position = scaleXZ(-150, 42, 1360), radius = scaleDistance(45), zoneId = "zone_dark_woodland", count = 3, socialGroupId = "dire_pack_west", patrolRadius = scaleDistance(32), patrolCycleSeconds = 8 },
+		{ id = "spawn_dire_wolf_east", mobId = "mob_dire_wolf", position = scaleXZ(145, 44, 1390), radius = scaleDistance(45), zoneId = "zone_dark_woodland", count = 3, socialGroupId = "dire_pack_east", patrolRadius = scaleDistance(32), patrolCycleSeconds = 8 },
+		{ id = "spawn_forest_spider_dark", mobId = "mob_forest_spider", position = scaleXZ(-30, 38, 1490), radius = scaleDistance(74), zoneId = "zone_dark_woodland", count = 3, patrolRadius = scaleDistance(14), patrolCycleSeconds = 12 },
+		{ id = "spawn_dire_wolf_alpha", mobId = "mob_dire_wolf_alpha", position = scaleXZ(100, 48, 1510), radius = scaleDistance(20), zoneId = "zone_dark_woodland", socialGroupId = "dire_pack_east" },
+
+		-- Old Cemetery.
+		{ id = "spawn_skeleton_cemetery_a", mobId = "mob_skeleton", position = scaleXZ(240, 100, 1385), radius = scaleDistance(38), zoneId = "zone_old_cemetery", count = 3, socialGroupId = "cemetery_group_a", patrolRadius = scaleDistance(18), patrolCycleSeconds = 12 },
+		{ id = "spawn_skeleton_cemetery_b", mobId = "mob_skeleton", position = scaleXZ(315, 102, 1435), radius = scaleDistance(34), zoneId = "zone_old_cemetery", count = 2, socialGroupId = "cemetery_group_b", patrolRadius = scaleDistance(18), patrolCycleSeconds = 12 },
+		{ id = "spawn_skeleton_archer_cemetery", mobId = "mob_skeleton_archer", position = scaleXZ(285, 105, 1470), radius = scaleDistance(44), zoneId = "zone_old_cemetery", count = 3, socialGroupId = "cemetery_group_b" },
+		{ id = "spawn_grave_guardian", mobId = "mob_grave_guardian", position = scaleXZ(335, 107, 1485), radius = scaleDistance(14), zoneId = "zone_old_cemetery", socialGroupId = "cemetery_guardian" },
+
+		-- Fallen Shrine.
+		{ id = "spawn_fallen_acolytes", mobId = "mob_fallen_acolyte", position = scaleXZ(-285, 108, 1420), radius = scaleDistance(55), zoneId = "zone_fallen_shrine", count = 4, socialGroupId = "shrine_casters", patrolRadius = scaleDistance(14), patrolCycleSeconds = 12 },
+		{ id = "spawn_shrine_guardians", mobId = "mob_shrine_guardian", position = scaleXZ(-245, 110, 1470), radius = scaleDistance(42), zoneId = "zone_fallen_shrine", count = 3, socialGroupId = "shrine_guardians" },
+
+		-- Ancient Approach: sparse but heavy.
+		{ id = "spawn_ancient_sentinels", mobId = "mob_ancient_sentinel", position = scaleXZ(-70, 122, 1725), radius = scaleDistance(78), zoneId = "zone_ancient_approach", count = 4, patrolRadius = scaleDistance(16), patrolCycleSeconds = 14 },
+		{ id = "spawn_ancient_watchers", mobId = "mob_ancient_watcher", position = scaleXZ(90, 126, 1790), radius = scaleDistance(54), zoneId = "zone_ancient_approach", count = 2 },
+		{ id = "spawn_moonbound_warden", mobId = "mob_moonbound_warden", position = scaleXZ(0, 130, 1870), radius = scaleDistance(18), zoneId = "zone_ancient_approach" },
 	},
 
 	Route = {
