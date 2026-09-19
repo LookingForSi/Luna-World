@@ -44,6 +44,17 @@ return function(TestRunner)
 		assert(#profile.Inventory == 40 and profile.Items["new-1"] == nil)
 	end)
 
+	TestRunner.run("foreign and equipped instances cannot be discarded from inventory", function()
+		local profile = ProfileSchema.createDefault()
+		local missing, missingReason = InventoryRules.discard(profile, "foreign")
+		assert(missing == nil and missingReason == "NotOwned")
+
+		profile.Items["equipped"] = { ItemId = "weapon_training_sword", Quantity = 1 }
+		profile.Equipment.Weapon = "equipped"
+		local equipped, equippedReason = InventoryRules.discard(profile, "equipped")
+		assert(equipped == nil and equippedReason == "EquippedItem")
+	end)
+
 	TestRunner.run("discard decrements stack or removes its canonical instance", function()
 		local profile = ProfileSchema.createDefault()
 		local withStack = InventoryRules.add(profile, "material_wolf_pelt", 5, generator("stack-"))
