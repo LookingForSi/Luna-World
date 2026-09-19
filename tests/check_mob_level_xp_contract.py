@@ -16,9 +16,15 @@ PROGRESSION = text("src/shared/progression/ProgressionRules.luau")
 LOOT = text("src/server/services/LootService.luau")
 HUD = text("src/client/ui/CombatHud.luau")
 
-for token in ("level = 1", "level = 2", "level = 3"):
+for token in (
+    'id = "mob_young_wolf", displayName = "Молодой волк", level = 1',
+    'id = "mob_grey_wolf", displayName = "Волк", level = 2',
+    'id = "mob_wolf_pack_leader", displayName = "Вожак стаи", level = 3',
+    'id = "mob_spider", displayName = "Ядовитый паук", level = 4',
+    'id = "mob_moonbound_warden", displayName = "Лунный страж", level = 10',
+):
     if token not in MOBS:
-        raise AssertionError(f"initial mob level tuning is missing {token}")
+        raise AssertionError(f"v0.1 mob level tuning is missing {token}")
 
 if 'model:SetAttribute("Level", definition.level)' not in SERVICE:
     raise AssertionError("mob level must replicate on the authoritative mob model")
