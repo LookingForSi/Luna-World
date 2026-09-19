@@ -31,6 +31,12 @@ export type SpawnMarkerDefinition = {
 }
 
 export type WorldLayoutDefinition = {
+	WorldBounds: {
+		minX: number,
+		maxX: number,
+		minZ: number,
+		maxZ: number,
+	},
 	Dimensions: {
 		VillageFootprint: Vector2,
 		VillageElevationAboveMeadows: number,
@@ -60,6 +66,13 @@ local function scaleDistance(value: number): number
 end
 
 local WorldLayout: WorldLayoutDefinition = {
+	WorldBounds = {
+		minX = -1300,
+		maxX = 1300,
+		minZ = -650,
+		maxZ = 4150,
+	},
+
 	Dimensions = {
 		VillageFootprint = Vector2.new(500, 440),
 		VillageElevationAboveMeadows = 50,
