@@ -6,6 +6,7 @@ local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitio
 local CombatService = require(script.Parent.services.CombatService)
 local MobService = require(script.Parent.services.MobService)
 local MobAIService = require(script.Parent.services.MobAIService)
+local PlayerDataService = require(script.Parent.services.PlayerDataService)
 local ProgressionService = require(script.Parent.services.ProgressionService)
 local RespawnService = require(script.Parent.services.RespawnService)
 local StudioDebugService = require(script.Parent.services.StudioDebugService)
@@ -19,6 +20,7 @@ local function findMobDefinitionById(mobId: string)
 	return nil
 end
 
+PlayerDataService.start()
 ProgressionService.start()
 CombatService.start()
 RespawnService.start()
@@ -44,4 +46,5 @@ game:BindToClose(function()
 	MobService.stop()
 	CombatService.stop()
 	ProgressionService.stop()
+	PlayerDataService.stop()
 end)
