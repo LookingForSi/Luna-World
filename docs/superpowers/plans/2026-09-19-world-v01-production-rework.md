@@ -34,19 +34,36 @@ Generator не запускается в runtime.
 
 ## 4. Phase 2 — macro terrain
 
+Статус: **terrain v0.2 implemented, owner re-import pending**.
+
 Создать единый landscape:
 
-- Village hill;
-- Meadows basin;
-- river valley;
-- Moonfall Road spine;
-- Goblin high side;
-- Spider low side;
-- Dark Woodland threshold.
+- Village hill — **DONE**;
+- Meadows basin — **DONE**;
+- river valley — **DONE**;
+- Moonfall Road spine — **DONE**;
+- Goblin high side — **DONE, strengthened in v0.2**;
+- Spider low side — **DONE, strengthened in v0.2**;
+- Dark Woodland threshold — **DONE**;
+- Selene horizon massif — **DONE**;
+- future Old Cemetery raised terrace — **RESERVED**;
+- future Fallen Shrine raised promontory — **RESERVED**.
 
-Проверить:
+Terrain v0.2 additionally:
 
-- нет отдельных floating islands;
+- regular terrain floor no longer reaches zero except intentional river carving;
+- vertical authoring range increased from 128 to 192 studs to avoid clipping Selene massif;
+- Goblin Camp has a raised playable shelf plus rough outer rim;
+- Spider Hollow has a lower playable core plus enclosing rim;
+- Old Cemetery/Fallen Shrine are terrain reservations only, not v0.1 gameplay zones.
+
+Проверить после owner re-import:
+
+- нет отдельных floating islands / zero-height holes;
+- Village Hill и Selene massif сохраняют approved concept silhouette;
+- Goblin Camp географически читается до props;
+- Spider Hollow читается как hollow до props;
+- future Old Cemetery/Fallen Shrine не выглядят как случайные ямы;
 - terrain скрывает соседние зоны;
 - карты хватает по ширине вокруг маршрутов;
 - world boundary визуально объяснима.
@@ -91,6 +108,8 @@ Generator не запускается в runtime.
 - Dark Woodland boundary stones.
 
 При необходимости сделать modular assets в Blender.
+
+Дополнительно использовать Blender Studio subscription как источник production references и пригодных reusable assets. Для каждого внешнего asset перед включением в Luna World фиксировать источник и конкретную лицензию; не считать наличие подписки автоматическим разрешением на любой контент.
 
 ## 8. Phase 6 — grounding and gameplay anchors
 
