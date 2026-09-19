@@ -24,7 +24,7 @@ REQUIRED_POIS = {
     "entry_dark_woodland",
 }
 
-REQUIRED_ROUTES = {"main", "moonfall", "goblin", "spider", "spider_return"}
+REQUIRED_ROUTES = {"main", "moonfall", "goblin", "spider", "spider_return", "ancient_approach"}
 
 
 def max_slope_degrees(points: list[list[float]]) -> float:
@@ -61,7 +61,7 @@ def main() -> None:
     assert data["worldScaleXZ"] == 2.0
     assert data["resolution"] == {"width": 650, "height": 1200}
     assert data["heightRangeStuds"] == [0, 192]
-    assert data["artifactRevision"] == "terrain-v03"
+    assert data["artifactRevision"] == "terrain-v04"
 
     bounds = data["boundsStuds"]
     assert bounds["maxX"] - bounds["minX"] == 2600
@@ -76,6 +76,7 @@ def main() -> None:
     assert max_slope_degrees(data["routes"]["goblin"]) <= 18.0
     assert max_slope_degrees(data["routes"]["spider"]) <= 18.0
     assert max_slope_degrees(data["routes"]["spider_return"]) <= 18.0
+    assert max_slope_degrees(data["routes"]["ancient_approach"]) <= 12.0
 
     bridge_id = data["features"]["river"]["bridgePoiId"]
     assert bridge_id == "poi_meadow_bridge"
@@ -94,9 +95,13 @@ def main() -> None:
 
     terrain_pads = {entry["id"]: entry for entry in data["features"]["terrainPads"]}
     assert terrain_pads["goblin_camp"]["mode"] == "raise"
-    assert terrain_pads["goblin_camp"]["targetY"] >= 65
+    assert terrain_pads["goblin_camp"]["targetY"] >= 58
+    assert terrain_pads["goblin_camp"]["center"][0] > 0
+    assert terrain_pads["goblin_camp"]["center"][2] <= 2250
     assert terrain_pads["spider_hollow"]["mode"] == "lower"
     assert terrain_pads["spider_hollow"]["targetY"] <= 4
+    assert terrain_pads["spider_hollow"]["center"][0] < 0
+    assert terrain_pads["spider_hollow"]["center"][2] <= 2250
 
     rings = {entry["id"]: entry for entry in data["features"]["localRings"]}
     assert "goblin_camp_outer_rampart" not in rings
@@ -105,16 +110,36 @@ def main() -> None:
     future = {entry["id"]: entry for entry in data["features"]["futureTerrainReservations"]}
     assert future["future_old_cemetery"]["terrainIntent"] == "raised_terrace"
     assert future["future_fallen_shrine"]["terrainIntent"] == "raised_promontory"
+    assert future["future_ancient_approach"]["terrainIntent"] == "broad_high_approach"
     assert future["future_old_cemetery"]["mode"] == "raise"
     assert future["future_fallen_shrine"]["mode"] == "raise"
-    assert future["future_old_cemetery"]["targetY"] >= 120
-    assert future["future_fallen_shrine"]["targetY"] >= 125
-    assert bounds["maxZ"] - future["future_old_cemetery"]["center"][2] >= 350
-    assert bounds["maxZ"] - future["future_fallen_shrine"]["center"][2] >= 350
+    assert future["future_ancient_approach"]["mode"] == "raise"
+    assert future["future_old_cemetery"]["center"][0] > 0
+    assert future["future_fallen_shrine"]["center"][0] < 0
+    assert future["future_old_cemetery"]["center"][2] < 3200
+    assert future["future_fallen_shrine"]["center"][2] < 3200
+    assert future["future_ancient_approach"]["center"][2] > 3400
+    assert future["future_ancient_approach"]["radiusStuds"] >= 300
+    assert future["future_ancient_approach"]["targetY"] >= 120
 
     zone_ids = {entry["id"] for entry in data["zones"]}
     assert "zone_old_cemetery" not in zone_ids
     assert "zone_fallen_shrine" not in zone_ids
+    assert "zone_ancient_approach" not in zone_ids
+
+    poi_by_id = {entry["id"]: entry for entry in data["pois"]}
+    river_z = poi_by_id["poi_meadow_bridge"]["position"][2]
+    crossroads_z = poi_by_id["poi_moonfall_crossroads"]["position"][2]
+    goblin_z = poi_by_id["poi_goblin_camp"]["position"][2]
+    spider_z = poi_by_id["poi_spider_hollow"]["position"][2]
+
+    # North-of-river content must start promptly instead of leaving a huge flat dead field.
+    assert crossroads_z - river_z <= 1400
+    assert max(goblin_z, spider_z) - crossroads_z <= 350
+
+    # Approved concept orientation in the imported Studio view.
+    assert poi_by_id["poi_goblin_camp"]["position"][0] > 0
+    assert poi_by_id["poi_spider_hollow"]["position"][0] < 0
 
     disabled_spawns = {entry["id"] for entry in data["spawns"] if not entry["spawnEnabled"]}
     assert "spawn_goblin_camp_elite_future" in disabled_spawns
@@ -141,6 +166,13 @@ def main() -> None:
     shrine_center = sample_height(height, data, shrine["center"][0], shrine["center"][2])
     shrine_outer = radial_average(height, data, shrine["center"], shrine["radiusStuds"] + 100)
     assert shrine_center >= shrine_outer + 8.0
+
+    ancient = future["future_ancient_approach"]
+    ancient_center = sample_height(height, data, ancient["center"][0], ancient["center"][2])
+    ancient_outer = radial_average(height, data, ancient["center"], ancient["radiusStuds"] + 120)
+    assert ancient_center >= ancient_outer + 6.0
+    assert ancient_center >= cemetery_center + 8.0
+    assert ancient_center >= shrine_center + 8.0
 
     print("worldgen contract: PASS")
 
