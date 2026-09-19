@@ -84,10 +84,15 @@ function ProgressionService.awardMobXP(player: Player, baseXP: number, mobLevel:
 	local profile = PlayerDataService.getProfileCopy(player)
 	if profile == nil then return 0 end
 
-	local reward = ProgressionRules.calculateMobXP(baseXP, profile.Level, mobLevel)
-	if reward <= 0 then return 0 end
-	if not ProgressionService.awardXP(player, reward) then return 0 end
+	local reward = if profile.Level >= ProgressionConfig.LevelCap
+		then 0
+		else ProgressionRules.calculateMobXP(baseXP, profile.Level, mobLevel)
+	if reward > 0 and not ProgressionService.awardXP(player, reward) then
+		return 0
+	end
 
+	-- Publish even a zero reward so an over-levelled player can see that the kill
+	-- produced no XP rather than assuming the progression system failed.
 	CombatPresentationService.publishToPlayer(player, CombatPresentationRules.create(
 		"Reward",
 		HttpService:GenerateGUID(false),
