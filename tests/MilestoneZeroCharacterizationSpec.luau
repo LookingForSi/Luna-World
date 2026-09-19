@@ -8,6 +8,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local CombatRules = require(ReplicatedStorage.Shared.combat.CombatRules)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
+local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
@@ -291,7 +292,12 @@ return function(TestRunner)
 			assert(MobService.applyDamage(entityId, humanoid.Health, player))
 			assert(not MobService.applyDamage(entityId, 1, player), "dead mob must reject repeated damage")
 
-			local expectedXP = initialXP + MobDefinitions.grey_wolf.rewardXP
+			local playerLevel = player:GetAttribute(ProgressionConfig.LevelAttribute) :: number
+			local expectedXP = initialXP + ProgressionRules.calculateMobXP(
+				MobDefinitions.grey_wolf.rewardXP,
+				playerLevel,
+				MobDefinitions.grey_wolf.level
+			)
 			waitUntil("one XP reward for the grey wolf death", 3, function(): boolean?
 				return if player:GetAttribute("SessionXP") == expectedXP then true else nil
 			end)
