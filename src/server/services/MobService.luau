@@ -16,13 +16,37 @@ local TerrainGrounding = require(script.Parent.Parent.world.TerrainGrounding)
 
 local MobService = {}
 
-local ROOT_SIZE = Vector3.new(4, 3, 6)
-local SPAWN_Y = ROOT_SIZE.Y * 0.5
-local WOLF_COLOR = Color3.fromRGB(110, 110, 120)
+local VISUAL_PROFILES = table.freeze({
+	WolfYoung = table.freeze({ size = Vector3.new(3.5, 2.5, 5), color = Color3.fromRGB(125, 125, 135) }),
+	Wolf = table.freeze({ size = Vector3.new(4, 3, 6), color = Color3.fromRGB(105, 105, 120) }),
+	WolfAlpha = table.freeze({ size = Vector3.new(5, 3.8, 7.2), color = Color3.fromRGB(82, 82, 98) }),
+	DireWolf = table.freeze({ size = Vector3.new(4.8, 3.6, 7), color = Color3.fromRGB(72, 78, 88) }),
+	DireWolfAlpha = table.freeze({ size = Vector3.new(5.6, 4.2, 8), color = Color3.fromRGB(58, 63, 75) }),
+	Goblin = table.freeze({ size = Vector3.new(3, 5, 3), color = Color3.fromRGB(86, 122, 70) }),
+	GoblinWarrior = table.freeze({ size = Vector3.new(3.5, 5.5, 3.5), color = Color3.fromRGB(74, 108, 58) }),
+	GoblinShaman = table.freeze({ size = Vector3.new(3.2, 5.4, 3.2), color = Color3.fromRGB(82, 90, 132) }),
+	GoblinChief = table.freeze({ size = Vector3.new(4.2, 6.5, 4.2), color = Color3.fromRGB(72, 88, 50) }),
+	Spider = table.freeze({ size = Vector3.new(5.5, 2.2, 5.5), color = Color3.fromRGB(35, 31, 45) }),
+	SpiderLarge = table.freeze({ size = Vector3.new(7.5, 3, 7.5), color = Color3.fromRGB(30, 25, 38) }),
+	SpiderForest = table.freeze({ size = Vector3.new(5.8, 2.4, 5.8), color = Color3.fromRGB(42, 52, 38) }),
+	Skeleton = table.freeze({ size = Vector3.new(2.6, 5.8, 2.6), color = Color3.fromRGB(180, 180, 164) }),
+	SkeletonArcher = table.freeze({ size = Vector3.new(2.6, 5.8, 2.6), color = Color3.fromRGB(165, 170, 158) }),
+	GraveGuardian = table.freeze({ size = Vector3.new(4.2, 7, 4.2), color = Color3.fromRGB(105, 110, 112) }),
+	Acolyte = table.freeze({ size = Vector3.new(3, 6, 3), color = Color3.fromRGB(82, 70, 105) }),
+	ShrineGuardian = table.freeze({ size = Vector3.new(4, 6.8, 4), color = Color3.fromRGB(94, 88, 110) }),
+	Sentinel = table.freeze({ size = Vector3.new(4.8, 8, 4.8), color = Color3.fromRGB(120, 126, 132) }),
+	Watcher = table.freeze({ size = Vector3.new(3.8, 7, 3.8), color = Color3.fromRGB(100, 112, 140) }),
+	Warden = table.freeze({ size = Vector3.new(6.2, 10, 6.2), color = Color3.fromRGB(92, 104, 138) }),
+})
 
 type SpawnSpec = {
 	definitionKey: string,
 	cframe: CFrame,
+	spawnMarkerId: string,
+	spawnIndex: number,
+	socialGroupId: string?,
+	patrolRadius: number,
+	patrolCycleSeconds: number,
 }
 
 local function definitionKeyForId(mobId: string): string?
@@ -34,6 +58,20 @@ local function definitionKeyForId(mobId: string): string?
 	return nil
 end
 
+local function visualProfile(definition: CombatTypes.MobDefinition): { size: Vector3, color: Color3 }
+	local profile = VISUAL_PROFILES[definition.visualProfile]
+	assert(profile ~= nil, "unknown mob visual profile: " .. definition.visualProfile)
+	return profile
+end
+
+local function spawnOffset(index: number, count: number, radius: number): Vector3
+	if count <= 1 then return Vector3.zero end
+	local fraction = math.sqrt((index - 0.5) / count)
+	local angle = (index - 1) * 2.399963229728653
+	local distance = math.min(radius * 0.58, radius * 0.18 + radius * 0.42 * fraction)
+	return Vector3.new(math.cos(angle) * distance, 0, math.sin(angle) * distance)
+end
+
 local function configuredWorldSpawns(): { SpawnSpec }
 	local result: { SpawnSpec } = {}
 	for _, marker in WorldLayout.SpawnMarkers do
@@ -41,18 +79,25 @@ local function configuredWorldSpawns(): { SpawnSpec }
 			continue
 		end
 		local definitionKey = definitionKeyForId(marker.mobId)
-		-- World layout may already reserve markers for later milestones. Unknown
-		-- definition ids remain visible as blockout placeholders but do not spawn
-		-- authoritative combat entities yet.
 		if definitionKey == nil then
 			continue
 		end
-
-		local ground = TerrainGrounding.surfaceAt(marker.position)
-		table.insert(result, {
-			definitionKey = definitionKey,
-			cframe = CFrame.new(ground + Vector3.new(0, SPAWN_Y, 0)),
-		})
+		local definition = MobDefinitions[definitionKey]
+		local profile = visualProfile(definition)
+		local count = marker.count or 1
+		for index = 1, count do
+			local candidate = marker.position + spawnOffset(index, count, marker.radius)
+			local ground = TerrainGrounding.surfaceAt(candidate)
+			table.insert(result, {
+				definitionKey = definitionKey,
+				cframe = CFrame.new(ground + Vector3.new(0, profile.size.Y * 0.5 + 0.15, 0)),
+				spawnMarkerId = marker.id,
+				spawnIndex = index,
+				socialGroupId = marker.socialGroupId,
+				patrolRadius = marker.patrolRadius or 0,
+				patrolCycleSeconds = marker.patrolCycleSeconds or 10,
+			})
+		end
 	end
 	return result
 end
@@ -81,22 +126,34 @@ MobService.MobDied = mobDiedEvent.Event
 MobService.MobSpawned = mobSpawnedEvent.Event
 MobService.HostileAction = hostileActionEvent.Event
 
-local function createMob(definitionKey: string, spawnCFrame: CFrame, isRespawn: boolean?): Model
-	local definition = MobDefinitions[definitionKey]
-	assert(definition ~= nil, "unknown mob definition: " .. definitionKey)
+local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
+	local definition = MobDefinitions[spawn.definitionKey]
+	assert(definition ~= nil, "unknown mob definition: " .. spawn.definitionKey)
+	local spawnCFrame = spawn.cframe
+	local profile = visualProfile(definition)
 	local entityId = HttpService:GenerateGUID(false)
 	local model = Instance.new("Model")
 	model.Name = definition.displayName
 	model:SetAttribute("EntityId", entityId)
 	model:SetAttribute("MobId", definition.id)
 	model:SetAttribute("Level", definition.level)
+	model:SetAttribute("PhysicalDefense", definition.physicalDefense)
+	model:SetAttribute("MagicDefense", definition.magicDefense)
+	model:SetAttribute("Faction", definition.faction)
+	model:SetAttribute("SpawnMarkerId", spawn.spawnMarkerId)
+	model:SetAttribute("SpawnIndex", spawn.spawnIndex)
+	model:SetAttribute("SocialGroupId", spawn.socialGroupId)
+	model:SetAttribute("SocialAssistRadius", definition.socialAssistRadius)
+	model:SetAttribute("PatrolRadius", spawn.patrolRadius)
+	model:SetAttribute("PatrolCycleSeconds", spawn.patrolCycleSeconds)
 	model:SetAttribute(CombatConfig.MobHomePositionAttribute, spawnCFrame.Position)
 	model:SetAttribute(CombatConfig.MobMovementSpeedAttribute, definition.chaseSpeed)
+	model:SetAttribute(CombatConfig.MobOutgoingDamageMultiplierAttribute, 1)
 
 	local rootPart = Instance.new("Part")
 	rootPart.Name = "HumanoidRootPart"
-	rootPart.Size = ROOT_SIZE
-	rootPart.Color = WOLF_COLOR
+	rootPart.Size = profile.size
+	rootPart.Color = profile.color
 	rootPart.Material = Enum.Material.Slate
 	rootPart.Anchored = false
 	rootPart.CanCollide = true
@@ -154,7 +211,7 @@ local function createMob(definitionKey: string, spawnCFrame: CFrame, isRespawn: 
 			if not started or serviceGeneration ~= expectedGeneration then
 				return
 			end
-			createMob(definitionKey, spawnCFrame, true)
+			createMob(spawn, true)
 		end)
 	end)
 
@@ -169,7 +226,7 @@ function MobService.start(): ()
 	serviceGeneration += 1
 	removeKnownMobPlaceholders()
 	for _, spawn in configuredWorldSpawns() do
-		createMob(spawn.definitionKey, spawn.cframe)
+		createMob(spawn)
 	end
 end
 
@@ -236,25 +293,37 @@ function MobService.registerHostileAction(entityId: string, attacker: Player): b
 	return true
 end
 
-function MobService.applyDamage(entityId: string, amount: number, attacker: Player): boolean
+function MobService.applyDamage(
+	entityId: string,
+	amount: number,
+	attacker: Player,
+	damageType: CombatTypes.MobDamageType?
+): (boolean, number?)
 	assert(amount >= 0, "damage must not be negative")
 
 	local model = mobsByEntityId[entityId]
 	if model == nil or attacker.Parent ~= Players then
-		return false
+		return false, nil
 	end
 
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	if humanoid == nil or humanoid.Health <= 0 then
-		return false
+		return false, nil
 	end
 
-	-- Damage values and attribution are accepted only through this server-owned API.
-	-- The attacker is intentionally retained in server memory, never replicated.
+	local definition = MobService.getDefinition(model)
+	if definition == nil then return false, nil end
+	local resolvedDamageType = damageType
+	if resolvedDamageType == nil then
+		resolvedDamageType = if attacker:GetAttribute(CombatConfig.ArchetypeAttribute) == "mystic" then "Magic" else "Physical"
+	end
+	local defense = if resolvedDamageType == "Magic" then definition.magicDefense else definition.physicalDefense
+	local appliedAmount = math.max(1, math.floor(amount - defense + 0.5))
+
 	lastAttackerByEntityId[entityId] = attacker
 	MobService.registerHostileAction(entityId, attacker)
-	humanoid:TakeDamage(amount)
-	return true
+	humanoid:TakeDamage(appliedAmount)
+	return true, appliedAmount
 end
 
 function MobService.applyCalculatedMovement(model: Model): boolean
