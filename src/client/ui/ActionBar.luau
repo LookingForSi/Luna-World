@@ -36,10 +36,19 @@ local function makeButton(parent: Instance, name: string, text: string, size: UD
 	return button
 end
 
+local function autoBindingHint(): string
+	if UserInputService.GamepadEnabled and not UserInputService.KeyboardEnabled then
+		return "L2"
+	end
+	return "G"
+end
+
 local function updateAuto(): ()
 	if autoButton == nil then return end
 	local enabled = player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == true
-	autoButton.Text = if enabled then "AUTO\nВКЛ" else "AUTO\nВЫКЛ"
+	autoButton.Text = if enabled
+		then string.format("AUTO [%s]\nВКЛ", autoBindingHint())
+		else string.format("AUTO [%s]\nВЫКЛ", autoBindingHint())
 	autoButton.BackgroundColor3 = if enabled then Color3.fromRGB(91, 105, 58) else Color3.fromRGB(42, 45, 56)
 end
 
@@ -110,7 +119,7 @@ function ActionBar.start(skillIds: { string }, onAttack: () -> (), onAutoToggle:
 
 	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.2, -4, 0, 70))
 	clearButton.Position = UDim2.new(0, 0, 0, 62)
-	autoButton = makeButton(content, "Auto", "AUTO\nВЫКЛ", UDim2.new(0.25, -4, 0, 70))
+	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.25, -4, 0, 70))
 	local auto = autoButton :: TextButton
 	auto.Position = UDim2.new(0.21, 0, 0, 62)
 	local attackSize = UDim2.new(0.52, -4, 0, if UserInputService.TouchEnabled then 80 else 70)
