@@ -114,29 +114,58 @@ export type ArchetypeDefinition = {
 export type AggressionMode = "Passive" | "Aggressive"
 export type MobRank = "Ordinary" | "Elite" | "Boss"
 export type MobAttackKind = "Melee" | "Ranged"
+export type MobDamageType = "Physical" | "Magic"
+export type MobAbilityKind = "DirectDamage" | "DamageOverTime" | "Crippling" | "AllyDamageBuff" | "SelfDamageBuff"
+
+export type MobAbilityDefinition = {
+	id: string,
+	displayName: string,
+	kind: MobAbilityKind,
+	damageType: MobDamageType,
+	range: number,
+	damage: number,
+	windupSeconds: number,
+	cooldownSeconds: number,
+	presentationKey: string,
+	durationSeconds: number?,
+	tickDamage: number?,
+	tickIntervalSeconds: number?,
+	movementMultiplier: number?,
+	attackSpeedMultiplier: number?,
+	damageMultiplier: number?,
+	radius: number?,
+}
 
 export type MobDefinition = {
 	id: string,
 	displayName: string,
 	level: number,
 	maxHealth: number,
+	physicalDefense: number,
+	magicDefense: number,
 	rewardXP: number,
 	lootTableId: string,
 	respawnSeconds: number,
 	aggressionMode: AggressionMode,
 	rank: MobRank,
 	attackKind: MobAttackKind,
+	faction: string,
+	visualProfile: string,
 	detectionRadius: number,
 	aggroRadius: number,
 	reacquireRadius: number,
 	leashDistance: number,
 	attackRange: number,
+	basicAttackRange: number,
 	basicAttackDamage: number,
+	basicAttackDamageType: MobDamageType,
 	attackWindupSeconds: number,
 	attackIntervalSeconds: number,
 	chaseSpeed: number,
 	decisionIntervalSeconds: number,
 	restoreHealthOnReturn: boolean,
+	socialAssistRadius: number,
+	abilityIds: { string },
 }
 
 export type ActionResult = {
