@@ -269,3 +269,44 @@ Production combat/AI специально не подключены: mob figures
 - Ancient Approach и Selene horizon этой правкой не меняются.
 
 Следующий gate: повторный owner traversal на `terrain-v05`.
+
+
+## 15. Environment dressing pass v01
+
+До Blender art pass мир насыщается **replaceable blockout dressing** прямо в Roblox:
+
+- подпорные каменные стенки и ограждения Luna Village;
+- полевые/дорожные заборы, брёвна, ящики и камни вокруг Moonfall Farm;
+- каменные группы у реки и Stone Circle;
+- сломанные заборы, пни и roadside clutter на Moonfall Road;
+- внешний мусор/брёвна/ящики вокруг Goblin Camp;
+- мёртвые деревья и каменные группы по периметру Spider Hollow;
+- более плотный порог Dark Woodland;
+- стенка/деревья/обломки Old Cemetery;
+- rubble вокруг Fallen Shrine;
+- боковые руины и каменные группы вдоль Ancient Approach.
+
+Этот слой имеет атрибут `ArtReplacementTarget = BlenderModularKits` и **не считается final art**.
+
+### Разделение Roblox / Blender Studio
+
+Сейчас в Roblox фиксируем:
+- плотность;
+- силуэт;
+- sightlines;
+- ширину проходов;
+- читаемость POI;
+- отсутствие пустых полей;
+- traversal/no-jump.
+
+После принятия этого spatial pass заменяем блоки на Blender-модули:
+- village houses / roofs / retaining walls;
+- fence kit;
+- rock/cliff kit;
+- goblin architecture kit;
+- dead-tree/root/web kit;
+- cemetery kit;
+- shrine/ancient ruins kit;
+- крупные hero landmarks.
+
+То есть Blender не должен определять географию мира — он даёт качественные ассеты уже принятой географии.
