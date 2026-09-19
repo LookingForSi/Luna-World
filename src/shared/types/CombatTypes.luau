@@ -115,7 +115,7 @@ export type AggressionMode = "Passive" | "Aggressive"
 export type MobRank = "Ordinary" | "Elite" | "Boss"
 export type MobAttackKind = "Melee" | "Ranged"
 export type MobDamageType = "Physical" | "Magic"
-export type MobAbilityKind = "DirectDamage" | "DamageOverTime" | "Crippling" | "AllyDamageBuff" | "SelfDamageBuff"
+export type MobAbilityKind = "DirectDamage" | "AreaDamage" | "DamageOverTime" | "Crippling" | "AllyDamageBuff" | "SelfDamageBuff"
 
 export type MobAbilityDefinition = {
 	id: string,
