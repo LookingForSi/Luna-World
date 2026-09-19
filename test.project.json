@@ -12,7 +12,11 @@
         "SkillRequest": { "$className": "RemoteEvent" },
         "SkillResult": { "$className": "RemoteEvent" },
         "RespawnRequest": { "$className": "RemoteEvent" },
-        "CombatPresentation": { "$className": "RemoteEvent" }
+        "CombatPresentation": { "$className": "RemoteEvent" },
+        "InventoryActionRequest": { "$className": "RemoteEvent" },
+        "InventorySnapshotRequest": { "$className": "RemoteEvent" },
+        "InventorySnapshot": { "$className": "RemoteEvent" },
+        "InventoryActionResult": { "$className": "RemoteEvent" }
       },
       "TestRemotes": {
         "$className": "Folder",
