@@ -6,6 +6,8 @@ local ArchetypeDefinitions = require(ReplicatedStorage.Shared.definitions.Archet
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
+local LootTableDefinitions = require(ReplicatedStorage.Shared.definitions.LootTableDefinitions)
+local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 
 local SUPPORTED_RESOURCES = { Stamina = true, Focus = true, Mana = true }
@@ -187,6 +189,7 @@ return function(TestRunner)
 			assert(SUPPORTED_MOB_ATTACK_KINDS[definition.attackKind], prefix .. "attackKind is unsupported")
 			assertFiniteNumber(definition.maxHealth, prefix .. "maxHealth")
 			assertFiniteNumber(definition.rewardXP, prefix .. "rewardXP", true)
+			assert(type(definition.lootTableId) == "string" and LootTableDefinitions[definition.lootTableId] ~= nil, prefix .. "lootTableId must reference a loot table")
 			assertFiniteNumber(definition.respawnSeconds, prefix .. "respawnSeconds")
 			assertFiniteNumber(definition.detectionRadius, prefix .. "detectionRadius", true)
 			assertFiniteNumber(definition.aggroRadius, prefix .. "aggroRadius", true)
@@ -200,6 +203,18 @@ return function(TestRunner)
 			assertFiniteNumber(definition.chaseSpeed, prefix .. "chaseSpeed")
 			assertFiniteNumber(definition.decisionIntervalSeconds, prefix .. "decisionIntervalSeconds")
 			assert(type(definition.restoreHealthOnReturn) == "boolean", prefix .. "restoreHealthOnReturn must be boolean")
+		end
+	end)
+
+	TestRunner.run("loot tables reference known stable item ids", function()
+		for key, definition in LootTableDefinitions do
+			assert(key == definition.id)
+			assert(definition.lunaMin >= 0 and definition.lunaMin <= definition.lunaMax)
+			for _, entry in definition.entries do
+				assert(ItemDefinitions[entry.itemId] ~= nil, definition.id .. " references unknown item " .. entry.itemId)
+				assert(entry.chance >= 0 and entry.chance <= 1)
+				assert(entry.minQuantity >= 1 and entry.minQuantity <= entry.maxQuantity)
+			end
 		end
 	end)
 
