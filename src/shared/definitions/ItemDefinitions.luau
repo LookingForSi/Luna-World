@@ -102,6 +102,12 @@ local definitions: { [string]: ItemTypes.ItemDefinition } = {
 	material_wolf_pelt = stackable("material_wolf_pelt", "Волчья шкура", "Material", "Common", nil),
 	material_sharp_fang = stackable("material_sharp_fang", "Острый клык", "Material", "Common", nil),
 	material_spider_silk = stackable("material_spider_silk", "Паучий шёлк", "Material", "Common", nil),
+	material_venom_sac = stackable("material_venom_sac", "Ядовитая железа", "Material", "Uncommon", nil),
+	material_goblin_token = stackable("material_goblin_token", "Гоблинский жетон", "Material", "Common", nil),
+	material_dire_hide = stackable("material_dire_hide", "Шкура лютого волка", "Material", "Uncommon", nil),
+	material_bone_fragment = stackable("material_bone_fragment", "Фрагмент древней кости", "Material", "Common", nil),
+	material_fallen_relic = stackable("material_fallen_relic", "Осквернённая реликвия", "Material", "Uncommon", nil),
+	material_ancient_shard = stackable("material_ancient_shard", "Осколок древнего камня", "Material", "Uncommon", nil),
 	consumable_minor_healing_draught = stackable(
 		"consumable_minor_healing_draught",
 		"Малое лечебное зелье",
