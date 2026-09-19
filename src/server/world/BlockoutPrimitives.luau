@@ -1,5 +1,7 @@
 --!strict
 
+local Workspace = game:GetService("Workspace")
+
 local TerrainGrounding = require(script.Parent.TerrainGrounding)
 
 export type PartOptions = {
@@ -30,6 +32,12 @@ local function applyOptions(part: Part, options: PartOptions?)
 			part:SetAttribute(name, value)
 		end
 	end
+end
+
+local function embedDepth(height: number): number
+	-- A small intentional overlap hides the common blockout gap where a rigid prop
+	-- meets sloped voxel terrain. Thin surface overlays are only embedded slightly.
+	return math.min(1.6, math.max(0.08, height * 0.12))
 end
 
 function BlockoutPrimitives.part(
@@ -66,7 +74,7 @@ function BlockoutPrimitives.groundedPart(
 	options: PartOptions?
 ): (Part, boolean)
 	local groundPosition, hit = TerrainGrounding.surfaceAt(authoredPosition)
-	local center = groundPosition + Vector3.new(0, size.Y / 2, 0)
+	local center = groundPosition + Vector3.new(0, size.Y / 2 - embedDepth(size.Y), 0)
 	return BlockoutPrimitives.part(parent, name, size, CFrame.new(center), material, color, options), hit
 end
 
@@ -107,7 +115,7 @@ function BlockoutPrimitives.groundedSegment(
 ): (Part, number)
 	local fromGround, hitFrom = TerrainGrounding.surfaceAt(authoredFrom)
 	local toGround, hitTo = TerrainGrounding.surfaceAt(authoredTo)
-	local vertical = Vector3.new(0, thickness / 2 + 0.05, 0)
+	local vertical = Vector3.new(0, thickness / 2 - embedDepth(thickness), 0)
 	local part = BlockoutPrimitives.segment(
 		parent,
 		name,
@@ -124,6 +132,51 @@ function BlockoutPrimitives.groundedSegment(
 	if hitFrom then hits += 1 end
 	if hitTo then hits += 1 end
 	return part, hits
+end
+
+function BlockoutPrimitives.replaceTerrainMaterials(
+	authoredCenter: Vector3,
+	size: Vector3,
+	sourceMaterials: { Enum.Material },
+	targetMaterial: Enum.Material
+)
+	local ground = TerrainGrounding.surfaceAt(authoredCenter)
+	local half = size / 2
+	local center = Vector3.new(authoredCenter.X, ground.Y, authoredCenter.Z)
+	local minCorner = center - half
+	local maxCorner = center + half
+	local region = Region3.new(minCorner, maxCorner):ExpandToGrid(4)
+
+	for _, sourceMaterial in ipairs(sourceMaterials) do
+		Workspace.Terrain:ReplaceMaterial(region, 4, sourceMaterial, targetMaterial)
+	end
+end
+
+function BlockoutPrimitives.paintTerrainStrip(
+	authoredFrom: Vector3,
+	authoredTo: Vector3,
+	width: number,
+	targetMaterial: Enum.Material
+)
+	local groundA = TerrainGrounding.surfaceAt(authoredFrom)
+	local groundB = TerrainGrounding.surfaceAt(authoredTo)
+	local halfWidth = width / 2 + 3
+	local minY = math.min(groundA.Y, groundB.Y) - 5
+	local maxY = math.max(groundA.Y, groundB.Y) + 5
+	local minCorner = Vector3.new(
+		math.min(authoredFrom.X, authoredTo.X) - halfWidth,
+		minY,
+		math.min(authoredFrom.Z, authoredTo.Z) - halfWidth
+	)
+	local maxCorner = Vector3.new(
+		math.max(authoredFrom.X, authoredTo.X) + halfWidth,
+		maxY,
+		math.max(authoredFrom.Z, authoredTo.Z) + halfWidth
+	)
+	local region = Region3.new(minCorner, maxCorner):ExpandToGrid(4)
+
+	Workspace.Terrain:ReplaceMaterial(region, 4, Enum.Material.Grass, targetMaterial)
+	Workspace.Terrain:ReplaceMaterial(region, 4, Enum.Material.LeafyGrass, targetMaterial)
 end
 
 function BlockoutPrimitives.folder(parent: Instance, name: string): Folder
