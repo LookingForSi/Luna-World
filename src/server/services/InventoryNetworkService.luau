@@ -72,7 +72,6 @@ local function onActionRequest(player: Player, ...: unknown): ()
 		ok = ok,
 		reason = reason,
 	})
-	if ok then pushSnapshot(player) end
 end
 
 function InventoryNetworkService.start(): ()
