@@ -254,7 +254,15 @@ local function createGoblinCamp(parent: Instance, positions: { [string]: Vector3
 
 	local lookout = positions.poi_goblin_lookout
 	P.groundedPart(camp, "WatchTowerBase", lookout, Vector3.new(16, 22, 16), Enum.Material.WoodPlanks, COLORS.darkTimber)
-	P.groundedPart(camp, "WatchPlatform", lookout + Vector3.new(0, 20, 0), Vector3.new(24, 3, 24), Enum.Material.WoodPlanks, COLORS.timber)
+	local lookoutGround = Grounding.surfaceAt(lookout)
+	P.part(
+		camp,
+		"WatchPlatform",
+		Vector3.new(24, 3, 24),
+		CFrame.new(lookoutGround + Vector3.new(0, 23, 0)),
+		Enum.Material.WoodPlanks,
+		COLORS.timber
+	)
 end
 
 local function createSpiderHollow(parent: Instance, positions: { [string]: Vector3 })
@@ -390,7 +398,16 @@ local function createCemetery(parent: Instance, positions: { [string]: Vector3 }
 
 	local mausoleum = center + Vector3.new(0, 0, 90)
 	P.groundedPart(cemetery, "Mausoleum", mausoleum, Vector3.new(46, 24, 32), Enum.Material.Limestone, COLORS.ancientStone)
-	P.groundedPart(cemetery, "MausoleumRoof", mausoleum + Vector3.new(0, 22, 0), Vector3.new(52, 5, 38), Enum.Material.Slate, COLORS.darkStone, { canCollide = false })
+	local mausoleumGround = Grounding.surfaceAt(mausoleum)
+	P.part(
+		cemetery,
+		"MausoleumRoof",
+		Vector3.new(52, 5, 38),
+		CFrame.new(mausoleumGround + Vector3.new(0, 26.5, 0)),
+		Enum.Material.Slate,
+		COLORS.darkStone,
+		{ canCollide = false }
+	)
 end
 
 local function createShrine(parent: Instance, positions: { [string]: Vector3 })
