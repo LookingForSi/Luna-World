@@ -362,6 +362,7 @@ def route_slope_stats(source: dict) -> dict:
 def save_manifest(source: dict, height: np.ndarray, output_dir: Path) -> None:
     manifest = {
         "generatorVersion": 3,
+        "artifactRevision": source.get("artifactRevision", "unversioned"),
         "worldScaleXZ": source["worldScaleXZ"],
         "boundsStuds": source["boundsStuds"],
         "resolution": source["resolution"],
@@ -400,12 +401,15 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("artifacts/worldgen/v01"),
-        help="Output directory.",
+        default=None,
+        help="Output directory. Defaults to artifacts/worldgen/v01/<artifactRevision>.",
     )
     args = parser.parse_args()
 
     source = load_source(args.source)
+    if args.output is None:
+        revision = source.get("artifactRevision", "unversioned")
+        args.output = Path("artifacts/worldgen/v01") / revision
     args.output.mkdir(parents=True, exist_ok=True)
 
     height, water_mask = generate_height(source)
@@ -415,6 +419,7 @@ def main() -> None:
     save_manifest(source, height, args.output)
 
     print(f"Generated Luna World v0.1 terrain draft in {args.output}")
+    print(f"Artifact revision: {source.get('artifactRevision', 'unversioned')}")
     print(f"World scale X/Z: {source['worldScaleXZ']}x")
     print(f"Height range: {height.min():.2f}..{height.max():.2f} studs")
     for name, stats in route_slope_stats(source).items():
