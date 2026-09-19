@@ -5,6 +5,9 @@ local MINIMUM_GATE_TO_EXIT_DISTANCE = 700
 local REQUIRED_ZONE_IDS = {
 	"zone_luna_village",
 	"zone_luna_meadows",
+	"zone_moonfall_road",
+	"zone_goblin_camp",
+	"zone_spider_hollow",
 }
 
 local REQUIRED_POI_IDS = {
@@ -20,12 +23,28 @@ local REQUIRED_POI_IDS = {
 	"poi_meadow_bridge",
 	"poi_stone_circle",
 	"exit_moonfall_road",
+	"poi_broken_wagon",
+	"poi_moonfall_crossroads",
+	"poi_old_waystone",
+	"poi_goblin_camp",
+	"poi_goblin_lookout",
+	"poi_spider_hollow",
+	"poi_spider_cave_mouth",
+	"poi_dark_woodland_gate",
+	"entry_dark_woodland",
 }
 
 local REQUIRED_SPAWN_IDS = {
 	"spawn_young_wolf_farm",
 	"spawn_wolf_stone_circle",
 	"spawn_spider_meadow_pocket",
+	"spawn_goblin_scout_outer",
+	"spawn_goblin_scout_road",
+	"spawn_goblin_warrior_camp",
+	"spawn_goblin_camp_elite_future",
+	"spawn_spider_hollow_outer",
+	"spawn_spider_hollow_mid",
+	"spawn_spider_hollow_brood",
 }
 
 local WorldLayoutValidator = {}
@@ -99,6 +118,22 @@ local function validateLevelRanges(entries: { any }, categoryName: string, error
 	end
 end
 
+local function validateRoute(route: { any }, routeName: string, errors: { string })
+	if #route < 2 then
+		table.insert(errors, string.format("%s must contain at least two points", routeName))
+	end
+
+	for index, position in ipairs(route) do
+		if typeof(position) ~= "Vector3" then
+			table.insert(errors, string.format("%s[%d] must be a Vector3", routeName, index))
+		end
+	end
+end
+
+local function samePosition(first: any, second: any): boolean
+	return typeof(first) == "Vector3" and typeof(second) == "Vector3" and first == second
+end
+
 function WorldLayoutValidator.validate(layout: any): (boolean, { string })
 	local errors = {}
 	if type(layout) ~= "table" then
@@ -110,6 +145,10 @@ function WorldLayoutValidator.validate(layout: any): (boolean, { string })
 	local pointsOfInterest = getList(layout, "PointsOfInterest", errors)
 	local spawnMarkers = getList(layout, "SpawnMarkers", errors)
 	local route = getList(layout, "Route", errors)
+	local moonfallRoadRoute = getList(layout, "MoonfallRoadRoute", errors)
+	local goblinCampRoute = getList(layout, "GoblinCampRoute", errors)
+	local spiderHollowRoute = getList(layout, "SpiderHollowRoute", errors)
+	local spiderReturnRoute = getList(layout, "SpiderReturnRoute", errors)
 
 	local seenIds = {}
 	local zonesById = collectIds(zones, "zone", seenIds, errors)
@@ -126,14 +165,27 @@ function WorldLayoutValidator.validate(layout: any): (boolean, { string })
 		if type(spawnMarker) == "table" then
 			local radius = spawnMarker.radius
 			if type(radius) ~= "number" or not (radius > 0) then
-				table.insert(errors, string.format("spawn marker '%s' must have radius greater than zero", tostring(spawnMarker.id or index)))
+				table.insert(errors, string.format(
+					"spawn marker '%s' must have radius greater than zero",
+					tostring(spawnMarker.id or index)
+				))
+			end
+
+			local zoneId = spawnMarker.zoneId
+			if type(zoneId) ~= "string" or zonesById[zoneId] == nil then
+				table.insert(errors, string.format(
+					"spawn marker '%s' must reference an existing zone",
+					tostring(spawnMarker.id or index)
+				))
 			end
 		end
 	end
 
-	if #route < 2 then
-		table.insert(errors, "Route must contain at least two points")
-	end
+	validateRoute(route, "Route", errors)
+	validateRoute(moonfallRoadRoute, "MoonfallRoadRoute", errors)
+	validateRoute(goblinCampRoute, "GoblinCampRoute", errors)
+	validateRoute(spiderHollowRoute, "SpiderHollowRoute", errors)
+	validateRoute(spiderReturnRoute, "SpiderReturnRoute", errors)
 
 	local gate = pointsOfInterestById.poi_main_gate
 	local roadExit = pointsOfInterestById.exit_moonfall_road
@@ -152,6 +204,54 @@ function WorldLayoutValidator.validate(layout: any): (boolean, { string })
 					string.format("gate-to-exit XZ distance must be at least %d studs", MINIMUM_GATE_TO_EXIT_DISTANCE)
 				)
 			end
+		end
+	end
+
+	local crossroads = pointsOfInterestById.poi_moonfall_crossroads
+	local goblinCamp = pointsOfInterestById.poi_goblin_camp
+	local spiderHollow = pointsOfInterestById.poi_spider_hollow
+	local darkGate = pointsOfInterestById.poi_dark_woodland_gate
+	local darkEntry = pointsOfInterestById.entry_dark_woodland
+
+	if roadExit ~= nil and #moonfallRoadRoute > 0
+		and not samePosition(moonfallRoadRoute[1], roadExit.position) then
+		table.insert(errors, "MoonfallRoadRoute must begin at exit_moonfall_road")
+	end
+	if darkEntry ~= nil and #moonfallRoadRoute > 0
+		and not samePosition(moonfallRoadRoute[#moonfallRoadRoute], darkEntry.position) then
+		table.insert(errors, "MoonfallRoadRoute must end at entry_dark_woodland")
+	end
+	if crossroads ~= nil then
+		if #goblinCampRoute > 0 and not samePosition(goblinCampRoute[1], crossroads.position) then
+			table.insert(errors, "GoblinCampRoute must begin at poi_moonfall_crossroads")
+		end
+		if #spiderHollowRoute > 0 and not samePosition(spiderHollowRoute[1], crossroads.position) then
+			table.insert(errors, "SpiderHollowRoute must begin at poi_moonfall_crossroads")
+		end
+	end
+	if spiderHollow ~= nil and #spiderReturnRoute > 0
+		and spiderHollowRoute[#spiderHollowRoute] ~= spiderReturnRoute[1] then
+		table.insert(errors, "SpiderReturnRoute must begin at the end of SpiderHollowRoute")
+	end
+
+	if crossroads ~= nil and goblinCamp ~= nil
+		and typeof(crossroads.position) == "Vector3" and typeof(goblinCamp.position) == "Vector3"
+		and goblinCamp.position.Y <= crossroads.position.Y then
+		table.insert(errors, "Goblin Camp must be above Moonfall crossroads")
+	end
+
+	if crossroads ~= nil and spiderHollow ~= nil
+		and typeof(crossroads.position) == "Vector3" and typeof(spiderHollow.position) == "Vector3"
+		and spiderHollow.position.Y >= crossroads.position.Y then
+		table.insert(errors, "Spider Hollow must be below Moonfall crossroads")
+	end
+
+	if crossroads ~= nil and darkGate ~= nil and darkEntry ~= nil
+		and typeof(crossroads.position) == "Vector3"
+		and typeof(darkGate.position) == "Vector3"
+		and typeof(darkEntry.position) == "Vector3" then
+		if darkGate.position.Z <= crossroads.position.Z or darkEntry.position.Z <= darkGate.position.Z then
+			table.insert(errors, "Dark Woodland handoff must continue deeper along +Z")
 		end
 	end
 

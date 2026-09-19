@@ -24,11 +24,16 @@ export type WorldLayoutDefinition = {
 		VillageFootprint: Vector2,
 		VillageElevationAboveMeadows: number,
 		MeadowsRouteLength: number,
+		MoonfallRouteLength: number,
 	},
 	Zones: { ZoneDefinition },
 	PointsOfInterest: { PointOfInterestDefinition },
 	SpawnMarkers: { SpawnMarkerDefinition },
 	Route: { Vector3 },
+	MoonfallRoadRoute: { Vector3 },
+	GoblinCampRoute: { Vector3 },
+	SpiderHollowRoute: { Vector3 },
+	SpiderReturnRoute: { Vector3 },
 }
 
 local WorldLayout: WorldLayoutDefinition = {
@@ -36,6 +41,7 @@ local WorldLayout: WorldLayoutDefinition = {
 		VillageFootprint = Vector2.new(250, 220),
 		VillageElevationAboveMeadows = 36,
 		MeadowsRouteLength = 900,
+		MoonfallRouteLength = 940,
 	},
 
 	Zones = {
@@ -48,6 +54,21 @@ local WorldLayout: WorldLayoutDefinition = {
 			id = "zone_luna_meadows",
 			levelMin = 1,
 			levelMax = 3,
+		},
+		{
+			id = "zone_moonfall_road",
+			levelMin = 3,
+			levelMax = 7,
+		},
+		{
+			id = "zone_goblin_camp",
+			levelMin = 4,
+			levelMax = 7,
+		},
+		{
+			id = "zone_spider_hollow",
+			levelMin = 4,
+			levelMax = 6,
 		},
 	},
 
@@ -64,6 +85,16 @@ local WorldLayout: WorldLayoutDefinition = {
 		{ id = "poi_meadow_bridge", position = Vector3.new(-35, 7, 300) },
 		{ id = "poi_stone_circle", position = Vector3.new(135, 6, 545) },
 		{ id = "exit_moonfall_road", position = Vector3.new(0, 4, 900) },
+
+		{ id = "poi_broken_wagon", position = Vector3.new(-70, 9, 1050) },
+		{ id = "poi_moonfall_crossroads", position = Vector3.new(20, 16, 1220) },
+		{ id = "poi_old_waystone", position = Vector3.new(8, 16, 1210) },
+		{ id = "poi_goblin_camp", position = Vector3.new(-300, 30, 1400) },
+		{ id = "poi_goblin_lookout", position = Vector3.new(-360, 42, 1510) },
+		{ id = "poi_spider_hollow", position = Vector3.new(300, 2, 1420) },
+		{ id = "poi_spider_cave_mouth", position = Vector3.new(360, 0, 1530) },
+		{ id = "poi_dark_woodland_gate", position = Vector3.new(20, 24, 1740) },
+		{ id = "entry_dark_woodland", position = Vector3.new(0, 26, 1840) },
 	},
 
 	SpawnMarkers = {
@@ -88,6 +119,55 @@ local WorldLayout: WorldLayoutDefinition = {
 			radius = 60,
 			zoneId = "zone_luna_meadows",
 		},
+		{
+			id = "spawn_goblin_scout_road",
+			mobId = "mob_goblin_scout",
+			position = Vector3.new(-105, 20, 1285),
+			radius = 42,
+			zoneId = "zone_moonfall_road",
+		},
+		{
+			id = "spawn_goblin_scout_outer",
+			mobId = "mob_goblin_scout",
+			position = Vector3.new(-220, 26, 1340),
+			radius = 48,
+			zoneId = "zone_goblin_camp",
+		},
+		{
+			id = "spawn_goblin_warrior_camp",
+			mobId = "mob_goblin_warrior",
+			position = Vector3.new(-300, 30, 1430),
+			radius = 55,
+			zoneId = "zone_goblin_camp",
+		},
+		{
+			id = "spawn_goblin_camp_elite_future",
+			mobId = "mob_goblin_warrior",
+			position = Vector3.new(-350, 40, 1500),
+			radius = 36,
+			zoneId = "zone_goblin_camp",
+		},
+		{
+			id = "spawn_spider_hollow_outer",
+			mobId = "mob_meadow_spider",
+			position = Vector3.new(210, 7, 1345),
+			radius = 48,
+			zoneId = "zone_spider_hollow",
+		},
+		{
+			id = "spawn_spider_hollow_mid",
+			mobId = "mob_meadow_spider",
+			position = Vector3.new(295, 2, 1430),
+			radius = 55,
+			zoneId = "zone_spider_hollow",
+		},
+		{
+			id = "spawn_spider_hollow_brood",
+			mobId = "mob_brood_spider",
+			position = Vector3.new(345, 0, 1510),
+			radius = 44,
+			zoneId = "zone_spider_hollow",
+		},
 	},
 
 	Route = {
@@ -99,6 +179,46 @@ local WorldLayout: WorldLayoutDefinition = {
 		Vector3.new(90, 6, 560),
 		Vector3.new(45, 5, 720),
 		Vector3.new(0, 4, 900),
+	},
+
+	MoonfallRoadRoute = {
+		Vector3.new(0, 4, 900),
+		Vector3.new(-25, 6, 1010),
+		Vector3.new(-10, 10, 1110),
+		Vector3.new(20, 16, 1220),
+		Vector3.new(5, 18, 1340),
+		Vector3.new(-10, 20, 1470),
+		Vector3.new(15, 22, 1600),
+		Vector3.new(20, 24, 1740),
+		Vector3.new(0, 26, 1840),
+	},
+
+	GoblinCampRoute = {
+		Vector3.new(20, 16, 1220),
+		Vector3.new(-80, 19, 1265),
+		Vector3.new(-170, 24, 1315),
+		Vector3.new(-250, 28, 1370),
+		Vector3.new(-300, 30, 1400),
+		Vector3.new(-330, 36, 1460),
+		Vector3.new(-360, 42, 1510),
+	},
+
+	SpiderHollowRoute = {
+		Vector3.new(20, 16, 1220),
+		Vector3.new(105, 12, 1275),
+		Vector3.new(195, 7, 1340),
+		Vector3.new(270, 3, 1395),
+		Vector3.new(300, 2, 1420),
+		Vector3.new(330, 1, 1480),
+		Vector3.new(360, 0, 1530),
+	},
+
+	SpiderReturnRoute = {
+		Vector3.new(360, 0, 1530),
+		Vector3.new(320, 3, 1570),
+		Vector3.new(245, 8, 1595),
+		Vector3.new(155, 15, 1605),
+		Vector3.new(15, 22, 1600),
 	},
 }
 

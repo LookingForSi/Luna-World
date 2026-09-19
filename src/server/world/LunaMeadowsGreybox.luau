@@ -165,7 +165,7 @@ end
 
 local function getSpiderSpawnDefinition(): SpawnMarkerDefinition
 	for _, definition in ipairs(WorldLayout.SpawnMarkers) do
-		if string.find(definition.mobId, "spider", 1, true) ~= nil then
+		if definition.zoneId == "zone_luna_meadows" and string.find(definition.mobId, "spider", 1, true) ~= nil then
 			return definition
 		end
 	end
@@ -438,44 +438,42 @@ end
 
 local function createSpawnMarkers(parent: Instance): string
 	local markers = createFolder(parent, SPAWN_CONTAINER_NAME)
-	local meadowsZoneId: string? = nil
 	local safeTransitionEnd = WorldLayout.Route[SAFE_TRANSITION_END_ROUTE_INDEX]
-	assert(
-		#WorldLayout.SpawnMarkers == EXPECTED_SPAWN_MARKER_COUNT,
-		string.format("Luna Meadows requires exactly %d WorldLayout spawn definitions", EXPECTED_SPAWN_MARKER_COUNT)
-	)
+	local meadowsSpawnCount = 0
 	assert(safeTransitionEnd ~= nil, "WorldLayout route must define the calm transition after the gate")
 
 	for _, definition in ipairs(WorldLayout.SpawnMarkers) do
-		assert(
-			definition.position.Z >= safeTransitionEnd.Z,
-			string.format("Spawn marker '%s' must remain beyond the calm gate transition", definition.id)
-		)
-		if meadowsZoneId == nil then
-			meadowsZoneId = definition.zoneId
-		else
+		if definition.zoneId == "zone_luna_meadows" then
+			meadowsSpawnCount += 1
 			assert(
-				definition.zoneId == meadowsZoneId,
-				"All Luna Meadows spawn definitions must use the same WorldLayout zone ID"
+				definition.position.Z >= safeTransitionEnd.Z,
+				string.format("Spawn marker '%s' must remain beyond the calm gate transition", definition.id)
 			)
-		end
 
-		GreyboxPrimitives.createMarker(markers, definition.id, definition.position, {
-			StableId = definition.id,
-			MobId = definition.mobId,
-			Radius = definition.radius,
-			ZoneId = definition.zoneId,
-		})
+			GreyboxPrimitives.createMarker(markers, definition.id, definition.position, {
+				StableId = definition.id,
+				MobId = definition.mobId,
+				Radius = definition.radius,
+				ZoneId = definition.zoneId,
+			})
+		end
 	end
 
-	assert(meadowsZoneId ~= nil, "Luna Meadows requires at least one WorldLayout spawn definition")
-	return meadowsZoneId
+	assert(
+		meadowsSpawnCount == EXPECTED_SPAWN_MARKER_COUNT,
+		string.format(
+			"Luna Meadows requires exactly %d spawn definitions, got %d",
+			EXPECTED_SPAWN_MARKER_COUNT,
+			meadowsSpawnCount
+		)
+	)
+	return "zone_luna_meadows"
 end
 
 local function createExitMarker(parent: Instance, definition: PointOfInterestDefinition)
 	GreyboxPrimitives.createMarker(parent, definition.id, definition.position, {
 		StableId = definition.id,
-		Destination = "zone_moonfall_road_future",
+		Destination = "zone_moonfall_road",
 	})
 end
 
