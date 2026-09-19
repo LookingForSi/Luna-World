@@ -87,7 +87,7 @@ function PlayableWorldBlockout.rebuild(): (Model, SpawnLocation)
 	local root = Instance.new("Model")
 	root.Name = ROOT_NAME
 	root:SetAttribute("ManagedBy", MANAGED_BY)
-	root:SetAttribute("TerrainRevision", "terrain-v05")
+	root:SetAttribute("TerrainRevision", "terrain-v06")
 	root:SetAttribute("Purpose", "OwnerTraversalBlockout")
 
 	local spawn = VillageAndMeadowsBlockout.build(root)
