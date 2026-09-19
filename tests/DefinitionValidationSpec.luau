@@ -4,7 +4,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ArchetypeDefinitions = require(ReplicatedStorage.Shared.definitions.ArchetypeDefinitions)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
+local LootTableDefinitions = require(ReplicatedStorage.Shared.definitions.LootTableDefinitions)
+local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 
 local SUPPORTED_RESOURCES = { Stamina = true, Focus = true, Mana = true }
@@ -77,6 +80,8 @@ return function(TestRunner)
 			local archetype = ArchetypeDefinitions[definition.archetypeId]
 			local prefix = definition.id .. "."
 			assert(type(definition.displayName) == "string" and definition.displayName ~= "", prefix .. "displayName is required")
+			assertFiniteNumber(definition.unlockLevel, prefix .. "unlockLevel")
+			assert(definition.unlockLevel % 1 == 0 and definition.unlockLevel <= ProgressionConfig.LevelCap, prefix .. "unlockLevel must be a supported integer level")
 			assert(archetype ~= nil, prefix .. "archetypeId must reference an archetype")
 			assert(definition.resourceType == archetype.resourceType, prefix .. "resourceType must match archetype")
 			assert(SUPPORTED_TARGETS[definition.targetType], prefix .. "targetType is unsupported")
@@ -167,6 +172,9 @@ return function(TestRunner)
 	end)
 
 	TestRunner.run("mob definitions declare approved aggression and AI radii", function()
+		assert(MobDefinitions.young_wolf.level == 1 and MobDefinitions.young_wolf.rewardXP == 15)
+		assert(MobDefinitions.grey_wolf.level == 2 and MobDefinitions.grey_wolf.rewardXP == 25)
+		assert(MobDefinitions.spider.level == 3 and MobDefinitions.spider.rewardXP == 35)
 		assert(MobDefinitions.young_wolf.aggressionMode == "Passive")
 		assert(MobDefinitions.grey_wolf.aggressionMode == "Aggressive")
 		assert(MobDefinitions.grey_wolf.attackKind == "Melee")
@@ -174,11 +182,14 @@ return function(TestRunner)
 		for _, definition in MobDefinitions do
 			local prefix = definition.id .. "."
 			assert(type(definition.displayName) == "string" and definition.displayName ~= "", prefix .. "displayName is required")
+			assertFiniteNumber(definition.level, prefix .. "level")
+			assert(definition.level % 1 == 0 and definition.level >= 1 and definition.level <= ProgressionConfig.LevelCap, prefix .. "level must be a supported integer")
 			assert(SUPPORTED_AGGRESSION_MODES[definition.aggressionMode], prefix .. "aggressionMode is unsupported")
 			assert(SUPPORTED_MOB_RANKS[definition.rank], prefix .. "rank is unsupported")
 			assert(SUPPORTED_MOB_ATTACK_KINDS[definition.attackKind], prefix .. "attackKind is unsupported")
 			assertFiniteNumber(definition.maxHealth, prefix .. "maxHealth")
 			assertFiniteNumber(definition.rewardXP, prefix .. "rewardXP", true)
+			assert(type(definition.lootTableId) == "string" and LootTableDefinitions[definition.lootTableId] ~= nil, prefix .. "lootTableId must reference a loot table")
 			assertFiniteNumber(definition.respawnSeconds, prefix .. "respawnSeconds")
 			assertFiniteNumber(definition.detectionRadius, prefix .. "detectionRadius", true)
 			assertFiniteNumber(definition.aggroRadius, prefix .. "aggroRadius", true)
@@ -192,6 +203,18 @@ return function(TestRunner)
 			assertFiniteNumber(definition.chaseSpeed, prefix .. "chaseSpeed")
 			assertFiniteNumber(definition.decisionIntervalSeconds, prefix .. "decisionIntervalSeconds")
 			assert(type(definition.restoreHealthOnReturn) == "boolean", prefix .. "restoreHealthOnReturn must be boolean")
+		end
+	end)
+
+	TestRunner.run("loot tables reference known stable item ids", function()
+		for key, definition in LootTableDefinitions do
+			assert(key == definition.id)
+			assert(definition.lunaMin >= 0 and definition.lunaMin <= definition.lunaMax)
+			for _, entry in definition.entries do
+				assert(ItemDefinitions[entry.itemId] ~= nil, definition.id .. " references unknown item " .. entry.itemId)
+				assert(entry.chance >= 0 and entry.chance <= 1)
+				assert(entry.minQuantity >= 1 and entry.minQuantity <= entry.maxQuantity)
+			end
 		end
 	end)
 

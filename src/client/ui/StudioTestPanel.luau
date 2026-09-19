@@ -5,12 +5,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 
 local StudioTestPanel = {}
 
 local player = Players.LocalPlayer
 local screenGui: ScreenGui? = nil
-local attributeConnection: RBXScriptConnection? = nil
+local archetypeAttributeConnection: RBXScriptConnection? = nil
+local levelAttributeConnection: RBXScriptConnection? = nil
+local levelValueLabel: TextLabel? = nil
 local buttonConnections: { RBXScriptConnection } = {}
 local buttons: { [string]: TextButton } = {}
 
@@ -28,13 +31,31 @@ local function updateSelection(): ()
 	end
 end
 
+local function currentLevel(): number
+	local value = player:GetAttribute(ProgressionConfig.LevelAttribute)
+	if typeof(value) ~= "number" then return 1 end
+	return math.clamp(math.floor(value), 1, ProgressionConfig.LevelCap)
+end
+
+local function updateLevel(): ()
+	if levelValueLabel ~= nil then
+		levelValueLabel.Text = string.format("LV %d", currentLevel())
+	end
+end
+
 function StudioTestPanel.start(): ()
 	StudioTestPanel.stop()
 	if not RunService:IsStudio() then return end
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	local candidate = remotes:WaitForChild("StudioSetArchetype", 5)
+	local levelCandidate = remotes:WaitForChild("StudioSetLevel", 5)
+	local testItemsCandidate = remotes:WaitForChild("StudioGrantTestItems", 5)
 	if candidate == nil or not candidate:IsA("RemoteEvent") then return end
+	if levelCandidate == nil or not levelCandidate:IsA("RemoteEvent") then return end
+	if testItemsCandidate == nil or not testItemsCandidate:IsA("RemoteEvent") then return end
 	local remote = candidate :: RemoteEvent
+	local levelRemote = levelCandidate :: RemoteEvent
+	local testItemsRemote = testItemsCandidate :: RemoteEvent
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "StudioTestPanel"
@@ -44,7 +65,7 @@ function StudioTestPanel.start(): ()
 	local frame = Instance.new("Frame")
 	frame.Name = "ArchetypeSwitcher"
 	frame.Position = UDim2.fromOffset(18, 82)
-	frame.Size = UDim2.fromOffset(300, 66)
+	frame.Size = UDim2.fromOffset(300, 142)
 	frame.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
 	frame.BackgroundTransparency = 0.12
 	frame.BorderSizePixel = 0
@@ -79,17 +100,59 @@ function StudioTestPanel.start(): ()
 		end))
 	end
 
-	attributeConnection = player:GetAttributeChangedSignal(CombatConfig.ArchetypeAttribute):Connect(updateSelection)
+	local function makeLevelButton(name: string, text: string, x: number, width: number): TextButton
+		local button = Instance.new("TextButton")
+		button.Name = name
+		button.Position = UDim2.fromOffset(x, 66)
+		button.Size = UDim2.fromOffset(width, 30)
+		button.BackgroundColor3 = Color3.fromRGB(42, 45, 56)
+		button.TextColor3 = Color3.fromRGB(240, 240, 244)
+		button.Font = Enum.Font.GothamBold
+		button.TextSize = 12
+		button.Text = text
+		button.Parent = frame
+		return button
+	end
+
+	local levelDown = makeLevelButton("LevelDown", "LV -", 8, 62)
+	local levelValue = makeLevelButton("LevelValue", "LV 1", 76, 72)
+	levelValue.Active = false
+	levelValue.AutoButtonColor = false
+	levelValueLabel = levelValue
+	local levelUp = makeLevelButton("LevelUp", "LV +", 154, 62)
+	local levelMax = makeLevelButton("LevelMax", "LV 10", 222, 70)
+
+	table.insert(buttonConnections, levelDown.Activated:Connect(function()
+		levelRemote:FireServer(math.max(1, currentLevel() - 1))
+	end))
+	table.insert(buttonConnections, levelUp.Activated:Connect(function()
+		levelRemote:FireServer(math.min(ProgressionConfig.LevelCap, currentLevel() + 1))
+	end))
+	table.insert(buttonConnections, levelMax.Activated:Connect(function()
+		levelRemote:FireServer(ProgressionConfig.LevelCap)
+	end))
+
+	local testItems = makeLevelButton("GrantTestItems", "ТЕСТ ЛУТ +", 8, 140)
+	testItems.Position = UDim2.fromOffset(8, 104)
+	table.insert(buttonConnections, testItems.Activated:Connect(function()
+		testItemsRemote:FireServer()
+	end))
+
+	archetypeAttributeConnection = player:GetAttributeChangedSignal(CombatConfig.ArchetypeAttribute):Connect(updateSelection)
+	levelAttributeConnection = player:GetAttributeChangedSignal(ProgressionConfig.LevelAttribute):Connect(updateLevel)
 	screenGui = gui
 	updateSelection()
+	updateLevel()
 end
 
 function StudioTestPanel.stop(): ()
-	if attributeConnection ~= nil then attributeConnection:Disconnect(); attributeConnection = nil end
+	if archetypeAttributeConnection ~= nil then archetypeAttributeConnection:Disconnect(); archetypeAttributeConnection = nil end
+	if levelAttributeConnection ~= nil then levelAttributeConnection:Disconnect(); levelAttributeConnection = nil end
 	for _, connection in buttonConnections do connection:Disconnect() end
 	table.clear(buttonConnections)
 	table.clear(buttons)
 	if screenGui ~= nil then screenGui:Destroy(); screenGui = nil end
+	levelValueLabel = nil
 end
 
 return StudioTestPanel

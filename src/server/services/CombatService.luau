@@ -8,6 +8,8 @@ local HttpService = game:GetService("HttpService")
 local ActionRules = require(ReplicatedStorage.Shared.combat.ActionRules)
 local AutoAttackRules = require(ReplicatedStorage.Shared.combat.AutoAttackRules)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
+local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
 local CombatRules = require(ReplicatedStorage.Shared.combat.CombatRules)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local DamageRules = require(ReplicatedStorage.Shared.combat.DamageRules)
@@ -22,6 +24,8 @@ local MobService = require(script.Parent.MobService)
 local CombatEffectService = require(script.Parent.CombatEffectService)
 local CombatPresentationService = require(script.Parent.CombatPresentationService)
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+local StatsService = require(script.Parent.StatsService)
 
 local CombatService = {}
 
@@ -101,23 +105,25 @@ local function getArchetypeId(player: Player): string
 	return "knight"
 end
 
-local function createStatSnapshot(archetypeId: string): CombatTypes.CombatStatSnapshot
-	local archetype = ArchetypeDefinitions[archetypeId]
-	local configured = CombatConfig.ArchetypeStats[archetypeId]
-	assert(archetype ~= nil and configured ~= nil, "combat snapshot requires a known archetype")
-	return {
-		resource = ResourceRules.create(archetype.resourceType, configured.maximumResource),
-		resourceRegenerationPerSecond = configured.resourceRegenerationPerSecond,
-		physicalAttack = configured.physicalAttack,
-		magicAttack = configured.magicAttack,
-		basePhysicalDefense = configured.physicalDefense,
-		physicalDefense = configured.physicalDefense,
-		baseAttackSpeedMultiplier = configured.attackSpeedMultiplier,
-		attackSpeedMultiplier = configured.attackSpeedMultiplier,
-		criticalChance = configured.criticalChance,
-		baseMovementSpeed = configured.movementSpeed,
-		movementSpeed = configured.movementSpeed,
-	}
+local function createStatSnapshot(player: Player, archetypeId: string): StatsService.Snapshot
+	return StatsService.createCombatSnapshot(player, archetypeId, nil)
+end
+
+local function preserveRatio(current: number, oldMaximum: number, newMaximum: number): number
+	if oldMaximum <= 0 then return newMaximum end
+	return math.clamp((current / oldMaximum) * newMaximum, 0, newMaximum)
+end
+
+local function applyMaximumHealth(player: Player, newMaximum: number, preserveCurrentRatio: boolean): ()
+	local character = player.Character
+	local humanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+	if humanoid == nil then return end
+	local oldMaximum = humanoid.MaxHealth
+	local oldCurrent = humanoid.Health
+	humanoid.MaxHealth = newMaximum
+	humanoid.Health = if preserveCurrentRatio
+		then preserveRatio(oldCurrent, oldMaximum, newMaximum)
+		else newMaximum
 end
 
 local function replicateResource(player: Player, state: PlayerCombatState): ()
@@ -170,13 +176,14 @@ local function getState(player: Player): PlayerCombatState
 	local state = statesByPlayer[player]
 	if state == nil then
 		local archetypeId = getArchetypeId(player)
+		local snapshot = createStatSnapshot(player, archetypeId)
 		state = {
 			readyAt = 0,
 			actionState = "Ready",
 			bufferedTargetId = nil,
 			generation = 0,
 			archetypeId = archetypeId,
-			stats = createStatSnapshot(archetypeId),
+			stats = snapshot.combat,
 			regenerationElapsed = 0,
 			cooldowns = cooldownsByPlayer[player] or {},
 			skillSlot = SkillActionLifecycle.createSlot(),
@@ -186,10 +193,45 @@ local function getState(player: Player): PlayerCombatState
 		}
 		cooldownsByPlayer[player] = state.cooldowns
 		statesByPlayer[player] = state
+		applyMaximumHealth(player, snapshot.maxHealth, true)
+		CombatEffectService.recomputePlayerModifiers(player, state.stats)
 		replicateState(player, state)
 		replicateCooldowns(player, state)
 	end
 	return state
+end
+
+function CombatService.refreshPlayerStats(player: Player): boolean
+	local state = statesByPlayer[player]
+	if state == nil or player.Parent ~= Players or not PlayerDataService.isReady(player) then return false end
+	local snapshot = createStatSnapshot(player, state.archetypeId)
+	local oldResource = state.stats.resource
+	local resourceRatioCurrent = preserveRatio(
+		oldResource.current,
+		oldResource.maximum,
+		snapshot.combat.resource.maximum
+	)
+
+	state.stats.resource = {
+		resourceType = snapshot.combat.resource.resourceType,
+		current = resourceRatioCurrent,
+		maximum = snapshot.combat.resource.maximum,
+	}
+	state.stats.resourceRegenerationPerSecond = snapshot.combat.resourceRegenerationPerSecond
+	state.stats.physicalAttack = snapshot.combat.physicalAttack
+	state.stats.magicAttack = snapshot.combat.magicAttack
+	state.stats.basePhysicalDefense = snapshot.combat.basePhysicalDefense
+	state.stats.physicalDefense = snapshot.combat.physicalDefense
+	state.stats.baseAttackSpeedMultiplier = snapshot.combat.baseAttackSpeedMultiplier
+	state.stats.attackSpeedMultiplier = snapshot.combat.attackSpeedMultiplier
+	state.stats.criticalChance = snapshot.combat.criticalChance
+	state.stats.baseMovementSpeed = snapshot.combat.baseMovementSpeed
+	state.stats.movementSpeed = snapshot.combat.movementSpeed
+
+	applyMaximumHealth(player, snapshot.maxHealth, true)
+	CombatEffectService.recomputePlayerModifiers(player, state.stats)
+	replicateResource(player, state)
+	return true
 end
 
 local function getPlayerByCanonicalTargetId(targetId: string): Player?
@@ -428,6 +470,7 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 end
 
 local function onSkillRequest(player: Player, ...: unknown): ()
+	if not PlayerDataService.isReady(player) then return end
 	local argumentCount = select("#", ...)
 	local skillId = RemoteRequestRules.validateSkillRequest(argumentCount, (select(1, ...)))
 	-- Malformed/extra payloads are silently dropped to avoid turning forged spam
@@ -455,6 +498,16 @@ local function onSkillRequest(player: Player, ...: unknown): ()
 	)
 	if not decision.accepted or definition == nil then
 		reject(player, {
+			outcome = "Rejected",
+			reasonCode = "ForbiddenState",
+		})
+		return
+	end
+	local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
+	local actorLevel = if typeof(rawLevel) == "number" then rawLevel else 1
+	if not ProgressionRules.isSkillUnlocked(definition.unlockLevel, actorLevel) then
+		reject(player, {
+			skillId = skillId,
 			outcome = "Rejected",
 			reasonCode = "ForbiddenState",
 		})
@@ -687,6 +740,7 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 end
 
 local function onTargetRequest(player: Player, ...: unknown): ()
+	if not PlayerDataService.isReady(player) then return end
 	local entityId = RemoteRequestRules.validateTargetRequest(select("#", ...), (select(1, ...)))
 	if entityId == nil then return end
 	-- The sole semantic clear command is one exact empty string. Other malformed
@@ -751,6 +805,7 @@ local function onTargetRequest(player: Player, ...: unknown): ()
 end
 
 local function onAttackRequest(player: Player, ...: unknown): ()
+	if not PlayerDataService.isReady(player) then return end
 	-- The Milestone 1 contract has no payload. This explicitly rejects legacy booleans and extra arguments.
 	if not RemoteRequestRules.validateAttackRequest(select("#", ...)) then return end
 	-- Check lifecycle before rate bookkeeping and before any path can call getState.
@@ -810,6 +865,7 @@ local function onAutoAttackModeRequest(player: Player, ...: unknown): ()
 		replicateState(player, existingState)
 		return
 	end
+	if not PlayerDataService.isReady(player) then return end
 
 	local now = workspace:GetServerTimeNow()
 	if ActionRules.isRequestRateLimited(
@@ -864,6 +920,7 @@ function CombatService.requestMobBasicAttack(
 	target: Player,
 	definition: CombatTypes.MobDefinition
 ): boolean
+	if not PlayerDataService.isReady(target) then return false end
 	local now = workspace:GetServerTimeNow()
 	local humanoid = mob:FindFirstChildOfClass("Humanoid")
 	local root = mob:FindFirstChild("HumanoidRootPart")
@@ -953,6 +1010,12 @@ function CombatService.start(): ()
 	table.insert(serviceConnections, autoAttackModeRequest.OnServerEvent:Connect(onAutoAttackModeRequest))
 	table.insert(serviceConnections, skillRequest.OnServerEvent:Connect(onSkillRequest))
 	table.insert(serviceConnections, Players.PlayerAdded:Connect(onPlayerAdded))
+	table.insert(serviceConnections, PlayerDataService.ProfileReady:Connect(function(player)
+		CombatService.refreshPlayerStats(player)
+	end))
+	table.insert(serviceConnections, PlayerDataService.ProfileChanged:Connect(function(player)
+		CombatService.refreshPlayerStats(player)
+	end))
 	table.insert(serviceConnections, Players.PlayerRemoving:Connect(function(player)
 		clearPlayerState(player, true)
 		local deathConnection = characterDeathConnections[player]
@@ -1066,6 +1129,18 @@ function CombatService._setArchetypeForStudio(player: Player, archetypeId: strin
 	player:SetAttribute(ARCHETYPE_ATTRIBUTE, archetypeId)
 	player:LoadCharacter()
 	return true
+end
+
+function CombatService.restorePlayerResource(player: Player, amount: number): number
+	if amount ~= amount or amount <= 0 or amount == math.huge then return 0 end
+	if player.Parent ~= Players or not PlayerDataService.isReady(player) or getLivingCharacterRoot(player) == nil then return 0 end
+	local state = statesByPlayer[player]
+	if state == nil then return 0 end
+	local before = state.stats.resource.current
+	local restored = ResourceRules.restore(state.stats.resource, amount)
+	state.stats.resource = restored
+	replicateResource(player, state)
+	return restored.current - before
 end
 
 -- Test-project-only server seam. It is unavailable in live servers and is never

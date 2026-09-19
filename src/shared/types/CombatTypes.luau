@@ -86,6 +86,7 @@ export type SkillDefinition = {
 	id: string,
 	archetypeId: string,
 	displayName: string,
+	unlockLevel: number,
 	targetType: TargetType,
 	range: number,
 	requiresFacing: boolean,
@@ -117,8 +118,10 @@ export type MobAttackKind = "Melee" | "Ranged"
 export type MobDefinition = {
 	id: string,
 	displayName: string,
+	level: number,
 	maxHealth: number,
 	rewardXP: number,
+	lootTableId: string,
 	respawnSeconds: number,
 	aggressionMode: AggressionMode,
 	rank: MobRank,

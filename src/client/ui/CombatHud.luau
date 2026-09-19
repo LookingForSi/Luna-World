@@ -5,6 +5,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
+local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombatUiRules)
 local HudLayout = require(script.Parent.HudLayout)
@@ -17,11 +19,15 @@ local targetNameLabel: TextLabel? = nil
 local targetHealthTextLabel: TextLabel? = nil
 local targetHealthFill: Frame? = nil
 local playerCombatPointsFill: Frame? = nil
+local playerCombatPointsValueLabel: TextLabel? = nil
 local playerHealthFill: Frame? = nil
+local playerHealthValueLabel: TextLabel? = nil
 local playerResourceFill: Frame? = nil
 local playerResourceLabel: TextLabel? = nil
+local playerResourceValueLabel: TextLabel? = nil
 local xpFill: Frame? = nil
-local xpLabel: TextLabel? = nil
+local xpValueLabel: TextLabel? = nil
+local levelLabel: TextLabel? = nil
 local feedbackLabel: TextLabel? = nil
 local targetHealthConnection: RBXScriptConnection? = nil
 local targetAncestryConnection: RBXScriptConnection? = nil
@@ -32,6 +38,7 @@ local statusConnections: { RBXScriptConnection } = {}
 local presentationConnection: RBXScriptConnection? = nil
 local feedbackGeneration = 0
 local currentTarget: Model? = nil
+
 
 local RESOURCE_NAMES = {
 	Stamina = "STM",
@@ -56,13 +63,30 @@ local function disconnectPlayerHealth(): ()
 	if playerMaxHealthConnection ~= nil then playerMaxHealthConnection:Disconnect(); playerMaxHealthConnection = nil end
 end
 
-local function updateXP(): ()
-	local value = player:GetAttribute("SessionXP")
-	local sessionXP = if typeof(value) == "number" then math.max(0, value) else 0
-	if xpLabel ~= nil then xpLabel.Text = string.format("XP: %d", sessionXP) end
+local function formatStatusNumber(value: number): string
+	local rounded = math.round(value)
+	if math.abs(value - rounded) < 0.05 then
+		return tostring(rounded)
+	end
+	return string.format("%.1f", value)
+end
+
+local function updateProgression(): ()
+	local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
+	local rawXP = player:GetAttribute(ProgressionConfig.ExperienceAttribute)
+	local level = if typeof(rawLevel) == "number" then math.clamp(math.floor(rawLevel), 1, ProgressionConfig.LevelCap) else 1
+	local xp = if typeof(rawXP) == "number" then math.max(0, math.floor(rawXP)) else 0
+	local required = ProgressionRules.requiredXP(level)
+
+	if levelLabel ~= nil then
+		levelLabel.Text = string.format("LVL %d", level)
+	end
+	if xpValueLabel ~= nil then
+		xpValueLabel.Text = if required == nil then "MAX" else string.format("%d / %d", xp, required)
+	end
 	if xpFill ~= nil then
-		local reference = math.max(1, CombatConfig.SessionXpHudReference)
-		xpFill.Size = UDim2.fromScale(math.clamp(sessionXP / reference, 0, 1), 1)
+		local ratio = if required == nil then 1 else math.clamp(xp / required, 0, 1)
+		xpFill.Size = UDim2.fromScale(ratio, 1)
 	end
 end
 
@@ -73,6 +97,13 @@ local function updateCombatPoints(): ()
 	local maximumValue = if typeof(maximum) == "number" then maximum else 0
 	local ratio = if maximumValue > 0 then math.clamp(currentValue / maximumValue, 0, 1) else 0
 	if playerCombatPointsFill ~= nil then playerCombatPointsFill.Size = UDim2.fromScale(ratio, 1) end
+	if playerCombatPointsValueLabel ~= nil then
+		playerCombatPointsValueLabel.Text = string.format(
+			"%s / %s",
+			formatStatusNumber(currentValue),
+			formatStatusNumber(maximumValue)
+		)
+	end
 end
 
 local function updateResource(): ()
@@ -84,6 +115,13 @@ local function updateResource(): ()
 	local maximumValue = if typeof(maximum) == "number" then maximum else 0
 	local ratio = if maximumValue > 0 then math.clamp(currentValue / maximumValue, 0, 1) else 0
 	if playerResourceLabel ~= nil then playerResourceLabel.Text = displayName end
+	if playerResourceValueLabel ~= nil then
+		playerResourceValueLabel.Text = string.format(
+			"%s / %s",
+			formatStatusNumber(currentValue),
+			formatStatusNumber(maximumValue)
+		)
+	end
 	if playerResourceFill ~= nil then playerResourceFill.Size = UDim2.fromScale(ratio, 1) end
 end
 
@@ -92,14 +130,27 @@ local function updateTargetHealth(humanoid: Humanoid): ()
 	local maxHealth = math.max(0, humanoid.MaxHealth)
 	local ratio = if maxHealth > 0 then math.clamp(health / maxHealth, 0, 1) else 0
 	if targetHealthTextLabel ~= nil then
-		targetHealthTextLabel.Text = string.format("HP: %d / %d", math.ceil(health), math.ceil(maxHealth))
+		targetHealthTextLabel.Text = string.format(
+			"HP: %s / %s",
+			formatStatusNumber(health),
+			formatStatusNumber(maxHealth)
+		)
 	end
 	if targetHealthFill ~= nil then targetHealthFill.Size = UDim2.fromScale(ratio, 1) end
 end
 
 local function updatePlayerHealth(humanoid: Humanoid): ()
-	local ratio = if humanoid.MaxHealth > 0 then math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1) else 0
+	local current = math.max(0, humanoid.Health)
+	local maximum = math.max(0, humanoid.MaxHealth)
+	local ratio = if maximum > 0 then math.clamp(current / maximum, 0, 1) else 0
 	if playerHealthFill ~= nil then playerHealthFill.Size = UDim2.fromScale(ratio, 1) end
+	if playerHealthValueLabel ~= nil then
+		playerHealthValueLabel.Text = string.format(
+			"%s / %s",
+			formatStatusNumber(current),
+			formatStatusNumber(maximum)
+		)
+	end
 end
 
 local function bindPlayerCharacter(character: Model): ()
@@ -129,11 +180,18 @@ local function makeTextLabel(parent: Instance, name: string, position: UDim2): T
 	return label
 end
 
-local function makeStatusBar(parent: Instance, name: string, position: UDim2, fillName: string, fillColor: Color3): Frame
+local function makeStatusBar(
+	parent: Instance,
+	name: string,
+	position: UDim2,
+	fillName: string,
+	fillColor: Color3,
+	rightReserved: number?
+): Frame
 	local background = Instance.new("Frame")
 	background.Name = name
 	background.Position = position
-	background.Size = UDim2.new(1, -16, 0, 14)
+	background.Size = UDim2.new(1, -(16 + (rightReserved or 0)), 0, 14)
 	background.BackgroundColor3 = Color3.fromRGB(38, 39, 47)
 	background.BorderSizePixel = 0
 	background.ClipsDescendants = true
@@ -155,18 +213,48 @@ local function makePlayerStatusRow(
 	labelText: string,
 	fillName: string,
 	fillColor: Color3
-): (TextLabel, Frame)
-	local y = 8 + (row - 1) * 41
+): (TextLabel, TextLabel, Frame)
+	local y = 34 + (row - 1) * 37
 	local label = makeTextLabel(parent, name .. "Label", UDim2.fromOffset(8, y))
-	label.Size = UDim2.new(1, -16, 0, 16)
+	label.Size = UDim2.new(1, -16, 0, 15)
 	label.Text = labelText
-	label.TextSize = 12
-	local fill = makeStatusBar(parent, name .. "Bar", UDim2.fromOffset(8, y + 19), fillName, fillColor)
+	label.TextSize = 11
+
+	local valueLabel = makeTextLabel(parent, name .. "Value", UDim2.fromOffset(8, y))
+	valueLabel.Size = UDim2.new(1, -16, 0, 15)
+	valueLabel.Text = "0 / 0"
+	valueLabel.TextSize = 11
+	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+	local fill = makeStatusBar(
+		parent,
+		name .. "Bar",
+		UDim2.fromOffset(8, y + 17),
+		fillName,
+		fillColor,
+		0
+	)
 	local background = fill.Parent
 	if background ~= nil and background:IsA("Frame") then
-		background.Size = UDim2.new(1, -16, 0, 13)
+		background.Size = UDim2.new(1, -16, 0, 12)
 	end
-	return label, fill
+	return label, valueLabel, fill
+end
+
+local function createPlayerHeader(parent: Frame): TextLabel
+	local nameLabel = makeTextLabel(parent, "PlayerName", UDim2.fromOffset(8, 7))
+	nameLabel.Size = UDim2.new(1, -82, 0, 20)
+	nameLabel.Font = Enum.Font.GothamBold
+	nameLabel.Text = player.DisplayName
+	nameLabel.TextSize = 14
+
+	local level = makeTextLabel(parent, "PlayerLevel", UDim2.fromOffset(8, 7))
+	level.Size = UDim2.new(1, -16, 0, 20)
+	level.Font = Enum.Font.GothamBold
+	level.Text = "LVL 1"
+	level.TextSize = 14
+	level.TextXAlignment = Enum.TextXAlignment.Right
+	return level
 end
 
 function CombatHud.start(): ()
@@ -175,12 +263,9 @@ function CombatHud.start(): ()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CombatHud"
 	gui.ResetOnSpawn = false
-	-- Use the physical viewport edge so the top-right status panel has the
-	-- same visible corner margin as the bottom-left/right HUD panels.
 	gui.IgnoreGuiInset = true
 	gui.Parent = player:WaitForChild("PlayerGui")
 
-	-- Stock chat remains lower-left; the custom combat log owns its own corner-safe placement.
 	TextChatService.ChatWindowConfiguration.HorizontalAlignment = Enum.HorizontalAlignment.Left
 	TextChatService.ChatWindowConfiguration.VerticalAlignment = Enum.VerticalAlignment.Bottom
 
@@ -194,7 +279,7 @@ function CombatHud.start(): ()
 
 	targetNameLabel = makeTextLabel(targetPanel, "TargetName", UDim2.fromOffset(8, 4))
 	targetHealthTextLabel = makeTextLabel(targetPanel, "HealthText", UDim2.fromOffset(8, 28))
-	targetHealthFill = makeStatusBar(targetPanel, "HealthBar", UDim2.fromOffset(8, 60), "Fill", Color3.fromRGB(159, 52, 62))
+	targetHealthFill = makeStatusBar(targetPanel, "HealthBar", UDim2.fromOffset(8, 60), "Fill", Color3.fromRGB(159, 52, 62), 0)
 
 	local playerPanel = Instance.new("Frame")
 	playerPanel.Name = "PlayerStatusFrame"
@@ -204,8 +289,10 @@ function CombatHud.start(): ()
 	HudLayout.applyPanelStyle(playerPanel)
 	playerPanel.Parent = gui
 
+	levelLabel = createPlayerHeader(playerPanel)
+
 	local cpLabel
-	cpLabel, playerCombatPointsFill = makePlayerStatusRow(
+	cpLabel, playerCombatPointsValueLabel, playerCombatPointsFill = makePlayerStatusRow(
 		playerPanel,
 		"CombatPoints",
 		1,
@@ -216,7 +303,7 @@ function CombatHud.start(): ()
 	cpLabel.Text = "CP"
 
 	local hpLabel
-	hpLabel, playerHealthFill = makePlayerStatusRow(
+	hpLabel, playerHealthValueLabel, playerHealthFill = makePlayerStatusRow(
 		playerPanel,
 		"PlayerHealth",
 		2,
@@ -227,7 +314,7 @@ function CombatHud.start(): ()
 	hpLabel.Text = "HP"
 
 	local resourceLabel
-	resourceLabel, playerResourceFill = makePlayerStatusRow(
+	resourceLabel, playerResourceValueLabel, playerResourceFill = makePlayerStatusRow(
 		playerPanel,
 		"PlayerResource",
 		3,
@@ -237,16 +324,16 @@ function CombatHud.start(): ()
 	)
 	playerResourceLabel = resourceLabel
 
-	local xp
-	xp, xpFill = makePlayerStatusRow(
+	local xpLabel
+	xpLabel, xpValueLabel, xpFill = makePlayerStatusRow(
 		playerPanel,
-		"SessionXP",
+		"LevelXP",
 		4,
-		"XP: 0",
-		"SessionXPFill",
+		"XP",
+		"LevelXPFill",
 		Color3.fromRGB(119, 104, 178)
 	)
-	xpLabel = xp
+	xpLabel.Text = "XP"
 
 	local feedback = makeTextLabel(gui, "CombatFeedback", UDim2.new(0.5, -160, 1, -122))
 	feedback.Size = UDim2.fromOffset(320, 28)
@@ -257,14 +344,15 @@ function CombatHud.start(): ()
 	screenGui = gui
 
 	CombatHud.setTarget(nil)
-	updateXP()
+	updateProgression()
 	updateCombatPoints()
 	updateResource()
 	if player.Character ~= nil then bindPlayerCharacter(player.Character) end
 	characterAddedConnection = player.CharacterAdded:Connect(bindPlayerCharacter)
 
 	for _, attributeName in {
-		"SessionXP",
+		ProgressionConfig.LevelAttribute,
+		ProgressionConfig.ExperienceAttribute,
 		CombatConfig.CombatPointsCurrentAttribute,
 		CombatConfig.CombatPointsMaximumAttribute,
 		CombatConfig.ResourceTypeAttribute,
@@ -272,8 +360,8 @@ function CombatHud.start(): ()
 		CombatConfig.ResourceMaximumAttribute,
 	} do
 		table.insert(statusConnections, player:GetAttributeChangedSignal(attributeName):Connect(function()
-			if attributeName == "SessionXP" then
-				updateXP()
+			if attributeName == ProgressionConfig.LevelAttribute or attributeName == ProgressionConfig.ExperienceAttribute then
+				updateProgression()
 			elseif attributeName == CombatConfig.CombatPointsCurrentAttribute or attributeName == CombatConfig.CombatPointsMaximumAttribute then
 				updateCombatPoints()
 			else
@@ -312,7 +400,10 @@ function CombatHud.setTarget(target: Model?): ()
 	if humanoid == nil then return end
 
 	currentTarget = target
-	targetNameLabel.Text = target.Name
+	local targetLevel = target:GetAttribute("Level")
+	targetNameLabel.Text = if typeof(targetLevel) == "number"
+		then string.format("LV %d · %s", math.floor(targetLevel), target.Name)
+		else target.Name
 	updateTargetHealth(humanoid)
 	targetHealthConnection = humanoid.HealthChanged:Connect(function()
 		if currentTarget == target then updateTargetHealth(humanoid) end
@@ -336,11 +427,15 @@ function CombatHud.stop(): ()
 	targetHealthTextLabel = nil
 	targetHealthFill = nil
 	playerCombatPointsFill = nil
+	playerCombatPointsValueLabel = nil
 	playerHealthFill = nil
+	playerHealthValueLabel = nil
 	playerResourceFill = nil
 	playerResourceLabel = nil
+	playerResourceValueLabel = nil
 	xpFill = nil
-	xpLabel = nil
+	xpValueLabel = nil
+	levelLabel = nil
 	feedbackLabel = nil
 end
 
