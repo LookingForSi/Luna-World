@@ -2,8 +2,16 @@
 
 export type ZoneDefinition = {
 	id: string,
+	displayName: string,
 	levelMin: number,
 	levelMax: number,
+}
+
+export type ZoneVolumeDefinition = {
+	zoneId: string,
+	center: Vector3,
+	size: Vector3,
+	priority: number,
 }
 
 export type PointOfInterestDefinition = {
@@ -28,6 +36,7 @@ export type WorldLayoutDefinition = {
 		MoonfallRouteLength: number,
 	},
 	Zones: { ZoneDefinition },
+	ZoneVolumes: { ZoneVolumeDefinition },
 	PointsOfInterest: { PointOfInterestDefinition },
 	SpawnMarkers: { SpawnMarkerDefinition },
 	Route: { Vector3 },
@@ -48,28 +57,66 @@ local WorldLayout: WorldLayoutDefinition = {
 	Zones = {
 		{
 			id = "zone_luna_village",
+			displayName = "Luna Village",
 			levelMin = 1,
 			levelMax = 1,
 		},
 		{
 			id = "zone_luna_meadows",
+			displayName = "Luna Meadows",
 			levelMin = 1,
 			levelMax = 3,
 		},
 		{
 			id = "zone_moonfall_road",
+			displayName = "Moonfall Road",
 			levelMin = 3,
 			levelMax = 7,
 		},
 		{
 			id = "zone_goblin_camp",
+			displayName = "Goblin Camp",
 			levelMin = 4,
 			levelMax = 7,
 		},
 		{
 			id = "zone_spider_hollow",
+			displayName = "Spider Hollow",
 			levelMin = 4,
 			levelMax = 6,
+		},
+	},
+
+	ZoneVolumes = {
+		{
+			zoneId = "zone_luna_village",
+			center = Vector3.new(0, 50, -95),
+			size = Vector3.new(360, 140, 330),
+			priority = 5,
+		},
+		{
+			zoneId = "zone_luna_meadows",
+			center = Vector3.new(0, 18, 510),
+			size = Vector3.new(760, 120, 900),
+			priority = 1,
+		},
+		{
+			zoneId = "zone_moonfall_road",
+			center = Vector3.new(0, 22, 1380),
+			size = Vector3.new(560, 140, 960),
+			priority = 2,
+		},
+		{
+			zoneId = "zone_goblin_camp",
+			center = Vector3.new(-300, 36, 1415),
+			size = Vector3.new(430, 140, 430),
+			priority = 10,
+		},
+		{
+			zoneId = "zone_spider_hollow",
+			center = Vector3.new(300, 8, 1440),
+			size = Vector3.new(440, 120, 440),
+			priority = 10,
 		},
 	},
 

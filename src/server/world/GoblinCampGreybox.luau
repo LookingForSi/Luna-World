@@ -87,13 +87,14 @@ local function createApproach(parent: Instance)
 		local from = WorldLayout.GoblinCampRoute[index]
 		local to = WorldLayout.GoblinCampRoute[index + 1]
 
-		local groundSection = GreyboxPrimitives.createSegment(
+		local groundSection = GreyboxPrimitives.createSegmentWithOverlap(
 			ground,
 			string.format("GoblinSlope%02d", index),
 			from - Vector3.new(0, 4, 0),
 			to - Vector3.new(0, 4, 0),
 			170,
-			8
+			8,
+			36
 		)
 		groundSection.Material = Enum.Material.Grass
 		groundSection.Color = COLORS.ground

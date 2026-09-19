@@ -4,8 +4,10 @@ export type Attributes = { [string]: any }
 
 local MARKER_SIZE = Vector3.new(2, 2, 2)
 local MARKER_COLOR = Color3.fromRGB(255, 196, 64)
-local LABEL_SIZE = UDim2.fromOffset(240, 48)
+local LABEL_SIZE = UDim2.fromOffset(220, 32)
 local LABEL_OFFSET = Vector3.new(0, 3, 0)
+local DEFAULT_LABEL_MAX_DISTANCE = 65
+local MARKER_LABEL_MAX_DISTANCE = 45
 
 local GreyboxPrimitives = {}
 
@@ -36,11 +38,12 @@ function GreyboxPrimitives.createBlock(
 	return block
 end
 
-function GreyboxPrimitives.createLabel(adornee: BasePart, text: string): BillboardGui
+function GreyboxPrimitives.createLabel(adornee: BasePart, text: string, maxDistance: number?): BillboardGui
 	local label = Instance.new("BillboardGui")
 	label.Name = "Label"
 	label.Adornee = adornee
-	label.AlwaysOnTop = true
+	label.AlwaysOnTop = false
+	label.MaxDistance = maxDistance or DEFAULT_LABEL_MAX_DISTANCE
 	label.Size = LABEL_SIZE
 	label.StudsOffset = LABEL_OFFSET
 
@@ -51,8 +54,10 @@ function GreyboxPrimitives.createLabel(adornee: BasePart, text: string): Billboa
 	textLabel.Font = Enum.Font.GothamBold
 	textLabel.Text = text
 	textLabel.TextColor3 = Color3.new(1, 1, 1)
-	textLabel.TextScaled = true
-	textLabel.TextStrokeTransparency = 0.5
+	textLabel.TextScaled = false
+	textLabel.TextSize = 15
+	textLabel.TextWrapped = true
+	textLabel.TextStrokeTransparency = 0.55
 	textLabel.Parent = label
 
 	label.Parent = adornee
@@ -77,7 +82,7 @@ function GreyboxPrimitives.createMarker(
 	marker.CanCollide = false
 	marker:SetAttribute("StableId", name)
 	applyAttributes(marker, attributes)
-	GreyboxPrimitives.createLabel(marker, name)
+	GreyboxPrimitives.createLabel(marker, name, MARKER_LABEL_MAX_DISTANCE)
 	marker.Parent = parent
 
 	return marker
@@ -103,6 +108,30 @@ function GreyboxPrimitives.createSegment(
 	)
 
 	return segment
+end
+
+function GreyboxPrimitives.createSegmentWithOverlap(
+	parent: Instance,
+	name: string,
+	fromPosition: Vector3,
+	toPosition: Vector3,
+	width: number,
+	thickness: number,
+	overlap: number
+): BasePart
+	assert(overlap >= 0, "segment overlap must be non-negative")
+	local offset = toPosition - fromPosition
+	assert(offset.Magnitude > 0, "segment endpoints must not be identical")
+
+	local extension = offset.Unit * overlap / 2
+	return GreyboxPrimitives.createSegment(
+		parent,
+		name,
+		fromPosition - extension,
+		toPosition + extension,
+		width,
+		thickness
+	)
 end
 
 return table.freeze(GreyboxPrimitives)

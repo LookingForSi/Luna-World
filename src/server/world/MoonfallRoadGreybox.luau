@@ -110,13 +110,14 @@ local function createRouteGeometry(parent: Instance)
 		local from = WorldLayout.MoonfallRoadRoute[index]
 		local to = WorldLayout.MoonfallRoadRoute[index + 1]
 
-		local groundSection = GreyboxPrimitives.createSegment(
+		local groundSection = GreyboxPrimitives.createSegmentWithOverlap(
 			ground,
 			string.format("MoonfallGround%02d", index),
 			from + groundOffset,
 			to + groundOffset,
 			GROUND_WIDTH,
-			GROUND_THICKNESS
+			GROUND_THICKNESS,
+			48
 		)
 		groundSection.Material = Enum.Material.Grass
 		groundSection.Color = COLORS.ground

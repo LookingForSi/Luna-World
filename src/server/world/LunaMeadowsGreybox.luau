@@ -178,13 +178,14 @@ local function createMeadowGround(parent: Instance)
 	local verticalOffset = Vector3.new(0, -GROUND.thickness / 2, 0)
 
 	for index = 1, #WorldLayout.Route - 1 do
-		local section = GreyboxPrimitives.createSegment(
+		local section = GreyboxPrimitives.createSegmentWithOverlap(
 			ground,
 			string.format("MeadowGround%02d", index),
 			WorldLayout.Route[index] + verticalOffset,
 			WorldLayout.Route[index + 1] + verticalOffset,
 			GROUND.width,
-			GROUND.thickness
+			GROUND.thickness,
+			56
 		)
 		section.Material = Enum.Material.Grass
 		section.Color = COLORS.ground

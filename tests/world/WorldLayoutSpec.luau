@@ -75,6 +75,19 @@ function WorldLayoutSpec.register(runner: Runner)
 		assertInvalid(layout, "levelMin <= levelMax")
 	end)
 
+	runner:test("zone presentation volumes cover every canonical zone", function()
+		assert(#WorldLayout.ZoneVolumes == #WorldLayout.Zones)
+		for _, zone in ipairs(WorldLayout.Zones) do
+			assert(type(zone.displayName) == "string" and zone.displayName ~= "")
+		end
+	end)
+
+	runner:test("zone presentation volume with unknown zone fails", function()
+		local layout = deepClone(WorldLayout)
+		layout.ZoneVolumes[1].zoneId = "zone_missing"
+		assertInvalid(layout, "must reference an existing zone")
+	end)
+
 	runner:test("non-positive radius fails", function()
 		local layout = deepClone(WorldLayout)
 		layout.SpawnMarkers[1].radius = 0

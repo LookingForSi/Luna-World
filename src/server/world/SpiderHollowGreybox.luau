@@ -92,13 +92,14 @@ local function createTrail(
 		local from = route[index]
 		local to = route[index + 1]
 
-		local groundSection = GreyboxPrimitives.createSegment(
+		local groundSection = GreyboxPrimitives.createSegmentWithOverlap(
 			ground,
 			string.format("%sGround%02d", name, index),
 			from - Vector3.new(0, 5, 0),
 			to - Vector3.new(0, 5, 0),
 			groundWidth,
-			10
+			10,
+			36
 		)
 		groundSection.Material = Enum.Material.Grass
 		groundSection.Color = COLORS.ground

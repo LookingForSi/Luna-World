@@ -142,6 +142,7 @@ function WorldLayoutValidator.validate(layout: any): (boolean, { string })
 	end
 
 	local zones = getList(layout, "Zones", errors)
+	local zoneVolumes = getList(layout, "ZoneVolumes", errors)
 	local pointsOfInterest = getList(layout, "PointsOfInterest", errors)
 	local spawnMarkers = getList(layout, "SpawnMarkers", errors)
 	local route = getList(layout, "Route", errors)
@@ -160,6 +161,48 @@ function WorldLayoutValidator.validate(layout: any): (boolean, { string })
 	requireIds(REQUIRED_SPAWN_IDS, spawnMarkersById, "spawn marker", errors)
 
 	validateLevelRanges(zones, "zone", errors)
+
+	for index, zone in ipairs(zones) do
+		if type(zone) == "table" then
+			if type(zone.displayName) ~= "string" or zone.displayName == "" then
+				table.insert(errors, string.format("zone '%s' must define a non-empty displayName", tostring(zone.id or index)))
+			end
+		end
+	end
+
+	local zoneVolumeCountById = {}
+	for index, zoneVolume in ipairs(zoneVolumes) do
+		if type(zoneVolume) ~= "table" then
+			table.insert(errors, string.format("ZoneVolumes[%d] must be a table", index))
+			continue
+		end
+
+		local zoneId = zoneVolume.zoneId
+		if type(zoneId) ~= "string" or zonesById[zoneId] == nil then
+			table.insert(errors, string.format("ZoneVolumes[%d] must reference an existing zone", index))
+		else
+			zoneVolumeCountById[zoneId] = (zoneVolumeCountById[zoneId] or 0) + 1
+		end
+
+		if typeof(zoneVolume.center) ~= "Vector3" then
+			table.insert(errors, string.format("ZoneVolumes[%d] center must be a Vector3", index))
+		end
+		if typeof(zoneVolume.size) ~= "Vector3"
+			or zoneVolume.size.X <= 0
+			or zoneVolume.size.Y <= 0
+			or zoneVolume.size.Z <= 0 then
+			table.insert(errors, string.format("ZoneVolumes[%d] size must be a positive Vector3", index))
+		end
+		if type(zoneVolume.priority) ~= "number" then
+			table.insert(errors, string.format("ZoneVolumes[%d] priority must be numeric", index))
+		end
+	end
+
+	for _, requiredZoneId in ipairs(REQUIRED_ZONE_IDS) do
+		if zoneVolumeCountById[requiredZoneId] ~= 1 then
+			table.insert(errors, string.format("zone '%s' must define exactly one presentation volume", requiredZoneId))
+		end
+	end
 
 	for index, spawnMarker in ipairs(spawnMarkers) do
 		if type(spawnMarker) == "table" then
