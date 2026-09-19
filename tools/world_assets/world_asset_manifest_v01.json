@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "purpose": "Luna World v0.1 modular environment asset replacement contract",
+  "rules": {
+    "source_priority": [
+      "Blender Studio licensed asset used as reference/source when license permits export into the game",
+      "original Blender model derived from approved art direction",
+      "Roblox-native primitive only as temporary fallback"
+    ],
+    "no_direct_game_clone_assets": true,
+    "pivot": "ground_center",
+    "forward_axis": "-Z",
+    "up_axis": "+Y",
+    "default_scale": 1.0,
+    "collision_policy": "simple_proxy",
+    "lod_policy": "prefer silhouette-preserving low-complexity assets suitable for Roblox/mobile"
+  },
+  "categories": [
+    {
+      "id": "village_house",
+      "current_blockout": true,
+      "target_variants": 6,
+      "usage": "Luna Village outer silhouette and secondary houses",
+      "notes": "Readable timber/stone fantasy houses; vary footprint and roofline, not scale of the world."
+    },
+    {
+      "id": "village_roof",
+      "current_blockout": true,
+      "target_variants": 4,
+      "usage": "Village and farm roof silhouettes",
+      "notes": "Separate roof modules make recolor and house recombination cheap."
+    },
+    {
+      "id": "fence",
+      "current_blockout": false,
+      "target_variants": 5,
+      "usage": "Farm, roads, village edge, goblin perimeter",
+      "notes": "Straight, broken, corner, gate and damaged variants."
+    },
+    {
+      "id": "rock",
+      "current_blockout": true,
+      "target_variants": 10,
+      "usage": "River banks, zone edges, shelves, escarpments and traversal framing",
+      "notes": "Need small/medium/large silhouettes; do not create unavoidable micro-steps on critical routes."
+    },
+    {
+      "id": "tree",
+      "current_blockout": true,
+      "target_variants": 8,
+      "usage": "Meadows framing, village edge and Dark Woodland mass",
+      "notes": "Several trunk/crown profiles; crowns non-collidable, trunk collision simple."
+    },
+    {
+      "id": "dead_tree",
+      "current_blockout": true,
+      "target_variants": 6,
+      "usage": "Spider Hollow, cemetery and shrine mood",
+      "notes": "Roots/branches must not create hidden collision traps."
+    },
+    {
+      "id": "ancient_ruin",
+      "current_blockout": true,
+      "target_variants": 8,
+      "usage": "Old Cemetery, Fallen Shrine and Ancient Approach",
+      "notes": "Pillars, broken lintels, wall fragments and rubble compatible as one kit."
+    },
+    {
+      "id": "field_strip",
+      "current_blockout": true,
+      "target_variants": 2,
+      "usage": "Moonfall Farm agricultural read",
+      "notes": "Prefer Roblox terrain/material/decal treatment over heavy mesh rows."
+    },
+    {
+      "id": "goblin_structure",
+      "current_blockout": false,
+      "target_variants": 6,
+      "usage": "Goblin Camp huts, palisades and lookout",
+      "notes": "Crude timber/leather construction; readable at distance."
+    },
+    {
+      "id": "spider_web",
+      "current_blockout": false,
+      "target_variants": 4,
+      "usage": "Spider Hollow cave mouth and deadwood dressing",
+      "notes": "Visual only; non-collidable."
+    }
+  ]
+}
