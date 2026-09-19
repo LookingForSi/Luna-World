@@ -849,5 +849,6 @@
         "terrainIntent": "raised_promontory"
       }
     ]
-  }
+  },
+  "artifactRevision": "terrain-v02"
 }
