@@ -71,12 +71,14 @@ function ProgressionRules.applyXP(level: number, xp: number, reward: number): Pr
 	}
 end
 
-function ProgressionRules.isSkillUnlocked(skillId: string, level: number): boolean
+function ProgressionRules.isSkillUnlocked(requiredLevel: number, level: number): boolean
+	if not isFiniteNumber(requiredLevel) or requiredLevel % 1 ~= 0 or requiredLevel < 1 or requiredLevel > ProgressionConfig.LevelCap then
+		return false
+	end
 	if not isFiniteNumber(level) or level % 1 ~= 0 or level < 1 or level > ProgressionConfig.LevelCap then
 		return false
 	end
-	local required = ProgressionConfig.SkillUnlockLevelById[skillId]
-	return required == nil or level >= required
+	return level >= requiredLevel
 end
 
 return table.freeze(ProgressionRules)
