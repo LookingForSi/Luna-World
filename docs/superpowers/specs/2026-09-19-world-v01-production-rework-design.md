@@ -175,17 +175,20 @@ Approved concept задаёт не только отдельные POI, но и 
 - crossroads и первые side-zones располагаются достаточно близко к river transition;
 - в imported Studio orientation Goblin Camp должен находиться на concept-left, Spider Hollow — на concept-right;
 - Old Cemetery и Fallen Shrine повторяют ту же side-логику approved concept;
-- весь side-zone block может смещаться южнее как единая композиция, если это улучшает pacing;
+- Goblin Camp / Spider Hollow / Old Cemetery / Fallen Shrine образуют единый combat-block, сдвинутый ближе к river transition;
+- footprint четырёх combat-зон должен быть примерно на 10–15% крупнее первой owner-tested версии;
+- между Cemetery/Shrine и Ancient Approach должен читаться отдельный переход, а не слипшийся ряд зон;
 - Ancient Approach — отдельная крупная высокая зона, а не edge ridge;
 - Ancient Approach должен быть шире локальных side-zones и заметно выше Cemetery/Shrine;
 - Selene massif остаётся дальним horizon и не используется как gameplay-площадка Ancient Approach;
 - main road сохраняет непрерывный no-jump climb от Dark Woodland к Ancient Approach.
 
-### Terrain v0.4 acceptance criteria
+### Terrain v0.5 acceptance criteria
 
-После импорта `terrain-v04` должны выполняться одновременно:
+После импорта `terrain-v05` должны выполняться одновременно:
 
 - пространство сразу после river transition не воспринимается как пустая равнина без назначения;
+- за мостом в Meadows нет отдельной spider-зоны: ранние пауки начинаются только в Spider Hollow;
 - Moonfall Road начинает формировать рельеф до crossroads;
 - Goblin Camp и Spider Hollow визуально находятся на сторонах approved concept;
 - Goblin Camp имеет centered raised combat shelf;
