@@ -2,6 +2,9 @@
 
 local LunaVillageGreybox = require(script.Parent.LunaVillageGreybox)
 local LunaMeadowsGreybox = require(script.Parent.LunaMeadowsGreybox)
+local MoonfallRoadGreybox = require(script.Parent.MoonfallRoadGreybox)
+local GoblinCampGreybox = require(script.Parent.GoblinCampGreybox)
+local SpiderHollowGreybox = require(script.Parent.SpiderHollowGreybox)
 
 local MANAGED_ROOT_NAME = "LunaWorldGreybox"
 local MANAGED_BY_ATTRIBUTE = "ManagedBy"
@@ -43,6 +46,9 @@ function WorldGreyboxBuilder.rebuild(workspaceRoot: Instance?): Model
 
 	LunaVillageGreybox.build(replacement)
 	LunaMeadowsGreybox.build(replacement)
+	MoonfallRoadGreybox.build(replacement)
+	GoblinCampGreybox.build(replacement)
+	SpiderHollowGreybox.build(replacement)
 
 	replacement.Parent = targetRoot
 	for _, managedRoot in ipairs(existingManagedRoots) do
