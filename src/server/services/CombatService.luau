@@ -70,7 +70,6 @@ local statesByPlayer: { [Player]: PlayerCombatState } = {}
 local cooldownsByPlayer: { [Player]: CooldownRules.CooldownDeadlines } = {}
 local characterDeathConnections: { [Player]: RBXScriptConnection } = {}
 local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
-local progressionConnections: { [Player]: RBXScriptConnection } = {}
 local targetLifecycleConnections: { [Player]: { RBXScriptConnection } } = {}
 local lastTargetRequestAtByPlayer: { [Player]: number } = {}
 local lastAttackRequestAtByPlayer: { [Player]: number } = {}
@@ -910,9 +909,6 @@ local function onPlayerAdded(player: Player): ()
 	setReplicatedTarget(player, nil)
 	ensureCombatPoints(player)
 	replicateState(player, getState(player))
-	progressionConnections[player] = player:GetAttributeChangedSignal(ProgressionConfig.LevelAttribute):Connect(function()
-		CombatService.refreshPlayerStats(player)
-	end)
 	characterAddedConnections[player] = player.CharacterAdded:Connect(function(character) bindCharacter(player, character) end)
 	if player.Character ~= nil then bindCharacter(player, player.Character) end
 end
@@ -1014,6 +1010,12 @@ function CombatService.start(): ()
 	table.insert(serviceConnections, autoAttackModeRequest.OnServerEvent:Connect(onAutoAttackModeRequest))
 	table.insert(serviceConnections, skillRequest.OnServerEvent:Connect(onSkillRequest))
 	table.insert(serviceConnections, Players.PlayerAdded:Connect(onPlayerAdded))
+	table.insert(serviceConnections, PlayerDataService.ProfileReady:Connect(function(player)
+		CombatService.refreshPlayerStats(player)
+	end))
+	table.insert(serviceConnections, PlayerDataService.ProfileChanged:Connect(function(player)
+		CombatService.refreshPlayerStats(player)
+	end))
 	table.insert(serviceConnections, Players.PlayerRemoving:Connect(function(player)
 		clearPlayerState(player, true)
 		local deathConnection = characterDeathConnections[player]
@@ -1022,9 +1024,6 @@ function CombatService.start(): ()
 		local addedConnection = characterAddedConnections[player]
 		if addedConnection ~= nil then addedConnection:Disconnect() end
 		characterAddedConnections[player] = nil
-		local progressionConnection = progressionConnections[player]
-		if progressionConnection ~= nil then progressionConnection:Disconnect() end
-		progressionConnections[player] = nil
 	end))
 	for _, player in Players:GetPlayers() do onPlayerAdded(player) end
 	table.insert(serviceConnections, RunService.Heartbeat:Connect(function(deltaTime)
@@ -1086,7 +1085,6 @@ function CombatService.stop(): ()
 	end
 	for _, connection in characterDeathConnections do connection:Disconnect() end
 	for _, connection in characterAddedConnections do connection:Disconnect() end
-	for _, connection in progressionConnections do connection:Disconnect() end
 	for _, connections in targetLifecycleConnections do
 		for _, connection in connections do connection:Disconnect() end
 	end
@@ -1114,7 +1112,6 @@ function CombatService.stop(): ()
 	table.clear(cooldownsByPlayer)
 	table.clear(characterDeathConnections)
 	table.clear(characterAddedConnections)
-	table.clear(progressionConnections)
 	table.clear(targetLifecycleConnections)
 	table.clear(lastAttackRequestAtByPlayer)
 	table.clear(lastTargetRequestAtByPlayer)
