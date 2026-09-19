@@ -32,7 +32,9 @@ if "StudioSetArchetype" in read(DEFAULT_PROJECT):
     raise AssertionError("StudioSetArchetype must not be statically exposed by the production Rojo project")
 require(SERVER_DEBUG, "RunService:IsStudio()", "Studio archetype switching must be gated by RunService:IsStudio on the server")
 require(SERVER_DEBUG, 'Instance.new("RemoteEvent")', "Studio archetype remote must be created dynamically by the Studio-only service")
-require(SERVER_DEBUG, 'created.Name = "StudioSetArchetype"', "Studio archetype remote name is missing")
+require(SERVER_DEBUG, 'createRemote("StudioSetArchetype")', "Studio archetype remote name is missing")
+require(SERVER_DEBUG, 'createRemote("StudioSetLevel")', "Studio level remote name is missing")
+require(SERVER_DEBUG, "ProgressionService._setLevelForStudio", "Studio debug service must delegate level changes to ProgressionService")
 require(SERVER_DEBUG, "CombatService._setArchetypeForStudio", "Studio debug service must delegate lifecycle reset to CombatService")
 require(COMBAT, "function CombatService._setArchetypeForStudio", "CombatService Studio archetype seam is missing")
 require(COMBAT, 'assert(RunService:IsStudio()', "Studio archetype seam must hard-fail outside Studio")
@@ -45,6 +47,8 @@ require(SERVER_MAIN, "StudioDebugService.start()", "server bootstrap must start 
 require(CLIENT_DEBUG, "RunService:IsStudio()", "Studio class panel must be gated on the client")
 for archetype_id in ("knight", "ranger", "mystic"):
     require(CLIENT_DEBUG, archetype_id, f"Studio class panel is missing {archetype_id}")
+for token in ('"LevelDown"', '"LevelUp"', '"LevelMax"'):
+    require(CLIENT_DEBUG, token, f"Studio level controls are missing {token}")
 require(CLIENT_MAIN, "StudioTestPanel.start()", "client bootstrap must start the Studio-only panel")
 
 # Player HUD has four rows: PvP-only CP, HP, archetype resource, and XP.
