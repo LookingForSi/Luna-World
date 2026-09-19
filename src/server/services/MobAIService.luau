@@ -24,6 +24,10 @@ type Record = {
 	navigationDetour: Vector3?,
 	navigationGoal: Vector3?,
 	navigationDetourUntil: number,
+	patrolRadius: number,
+	patrolCycleSeconds: number,
+	nextPatrolAt: number,
+	patrolIndex: number,
 	connections: { RBXScriptConnection },
 }
 type AttackRequest = (Model, Player, CombatTypes.MobDefinition) -> boolean
@@ -171,6 +175,17 @@ local function navigationDestination(record: Record, root: BasePart, destination
 	return destination
 end
 
+local function patrolDestination(record: Record, currentY: number): Vector3
+	local steps = 8
+	local angle = ((record.patrolIndex - 1) % steps) / steps * math.pi * 2
+	local distance = record.patrolRadius * (if record.patrolIndex % 2 == 0 then 0.65 else 1)
+	return Vector3.new(
+		record.home.X + math.cos(angle) * distance,
+		currentY,
+		record.home.Z + math.sin(angle) * distance
+	)
+end
+
 local function moveToward(record: Record, destination: Vector3, capturedGeneration: number, now: number): ()
 	local humanoid, root = mobParts(record.model)
 	if humanoid == nil or root == nil then return end
@@ -241,8 +256,16 @@ local function decide(record: Record, now: number): ()
 	elseif nextState == "Return" then
 		moveToward(record, record.home, capturedGeneration, now)
 	elseif nextState == "Idle" then
-		humanoid:MoveTo(root.Position)
-		if MobAIRules.shouldRestoreHealth(previousState, nextState, definition.restoreHealthOnReturn) then humanoid.Health = humanoid.MaxHealth end
+		if MobAIRules.shouldRestoreHealth(previousState, nextState, definition.restoreHealthOnReturn) then
+			humanoid.Health = humanoid.MaxHealth
+		end
+		if record.patrolRadius > 0 and now >= record.nextPatrolAt then
+			record.patrolIndex += 1
+			record.nextPatrolAt = now + record.patrolCycleSeconds
+			moveToward(record, patrolDestination(record, root.Position.Y), capturedGeneration, now)
+		elseif previousState ~= "Idle" or record.patrolRadius <= 0 then
+			humanoid:MoveTo(root.Position)
+		end
 	end
 end
 
@@ -261,6 +284,10 @@ local function register(model: Model, definition: CombatTypes.MobDefinition, hom
 		navigationDetour = nil,
 		navigationGoal = nil,
 		navigationDetourUntil = 0,
+		patrolRadius = if typeof(model:GetAttribute("PatrolRadius")) == "number" then model:GetAttribute("PatrolRadius") :: number else 0,
+		patrolCycleSeconds = if typeof(model:GetAttribute("PatrolCycleSeconds")) == "number" then model:GetAttribute("PatrolCycleSeconds") :: number else 10,
+		nextPatrolAt = workspace:GetServerTimeNow() + 2,
+		patrolIndex = if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 0,
 		connections = {},
 	}
 	records[model] = record
@@ -284,7 +311,27 @@ function MobAIService.start(serverAttackRequest: AttackRequest): ()
 	table.insert(serviceConnections, MobService.MobSpawned:Connect(register))
 	table.insert(serviceConnections, MobService.HostileAction:Connect(function(model: Model, attacker: Player)
 		local record = records[model]
-		if record ~= nil and livingRoot(attacker) ~= nil and record.state ~= "Return" then record.hostileAttacker = attacker end
+		if record == nil or livingRoot(attacker) == nil then return end
+		if record.state ~= "Return" then record.hostileAttacker = attacker end
+		local socialGroupId = model:GetAttribute("SocialGroupId")
+		if typeof(socialGroupId) ~= "string" or socialGroupId == "" then return end
+		local _, sourceRoot = mobParts(model)
+		if sourceRoot == nil then return end
+		for otherModel, otherRecord in records do
+			if otherModel ~= model
+				and otherModel:GetAttribute("SocialGroupId") == socialGroupId
+				and otherRecord.state ~= "Return"
+			then
+				local otherHumanoid, otherRoot = mobParts(otherModel)
+				local assistRadius = otherRecord.definition.socialAssistRadius
+				if otherHumanoid ~= nil and otherHumanoid.Health > 0 and otherRoot ~= nil
+					and assistRadius > 0
+					and (otherRoot.Position - sourceRoot.Position).Magnitude <= assistRadius
+				then
+					otherRecord.hostileAttacker = attacker
+				end
+			end
+		end
 	end))
 	for _, model in MobService.getAll() do
 		local definition = MobService.getDefinition(model)
