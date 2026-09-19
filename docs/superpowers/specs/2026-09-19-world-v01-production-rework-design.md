@@ -155,6 +155,32 @@ Luna World не использует свободный прыжок как но
 - future Old Cemetery — centered raised terrace;
 - future Fallen Shrine — centered raised promontory.
 
+## 6.2. Композиция северного блока
+
+Approved concept задаёт не только отдельные POI, но и их взаимное положение. Северная половина мира должна читаться как последовательность игровых слоёв, а не как большая пустая равнина с зонами, прижатыми к Selene.
+
+Обязательный порядок с юга на север:
+
+1. river / Meadows boundary;
+2. Moonfall Road и crossroads;
+3. side encounters: Goblin Camp + Spider Hollow;
+4. Dark Woodland;
+5. future Old Cemetery + Fallen Shrine;
+6. future Ancient Approach;
+7. Ruins of Selene horizon / future instance direction.
+
+Требования:
+
+- после реки не должно оставаться крупной пустой плоской площадки до первого meaningful encounter;
+- crossroads и первые side-zones располагаются достаточно близко к river transition;
+- в imported Studio orientation Goblin Camp должен находиться на concept-left, Spider Hollow — на concept-right;
+- Old Cemetery и Fallen Shrine повторяют ту же side-логику approved concept;
+- весь side-zone block может смещаться южнее как единая композиция, если это улучшает pacing;
+- Ancient Approach — отдельная крупная высокая зона, а не edge ridge;
+- Ancient Approach должен быть шире локальных side-zones и заметно выше Cemetery/Shrine;
+- Selene massif остаётся дальним horizon и не используется как gameplay-площадка Ancient Approach;
+- main road сохраняет непрерывный no-jump climb от Dark Woodland к Ancient Approach.
+
 ## 7. Grounding contract для объектов
 
 Нельзя задавать production Y-position здания/NPC исключительно вручную и предполагать, что земля останется на той же высоте.
@@ -312,6 +338,20 @@ Approved concept уже задаёт две будущие side-зоны за Da
 - обе площадки должны быть доступны для дальнейшего подключения дорог без перестройки всего Selene massif;
 - debug/top-down overlay помечает их как `future`;
 - gameplay zone IDs, mobs и rewards для них пока не создаются.
+
+## 13.2. Future Ancient Approach
+
+Ancient Approach резервируется уже в macro terrain, хотя gameplay этого уровня остаётся будущим.
+
+Требования:
+
+- центральное положение между Cemetery/Shrine и Selene;
+- широкая высокая buildable shelf / approach plateau;
+- заметный подъём относительно Cemetery/Shrine;
+- отдельный плавный route corridor от Dark Woodland;
+- зона не прижата к северной границе карты;
+- с неё должен читаться Selene massif как следующий горизонт;
+- локальный максимум расположен в центре approach, а не на boundary ridge.
 
 ## 14. Dark Woodland threshold
 
