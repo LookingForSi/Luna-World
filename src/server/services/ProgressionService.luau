@@ -2,9 +2,12 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
+local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
+local CombatPresentationService = require(script.Parent.CombatPresentationService)
 
 local ProgressionService = {}
 
@@ -69,6 +72,17 @@ function ProgressionService.awardMobXP(player: Player, baseXP: number, mobLevel:
 	local reward = ProgressionRules.calculateMobXP(baseXP, level, mobLevel)
 	if reward > 0 then
 		ProgressionService.awardXP(player, reward)
+		CombatPresentationService.publishToPlayer(player, CombatPresentationRules.create(
+			"Reward",
+			HttpService:GenerateGUID(false),
+			"player:" .. tostring(player.UserId),
+			workspace:GetServerTimeNow(),
+			{
+				presentationKey = "xp",
+				outcome = "Granted",
+				amount = reward,
+			}
+		))
 	end
 	return reward
 end
