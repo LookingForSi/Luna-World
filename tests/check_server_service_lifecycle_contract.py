@@ -22,11 +22,13 @@ MAIN = "src/server/main.server.luau"
 MOBS = "src/server/services/MobService.luau"
 PROGRESSION = "src/server/services/ProgressionService.luau"
 PLAYER_DATA = "src/server/services/PlayerDataService.luau"
+LOOT = "src/server/services/LootService.luau"
 
 require(MAIN, "game:BindToClose", "server bootstrap must own process-lifetime cleanup")
 for token in (
     "StudioDebugService.stop()",
     "RespawnService.stop()",
+    "LootService.stop()",
     "MobAIService.stop()",
     "MobService.stop()",
     "CombatService.stop()",
@@ -47,5 +49,7 @@ require(PROGRESSION, "profileReadyConnection:Disconnect()", "ProgressionService 
 require(PLAYER_DATA, "function PlayerDataService.stop()", "PlayerDataService must expose lifecycle cleanup")
 require(PLAYER_DATA, "playerRemovingConnection:Disconnect()", "PlayerDataService stop must disconnect player lifecycle events")
 require(PLAYER_DATA, "releasePlayer(player)", "PlayerDataService shutdown must release active profile leases")
+require(LOOT, "function LootService.stop()", "LootService must expose lifecycle cleanup")
+require(LOOT, "mobDiedConnection:Disconnect()", "LootService stop must disconnect mob reward events")
 
 print("Server service lifecycle contract: PASS")
