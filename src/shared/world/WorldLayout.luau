@@ -47,7 +47,7 @@ export type WorldLayoutDefinition = {
 	SpiderReturnRoute: { Vector3 },
 }
 
-local WORLD_DISTANCE_SCALE = 1.5
+local WORLD_DISTANCE_SCALE = 2.0
 
 local function scaleXZ(x: number, y: number, z: number): Vector3
 	return Vector3.new(x * WORLD_DISTANCE_SCALE, y, z * WORLD_DISTANCE_SCALE)
@@ -59,10 +59,10 @@ end
 
 local WorldLayout: WorldLayoutDefinition = {
 	Dimensions = {
-		VillageFootprint = Vector2.new(375, 330),
+		VillageFootprint = Vector2.new(500, 440),
 		VillageElevationAboveMeadows = 36,
-		MeadowsRouteLength = 1350,
-		MoonfallRouteLength = 1410,
+		MeadowsRouteLength = 1800,
+		MoonfallRouteLength = 1880,
 	},
 
 	Zones = {
