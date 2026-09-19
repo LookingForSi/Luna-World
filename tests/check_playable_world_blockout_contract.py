@@ -8,6 +8,7 @@ REQUIRED_FILES = [
     ROOT / "src/server/world/VillageAndMeadowsBlockout.luau",
     ROOT / "src/server/world/NorthernZonesBlockout.luau",
     ROOT / "src/server/world/WorldDressingBlockout.luau",
+    ROOT / "src/server/world/WorldCompositionBlockout.luau",
     ROOT / "src/server/world/PlayableWorldBlockout.luau",
     ROOT / "src/server/world/WorldBootstrap.server.luau",
     ROOT / "src/client/world-preview/ZonePresentation.client.luau",
@@ -43,6 +44,7 @@ def main() -> None:
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
     assert "WorldDressingBlockout" in builder
+    assert "WorldCompositionBlockout" in builder
 
     south = read(ROOT / "src/server/world/VillageAndMeadowsBlockout.luau")
     for token in (
@@ -90,6 +92,27 @@ def main() -> None:
         assert token in dressing
     assert "MobPlaceholder" not in dressing
     assert "spawn_spider_meadow_pocket" not in dressing
+
+    composition = read(ROOT / "src/server/world/WorldCompositionBlockout.luau")
+    for token in (
+        "MacroComposition",
+        "VillageHillComposition",
+        "FarmAndMeadowsComposition",
+        "CombatBlockComposition",
+        "UpperValleyComposition",
+        "VillageWestTreeBelt",
+        "FarmFieldRow",
+        "MoonfallWestScreen",
+        "GoblinShelfEdge",
+        "SpiderBasinRearDeadwood",
+        "DarkWoodlandWestMass",
+        "CemeteryRearDeadwood",
+        "ShrinePromontoryRocks",
+        "ApproachOuterPillarLeft",
+        "BlenderStudioAssetPass",
+    ):
+        assert token in composition
+    assert "MobPlaceholder" not in composition
 
     presentation = read(ROOT / "src/client/world-preview/ZonePresentation.client.luau")
     assert "ZoneToast" in presentation
