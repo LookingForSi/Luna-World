@@ -35,7 +35,7 @@ for token in (
 if "awardMobXP(killer, definition.rewardXP, definition.level)" not in MAIN:
     raise AssertionError("mob death reward must use base XP and mob level")
 
-if 'target:GetAttribute("Level")' not in HUD or '"%s · LV %d"' not in HUD:
+if 'target:GetAttribute("Level")' not in HUD or '"LV %d · %s"' not in HUD:
     raise AssertionError("target HUD must display mob level")
 
 print("Mob level and XP scaling contract: PASS")
