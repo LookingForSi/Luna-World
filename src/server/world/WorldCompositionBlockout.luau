@@ -248,6 +248,27 @@ local function createRuinPillar(
 	pillar.CFrame *= CFrame.Angles(math.rad((position.Z % 5) - 2), math.rad((position.X + position.Z) % 20 - 10), math.rad(2))
 end
 
+local function createCliffWall(parent: Instance, name: string, center: Vector3)
+	local cliff = P.model(parent, name)
+	cliff:SetAttribute("ReplacementCategory", "cliff_wall")
+
+	for index, xOffset in ipairs({ -192, -96, 0, 96, 192 }) do
+		local height = 68 + (index % 3) * 9
+		P.groundedPart(
+			cliff,
+			string.format("Face%02d", index),
+			center + Vector3.new(xOffset, 0, 0),
+			Vector3.new(104, height, 38),
+			Enum.Material.Rock,
+			COLORS.stone,
+			{
+				canCollide = true,
+				attributes = attrs("cliff_wall"),
+			}
+		)
+	end
+end
+
 local function buildVillageHill(parent: Instance, p: { [string]: Vector3 })
 	local village = P.model(parent, "VillageHillComposition")
 	local square = p.poi_village_square
@@ -309,6 +330,21 @@ local function buildFarmAndMeadows(parent: Instance, p: { [string]: Vector3 })
 	local bridge = p.poi_meadow_bridge
 	local circle = p.poi_stone_circle
 
+	P.replaceTerrainMaterials(
+		circle + Vector3.new(245, 0, 35),
+		Vector3.new(250, 26, 190),
+		{ Enum.Material.Grass, Enum.Material.LeafyGrass },
+		Enum.Material.Rock
+	)
+	createRockLine(
+		meadows,
+		"MeadowHillScree",
+		circle + Vector3.new(170, 0, -30),
+		circle + Vector3.new(315, 0, 95),
+		9,
+		0.72
+	)
+
 	for index, x in ipairs({ -180, -120, -60, 65, 125, 185 }) do
 		createFieldStrip(
 			meadows,
@@ -359,6 +395,19 @@ local function buildCombatBlock(parent: Instance, p: { [string]: Vector3 })
 	local goblin = p.poi_goblin_camp
 	local spider = p.poi_spider_hollow
 	local darkGate = p.poi_dark_woodland_gate
+
+	P.replaceTerrainMaterials(
+		goblin + Vector3.new(250, 0, -5),
+		Vector3.new(260, 28, 245),
+		{ Enum.Material.Grass, Enum.Material.LeafyGrass },
+		Enum.Material.Rock
+	)
+	P.replaceTerrainMaterials(
+		darkGate + Vector3.new(-345, 0, 65),
+		Vector3.new(280, 28, 190),
+		{ Enum.Material.Grass, Enum.Material.LeafyGrass },
+		Enum.Material.Rock
+	)
 
 	createTreeBelt(
 		combat,
@@ -435,6 +484,31 @@ local function buildUpperValley(parent: Instance, p: { [string]: Vector3 })
 	local cemetery = p.poi_old_cemetery
 	local shrine = p.poi_fallen_shrine
 	local approach = p.poi_ancient_approach
+
+	-- Fallen Shrine sits on a deliberate promontory. Its south face is an
+	-- intentionally non-traversable rock wall so the player must use the road.
+	P.replaceTerrainMaterials(
+		shrine + Vector3.new(0, 0, -250),
+		Vector3.new(500, 34, 210),
+		{ Enum.Material.Grass, Enum.Material.LeafyGrass },
+		Enum.Material.Rock
+	)
+	createCliffWall(upper, "FallenShrineSouthCliff", shrine + Vector3.new(0, 0, -265))
+	createRockLine(
+		upper,
+		"FallenShrineCliffScree",
+		shrine + Vector3.new(-230, 0, -305),
+		shrine + Vector3.new(230, 0, -305),
+		12,
+		0.82
+	)
+
+	P.replaceTerrainMaterials(
+		cemetery + Vector3.new(190, 0, -145),
+		Vector3.new(235, 28, 175),
+		{ Enum.Material.Grass, Enum.Material.LeafyGrass },
+		Enum.Material.Rock
+	)
 
 	createTreeBelt(
 		upper,
