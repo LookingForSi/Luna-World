@@ -95,7 +95,7 @@ local function applyDamage(
 	rawDamage: number,
 	actionId: string,
 	presentationKey: string,
-	definitionId: string
+	abilityId: string?
 ): number?
 	local humanoid = livingPlayerHumanoid(target)
 	if humanoid == nil then return nil end
@@ -108,7 +108,8 @@ local function applyDamage(
 		outcome = "Applied",
 		amount = damage,
 		isCritical = false,
-		definitionId = definitionId,
+		definitionId = definition.id,
+		skillId = abilityId,
 	})
 	return damage
 end
@@ -180,11 +181,33 @@ local function applyPoison(
 				outcome = "Applied",
 				amount = damage,
 				isCritical = false,
-				definitionId = ability.id,
+				definitionId = definition.id,
+				skillId = ability.id,
 				effectPhase = "Started",
 			})
 		end)
 	end
+end
+
+local function applyAreaDamage(
+	mob: Model,
+	definition: CombatTypes.MobDefinition,
+	ability: CombatTypes.MobAbilityDefinition,
+	actionId: string
+): boolean
+	local _, root = livingMobParts(mob)
+	if root == nil then return false end
+	local applied = false
+	local radius = ability.radius or ability.range
+	for _, candidate in Players:GetPlayers() do
+		local candidateRoot = livingPlayerRoot(candidate)
+		if candidateRoot ~= nil and (candidateRoot.Position - root.Position).Magnitude <= radius then
+			if applyDamage(mob, candidate, definition, ability.damageType, ability.damage, actionId, ability.presentationKey, ability.id) ~= nil then
+				applied = true
+			end
+		end
+	end
+	return applied
 end
 
 local function abilityEligible(
@@ -267,6 +290,8 @@ local function beginAction(
 
 		if ability.kind == "DirectDamage" then
 			applyDamage(mob, target, definition, ability.damageType, ability.damage, actionId, ability.presentationKey, ability.id)
+		elseif ability.kind == "AreaDamage" then
+			applyAreaDamage(mob, definition, ability, actionId)
 		elseif ability.kind == "DamageOverTime" then
 			local amount = applyDamage(mob, target, definition, ability.damageType, ability.damage, actionId, ability.presentationKey, ability.id)
 			if amount ~= nil then applyPoison(mob, target, definition, ability, actionId) end
@@ -280,14 +305,14 @@ local function beginAction(
 		elseif ability.kind == "AllyDamageBuff" then
 			applyAllyDamageBuff(mob, definition, ability)
 			publishToTarget(target, "Result", actionId, actorEntityId(mob, definition), {
-				targetEntityId = targetEntityId(target), presentationKey = ability.presentationKey,
-				outcome = "Applied", definitionId = ability.id,
+				targetEntityId = targetEntityId(target), skillId = ability.id, presentationKey = ability.presentationKey,
+				outcome = "Applied", definitionId = definition.id,
 			})
 		elseif ability.kind == "SelfDamageBuff" then
 			setMobDamageBuff(mob, ability.damageMultiplier or 1, ability.durationSeconds or 0)
 			publishToTarget(target, "Result", actionId, actorEntityId(mob, definition), {
-				targetEntityId = targetEntityId(target), presentationKey = ability.presentationKey,
-				outcome = "Applied", definitionId = ability.id,
+				targetEntityId = targetEntityId(target), skillId = ability.id, presentationKey = ability.presentationKey,
+				outcome = "Applied", definitionId = definition.id,
 			})
 		end
 
