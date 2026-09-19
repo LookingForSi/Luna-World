@@ -310,3 +310,41 @@ Production combat/AI специально не подключены: mob figures
 - крупные hero landmarks.
 
 То есть Blender не должен определять географию мира — он даёт качественные ассеты уже принятой географии.
+
+
+## 16. Macro composition pass v01
+
+Поверх локального environment dressing добавлен второй, более крупный слой композиции. Его задача — убрать ощущение пустой травяной карты **до** начала финального Blender art pass.
+
+Он специально работает крупными массами:
+
+- Luna Village: шесть дополнительных силуэтных домов по внешней части Village Hill, боковые tree-belts и каменные группы на склонах;
+- Moonfall Farm / Meadows: читаемые полосы полей, растительность по участкам береговой линии, дополнительный meadow tree/rock framing;
+- Moonfall Road: боковые tree screens, чтобы дорога не лежала в открытой равнине от горизонта до горизонта;
+- Goblin Camp: каменный край raised shelf и задний пояс деревьев;
+- Spider Hollow: каменное обрамление и мёртвый лес на задней кромке basin, центр encounter остаётся свободен;
+- Dark Woodland: две более плотные лесные массы по сторонам входа;
+- Old Cemetery / Fallen Shrine: deadwood + rock framing вокруг уже существующих POI;
+- Ancient Approach: расширенный ряд внешних ruin pillars и боковые rock escarpments, центральный no-jump route остаётся открытым.
+
+Этот слой находится в `WorldCompositionBlockout.luau`, создаётся как `MacroComposition` и помечен `ArtReplacementTarget = BlenderStudioAssetPass`.
+
+### 16.1. Asset replacement contract
+
+Добавлен `tools/world_assets/world_asset_manifest_v01.json`.
+
+Он фиксирует категории первой волны замены blockout → final art:
+
+- village_house;
+- village_roof;
+- fence;
+- rock;
+- tree;
+- dead_tree;
+- ancient_ruin;
+- field_strip;
+- goblin_structure;
+- spider_web.
+
+Все final art replacements должны сохранять footprint, sightline и collision intent placeholder'а. География мира не переделывается под купленный asset pack.
+
