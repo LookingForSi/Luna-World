@@ -189,6 +189,34 @@ local function createGroundedRoad(parent: Instance, name: string, points: { Vect
 	end
 end
 
+local function createPalisadeLine(
+	parent: Instance,
+	name: string,
+	fromPosition: Vector3,
+	toPosition: Vector3,
+	postHeight: number
+)
+	local wall = P.model(parent, name)
+	local horizontal = Vector3.new(toPosition.X - fromPosition.X, 0, toPosition.Z - fromPosition.Z)
+	local postSpacing = 6.5
+	local segments = math.max(1, math.ceil(horizontal.Magnitude / postSpacing))
+
+	for index = 0, segments do
+		local alpha = index / segments
+		local authored = fromPosition:Lerp(toPosition, alpha)
+		local ground = Grounding.surfaceAt(authored)
+		local height = postHeight + ((index % 3) - 1) * 0.8
+		P.part(
+			wall,
+			string.format("Stake%03d", index + 1),
+			Vector3.new(3.1, height, 3.1),
+			CFrame.new(ground + Vector3.new(0, height / 2 - 0.5, 0)),
+			Enum.Material.Wood,
+			COLORS.darkTimber
+		)
+	end
+end
+
 local function createVillage(parent: Instance, positions: { [string]: Vector3 })
 	local village = P.model(parent, "LunaVillage")
 	village:SetAttribute("ZoneId", "zone_luna_village")
@@ -198,6 +226,18 @@ local function createVillage(parent: Instance, positions: { [string]: Vector3 })
 	P.groundedPart(village, "GatePostRight", gate + Vector3.new(13, 0, 0), Vector3.new(5, 20, 5), Enum.Material.Wood, COLORS.darkTimber)
 	local gateGround = Grounding.surfaceAt(gate)
 	P.part(village, "GateLintel", Vector3.new(31, 4, 6), CFrame.new(gateGround + Vector3.new(0, 18, 0)), Enum.Material.Wood, COLORS.darkTimber)
+
+	-- Luna Village is a visibly protected safe settlement. The perimeter uses the
+	-- same visual height as the gate while preserving a clear main entrance.
+	local westFront = gate + Vector3.new(-310, 0, 0)
+	local eastFront = gate + Vector3.new(310, 0, 0)
+	local westRear = gate + Vector3.new(-310, 0, -520)
+	local eastRear = gate + Vector3.new(310, 0, -520)
+	createPalisadeLine(village, "VillagePalisadeNorthWest", westFront, gate + Vector3.new(-24, 0, 0), 18)
+	createPalisadeLine(village, "VillagePalisadeNorthEast", gate + Vector3.new(24, 0, 0), eastFront, 18)
+	createPalisadeLine(village, "VillagePalisadeWest", westFront, westRear, 18)
+	createPalisadeLine(village, "VillagePalisadeEast", eastFront, eastRear, 18)
+	createPalisadeLine(village, "VillagePalisadeSouth", westRear, eastRear, 18)
 
 	local square = positions.poi_village_square
 	P.groundedPart(village, "Square", square, Vector3.new(58, 0.8, 52), Enum.Material.Cobblestone, COLORS.stone, { canCollide = false })
