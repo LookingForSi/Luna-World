@@ -402,7 +402,7 @@ function CombatHud.setTarget(target: Model?): ()
 	currentTarget = target
 	local targetLevel = target:GetAttribute("Level")
 	targetNameLabel.Text = if typeof(targetLevel) == "number"
-		then string.format("%s · LV %d", target.Name, math.floor(targetLevel))
+		then string.format("LV %d · %s", math.floor(targetLevel), target.Name)
 		else target.Name
 	updateTargetHealth(humanoid)
 	targetHealthConnection = humanoid.HealthChanged:Connect(function()
