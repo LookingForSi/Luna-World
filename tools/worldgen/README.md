@@ -38,13 +38,13 @@ python tests/check_worldgen_contract.py
 Текущий artifact revision:
 
 ```text
-terrain-v04
+terrain-v05
 ```
 
 По умолчанию outputs создаются здесь:
 
 ```text
-artifacts/worldgen/v01/terrain-v04/
+artifacts/worldgen/v01/terrain-v05/
 ```
 
 Основной файл для Roblox:
@@ -155,3 +155,12 @@ Automated contract генерирует height field и численно про�
 - desktop/gamepad/mobile acceptance.
 
 Не начинать final foliage/material polish до принятия macro terrain и traversal.
+
+
+Terrain-v05 — owner traversal correction:
+
+- сдвигает Goblin Camp / Spider Hollow / Old Cemetery / Fallen Shrine южнее;
+- расширяет combat-zone footprints примерно на 10–15%;
+- сохраняет Ancient Approach и Selene horizon на прежнем месте;
+- увеличивает переход между верхними side-zones и Ancient Approach;
+- удаляет отдельный ранний spider encounter из Meadows.
