@@ -37,6 +37,24 @@ local function assertInvalid(layout: any, expectedErrorFragment: string)
 	error(string.format("expected an error containing '%s', got: %s", expectedErrorFragment, table.concat(errors, "; ")))
 end
 
+local function findSpawn(layout: any, id: string): any
+	for _, marker in ipairs(layout.SpawnMarkers) do
+		if marker.id == id then
+			return marker
+		end
+	end
+	error(string.format("missing spawn '%s' in test fixture", id))
+end
+
+local function findPoi(layout: any, id: string): any
+	for _, poi in ipairs(layout.PointsOfInterest) do
+		if poi.id == id then
+			return poi
+		end
+	end
+	error(string.format("missing POI '%s' in test fixture", id))
+end
+
 function WorldLayoutSpec.register(runner: Runner)
 	runner:test("canonical layout passes", function()
 		local valid, errors = WorldLayoutValidator.validate(WorldLayout)
@@ -57,10 +75,59 @@ function WorldLayoutSpec.register(runner: Runner)
 		assertInvalid(layout, "levelMin <= levelMax")
 	end)
 
+	runner:test("zone presentation volumes cover every canonical zone", function()
+		assert(#WorldLayout.ZoneVolumes == #WorldLayout.Zones)
+		for _, zone in ipairs(WorldLayout.Zones) do
+			assert(type(zone.displayName) == "string" and zone.displayName ~= "")
+		end
+	end)
+
+	runner:test("world horizontal distances are enlarged", function()
+		assert(WorldLayout.Dimensions.MeadowsRouteLength == 1350)
+		assert(WorldLayout.Dimensions.MoonfallRouteLength == 1410)
+		local roadExit = findPoi(WorldLayout, "exit_moonfall_road")
+		assert(roadExit.position.Z == 1350)
+	end)
+
+	runner:test("zone presentation volume with unknown zone fails", function()
+		local layout = deepClone(WorldLayout)
+		layout.ZoneVolumes[1].zoneId = "zone_missing"
+		assertInvalid(layout, "must reference an existing zone")
+	end)
+
+	runner:test("zone presentation volumes define safe floors", function()
+		for _, volume in ipairs(WorldLayout.ZoneVolumes) do
+			assert(type(volume.minSafeY) == "number")
+		end
+	end)
+
+	runner:test("invalid safe floor fails", function()
+		local layout = deepClone(WorldLayout)
+		layout.ZoneVolumes[1].minSafeY = "ground"
+		assertInvalid(layout, "minSafeY must be numeric")
+	end)
+
 	runner:test("non-positive radius fails", function()
 		local layout = deepClone(WorldLayout)
 		layout.SpawnMarkers[1].radius = 0
 		assertInvalid(layout, "radius greater than zero")
+	end)
+
+	runner:test("spawn marker with unknown zone fails", function()
+		local layout = deepClone(WorldLayout)
+		layout.SpawnMarkers[#layout.SpawnMarkers].zoneId = "zone_missing"
+		assertInvalid(layout, "must reference an existing zone")
+	end)
+
+	runner:test("future reservation spawns remain disabled", function()
+		assert(findSpawn(WorldLayout, "spawn_goblin_camp_elite_future").spawnEnabled == false)
+		assert(findSpawn(WorldLayout, "spawn_spider_hollow_brood").spawnEnabled == false)
+	end)
+
+	runner:test("invalid spawnEnabled shape fails", function()
+		local layout = deepClone(WorldLayout)
+		findSpawn(layout, "spawn_goblin_camp_elite_future").spawnEnabled = "yes"
+		assertInvalid(layout, "spawnEnabled must be boolean when provided")
 	end)
 
 	runner:test("missing required POI fails", function()
@@ -71,13 +138,38 @@ function WorldLayoutSpec.register(runner: Runner)
 
 	runner:test("exit too close fails", function()
 		local layout = deepClone(WorldLayout)
-		for _, pointOfInterest in ipairs(layout.PointsOfInterest) do
-			if pointOfInterest.id == "exit_moonfall_road" then
-				pointOfInterest.position = Vector3.new(0, 4, 699)
-				break
-			end
-		end
+		findPoi(layout, "exit_moonfall_road").position = Vector3.new(0, 4, 699)
 		assertInvalid(layout, "gate-to-exit XZ distance must be at least 700 studs")
+	end)
+
+	runner:test("Moonfall road starts at Meadows exit", function()
+		local layout = deepClone(WorldLayout)
+		layout.MoonfallRoadRoute[1] = Vector3.new(20, 4, 900)
+		assertInvalid(layout, "MoonfallRoadRoute must begin at exit_moonfall_road")
+	end)
+
+	runner:test("Moonfall road ends at Dark Woodland entry", function()
+		local layout = deepClone(WorldLayout)
+		layout.MoonfallRoadRoute[#layout.MoonfallRoadRoute] = Vector3.new(0, 26, 1800)
+		assertInvalid(layout, "MoonfallRoadRoute must end at entry_dark_woodland")
+	end)
+
+	runner:test("Goblin Camp remains above crossroads", function()
+		local layout = deepClone(WorldLayout)
+		findPoi(layout, "poi_goblin_camp").position = Vector3.new(-300, 16, 1400)
+		assertInvalid(layout, "Goblin Camp must be above Moonfall crossroads")
+	end)
+
+	runner:test("Spider Hollow remains below crossroads", function()
+		local layout = deepClone(WorldLayout)
+		findPoi(layout, "poi_spider_hollow").position = Vector3.new(300, 16, 1420)
+		assertInvalid(layout, "Spider Hollow must be below Moonfall crossroads")
+	end)
+
+	runner:test("Dark Woodland handoff remains deeper along +Z", function()
+		local layout = deepClone(WorldLayout)
+		findPoi(layout, "entry_dark_woodland").position = Vector3.new(0, 26, 1700)
+		assertInvalid(layout, "Dark Woodland handoff must continue deeper along +Z")
 	end)
 end
 

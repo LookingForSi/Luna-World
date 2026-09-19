@@ -24,12 +24,12 @@ local REQUIRED_POI_IDS = {
 }
 
 local GROUND = {
-	width = 440,
+	width = 660,
 	thickness = 8,
 }
 
 local ROAD = {
-	width = 20,
+	width = 24,
 	thickness = 1,
 }
 
@@ -165,7 +165,7 @@ end
 
 local function getSpiderSpawnDefinition(): SpawnMarkerDefinition
 	for _, definition in ipairs(WorldLayout.SpawnMarkers) do
-		if string.find(definition.mobId, "spider", 1, true) ~= nil then
+		if definition.zoneId == "zone_luna_meadows" and string.find(definition.mobId, "spider", 1, true) ~= nil then
 			return definition
 		end
 	end
@@ -178,13 +178,14 @@ local function createMeadowGround(parent: Instance)
 	local verticalOffset = Vector3.new(0, -GROUND.thickness / 2, 0)
 
 	for index = 1, #WorldLayout.Route - 1 do
-		local section = GreyboxPrimitives.createSegment(
+		local section = GreyboxPrimitives.createSegmentWithOverlap(
 			ground,
 			string.format("MeadowGround%02d", index),
 			WorldLayout.Route[index] + verticalOffset,
 			WorldLayout.Route[index + 1] + verticalOffset,
 			GROUND.width,
-			GROUND.thickness
+			GROUND.thickness,
+			84
 		)
 		section.Material = Enum.Material.Grass
 		section.Color = COLORS.ground
@@ -336,18 +337,28 @@ local function createFutureNpcMarkers(parent: Instance, farmPosition: Vector3)
 			string.format("FutureNpcMarker%02d", index),
 			farmPosition + offset,
 			Vector3.new(3, 6, 3),
-			Enum.Material.Neon,
+			Enum.Material.SmoothPlastic,
 			COLORS.npcMarker
 		)
 		marker.CanCollide = false
+		marker.Transparency = 0.45
 		marker:SetAttribute("Purpose", "FutureNPC")
-		GreyboxPrimitives.createLabel(marker, "Future NPC")
+		GreyboxPrimitives.createLabel(marker, "Future NPC", 30)
 	end
 end
 
 local function createFarm(parent: Instance, definition: PointOfInterestDefinition)
 	local farm = createModel(parent, "Farm")
 	farm:SetAttribute("StableId", definition.id)
+
+	createColoredBlock(
+		farm,
+		"FarmGroundPad",
+		Vector3.new(230, 6, 190),
+		CFrame.new(definition.position - Vector3.new(0, 3, 0)),
+		Enum.Material.Grass,
+		COLORS.ground
+	)
 
 	createGroundedBlock(
 		farm,
@@ -394,6 +405,15 @@ local function createStoneCircle(parent: Instance, definition: PointOfInterestDe
 	local stoneCircle = createModel(parent, "StoneCircle")
 	stoneCircle:SetAttribute("StableId", definition.id)
 
+	createColoredBlock(
+		stoneCircle,
+		"StoneCircleGroundPad",
+		Vector3.new(110, 6, 110),
+		CFrame.new(definition.position - Vector3.new(0, 3, 0)),
+		Enum.Material.Grass,
+		COLORS.ground
+	)
+
 	for index = 1, STONE_CIRCLE.stoneCount do
 		local angle = (index - 1) * math.pi * 2 / STONE_CIRCLE.stoneCount
 		local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * STONE_CIRCLE.radius
@@ -412,6 +432,15 @@ end
 local function createSpiderPocket(parent: Instance, definition: SpawnMarkerDefinition)
 	local pocket = createModel(parent, "SpiderPocket")
 	pocket:SetAttribute("Purpose", "SpiderHabitatBlockout")
+
+	createColoredBlock(
+		pocket,
+		"SpiderPocketGroundPad",
+		Vector3.new(190, 6, 170),
+		CFrame.new(definition.position - Vector3.new(0, 3, 0)),
+		Enum.Material.Grass,
+		COLORS.ground
+	)
 
 	for index, offset in ipairs(SPIDER_POCKET.treeOffsets) do
 		createGroundedBlock(
@@ -438,44 +467,43 @@ end
 
 local function createSpawnMarkers(parent: Instance): string
 	local markers = createFolder(parent, SPAWN_CONTAINER_NAME)
-	local meadowsZoneId: string? = nil
 	local safeTransitionEnd = WorldLayout.Route[SAFE_TRANSITION_END_ROUTE_INDEX]
-	assert(
-		#WorldLayout.SpawnMarkers == EXPECTED_SPAWN_MARKER_COUNT,
-		string.format("Luna Meadows requires exactly %d WorldLayout spawn definitions", EXPECTED_SPAWN_MARKER_COUNT)
-	)
+	local meadowsSpawnCount = 0
 	assert(safeTransitionEnd ~= nil, "WorldLayout route must define the calm transition after the gate")
 
 	for _, definition in ipairs(WorldLayout.SpawnMarkers) do
-		assert(
-			definition.position.Z >= safeTransitionEnd.Z,
-			string.format("Spawn marker '%s' must remain beyond the calm gate transition", definition.id)
-		)
-		if meadowsZoneId == nil then
-			meadowsZoneId = definition.zoneId
-		else
+		if definition.zoneId == "zone_luna_meadows" then
+			meadowsSpawnCount += 1
 			assert(
-				definition.zoneId == meadowsZoneId,
-				"All Luna Meadows spawn definitions must use the same WorldLayout zone ID"
+				definition.position.Z >= safeTransitionEnd.Z,
+				string.format("Spawn marker '%s' must remain beyond the calm gate transition", definition.id)
 			)
-		end
 
-		GreyboxPrimitives.createMarker(markers, definition.id, definition.position, {
-			StableId = definition.id,
-			MobId = definition.mobId,
-			Radius = definition.radius,
-			ZoneId = definition.zoneId,
-		})
+			GreyboxPrimitives.createMarker(markers, definition.id, definition.position, {
+				StableId = definition.id,
+				MobId = definition.mobId,
+				Radius = definition.radius,
+				ZoneId = definition.zoneId,
+				SpawnEnabled = definition.spawnEnabled ~= false,
+			})
+		end
 	end
 
-	assert(meadowsZoneId ~= nil, "Luna Meadows requires at least one WorldLayout spawn definition")
-	return meadowsZoneId
+	assert(
+		meadowsSpawnCount == EXPECTED_SPAWN_MARKER_COUNT,
+		string.format(
+			"Luna Meadows requires exactly %d spawn definitions, got %d",
+			EXPECTED_SPAWN_MARKER_COUNT,
+			meadowsSpawnCount
+		)
+	)
+	return "zone_luna_meadows"
 end
 
 local function createExitMarker(parent: Instance, definition: PointOfInterestDefinition)
 	GreyboxPrimitives.createMarker(parent, definition.id, definition.position, {
 		StableId = definition.id,
-		Destination = "zone_moonfall_road_future",
+		Destination = "zone_moonfall_road",
 	})
 end
 

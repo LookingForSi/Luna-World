@@ -13,6 +13,15 @@
       "World": {
         "$path": "src/server/world"
       }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "WorldPreview": {
+          "$path": "src/client/world-preview"
+        }
+      }
     }
   }
 }

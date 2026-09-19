@@ -8,6 +8,12 @@
         "$path": "src/shared"
       }
     },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "World": {
+        "$path": "src/server/world"
+      }
+    },
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "WorldTests": {

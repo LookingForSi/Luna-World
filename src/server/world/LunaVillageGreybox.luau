@@ -12,7 +12,7 @@ local POI_CONTAINER_NAME = "PointsOfInterest"
 local TERRACE_CONTAINER_NAME = "Terraces"
 local STRUCTURE_CONTAINER_NAME = "LocalStructures"
 
-local TERRACE_THICKNESS = 6
+local TERRACE_BASE_ELEVATION = 0
 local TERRACE_DEPTH_RATIOS = {
 	lower = 0.35,
 	middle = 0.34,
@@ -118,8 +118,11 @@ local function createTerrace(
 	surfaceElevation: number,
 	sizeXZ: Vector2
 ): BasePart
-	local size = Vector3.new(sizeXZ.X, TERRACE_THICKNESS, sizeXZ.Y)
-	local center = Vector3.new(centerXZ.X, surfaceElevation - TERRACE_THICKNESS / 2, centerXZ.Z)
+	local thickness = surfaceElevation - TERRACE_BASE_ELEVATION
+	assert(thickness > 0, "village terrace surface must be above its base elevation")
+	local size = Vector3.new(sizeXZ.X, thickness, sizeXZ.Y)
+	local centerY = TERRACE_BASE_ELEVATION + thickness / 2
+	local center = Vector3.new(centerXZ.X, centerY, centerXZ.Z)
 	return createColoredBlock(parent, name, size, CFrame.new(center), Enum.Material.Grass, COLORS.ground)
 end
 
@@ -154,6 +157,41 @@ local function createTerraces(parent: Instance, positions: { [string]: Vector3 }
 		math.min(positions.poi_elder_house.Y, positions.poi_shrine.Y),
 		Vector2.new(footprint.X * 0.78, footprint.Y * TERRACE_DEPTH_RATIOS.upper)
 	)
+end
+
+local function createVillagePaths(parent: Instance, positions: { [string]: Vector3 })
+	local paths = Instance.new("Folder")
+	paths.Name = "WalkablePaths"
+	paths.Parent = parent
+
+	local upperCenter = midpoint(positions.poi_elder_house, positions.poi_shrine)
+	local sections = {
+		{
+			name = "GateToSquareRamp",
+			from = positions.poi_main_gate + Vector3.new(0, 1, -4),
+			to = positions.poi_village_square + Vector3.new(0, 1, 18),
+			width = 22,
+		},
+		{
+			name = "SquareToUpperRamp",
+			from = positions.poi_village_square + Vector3.new(0, 1, -20),
+			to = upperCenter + Vector3.new(0, 1, 18),
+			width = 20,
+		},
+	}
+
+	for _, section in ipairs(sections) do
+		local ramp = GreyboxPrimitives.createSegment(
+			paths,
+			section.name,
+			section.from,
+			section.to,
+			section.width,
+			2
+		)
+		ramp.Material = Enum.Material.Cobblestone
+		ramp.Color = COLORS.stone
+	end
 end
 
 local function createHouseVolume(parent: Instance, name: string, position: Vector3, size: Vector3)
@@ -395,6 +433,7 @@ function LunaVillageGreybox.build(parent: Instance): Model
 	})
 
 	createTerraces(village, positions)
+	createVillagePaths(village, positions)
 
 	local pointsOfInterest = Instance.new("Folder")
 	pointsOfInterest.Name = POI_CONTAINER_NAME
