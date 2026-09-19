@@ -19,7 +19,6 @@ local COLORS = {
 	hay = Color3.fromRGB(174, 151, 76),
 	sheep = Color3.fromRGB(224, 220, 205),
 	wolf = Color3.fromRGB(96, 98, 101),
-	spider = Color3.fromRGB(50, 46, 48),
 	npc = Color3.fromRGB(103, 139, 151),
 }
 
@@ -154,50 +153,6 @@ local function createWolf(parent: Instance, name: string, position: Vector3, yaw
 			COLORS.wolf,
 			{ canCollide = false }
 		)
-	end
-end
-
-local function createSpider(parent: Instance, name: string, position: Vector3)
-	local model = P.model(parent, name)
-	model:SetAttribute("Purpose", "MobPlaceholder")
-	model:SetAttribute("MobId", "mob_meadow_spider")
-	local ground = Grounding.surfaceAt(position)
-
-	P.part(
-		model,
-		"Abdomen",
-		Vector3.new(5, 3.5, 6),
-		CFrame.new(ground + Vector3.new(0, 2.4, 1)),
-		Enum.Material.SmoothPlastic,
-		COLORS.spider,
-		{ canCollide = false, shape = Enum.PartType.Ball }
-	)
-	P.part(
-		model,
-		"Head",
-		Vector3.new(3.5, 2.8, 3.5),
-		CFrame.new(ground + Vector3.new(0, 2.2, -3)),
-		Enum.Material.SmoothPlastic,
-		COLORS.spider,
-		{ canCollide = false, shape = Enum.PartType.Ball }
-	)
-	for index, side in ipairs({ -1, 1 }) do
-		for leg = 1, 4 do
-			local z = -3 + (leg - 1) * 2
-			local from = ground + Vector3.new(side * 1.5, 2.3, z)
-			local to = ground + Vector3.new(side * (5 + leg), 0.8, z + (leg - 2.5) * 0.8)
-			P.segment(
-				model,
-				string.format("Leg_%d_%d", index, leg),
-				from,
-				to,
-				0.55,
-				0.55,
-				Enum.Material.SmoothPlastic,
-				COLORS.spider,
-				{ canCollide = false }
-			)
-		end
 	end
 end
 
@@ -432,32 +387,6 @@ local function createStoneCircle(parent: Instance, positions: { [string]: Vector
 	end
 end
 
-local function createEarlySpiderPocket(parent: Instance, spawns: { [string]: Vector3 })
-	local center = spawns.spawn_spider_meadow_pocket
-	if center == nil then
-		return
-	end
-
-	local pocket = P.model(parent, "EarlySpiderPocket")
-	for index, offset in ipairs({
-		Vector3.new(-30, 0, -24),
-		Vector3.new(26, 0, -18),
-		Vector3.new(38, 0, 26),
-		Vector3.new(-20, 0, 32),
-	}) do
-		P.groundedPart(
-			pocket,
-			string.format("DarkRock%02d", index),
-			center + offset,
-			Vector3.new(12, 8 + index, 11),
-			Enum.Material.Slate,
-			COLORS.darkStone
-		)
-	end
-	createSpider(pocket, "MeadowSpider01", center + Vector3.new(-12, 0, 4))
-	createSpider(pocket, "MeadowSpider02", center + Vector3.new(16, 0, -8))
-end
-
 local function createSpawn(parent: Instance, positions: { [string]: Vector3 }): SpawnLocation
 	local spawnPosition = positions.poi_village_square
 	local ground = Grounding.surfaceAt(spawnPosition)
@@ -484,7 +413,6 @@ function VillageAndMeadowsBlockout.build(parent: Instance): SpawnLocation
 	createVillage(south, positions)
 	createFarm(south, positions, spawns)
 	createStoneCircle(south, positions, spawns)
-	createEarlySpiderPocket(south, spawns)
 
 	return createSpawn(south, positions)
 end
