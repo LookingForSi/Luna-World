@@ -55,8 +55,8 @@ for token in (
     '"PlayerHealthFill"',
     '"PlayerResource"',
     '"PlayerResourceFill"',
-    '"SessionXP"',
-    '"SessionXPFill"',
+    '"LevelXP"',
+    '"LevelXPFill"',
 ):
     require(HUD, token, f"player HUD is missing row contract {token}")
 require(HUD, "humanoid.Health / humanoid.MaxHealth", "player HP bar must be driven by the local Humanoid")
@@ -67,6 +67,9 @@ require(HUD, "gui.IgnoreGuiInset = true", "player status top margin must not inc
 require(HUD, '"STM"', "knight stamina HUD abbreviation is missing")
 require(HUD, '"FCS"', "ranger focus HUD abbreviation is missing")
 require(HUD, '"MP"', "mystic mana HUD abbreviation is missing")
+require(HUD, '"LevelBadge"', "player HUD must render a dedicated level badge")
+require(HUD, "ProgressionRules.requiredXP(level)", "XP HUD must reset against each current-level threshold")
+require(CLIENT_MAIN, "SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)", "Roblox stock health display must not duplicate the custom HP HUD")
 
 # Grey wolf damage is deliberately above the knight's current defense so an ordinary PvE hit is visible in acceptance testing.
 require(MOBS, "basicAttackDamage = 22", "grey wolf needs visible post-mitigation damage against the knight test archetype")
