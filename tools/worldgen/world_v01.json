@@ -68,12 +68,12 @@
       "center": [
         560,
         60,
-        2200
+        1920
       ],
       "size": [
-        780,
+        880,
         150,
-        720
+        810
       ],
       "priority": 10
     },
@@ -83,12 +83,12 @@
       "center": [
         -560,
         6,
-        2220
+        1940
       ],
       "size": [
-        800,
+        900,
         120,
-        740
+        835
       ],
       "priority": 10
     }
@@ -219,15 +219,15 @@
       "position": [
         560,
         60,
-        2200
+        1920
       ]
     },
     {
       "id": "poi_goblin_lookout",
       "position": [
-        700,
+        720,
         68,
-        2370
+        2070
       ]
     },
     {
@@ -235,15 +235,15 @@
       "position": [
         -560,
         4,
-        2220
+        1940
       ]
     },
     {
       "id": "poi_spider_cave_mouth",
       "position": [
-        -700,
+        -720,
         4,
-        2380
+        2060
       ]
     },
     {
@@ -289,24 +289,12 @@
       "spawnEnabled": true
     },
     {
-      "id": "spawn_spider_meadow_pocket",
-      "mobId": "mob_meadow_spider",
-      "position": [
-        440,
-        8,
-        1380
-      ],
-      "radius": 120,
-      "zoneId": "zone_luna_meadows",
-      "spawnEnabled": true
-    },
-    {
       "id": "spawn_goblin_scout_road",
       "mobId": "mob_goblin_scout",
       "position": [
         180,
         24,
-        2020
+        1900
       ],
       "radius": 84,
       "zoneId": "zone_moonfall_road",
@@ -318,7 +306,7 @@
       "position": [
         400,
         48,
-        2110
+        1860
       ],
       "radius": 96,
       "zoneId": "zone_goblin_camp",
@@ -330,7 +318,7 @@
       "position": [
         560,
         60,
-        2230
+        1940
       ],
       "radius": 110,
       "zoneId": "zone_goblin_camp",
@@ -340,9 +328,9 @@
       "id": "spawn_goblin_camp_elite_future",
       "mobId": "mob_goblin_elite_future",
       "position": [
-        660,
+        680,
         66,
-        2350
+        2060
       ],
       "radius": 72,
       "zoneId": "zone_goblin_camp",
@@ -354,7 +342,7 @@
       "position": [
         -380,
         10,
-        2100
+        1860
       ],
       "radius": 96,
       "zoneId": "zone_spider_hollow",
@@ -366,7 +354,7 @@
       "position": [
         -560,
         4,
-        2230
+        1960
       ],
       "radius": 110,
       "zoneId": "zone_spider_hollow",
@@ -376,9 +364,9 @@
       "id": "spawn_spider_hollow_brood",
       "mobId": "mob_brood_spider",
       "position": [
-        -670,
+        -680,
         4,
-        2360
+        2060
       ],
       "radius": 88,
       "zoneId": "zone_spider_hollow",
@@ -482,34 +470,34 @@
         1940
       ],
       [
-        150,
+        160,
         24,
-        2000
+        1925
       ],
       [
-        300,
+        320,
         34,
-        2070
+        1915
       ],
       [
-        430,
+        455,
         46,
-        2140
+        1915
       ],
       [
         560,
         60,
-        2200
+        1920
       ],
       [
-        630,
+        640,
         64,
-        2290
+        1990
       ],
       [
-        700,
+        720,
         68,
-        2370
+        2070
       ]
     ],
     "spider": [
@@ -519,61 +507,61 @@
         1940
       ],
       [
-        -160,
+        -170,
         15,
-        2010
+        1925
       ],
       [
-        -310,
+        -330,
         11,
-        2080
+        1920
       ],
       [
-        -450,
+        -470,
         7,
-        2160
+        1930
       ],
       [
         -560,
         4,
-        2220
+        1940
       ],
       [
-        -630,
+        -640,
         4,
-        2300
+        2000
       ],
       [
-        -700,
+        -720,
         4,
-        2380
+        2060
       ]
     ],
     "spider_return": [
       [
-        -700,
+        -720,
         4,
-        2380
+        2060
       ],
       [
-        -610,
-        6,
-        2460
+        -630,
+        8,
+        2150
       ],
       [
         -450,
-        11,
-        2500
+        14,
+        2230
       ],
       [
         -260,
-        19,
-        2520
+        22,
+        2300
       ],
       [
-        10,
-        28,
-        2540
+        0,
+        25,
+        2360
       ]
     ],
     "ancient_approach": [
@@ -653,11 +641,11 @@
         "center": [
           560,
           60,
-          2200
+          1920
         ],
-        "radiusStuds": 240,
+        "radiusStuds": 270,
         "targetY": 60,
-        "blendStuds": 260,
+        "blendStuds": 290,
         "mode": "raise"
       },
       {
@@ -665,11 +653,11 @@
         "center": [
           -560,
           4,
-          2220
+          1940
         ],
-        "radiusStuds": 240,
+        "radiusStuds": 270,
         "targetY": 4,
-        "blendStuds": 220,
+        "blendStuds": 250,
         "mode": "lower"
       }
     ],
@@ -738,11 +726,11 @@
         "id": "goblin_massif",
         "centerXZ": [
           560,
-          2200
+          1920
         ],
         "sigmaXZ": [
-          500,
-          420
+          560,
+          470
         ],
         "amplitude": 26
       },
@@ -750,11 +738,11 @@
         "id": "goblin_back_ridge",
         "centerXZ": [
           820,
-          2390
+          2110
         ],
         "sigmaXZ": [
-          330,
-          300
+          370,
+          340
         ],
         "amplitude": 12
       },
@@ -762,11 +750,11 @@
         "id": "spider_hollow_basin",
         "centerXZ": [
           -560,
-          2220
+          1940
         ],
         "sigmaXZ": [
-          450,
-          420
+          505,
+          470
         ],
         "amplitude": -20
       },
@@ -774,11 +762,11 @@
         "id": "spider_outer_wall",
         "centerXZ": [
           -980,
-          2240
+          1960
         ],
         "sigmaXZ": [
-          320,
-          560
+          360,
+          630
         ],
         "amplitude": 22
       },
@@ -848,10 +836,10 @@
         "id": "spider_hollow_rim",
         "centerXZ": [
           -560,
-          2220
+          1940
         ],
-        "radiusStuds": 340,
-        "sigmaStuds": 105,
+        "radiusStuds": 385,
+        "sigmaStuds": 118,
         "amplitude": 20
       }
     ],
@@ -862,11 +850,11 @@
         "center": [
           560,
           102,
-          3110
+          2830
         ],
-        "radiusStuds": 225,
+        "radiusStuds": 255,
         "targetY": 102,
-        "blendStuds": 250,
+        "blendStuds": 280,
         "terrainIntent": "raised_terrace",
         "mode": "raise"
       },
@@ -876,11 +864,11 @@
         "center": [
           -560,
           108,
-          3140
+          2860
         ],
-        "radiusStuds": 205,
+        "radiusStuds": 230,
         "targetY": 108,
-        "blendStuds": 240,
+        "blendStuds": 270,
         "terrainIntent": "raised_promontory",
         "mode": "raise"
       },
@@ -900,5 +888,5 @@
       }
     ]
   },
-  "artifactRevision": "terrain-v04"
+  "artifactRevision": "terrain-v05"
 }
