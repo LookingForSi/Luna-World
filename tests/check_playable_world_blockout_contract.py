@@ -38,7 +38,7 @@ def main() -> None:
     assert "RECOVERY_Y" in bootstrap
 
     builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
-    assert 'TerrainRevision", "terrain-v04"' in builder
+    assert 'TerrainRevision", "terrain-v05"' in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
 
@@ -51,11 +51,12 @@ def main() -> None:
         "RiverAndBridge",
         "BridgeApproachSouth",
         "StoneCircle",
-        "EarlySpiderPocket",
         "LunaVillageSpawn",
     ):
         assert token in south
     assert "BillboardGui" not in south
+    assert "EarlySpiderPocket" not in south
+    assert "spawn_spider_meadow_pocket" not in south
 
     north = read(ROOT / "src/server/world/NorthernZonesBlockout.luau")
     for token in (
