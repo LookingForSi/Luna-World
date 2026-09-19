@@ -47,6 +47,46 @@ function InventoryService.getSnapshot(player: Player): PersistenceTypes.Profile?
 	return PlayerDataService.getProfileCopy(player)
 end
 
+function InventoryService.createClientSnapshot(player: Player): any?
+	local profile = PlayerDataService.getProfileCopy(player)
+	if profile == nil then return nil end
+
+	local inventory = {}
+	for _, instanceId in profile.Inventory do
+		local record = profile.Items[instanceId]
+		if record ~= nil then
+			table.insert(inventory, {
+				instanceId = instanceId,
+				itemId = record.ItemId,
+				quantity = record.Quantity,
+			})
+		end
+	end
+
+	local equipment = {}
+	for _, slot in InventoryConfig.EquipmentSlots do
+		local instanceId = profile.Equipment[slot]
+		if instanceId ~= nil then
+			local record = profile.Items[instanceId]
+			if record ~= nil then
+				equipment[slot] = {
+					instanceId = instanceId,
+					itemId = record.ItemId,
+					quantity = record.Quantity,
+				}
+			end
+		end
+	end
+
+	return {
+		luna = profile.Luna,
+		capacity = InventoryConfig.Capacity,
+		used = #profile.Inventory,
+		inventory = inventory,
+		equipment = equipment,
+	}
+end
+
 function InventoryService.grantItem(player: Player, itemId: string, quantity: number): (boolean, string?)
 	local profile = PlayerDataService.getProfileCopy(player)
 	if profile == nil then return false, "ProfileNotReady" end
