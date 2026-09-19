@@ -30,7 +30,7 @@ Base: текущий approved/prototyped world layout.
 
 Generator не запускается в runtime.
 
-Первая версия generator формирует карту 2600 × 4800 studs, 16-bit heightmap 1024 × 2048, water mask, top-down и overlays. Следующий checkpoint — owner import в Terrain Editor и runtime traversal review.
+Первая версия generator формирует карту 2600 × 4800 studs, 16-bit heightmap 650 × 1200, water mask, top-down и overlays. Следующий checkpoint — owner import в Terrain Editor и runtime traversal review.
 
 ## 4. Phase 2 — macro terrain
 
