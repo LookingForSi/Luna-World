@@ -1131,6 +1131,18 @@ function CombatService._setArchetypeForStudio(player: Player, archetypeId: strin
 	return true
 end
 
+function CombatService.restorePlayerResource(player: Player, amount: number): number
+	if amount ~= amount or amount <= 0 or amount == math.huge then return 0 end
+	if player.Parent ~= Players or not PlayerDataService.isReady(player) or getLivingCharacterRoot(player) == nil then return 0 end
+	local state = statesByPlayer[player]
+	if state == nil then return 0 end
+	local before = state.stats.resource.current
+	local restored = ResourceRules.restore(state.stats.resource, amount)
+	state.stats.resource = restored
+	replicateResource(player, state)
+	return restored.current - before
+end
+
 -- Test-project-only server seam. It is unavailable in live servers and is never
 -- reachable through a client RemoteEvent.
 function CombatService._setResourceForTest(player: Player, current: number): ()
