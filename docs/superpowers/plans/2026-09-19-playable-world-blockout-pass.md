@@ -1,14 +1,14 @@
 # Playable World Blockout Pass — production checklist
 
 Дата: 2026-09-19  
-База: `terrain-v04`  
+База: `terrain-v05`  
 Статус: **IMPLEMENTED — owner traversal pending**  
 Цель: превратить принятый macro-terrain в пешком проверяемый игровой мир без попытки сделать final art.
 
 ## 1. Общие обязательные требования
 
 ### Обязательно
-- не менять macro heightmap `terrain-v04` до owner traversal review;
+- не менять macro heightmap `terrain-v05` после этого correction pass без нового owner traversal review;
 - все объекты, зависящие от земли, ground-snapped к фактическому Roblox Terrain через raycast;
 - никакой обязательный маршрут не требует прыжка;
 - прыжок отключён в preview;
@@ -86,7 +86,8 @@
 - no-jump bridge approaches;
 - main road from Village through Meadows;
 - stone circle;
-- wolf/spider early-area placeholders.
+- wolf early-area placeholders;
+- **никакого отдельного spider encounter сразу за мостом**: пауки начинаются только в Spider Hollow.
 
 ### Желательно
 - roadside rocks / fences;
@@ -228,7 +229,7 @@ Only after this traversal review should terrain-v04 be considered macro-frozen f
 
 ## 13. Реализованный preview pass
 
-В ветке собран runtime blockout поверх импортированного `terrain-v04`:
+В ветке собран runtime blockout поверх импортированного `terrain-v05`:
 
 - terrain-raycast grounding для всех крупных объектов;
 - Luna Village;
@@ -251,3 +252,20 @@ Only after this traversal review should terrain-v04 be considered macro-frozen f
 Production combat/AI специально не подключены: mob figures здесь являются spatial placeholders для traversal и масштаба.
 
 Следующий gate: owner run-through по acceptance checklist раздела 12.
+
+
+## 14. Owner traversal correction — combat block south shift
+
+По результатам первого полного пешего прогона зафиксирована вторая пространственная итерация:
+
+- Ancient Approach и направление на Ruins of Selene остаются на принятых координатах;
+- Goblin Camp, Spider Hollow, Old Cemetery и Fallen Shrine сдвинуты южнее, ближе к реке и Moonfall crossroads;
+- footprint четырёх combat-зон увеличен примерно на 10–15%;
+- между верхней парой combat-зон и Ancient Approach оставлен более длинный переход;
+- terrain pads / macro landforms / POI / spawn markers / branch roads сдвинуты синхронно;
+- Spider Hollow сохраняет принятую owner'ом геометрию low basin;
+- случайный early spider pocket в Meadows за мостом удалён полностью;
+- Goblin Camp и Spider Hollow остаются по сторонам, утверждённым концептом;
+- Ancient Approach и Selene horizon этой правкой не меняются.
+
+Следующий gate: повторный owner traversal на `terrain-v05`.
