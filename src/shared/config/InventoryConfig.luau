@@ -10,6 +10,7 @@ end
 return table.freeze({
 	Capacity = 40,
 	DefaultStackLimit = 99,
+	ConsumableCooldownSeconds = 5,
 	EquipmentSlots = slots,
 	EquipmentSlotSet = table.freeze(slotSet),
 })
