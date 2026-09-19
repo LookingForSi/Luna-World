@@ -83,10 +83,12 @@ Macro terrain:
 - широкая Meadows basin;
 - реальное русло через Meadows в районе моста;
 - Moonfall Road spine;
-- повышенный western shoulder и Goblin Camp;
-- пониженный Spider Hollow;
+- выраженная приподнятая Goblin Camp shelf с внешним rough rim;
+- пониженный Spider Hollow с отдельным enclosing rim;
 - Dark Woodland approach;
-- высокие natural boundary ridges по внешнему периметру с проходом в сторону будущего Dark Woodland.
+- future terrain reservations под Old Cemetery и Fallen Shrine — как приподнятые площадки, но пока без gameplay zones;
+- высокие natural boundary ridges по внешнему периметру с проходом в сторону будущего Dark Woodland;
+- крупный Selene horizon massif за северной границей playable area.
 
 Routes не строятся плоскими Part-плитами. Generator мягко формирует terrain вокруг centerline и target elevation, поэтому переходы остаются частью земли.
 
@@ -106,3 +108,15 @@ Routes не строятся плоскими Part-плитами. Generator м�
 - mobile/gamepad runtime test.
 
 Не начинать final art/foliage pass до принятия macro terrain и traversal.
+
+
+## Terrain v0.2 — характер зон
+
+Вторая macro-итерация намеренно разделяет **playable core** и **silhouette**:
+
+- Goblin Camp имеет относительно спокойное внутреннее поле боя, но сидит на поднятой shelf и окружён rough terrain rim. Позже этот силуэт усиливается палисадом, huts, кострами и rock kit.
+- Spider Hollow имеет проходимое ядро, но находится в заметной чаше с отдельным rim. Позже граница усиливается rocks, roots, dark trees и web kit.
+- Old Cemetery и Fallen Shrine пока **не входят в gameplay scope v0.1**. Generator резервирует для них terrain silhouette из approved concept, чтобы дальнейшее расширение мира не потребовало ломать Selene-side geography.
+- regular terrain имеет authoring floor выше нуля; к низкой отметке опускается только специально вырезанное русло. Это предотвращает случайные holes в Terrain import.
+
+Высота import-region увеличена до 192 studs, потому что Selene massif больше не должен обрезаться верхней границей heightmap.
