@@ -161,8 +161,8 @@ local function createFenceLine(parent: Instance, name: string, fromPosition: Vec
 		P.part(
 			fence,
 			string.format("Post%02d", index + 1),
-			Vector3.new(2.2, 8, 2.2),
-			CFrame.new(ground + Vector3.new(0, 4, 0)),
+			Vector3.new(1.5, 6.5, 1.5),
+			CFrame.new(ground + Vector3.new(0, 3.0, 0)),
 			Enum.Material.Wood,
 			COLORS.darkTimber,
 			decorativeOptions(true)
@@ -172,14 +172,14 @@ local function createFenceLine(parent: Instance, name: string, fromPosition: Vec
 	for index = 1, #groundedPoints - 1 do
 		local a = groundedPoints[index]
 		local b = groundedPoints[index + 1]
-		for railIndex, y in ipairs({ 3.0, 6.0 }) do
+		for railIndex, y in ipairs({ 2.2, 4.5 }) do
 			P.segment(
 				fence,
 				string.format("Rail_%02d_%02d", index, railIndex),
 				a + Vector3.new(0, y, 0),
 				b + Vector3.new(0, y, 0),
-				1.2,
-				1.2,
+				0.65,
+				0.65,
 				Enum.Material.Wood,
 				COLORS.timber,
 				decorativeOptions(false)
