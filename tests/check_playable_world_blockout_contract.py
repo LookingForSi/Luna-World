@@ -46,7 +46,7 @@ def main() -> None:
     for token in (
         "LunaVillage",
         "MoonfallFarm",
-        "Sheep01",
+        "Sheep%02d",
         "YoungWolf01",
         "RiverAndBridge",
         "BridgeApproachSouth",
