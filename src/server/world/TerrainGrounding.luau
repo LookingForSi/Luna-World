@@ -8,7 +8,7 @@ local RAY_DISTANCE = 700
 local params = RaycastParams.new()
 params.FilterType = Enum.RaycastFilterType.Include
 params.FilterDescendantsInstances = { Workspace.Terrain }
-params.IgnoreWater = false
+params.IgnoreWater = true
 
 local TerrainGrounding = {}
 
