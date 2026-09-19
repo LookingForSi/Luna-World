@@ -168,20 +168,25 @@ local function applyPlayerCalculatedStats(
 		stance ~= nil
 	)
 	stats.physicalDefense = values.physicalDefense
-	stats.movementSpeed = values.movementSpeed
+	local hostileMovement = player:GetAttribute(CombatConfig.HostileMovementMultiplierAttribute)
+	local hostileAttackSpeed = player:GetAttribute(CombatConfig.HostileAttackSpeedMultiplierAttribute)
+	local movementMultiplier = if typeof(hostileMovement) == "number" then math.clamp(hostileMovement, 0.1, 1) else 1
+	local attackSpeedMultiplier = if typeof(hostileAttackSpeed) == "number" then math.clamp(hostileAttackSpeed, 0.1, 1) else 1
+	stats.movementSpeed = values.movementSpeed * movementMultiplier
 	local rapidShot = rapidShotStates[player]
-	stats.attackSpeedMultiplier = EffectRules.resolveAttackSpeed(
+	local friendlyAttackSpeed = EffectRules.resolveAttackSpeed(
 		stats.baseAttackSpeedMultiplier,
 		if rapidShot ~= nil then rapidShot.attackSpeedIncrease else 0,
 		CombatConfig.MaxAttackSpeedMultiplier,
 		rapidShot ~= nil
 	)
+	stats.attackSpeedMultiplier = math.max(CombatConfig.MinAttackSpeedMultiplier, friendlyAttackSpeed * attackSpeedMultiplier)
 	if stance ~= nil and player.Character == stance.character and stance.character.Parent ~= nil then
 		local humanoid = stance.character:FindFirstChildOfClass("Humanoid")
-		if humanoid ~= nil then humanoid.WalkSpeed = values.movementSpeed end
+		if humanoid ~= nil then humanoid.WalkSpeed = stats.movementSpeed end
 	elseif player.Character ~= nil then
 		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-		if humanoid ~= nil then humanoid.WalkSpeed = values.movementSpeed end
+		if humanoid ~= nil then humanoid.WalkSpeed = stats.movementSpeed end
 	end
 end
 
@@ -317,9 +322,17 @@ function CombatEffectService.executeAreaDamage(
 			CombatConfig.CriticalDamageMultiplier,
 			roll or function(): number return criticalRandom:NextNumber() end
 		)
-		if authoritativeApplication(areaTarget.entityId, damage.amount, actor) then
+		local applied = false
+		local appliedAmount: number? = nil
+		if applyDamage ~= nil then
+			applied = authoritativeApplication(areaTarget.entityId, damage.amount, actor)
+			appliedAmount = if applied then damage.amount else nil
+		else
+			applied, appliedAmount = MobService.applyDamage(areaTarget.entityId, damage.amount, actor, "Magic")
+		end
+		if applied then
 			appliedCount += 1
-			totalAmount += damage.amount
+			totalAmount += appliedAmount or damage.amount
 			anyCritical = anyCritical or damage.isCritical
 		end
 	end
@@ -419,9 +432,12 @@ function CombatEffectService.execute(
 		CombatConfig.CriticalDamageMultiplier,
 		function(): number return criticalRandom:NextNumber() end
 	)
-	if not MobService.applyDamage(target.entityId, damage.amount, actor) then
+	local damageType: CombatTypes.MobDamageType = if definition.powerSource == "MagicAttack" then "Magic" else "Physical"
+	local applied, appliedAmount = MobService.applyDamage(target.entityId, damage.amount, actor, damageType)
+	if not applied then
 		return { applied = false }
 	end
+	local resolvedAmount = appliedAmount or damage.amount
 	if effect.kind == "ShieldBash" then
 		local startedTemporaryEffect = false
 		local rank = getMobRank(target.model)
@@ -438,9 +454,9 @@ function CombatEffectService.execute(
 				interruptMobAction(target.model)
 			end
 		end
-		return { applied = true, amount = damage.amount, isCritical = damage.isCritical, effectPhase = if startedTemporaryEffect then "Started" else nil }
+		return { applied = true, amount = resolvedAmount, isCritical = damage.isCritical, effectPhase = if startedTemporaryEffect then "Started" else nil }
 	end
-	return { applied = true, amount = damage.amount, isCritical = damage.isCritical }
+	return { applied = true, amount = resolvedAmount, isCritical = damage.isCritical }
 end
 
 return table.freeze(CombatEffectService)
