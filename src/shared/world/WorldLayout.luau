@@ -5,6 +5,7 @@ export type ZoneDefinition = {
 	displayName: string,
 	levelMin: number,
 	levelMax: number,
+	future: boolean?,
 }
 
 export type ZoneVolumeDefinition = {
@@ -45,6 +46,7 @@ export type WorldLayoutDefinition = {
 	GoblinCampRoute: { Vector3 },
 	SpiderHollowRoute: { Vector3 },
 	SpiderReturnRoute: { Vector3 },
+	AncientApproachRoute: { Vector3 },
 }
 
 local WORLD_DISTANCE_SCALE = 2.0
@@ -96,6 +98,34 @@ local WorldLayout: WorldLayoutDefinition = {
 			levelMin = 4,
 			levelMax = 6,
 		},
+		{
+			id = "zone_dark_woodland",
+			displayName = "Dark Woodland",
+			levelMin = 6,
+			levelMax = 8,
+			future = true,
+		},
+		{
+			id = "zone_old_cemetery",
+			displayName = "Old Cemetery",
+			levelMin = 7,
+			levelMax = 9,
+			future = true,
+		},
+		{
+			id = "zone_fallen_shrine",
+			displayName = "Fallen Shrine",
+			levelMin = 7,
+			levelMax = 9,
+			future = true,
+		},
+		{
+			id = "zone_ancient_approach",
+			displayName = "Ancient Approach",
+			levelMin = 8,
+			levelMax = 10,
+			future = true,
+		},
 	},
 
 	ZoneVolumes = {
@@ -134,6 +164,34 @@ local WorldLayout: WorldLayoutDefinition = {
 			priority = 10,
 			minSafeY = -6,
 		},
+		{
+			zoneId = "zone_dark_woodland",
+			center = scaleXZ(0, 46, 1450),
+			size = scaleXZ(650, 180, 250),
+			priority = 6,
+			minSafeY = 8,
+		},
+		{
+			zoneId = "zone_old_cemetery",
+			center = scaleXZ(280, 102, 1555),
+			size = scaleXZ(260, 150, 230),
+			priority = 8,
+			minSafeY = 40,
+		},
+		{
+			zoneId = "zone_fallen_shrine",
+			center = scaleXZ(-280, 108, 1570),
+			size = scaleXZ(250, 150, 230),
+			priority = 8,
+			minSafeY = 40,
+		},
+		{
+			zoneId = "zone_ancient_approach",
+			center = scaleXZ(0, 124, 1770),
+			size = scaleXZ(380, 170, 360),
+			priority = 7,
+			minSafeY = 60,
+		},
 	},
 
 	PointsOfInterest = {
@@ -159,6 +217,11 @@ local WorldLayout: WorldLayoutDefinition = {
 		{ id = "poi_spider_cave_mouth", position = scaleXZ(-350, 4, 1190) },
 		{ id = "poi_dark_woodland_gate", position = scaleXZ(0, 30, 1340) },
 		{ id = "entry_dark_woodland", position = scaleXZ(0, 36, 1430) },
+
+		{ id = "poi_old_cemetery", position = scaleXZ(280, 102, 1555) },
+		{ id = "poi_fallen_shrine", position = scaleXZ(-280, 108, 1570) },
+		{ id = "poi_ancient_approach", position = scaleXZ(0, 124, 1770) },
+		{ id = "poi_selene_horizon", position = scaleXZ(0, 150, 2070) },
 	},
 
 	SpawnMarkers = {
@@ -285,6 +348,14 @@ local WorldLayout: WorldLayoutDefinition = {
 		scaleXZ(-225, 11, 1250),
 		scaleXZ(-130, 19, 1260),
 		scaleXZ(5, 28, 1270),
+	},
+
+	AncientApproachRoute = {
+		scaleXZ(0, 36, 1430),
+		scaleXZ(0, 54, 1520),
+		scaleXZ(0, 78, 1610),
+		scaleXZ(0, 104, 1700),
+		scaleXZ(0, 124, 1770),
 	},
 }
 
