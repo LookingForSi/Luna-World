@@ -1,0 +1,480 @@
+--!strict
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local WorldLayout = require(ReplicatedStorage.Shared.world.WorldLayout)
+local Grounding = require(script.Parent.TerrainGrounding)
+local P = require(script.Parent.BlockoutPrimitives)
+
+local NorthernZonesBlockout = {}
+
+local COLORS = {
+	road = Color3.fromRGB(118, 101, 78),
+	stone = Color3.fromRGB(92, 94, 91),
+	darkStone = Color3.fromRGB(58, 61, 61),
+	ancientStone = Color3.fromRGB(116, 116, 111),
+	timber = Color3.fromRGB(94, 66, 45),
+	darkTimber = Color3.fromRGB(57, 46, 37),
+	goblinCloth = Color3.fromRGB(98, 74, 52),
+	fire = Color3.fromRGB(219, 132, 50),
+	tree = Color3.fromRGB(64, 52, 42),
+	foliage = Color3.fromRGB(45, 70, 49),
+	deadTree = Color3.fromRGB(64, 58, 52),
+	web = Color3.fromRGB(202, 206, 210),
+	goblin = Color3.fromRGB(91, 112, 67),
+	spider = Color3.fromRGB(48, 43, 47),
+}
+
+local function poiPositions(): { [string]: Vector3 }
+	local result: { [string]: Vector3 } = {}
+	for _, poi in ipairs(WorldLayout.PointsOfInterest) do
+		result[poi.id] = poi.position
+	end
+	return result
+end
+
+local function createGroundedRoad(parent: Instance, name: string, points: { Vector3 }, width: number, material: Enum.Material?)
+	local folder = P.folder(parent, name)
+	local segmentIndex = 0
+	for routeIndex = 1, #points - 1 do
+		local start = points[routeIndex]
+		local finish = points[routeIndex + 1]
+		local horizontal = Vector3.new(finish.X - start.X, 0, finish.Z - start.Z)
+		local divisions = math.max(1, math.ceil(horizontal.Magnitude / 65))
+		for step = 1, divisions do
+			local a = start:Lerp(finish, (step - 1) / divisions)
+			local b = start:Lerp(finish, step / divisions)
+			segmentIndex += 1
+			P.groundedSegment(
+				folder,
+				string.format("Segment%03d", segmentIndex),
+				a,
+				b,
+				width,
+				0.35,
+				material or Enum.Material.Ground,
+				COLORS.road,
+				{ canCollide = false, attributes = { DecorativeRoad = true } }
+			)
+		end
+	end
+end
+
+local function createRock(parent: Instance, name: string, position: Vector3, size: Vector3)
+	local rock = P.groundedPart(
+		parent,
+		name,
+		position,
+		size,
+		Enum.Material.Rock,
+		COLORS.darkStone,
+		{ shape = Enum.PartType.Ball }
+	)
+	rock.CFrame *= CFrame.Angles(math.rad(7), math.rad((position.X + position.Z) % 70), math.rad(-5))
+end
+
+local function createTree(parent: Instance, name: string, position: Vector3, height: number, dead: boolean?)
+	local model = P.model(parent, name)
+	local ground = Grounding.surfaceAt(position)
+	local trunkColor = if dead then COLORS.deadTree else COLORS.tree
+	P.part(
+		model,
+		"Trunk",
+		Vector3.new(4.5, height, 4.5),
+		CFrame.new(ground + Vector3.new(0, height / 2, 0)),
+		Enum.Material.Wood,
+		trunkColor
+	)
+	if not dead then
+		P.part(
+			model,
+			"Crown",
+			Vector3.new(16, 18, 16),
+			CFrame.new(ground + Vector3.new(0, height + 5, 0)),
+			Enum.Material.Grass,
+			COLORS.foliage,
+			{ canCollide = false, shape = Enum.PartType.Ball }
+		)
+	else
+		for index, side in ipairs({ -1, 1 }) do
+			P.segment(
+				model,
+				string.format("Branch%02d", index),
+				ground + Vector3.new(0, height * 0.7, 0),
+				ground + Vector3.new(side * 8, height * 0.83, 2),
+				1.2,
+				1.2,
+				Enum.Material.Wood,
+				trunkColor,
+				{ canCollide = false }
+			)
+		end
+	end
+end
+
+local function createGoblin(parent: Instance, name: string, position: Vector3)
+	local model = P.model(parent, name)
+	model:SetAttribute("Purpose", "MobPlaceholder")
+	model:SetAttribute("MobId", "mob_goblin_scout")
+	local ground = Grounding.surfaceAt(position)
+	P.part(
+		model,
+		"Body",
+		Vector3.new(3.5, 5, 2.5),
+		CFrame.new(ground + Vector3.new(0, 3.5, 0)),
+		Enum.Material.SmoothPlastic,
+		COLORS.goblin,
+		{ canCollide = false }
+	)
+	P.part(
+		model,
+		"Head",
+		Vector3.new(3, 3, 3),
+		CFrame.new(ground + Vector3.new(0, 7.2, 0)),
+		Enum.Material.SmoothPlastic,
+		COLORS.goblin,
+		{ canCollide = false, shape = Enum.PartType.Ball }
+	)
+	P.segment(
+		model,
+		"Spear",
+		ground + Vector3.new(2.5, 1.2, 0),
+		ground + Vector3.new(2.5, 9, 0),
+		0.45,
+		0.45,
+		Enum.Material.Wood,
+		COLORS.timber,
+		{ canCollide = false }
+	)
+end
+
+local function createSpider(parent: Instance, name: string, position: Vector3, scale: number)
+	local model = P.model(parent, name)
+	model:SetAttribute("Purpose", "MobPlaceholder")
+	model:SetAttribute("MobId", "mob_meadow_spider")
+	local ground = Grounding.surfaceAt(position)
+	P.part(
+		model,
+		"Body",
+		Vector3.new(5, 3.5, 6) * scale,
+		CFrame.new(ground + Vector3.new(0, 2.5 * scale, 0)),
+		Enum.Material.SmoothPlastic,
+		COLORS.spider,
+		{ canCollide = false, shape = Enum.PartType.Ball }
+	)
+	for sideIndex, side in ipairs({ -1, 1 }) do
+		for leg = 1, 4 do
+			local z = (leg - 2.5) * 1.8 * scale
+			P.segment(
+				model,
+				string.format("Leg_%d_%d", sideIndex, leg),
+				ground + Vector3.new(side * 1.2 * scale, 2.2 * scale, z),
+				ground + Vector3.new(side * (5 + leg) * scale, 0.8 * scale, z),
+				0.45 * scale,
+				0.45 * scale,
+				Enum.Material.SmoothPlastic,
+				COLORS.spider,
+				{ canCollide = false }
+			)
+		end
+	end
+end
+
+local function createHut(parent: Instance, name: string, position: Vector3, yaw: number)
+	local model = P.model(parent, name)
+	local body = P.groundedPart(
+		model,
+		"Body",
+		position,
+		Vector3.new(28, 12, 22),
+		Enum.Material.WoodPlanks,
+		COLORS.goblinCloth
+	)
+	body.CFrame *= CFrame.Angles(0, math.rad(yaw), 0)
+	local ground = Grounding.surfaceAt(position)
+	P.part(
+		model,
+		"Roof",
+		Vector3.new(32, 3, 26),
+		body.CFrame * CFrame.new(0, 7.5, 0),
+		Enum.Material.Wood,
+		COLORS.darkTimber,
+		{ canCollide = false }
+	)
+end
+
+local function createGoblinCamp(parent: Instance, positions: { [string]: Vector3 })
+	local camp = P.model(parent, "GoblinCamp")
+	camp:SetAttribute("ZoneId", "zone_goblin_camp")
+	local center = positions.poi_goblin_camp
+	local halfX, halfZ = 122, 98
+
+	local fenceSegments = {
+		{ center + Vector3.new(-halfX, 0, -halfZ), center + Vector3.new(-44, 0, -halfZ) },
+		{ center + Vector3.new(44, 0, -halfZ), center + Vector3.new(halfX, 0, -halfZ) },
+		{ center + Vector3.new(-halfX, 0, -halfZ), center + Vector3.new(-halfX, 0, halfZ) },
+		{ center + Vector3.new(halfX, 0, -halfZ), center + Vector3.new(halfX, 0, halfZ) },
+		{ center + Vector3.new(-halfX, 0, halfZ), center + Vector3.new(halfX, 0, halfZ) },
+	}
+	for index, endpoints in ipairs(fenceSegments) do
+		P.groundedSegment(
+			camp,
+			string.format("Palisade%02d", index),
+			endpoints[1],
+			endpoints[2],
+			2.5,
+			8,
+			Enum.Material.Wood,
+			COLORS.darkTimber
+		)
+	end
+
+	createHut(camp, "Hut01", center + Vector3.new(-58, 0, 20), 18)
+	createHut(camp, "Hut02", center + Vector3.new(56, 0, 34), -22)
+	createHut(camp, "Hut03", center + Vector3.new(40, 0, -48), 10)
+
+	local ground = Grounding.surfaceAt(center)
+	P.part(
+		camp,
+		"Campfire",
+		Vector3.new(9, 2.5, 9),
+		CFrame.new(ground + Vector3.new(0, 1.8, 0)),
+		Enum.Material.Neon,
+		COLORS.fire,
+		{ canCollide = false, shape = Enum.PartType.Ball }
+	)
+
+	for index, offset in ipairs({
+		Vector3.new(-25, 0, -15),
+		Vector3.new(24, 0, 12),
+		Vector3.new(-8, 0, 48),
+	}) do
+		createGoblin(camp, string.format("Goblin%02d", index), center + offset)
+	end
+
+	local lookout = positions.poi_goblin_lookout
+	P.groundedPart(camp, "WatchTowerBase", lookout, Vector3.new(16, 22, 16), Enum.Material.WoodPlanks, COLORS.darkTimber)
+	P.groundedPart(camp, "WatchPlatform", lookout + Vector3.new(0, 20, 0), Vector3.new(24, 3, 24), Enum.Material.WoodPlanks, COLORS.timber)
+end
+
+local function createSpiderHollow(parent: Instance, positions: { [string]: Vector3 })
+	local hollow = P.model(parent, "SpiderHollow")
+	hollow:SetAttribute("ZoneId", "zone_spider_hollow")
+	local center = positions.poi_spider_hollow
+	local cave = positions.poi_spider_cave_mouth
+
+	for index, offset in ipairs({
+		Vector3.new(-120, 0, -40),
+		Vector3.new(-92, 0, 86),
+		Vector3.new(-35, 0, 118),
+		Vector3.new(72, 0, 104),
+		Vector3.new(118, 0, 38),
+		Vector3.new(110, 0, -78),
+		Vector3.new(40, 0, -122),
+		Vector3.new(-70, 0, -112),
+	}) do
+		createRock(
+			hollow,
+			string.format("PerimeterRock%02d", index),
+			center + offset,
+			Vector3.new(18 + index % 3 * 4, 12 + index % 4 * 3, 18 + index % 2 * 5)
+		)
+	end
+
+	for index, offset in ipairs({
+		Vector3.new(-82, 0, 38),
+		Vector3.new(66, 0, 54),
+		Vector3.new(38, 0, -74),
+		Vector3.new(-52, 0, -66),
+	}) do
+		createTree(hollow, string.format("DeadTree%02d", index), center + offset, 26 + index * 2, true)
+	end
+
+	local caveGround = Grounding.surfaceAt(cave)
+	P.part(hollow, "CavePillarLeft", Vector3.new(12, 28, 12), CFrame.new(caveGround + Vector3.new(-18, 14, 0)), Enum.Material.Rock, COLORS.darkStone)
+	P.part(hollow, "CavePillarRight", Vector3.new(12, 28, 12), CFrame.new(caveGround + Vector3.new(18, 14, 0)), Enum.Material.Rock, COLORS.darkStone)
+	P.part(hollow, "CaveLintel", Vector3.new(48, 10, 16), CFrame.new(caveGround + Vector3.new(0, 30, 0)), Enum.Material.Rock, COLORS.darkStone)
+
+	for index, offset in ipairs({
+		Vector3.new(-35, 13, -20),
+		Vector3.new(35, 12, 12),
+		Vector3.new(0, 16, 56),
+	}) do
+		local web = P.part(
+			hollow,
+			string.format("Web%02d", index),
+			Vector3.new(28, 18, 0.4),
+			CFrame.new(caveGround + offset) * CFrame.Angles(0, math.rad(index * 28), math.rad(index * 7)),
+			Enum.Material.Glass,
+			COLORS.web,
+			{ canCollide = false, transparency = 0.58 }
+		)
+		web:SetAttribute("Decorative", true)
+	end
+
+	createSpider(hollow, "Spider01", center + Vector3.new(-24, 0, -8), 1)
+	createSpider(hollow, "Spider02", center + Vector3.new(30, 0, 22), 1.1)
+	createSpider(hollow, "Spider03", center + Vector3.new(4, 0, 58), 0.9)
+end
+
+local function createMoonfallLandmarks(parent: Instance, positions: { [string]: Vector3 })
+	local props = P.model(parent, "MoonfallLandmarks")
+	local wagon = positions.poi_broken_wagon
+	P.groundedPart(props, "BrokenWagonBody", wagon, Vector3.new(18, 5, 10), Enum.Material.WoodPlanks, COLORS.timber)
+	for _, dx in ipairs({ -8, 8 }) do
+		local ground = Grounding.surfaceAt(wagon + Vector3.new(dx, 0, 0))
+		local wheel = P.part(
+			props,
+			"BrokenWheel",
+			Vector3.new(1.5, 10, 10),
+			CFrame.new(ground + Vector3.new(dx, 5, 5)) * CFrame.Angles(0, 0, math.rad(90)),
+			Enum.Material.Wood,
+			COLORS.darkTimber,
+			{ canCollide = false, shape = Enum.PartType.Cylinder }
+		)
+		wheel:SetAttribute("Decorative", true)
+	end
+
+	local waystone = positions.poi_old_waystone
+	P.groundedPart(props, "OldWaystone", waystone, Vector3.new(7, 18, 5), Enum.Material.Slate, COLORS.stone)
+
+	local crossroads = positions.poi_moonfall_crossroads
+	P.groundedPart(props, "CrossroadsPost", crossroads + Vector3.new(12, 0, -8), Vector3.new(3, 13, 3), Enum.Material.Wood, COLORS.darkTimber)
+end
+
+local function createDarkWoodland(parent: Instance, positions: { [string]: Vector3 })
+	local woodland = P.model(parent, "DarkWoodlandThreshold")
+	woodland:SetAttribute("ZoneId", "zone_dark_woodland")
+	local gate = positions.poi_dark_woodland_gate
+
+	for index = 1, 9 do
+		local x = 110 + (index - 1) * 55
+		local zOffset = ((index % 3) - 1) * 26
+		createTree(woodland, string.format("TreeLeft%02d", index), gate + Vector3.new(-x, 0, zOffset), 30 + index % 4 * 3)
+		createTree(woodland, string.format("TreeRight%02d", index), gate + Vector3.new(x, 0, -zOffset), 31 + index % 5 * 3)
+	end
+
+	local entry = positions.entry_dark_woodland
+	for index, offsetX in ipairs({ -70, 70 }) do
+		P.groundedPart(
+			woodland,
+			string.format("GateStone%02d", index),
+			entry + Vector3.new(offsetX, 0, 8),
+			Vector3.new(14, 32, 14),
+			Enum.Material.Slate,
+			COLORS.darkStone
+		)
+	end
+end
+
+local function createCemetery(parent: Instance, positions: { [string]: Vector3 })
+	local cemetery = P.model(parent, "OldCemetery")
+	cemetery:SetAttribute("ZoneId", "zone_old_cemetery")
+	local center = positions.poi_old_cemetery
+
+	for row = -1, 1 do
+		for col = -2, 2 do
+			local index = (row + 1) * 5 + col + 3
+			local pos = center + Vector3.new(col * 28, 0, row * 34)
+			local grave = P.groundedPart(
+				cemetery,
+				string.format("Grave%02d", index),
+				pos,
+				Vector3.new(5, 10 + (index % 3) * 2, 3),
+				Enum.Material.Slate,
+				COLORS.stone
+			)
+			grave.CFrame *= CFrame.Angles(math.rad((index % 2) * 3), math.rad((index % 5 - 2) * 3), 0)
+		end
+	end
+
+	local mausoleum = center + Vector3.new(0, 0, 90)
+	P.groundedPart(cemetery, "Mausoleum", mausoleum, Vector3.new(46, 24, 32), Enum.Material.Limestone, COLORS.ancientStone)
+	P.groundedPart(cemetery, "MausoleumRoof", mausoleum + Vector3.new(0, 22, 0), Vector3.new(52, 5, 38), Enum.Material.Slate, COLORS.darkStone, { canCollide = false })
+end
+
+local function createShrine(parent: Instance, positions: { [string]: Vector3 })
+	local shrine = P.model(parent, "FallenShrine")
+	shrine:SetAttribute("ZoneId", "zone_fallen_shrine")
+	local center = positions.poi_fallen_shrine
+
+	P.groundedPart(shrine, "ShrinePlatform", center, Vector3.new(100, 1.2, 90), Enum.Material.Cobblestone, COLORS.ancientStone, { canCollide = false })
+	for index, offset in ipairs({
+		Vector3.new(-38, 0, -26),
+		Vector3.new(0, 0, -32),
+		Vector3.new(38, 0, -26),
+		Vector3.new(-36, 0, 28),
+		Vector3.new(36, 0, 28),
+	}) do
+		P.groundedPart(
+			shrine,
+			string.format("Column%02d", index),
+			center + offset,
+			Vector3.new(8, 26 - (index % 3) * 5, 8),
+			Enum.Material.Limestone,
+			COLORS.ancientStone
+		)
+	end
+	P.groundedPart(shrine, "Altar", center + Vector3.new(0, 0, 18), Vector3.new(22, 7, 14), Enum.Material.Marble, COLORS.ancientStone)
+end
+
+local function createAncientApproach(parent: Instance, positions: { [string]: Vector3 })
+	local approach = P.model(parent, "AncientApproach")
+	approach:SetAttribute("ZoneId", "zone_ancient_approach")
+	local center = positions.poi_ancient_approach
+
+	for index, zOffset in ipairs({ -210, -120, -30, 70, 165 }) do
+		local height = 26 + index * 5
+		for _, xOffset in ipairs({ -78, 78 }) do
+			P.groundedPart(
+				approach,
+				string.format("Pylon_%02d_%d", index, xOffset),
+				center + Vector3.new(xOffset, 0, zOffset),
+				Vector3.new(12 + index, height, 12 + index),
+				Enum.Material.Limestone,
+				COLORS.ancientStone
+			)
+		end
+	end
+
+	local north = center + Vector3.new(0, 0, 230)
+	local northGround = Grounding.surfaceAt(north)
+	P.part(approach, "SeleneGateLeft", Vector3.new(18, 52, 18), CFrame.new(northGround + Vector3.new(-46, 26, 0)), Enum.Material.Limestone, COLORS.ancientStone)
+	P.part(approach, "SeleneGateRight", Vector3.new(18, 52, 18), CFrame.new(northGround + Vector3.new(46, 26, 0)), Enum.Material.Limestone, COLORS.ancientStone)
+	P.part(approach, "SeleneGateLintel", Vector3.new(110, 12, 20), CFrame.new(northGround + Vector3.new(0, 52, 0)), Enum.Material.Limestone, COLORS.ancientStone)
+
+	local horizon = positions.poi_selene_horizon
+	local horizonGround = Grounding.surfaceAt(horizon)
+	for index, x in ipairs({ -95, 0, 95 }) do
+		P.part(
+			approach,
+			string.format("SeleneHorizonMonolith%02d", index),
+			Vector3.new(18, 75 + index * 12, 18),
+			CFrame.new(horizonGround + Vector3.new(x, 40 + index * 6, 0)),
+			Enum.Material.Slate,
+			COLORS.darkStone,
+			{ canCollide = false, transparency = 0.18, attributes = { DistantSilhouette = true } }
+		)
+	end
+end
+
+function NorthernZonesBlockout.build(parent: Instance)
+	local positions = poiPositions()
+	local north = P.model(parent, "NorthWorld")
+
+	createGroundedRoad(north, "MoonfallRoad", WorldLayout.MoonfallRoadRoute, 22)
+	createGroundedRoad(north, "GoblinBranch", WorldLayout.GoblinCampRoute, 16)
+	createGroundedRoad(north, "SpiderBranch", WorldLayout.SpiderHollowRoute, 16)
+	createGroundedRoad(north, "SpiderReturn", WorldLayout.SpiderReturnRoute, 13)
+	createGroundedRoad(north, "AncientApproachRoad", WorldLayout.AncientApproachRoute, 26, Enum.Material.Cobblestone)
+
+	createMoonfallLandmarks(north, positions)
+	createGoblinCamp(north, positions)
+	createSpiderHollow(north, positions)
+	createDarkWoodland(north, positions)
+	createCemetery(north, positions)
+	createShrine(north, positions)
+	createAncientApproach(north, positions)
+end
+
+return table.freeze(NorthernZonesBlockout)
