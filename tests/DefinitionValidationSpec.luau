@@ -177,6 +177,8 @@ return function(TestRunner)
 		for _, definition in MobDefinitions do
 			local prefix = definition.id .. "."
 			assert(type(definition.displayName) == "string" and definition.displayName ~= "", prefix .. "displayName is required")
+			assertFiniteNumber(definition.level, prefix .. "level")
+			assert(definition.level % 1 == 0 and definition.level >= 1 and definition.level <= ProgressionConfig.LevelCap, prefix .. "level must be a supported integer")
 			assert(SUPPORTED_AGGRESSION_MODES[definition.aggressionMode], prefix .. "aggressionMode is unsupported")
 			assert(SUPPORTED_MOB_RANKS[definition.rank], prefix .. "rank is unsupported")
 			assert(SUPPORTED_MOB_ATTACK_KINDS[definition.attackKind], prefix .. "attackKind is unsupported")
