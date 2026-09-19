@@ -252,11 +252,13 @@ Enemy areas должны находиться на естественно дос
 
 Требования:
 
-- расположен выше main road;
+- расположен заметно выше main road;
 - доступен по широкому наклонному подъёму;
 - вход и выход проходятся без прыжка;
-- camp terrace интегрирована в склон;
-- палисад, huts, fire clearing, lookout;
+- camp core — относительно спокойная площадка для боя;
+- вокруг core рельеф образует **rough raised shelf / broken rim**, чтобы лагерь читался географически ещё до появления props;
+- rim не должен превращаться в замкнутую чашу: intended entrance остаётся широким и pathable;
+- terrain silhouette позже усиливается палисадом, huts, fire clearing, lookout, rocks и вытоптанной землёй;
 - основная дорога не требует зачистки лагеря;
 - лагерь должен быть заметен с crossroads, но не полностью раскрыт издалека;
 - future elite reservation остаётся disabled.
@@ -270,13 +272,28 @@ Enemy areas должны находиться на естественно дос
 - находится ниже main road;
 - descent path полностью walkable;
 - отдельный return path;
-- hollow читается как естественная впадина;
+- hollow читается как **явная естественная чаша / ложбина**, а не ровная поляна;
+- playable core остаётся достаточно ровным для боя;
+- внешний rim/склоны географически отделяют pocket от Moonfall Road;
+- один из краёв остаётся намеренно открыт под descent path, второй — под return route;
 - rock perimeter;
 - large roots / dark trees;
 - cave mouth landmark;
 - outer/mid spider zones;
 - brood area остаётся future reservation;
 - нельзя попасть вниз прыжком быстрее, чем intended path, и затем застрять.
+
+## 13.1. Future Selene-side terrain reservations
+
+Approved concept уже задаёт две будущие side-зоны за Dark Woodland: **Old Cemetery** и **Fallen Shrine**.
+
+Они не становятся gameplay zones в текущем v0.1 pass, но macro terrain обязан заранее резервировать для них читаемую географию:
+
+- Old Cemetery — **raised terrace / shelf**, а не яма или terrain-hole;
+- Fallen Shrine — **raised promontory / shelf**, а не низкая впадина;
+- обе площадки должны быть доступны для дальнейшего подключения дорог без перестройки всего Selene massif;
+- debug/top-down overlay помечает их как `future`;
+- gameplay zone IDs, mobs и rewards для них пока не создаются.
 
 ## 14. Dark Woodland threshold
 
