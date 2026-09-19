@@ -121,6 +121,7 @@ export type MobDefinition = {
 	level: number,
 	maxHealth: number,
 	rewardXP: number,
+	lootTableId: string,
 	respawnSeconds: number,
 	aggressionMode: AggressionMode,
 	rank: MobRank,
