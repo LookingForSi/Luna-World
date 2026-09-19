@@ -17,18 +17,6 @@ local ProgressionConfig = {
 		[9] = 1140,
 	}),
 
-	SkillUnlockLevelById = table.freeze({
-		power_strike = 2,
-		shield_bash = 4,
-		defensive_stance = 6,
-		power_shot = 2,
-		rapid_shot = 4,
-		snare = 6,
-		arcane_bolt = 2,
-		flame_burst = 4,
-		heal = 6,
-	}),
-
 	ArchetypeBaseMaxHealth = table.freeze({
 		knight = 100,
 		ranger = 100,
