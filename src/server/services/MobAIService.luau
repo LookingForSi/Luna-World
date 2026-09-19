@@ -28,6 +28,8 @@ type Record = {
 	patrolCycleSeconds: number,
 	nextPatrolAt: number,
 	patrolIndex: number,
+	spawnIndex: number,
+	socialGroupId: string?,
 	connections: { RBXScriptConnection },
 }
 type AttackRequest = (Model, Player, CombatTypes.MobDefinition) -> boolean
@@ -179,11 +181,14 @@ local function patrolDestination(record: Record, currentY: number): Vector3
 	local steps = 8
 	local angle = ((record.patrolIndex - 1) % steps) / steps * math.pi * 2
 	local distance = record.patrolRadius * (if record.patrolIndex % 2 == 0 then 0.65 else 1)
-	return Vector3.new(
-		record.home.X + math.cos(angle) * distance,
-		currentY,
-		record.home.Z + math.sin(angle) * distance
-	)
+	local radial = Vector3.new(math.cos(angle), 0, math.sin(angle))
+	local tangent = Vector3.new(-radial.Z, 0, radial.X)
+	-- Linked groups share the same patrol phase so guards actually move as a
+	-- patrol. SpawnIndex supplies a small formation offset to avoid stacking.
+	local formationOffset = if record.socialGroupId ~= nil then (record.spawnIndex - 1) * 4 else 0
+	return Vector3.new(record.home.X, currentY, record.home.Z)
+		+ radial * distance
+		+ tangent * formationOffset
 end
 
 local function moveToward(record: Record, destination: Vector3, capturedGeneration: number, now: number): ()
@@ -293,7 +298,11 @@ local function register(model: Model, definition: CombatTypes.MobDefinition, hom
 		patrolRadius = if typeof(model:GetAttribute("PatrolRadius")) == "number" then model:GetAttribute("PatrolRadius") :: number else 0,
 		patrolCycleSeconds = if typeof(model:GetAttribute("PatrolCycleSeconds")) == "number" then model:GetAttribute("PatrolCycleSeconds") :: number else 10,
 		nextPatrolAt = workspace:GetServerTimeNow() + 2,
-		patrolIndex = if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 0,
+		patrolIndex = if typeof(model:GetAttribute("SocialGroupId")) == "string"
+			then 0
+			else (if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 0),
+		spawnIndex = if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 1,
+		socialGroupId = if typeof(model:GetAttribute("SocialGroupId")) == "string" then model:GetAttribute("SocialGroupId") :: string else nil,
 		connections = {},
 	}
 	records[model] = record
