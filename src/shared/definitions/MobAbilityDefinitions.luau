@@ -88,9 +88,9 @@ local definitions: { [string]: CombatTypes.MobAbilityDefinition } = {
 		presentationKey = "mob_shrine_strike",
 	}),
 	ancient_sentinel_slam = ability({
-		id = "ancient_sentinel_slam", displayName = "Удар древнего стража", kind = "DirectDamage",
+		id = "ancient_sentinel_slam", displayName = "Удар древнего стража", kind = "AreaDamage",
 		damageType = "Physical", range = 15, damage = 46, windupSeconds = 0.9, cooldownSeconds = 6,
-		presentationKey = "mob_sentinel_slam",
+		presentationKey = "mob_sentinel_slam", radius = 14,
 	}),
 	ancient_watcher_bolt = ability({
 		id = "ancient_watcher_bolt", displayName = "Лунный импульс", kind = "DirectDamage",
@@ -98,9 +98,9 @@ local definitions: { [string]: CombatTypes.MobAbilityDefinition } = {
 		presentationKey = "mob_watcher_bolt",
 	}),
 	warden_ground_slam = ability({
-		id = "warden_ground_slam", displayName = "Сотрясение", kind = "DirectDamage",
+		id = "warden_ground_slam", displayName = "Сотрясение", kind = "AreaDamage",
 		damageType = "Physical", range = 16, damage = 54, windupSeconds = 1.0, cooldownSeconds = 6,
-		presentationKey = "mob_warden_slam",
+		presentationKey = "mob_warden_slam", radius = 18,
 	}),
 	warden_moon_bolt = ability({
 		id = "warden_moon_bolt", displayName = "Лунный разряд", kind = "DirectDamage",
