@@ -51,6 +51,10 @@ local function createZoneTriggers(parent: Instance)
 		local zone = zonesById[volume.zoneId]
 		assert(zone ~= nil, string.format("Missing zone definition for '%s'", volume.zoneId))
 
+		if zone.future == true then
+			continue
+		end
+
 		local trigger = Instance.new("Part")
 		trigger.Name = volume.zoneId
 		trigger.Size = volume.size
