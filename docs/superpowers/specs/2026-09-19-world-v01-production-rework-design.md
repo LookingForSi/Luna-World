@@ -181,6 +181,23 @@ Approved concept задаёт не только отдельные POI, но и 
 - Selene massif остаётся дальним horizon и не используется как gameplay-площадка Ancient Approach;
 - main road сохраняет непрерывный no-jump climb от Dark Woodland к Ancient Approach.
 
+### Terrain v0.4 acceptance criteria
+
+После импорта `terrain-v04` должны выполняться одновременно:
+
+- пространство сразу после river transition не воспринимается как пустая равнина без назначения;
+- Moonfall Road начинает формировать рельеф до crossroads;
+- Goblin Camp и Spider Hollow визуально находятся на сторонах approved concept;
+- Goblin Camp имеет centered raised combat shelf;
+- Spider Hollow имеет centered low basin;
+- Dark Woodland занимает центральный следующий слой и не прижат к Selene;
+- Old Cemetery / Fallen Shrine находятся севернее Dark Woodland, но заметно южнее Ancient Approach;
+- Ancient Approach является крупнее обеих side-zones, выше их и имеет самостоятельный силуэт;
+- Ancient Approach не касается северной границы как своей основной геометрией;
+- Selene massif остаётся отдельным дальним горизонтом;
+- main/secondary routes сохраняют no-jump slope limits;
+- никакая raised zone не превращается в яму из-за окружающего macro terrain.
+
 ## 7. Grounding contract для объектов
 
 Нельзя задавать production Y-position здания/NPC исключительно вручную и предполагать, что земля останется на той же высоте.
