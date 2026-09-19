@@ -76,6 +76,7 @@ local lastAttackRequestAtByPlayer: { [Player]: number } = {}
 local lastSkillRequestAtByPlayer: { [Player]: number } = {}
 local lastAutoAttackRequestAtByPlayer: { [Player]: number } = {}
 local mobAttackReadyAt: { [Model]: number } = setmetatable({}, { __mode = "k" }) :: any
+local mobDebuffGenerationByPlayer: { [Player]: number } = {}
 local started = false
 local serviceConnections: { RBXScriptConnection } = {}
 local regenerationSchedulerElapsed = 0
@@ -618,6 +619,10 @@ local function clearPlayerState(player: Player, discardRuntimeState: boolean?): 
 	cancelPendingAction(player, discardRuntimeState)
 	clearTarget(player)
 	local state = statesByPlayer[player]
+	mobDebuffGenerationByPlayer[player] = (mobDebuffGenerationByPlayer[player] or 0) + 1
+	player:SetAttribute(CombatConfig.HostileMovementMultiplierAttribute, nil)
+	player:SetAttribute(CombatConfig.HostileAttackSpeedMultiplierAttribute, nil)
+	player:SetAttribute(CombatConfig.HostileDebuffUntilAttribute, nil)
 	CombatEffectService.clearPlayerEffects(player, if state ~= nil then state.stats else nil)
 	statesByPlayer[player] = nil
 	lastTargetRequestAtByPlayer[player] = nil
@@ -697,9 +702,10 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 				CombatConfig.CriticalDamageMultiplier,
 				function(): number return criticalRandom:NextNumber() end
 			)
-			local applied = MobService.applyDamage(expectedTargetId, damage.amount, player)
+			local damageType: CombatTypes.MobDamageType = if definition.powerSource == "MagicAttack" then "Magic" else "Physical"
+			local applied, appliedAmount = MobService.applyDamage(expectedTargetId, damage.amount, player, damageType)
 			if applied then
-				amount = damage.amount
+				amount = appliedAmount or damage.amount
 				isCritical = damage.isCritical
 			end
 			if applied then
@@ -913,6 +919,44 @@ local function onPlayerAdded(player: Player): ()
 	if player.Character ~= nil then bindCharacter(player, player.Character) end
 end
 
+local function clearMobDebuff(player: Player, expectedGeneration: number?): ()
+	local generation = mobDebuffGenerationByPlayer[player] or 0
+	if expectedGeneration ~= nil and expectedGeneration ~= generation then return end
+	mobDebuffGenerationByPlayer[player] = generation + 1
+	player:SetAttribute(CombatConfig.HostileMovementMultiplierAttribute, nil)
+	player:SetAttribute(CombatConfig.HostileAttackSpeedMultiplierAttribute, nil)
+	player:SetAttribute(CombatConfig.HostileDebuffUntilAttribute, nil)
+	local state = statesByPlayer[player]
+	if state ~= nil then CombatEffectService.recomputePlayerModifiers(player, state.stats) end
+end
+
+function CombatService.getPlayerCombatStats(player: Player): CombatTypes.CombatStatSnapshot?
+	if player.Parent ~= Players or not PlayerDataService.isReady(player) then return nil end
+	return getState(player).stats
+end
+
+function CombatService.applyMobDebuff(
+	player: Player,
+	movementMultiplier: number,
+	attackSpeedMultiplier: number,
+	durationSeconds: number
+): boolean
+	if player.Parent ~= Players or not PlayerDataService.isReady(player) then return false end
+	local root = getLivingCharacterRoot(player)
+	if root == nil then return false end
+	local state = getState(player)
+	local generation = (mobDebuffGenerationByPlayer[player] or 0) + 1
+	mobDebuffGenerationByPlayer[player] = generation
+	player:SetAttribute(CombatConfig.HostileMovementMultiplierAttribute, math.clamp(movementMultiplier, 0.1, 1))
+	player:SetAttribute(CombatConfig.HostileAttackSpeedMultiplierAttribute, math.clamp(attackSpeedMultiplier, 0.1, 1))
+	player:SetAttribute(CombatConfig.HostileDebuffUntilAttribute, workspace:GetServerTimeNow() + durationSeconds)
+	CombatEffectService.recomputePlayerModifiers(player, state.stats)
+	task.delay(durationSeconds, function()
+		if player.Parent == Players then clearMobDebuff(player, generation) end
+	end)
+	return true
+end
+
 -- Server-only entry point used by MobAIService. The AI proposes an action; combat
 -- owns acceptance, timing, revalidation, mitigation, and the authoritative result.
 function CombatService.requestMobBasicAttack(
@@ -1118,6 +1162,7 @@ function CombatService.stop(): ()
 	table.clear(lastSkillRequestAtByPlayer)
 	table.clear(lastAutoAttackRequestAtByPlayer)
 	table.clear(mobAttackReadyAt)
+	table.clear(mobDebuffGenerationByPlayer)
 end
 
 -- Studio-only archetype switch seam. StudioDebugService delegates here so the
