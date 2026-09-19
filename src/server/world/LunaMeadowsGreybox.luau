@@ -455,6 +455,7 @@ local function createSpawnMarkers(parent: Instance): string
 				MobId = definition.mobId,
 				Radius = definition.radius,
 				ZoneId = definition.zoneId,
+				SpawnEnabled = definition.spawnEnabled ~= false,
 			})
 		end
 	end

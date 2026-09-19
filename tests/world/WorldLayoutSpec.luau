@@ -37,6 +37,15 @@ local function assertInvalid(layout: any, expectedErrorFragment: string)
 	error(string.format("expected an error containing '%s', got: %s", expectedErrorFragment, table.concat(errors, "; ")))
 end
 
+local function findSpawn(layout: any, id: string): any
+	for _, marker in ipairs(layout.SpawnMarkers) do
+		if marker.id == id then
+			return marker
+		end
+	end
+	error(string.format("missing spawn '%s' in test fixture", id))
+end
+
 local function findPoi(layout: any, id: string): any
 	for _, poi in ipairs(layout.PointsOfInterest) do
 		if poi.id == id then
@@ -76,6 +85,17 @@ function WorldLayoutSpec.register(runner: Runner)
 		local layout = deepClone(WorldLayout)
 		layout.SpawnMarkers[#layout.SpawnMarkers].zoneId = "zone_missing"
 		assertInvalid(layout, "must reference an existing zone")
+	end)
+
+	runner:test("future reservation spawns remain disabled", function()
+		assert(findSpawn(WorldLayout, "spawn_goblin_camp_elite_future").spawnEnabled == false)
+		assert(findSpawn(WorldLayout, "spawn_spider_hollow_brood").spawnEnabled == false)
+	end)
+
+	runner:test("invalid spawnEnabled shape fails", function()
+		local layout = deepClone(WorldLayout)
+		findSpawn(layout, "spawn_goblin_camp_elite_future").spawnEnabled = "yes"
+		assertInvalid(layout, "spawnEnabled must be boolean when provided")
 	end)
 
 	runner:test("missing required POI fails", function()

@@ -242,9 +242,11 @@ local function createSpawnMarkers(parent: Instance)
 				MobId = definition.mobId,
 				Radius = definition.radius,
 				ZoneId = definition.zoneId,
+				SpawnEnabled = definition.spawnEnabled ~= false,
 			})
 			if definition.id == "spawn_goblin_camp_elite_future" then
 				marker:SetAttribute("Purpose", "FutureEliteReservation")
+				assert(marker:GetAttribute("SpawnEnabled") == false, "future elite marker must remain disabled")
 			end
 		end
 	end

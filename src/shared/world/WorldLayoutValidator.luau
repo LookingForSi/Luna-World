@@ -171,6 +171,14 @@ function WorldLayoutValidator.validate(layout: any): (boolean, { string })
 				))
 			end
 
+			local spawnEnabled = spawnMarker.spawnEnabled
+			if spawnEnabled ~= nil and type(spawnEnabled) ~= "boolean" then
+				table.insert(errors, string.format(
+					"spawn marker '%s' spawnEnabled must be boolean when provided",
+					tostring(spawnMarker.id or index)
+				))
+			end
+
 			local zoneId = spawnMarker.zoneId
 			if type(zoneId) ~= "string" or zonesById[zoneId] == nil then
 				table.insert(errors, string.format(

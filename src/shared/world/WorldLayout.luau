@@ -17,6 +17,7 @@ export type SpawnMarkerDefinition = {
 	position: Vector3,
 	radius: number,
 	zoneId: string,
+	spawnEnabled: boolean?,
 }
 
 export type WorldLayoutDefinition = {
@@ -142,10 +143,11 @@ local WorldLayout: WorldLayoutDefinition = {
 		},
 		{
 			id = "spawn_goblin_camp_elite_future",
-			mobId = "mob_goblin_warrior",
+			mobId = "mob_goblin_elite_future",
 			position = Vector3.new(-350, 40, 1500),
 			radius = 36,
 			zoneId = "zone_goblin_camp",
+			spawnEnabled = false,
 		},
 		{
 			id = "spawn_spider_hollow_outer",
@@ -167,6 +169,7 @@ local WorldLayout: WorldLayoutDefinition = {
 			position = Vector3.new(345, 0, 1510),
 			radius = 44,
 			zoneId = "zone_spider_hollow",
+			spawnEnabled = false,
 		},
 	},
 
