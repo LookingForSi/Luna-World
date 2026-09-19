@@ -34,7 +34,7 @@ Generator не запускается в runtime.
 
 ## 4. Phase 2 — macro terrain
 
-Статус: **terrain v0.2 implemented, owner re-import pending**.
+Статус: **terrain v0.3 implemented, owner re-import pending**.
 
 Создать единый landscape:
 
@@ -49,7 +49,7 @@ Generator не запускается в runtime.
 - future Old Cemetery raised terrace — **RESERVED**;
 - future Fallen Shrine raised promontory — **RESERVED**.
 
-Terrain v0.2 additionally:
+Terrain v0.3 additionally:
 
 - regular terrain floor no longer reaches zero except intentional river carving;
 - vertical authoring range increased from 128 to 192 studs to avoid clipping Selene massif;
@@ -154,3 +154,15 @@ Owner test:
 - owner accepts scale and route readability.
 
 Не тратить время на финальные материалы/foliage до этого checkpoint.
+
+
+## Terrain v0.3 — centered encounter forms
+
+Реализовано после owner review:
+
+- authoring pads получили `raise / lower / set` semantics;
+- Goblin Camp больше не использует positive outer ring как главный рельеф: camp core поднят до centered shelf;
+- Spider Hollow использует intentional lowered core + surrounding rim;
+- Old Cemetery и Fallen Shrine сдвинуты внутрь карты и формируются как raised future terraces;
+- artifact output переведён на `terrain-v03`;
+- contract-test теперь генерирует actual height field и проверяет, что Goblin/Cemetery/Shrine выше ближайшего окружения, а Spider Hollow ниже rim.
