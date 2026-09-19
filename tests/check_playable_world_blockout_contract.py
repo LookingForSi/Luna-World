@@ -39,6 +39,8 @@ def main() -> None:
     assert "PlayableWorldBlockout" in bootstrap
     assert "WorldGreyboxBuilder" not in bootstrap
     assert "TraversalRecovery" in bootstrap
+    assert "suppressTemplateBaseplate" in bootstrap
+    assert "baseplate.CanCollide = false" in bootstrap
 
     builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
     assert 'TerrainRevision", "terrain-v05"' in builder
@@ -74,6 +76,7 @@ def main() -> None:
         "FALL_RECOVERY_Y",
         "FloorMaterial",
         "character:PivotTo",
+        "HumanoidStateType.Swimming",
     ):
         assert token in recovery
 
