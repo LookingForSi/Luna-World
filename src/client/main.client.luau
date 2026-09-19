@@ -9,6 +9,8 @@ local RespawnPrompt = require(clientRoot.ui.RespawnPrompt)
 local ActionBar = require(clientRoot.ui.ActionBar)
 local StudioTestPanel = require(clientRoot.ui.StudioTestPanel)
 local MovementController = require(clientRoot.controllers.MovementController)
+local InventoryController = require(clientRoot.controllers.InventoryController)
+local InventoryUi = require(clientRoot.ui.InventoryUi)
 local CombatPresentationController = require(clientRoot.controllers.CombatPresentationController)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -34,6 +36,13 @@ CombatHud.start()
 CombatLog.start()
 RespawnPrompt.start()
 StudioTestPanel.start()
+InventoryUi.start({
+	equip = InventoryController.requestEquip,
+	unequip = InventoryController.requestUnequip,
+	consume = InventoryController.requestConsume,
+	discard = InventoryController.requestDiscard,
+})
+InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult)
 TargetController.start(function(target: Model?)
 	CombatHud.setTarget(target)
 end)
@@ -48,6 +57,8 @@ local archetypeConnection = Players.LocalPlayer:GetAttributeChangedSignal(Combat
 
 script.Destroying:Connect(function()
 	archetypeConnection:Disconnect()
+	InventoryController.stop()
+	InventoryUi.stop()
 	StudioTestPanel.stop()
 	MovementController.stop()
 	CombatPresentationController.stop()
