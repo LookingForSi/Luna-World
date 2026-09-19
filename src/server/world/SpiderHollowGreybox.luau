@@ -120,11 +120,11 @@ local function createHollow(parent: Instance, definition: PointOfInterestDefinit
 	local hollow = createModel(parent, "HollowBasin", definition.id)
 	local position = definition.position
 
-	createGroundedBlock(
+	createColoredBlock(
 		hollow,
 		"HollowFloor",
-		position - Vector3.new(0, 7, 0),
 		Vector3.new(320, 10, 300),
+		CFrame.new(position - Vector3.new(0, 5, 0)),
 		Enum.Material.Grass,
 		COLORS.ground
 	)

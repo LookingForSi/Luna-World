@@ -152,11 +152,11 @@ local function createCampInterior(parent: Instance, campDefinition: PointOfInter
 	local camp = createModel(parent, "CampInterior", campDefinition.id)
 	local position = campDefinition.position
 
-	createGroundedBlock(
+	createColoredBlock(
 		camp,
 		"CampTerrace",
-		position - Vector3.new(0, 4, 0),
 		Vector3.new(300, 8, 260),
+		CFrame.new(position - Vector3.new(0, 4, 0)),
 		Enum.Material.Grass,
 		COLORS.ground
 	)
@@ -220,7 +220,7 @@ local function createLookout(parent: Instance, definition: PointOfInterestDefini
 			COLORS.darkTimber
 		)
 	end
-	createGroundedBlock(
+	local platform = createGroundedBlock(
 		lookout,
 		"LookoutPlatform",
 		position + Vector3.new(0, 18, 0),
@@ -228,7 +228,7 @@ local function createLookout(parent: Instance, definition: PointOfInterestDefini
 		Enum.Material.WoodPlanks,
 		COLORS.timber
 	)
-	GreyboxPrimitives.createLabel(lookout.LookoutPlatform :: BasePart, definition.id)
+	GreyboxPrimitives.createLabel(platform, definition.id)
 end
 
 local function createSpawnMarkers(parent: Instance)

@@ -279,7 +279,6 @@ local function createDarkWoodlandThreshold(
 		Destination = "zone_dark_woodland",
 		Purpose = "FutureZoneEntry",
 	})
-	GreyboxPrimitives.createLabel(entry, "Dark Woodland")
 end
 
 local function createRoadSpawnMarker(parent: Instance)
