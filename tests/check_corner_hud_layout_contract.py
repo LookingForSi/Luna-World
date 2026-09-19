@@ -23,6 +23,8 @@ HUD = "src/client/ui/CombatHud.luau"
 ACTIONS = "src/client/ui/ActionBar.luau"
 LOG = "src/client/ui/CombatLog.luau"
 CONFIG = "src/shared/config/CombatConfig.luau"
+PROGRESSION_CONFIG = "src/shared/config/ProgressionConfig.luau"
+CLIENT_MAIN = "src/client/main.client.luau"
 COMBAT = "src/server/services/CombatService.luau"
 
 require(LAYOUT, "HudLayout.CornerMargin = 24", "all corner panels must share one visible safe margin")
@@ -33,10 +35,16 @@ require(HUD, "gui.IgnoreGuiInset = true", "top HUD must measure its margin from 
 require(ACTIONS, "UDim2.new(1, -HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)", "action panel must use the shared bottom-right anchor")
 require(LOG, "UDim2.new(0, HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)", "combat log must use the shared bottom-left anchor")
 
-for token in ('"CombatPoints"', '"PlayerHealth"', '"PlayerResource"', '"SessionXP"'):
+for token in ('"CombatPoints"', '"PlayerHealth"', '"PlayerResource"', '"LevelXP"'):
     require(HUD, token, f"four-row player status is missing row {token}")
-for token in ('"CombatPointsFill"', '"PlayerHealthFill"', '"PlayerResourceFill"', '"SessionXPFill"'):
+for token in ('"CombatPointsFill"', '"PlayerHealthFill"', '"PlayerResourceFill"', '"LevelXPFill"'):
     require(HUD, token, f"four-row player status is missing fill {token}")
+
+require(HUD, '"LevelBadge"', "player status must include a dedicated level badge")
+require(HUD, '"LevelNumber"', "level badge must render the current level number")
+require(HUD, "ProgressionRules.requiredXP(level)", "XP bar must use the current level threshold")
+require(HUD, "formatStatusNumber(currentValue)", "status rows must expose exact current values")
+require(CLIENT_MAIN, "SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)", "stock Roblox health bar must be hidden")
 
 require(CONFIG, 'CombatPointsCurrentAttribute = "CombatPointsCurrent"', "CP needs a distinct replicated current-value attribute")
 require(CONFIG, 'CombatPointsMaximumAttribute = "CombatPointsMaximum"', "CP needs a distinct replicated maximum attribute")
