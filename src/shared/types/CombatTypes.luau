@@ -118,6 +118,7 @@ export type MobAttackKind = "Melee" | "Ranged"
 export type MobDefinition = {
 	id: string,
 	displayName: string,
+	level: number,
 	maxHealth: number,
 	rewardXP: number,
 	respawnSeconds: number,
