@@ -49,6 +49,7 @@
 - [Версионирование](docs/VERSIONING.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Design specification v0.1](docs/superpowers/specs/2026-09-13-luna-world-v0.1-design.md)
+- [Dev0.1 checkpoint](docs/releases/2026-09-20-dev0.1-checkpoint.md)
 - [Правила для AI-агентов](AGENTS.md)
 
 ## Toolchain
@@ -67,4 +68,10 @@ Git является source of truth для исходного кода и до�
 
 ## Статус
 
-Проект находится на стадии проектирования и подготовки v0.1. Игровой код ещё не считается начатым до утверждения спецификации и плана реализации.
+Текущий development checkpoint: **0.1.0-dev.2 / dev0.1**.
+
+Это первая целостная playable-база проекта. Уже реализованы три архетипа и target-based PvE, уровни 1–10, skills, XP, loot, inventory/equipment, persistence, Luna Village и открытый маршрут Moonfall Valley до Ancient Approach, полноценный Mob Content Pass, open-world elites, а также узкая деревенская экономика с No-Grade крафтом, merchant buy/sell и return scroll.
+
+Checkpoint ещё **не является финальным v0.1 Vertical Slice**. До release gate остаются прежде всего quest chain, party, Ruins of Selene как instanced dungeon, финальный boss, последующие balance/UX/art/audio/mobile passes и полный multiplayer acceptance.
+
+Подробная фиксация состава checkpoint и известных пробелов: [dev0.1 checkpoint](docs/releases/2026-09-20-dev0.1-checkpoint.md).
