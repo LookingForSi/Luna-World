@@ -58,14 +58,35 @@ local function createSnapshot(player: Player): any
 		local definition = QuestDefinitions[questId]
 		local objectives = {}
 		for _, objective in definition.objectives do table.insert(objectives, objectiveSnapshot(objective, record.Progress[objective.id] or 0)) end
-		table.insert(values, { id=questId, displayName=definition.displayName, state=record.State, turnInNpcId=definition.turnInNpcId, objectives=objectives })
+		table.insert(values, {
+			id=questId,
+			displayName=definition.displayName,
+			description=definition.description,
+			state=record.State,
+			turnInNpcId=definition.turnInNpcId,
+			rewardXP=definition.rewardXP,
+			rewardLuna=definition.rewardLuna,
+			objectives=objectives,
+		})
 	end
 	table.sort(values, function(a,b) return a.id < b.id end)
 	local markerByNpc = {}
 	for questId, definition in QuestDefinitions do
 		local record = profile.Quests[questId]
-		if record and record.State == "ReadyToTurnIn" then markerByNpc[definition.turnInNpcId] = "?"
-		elseif QuestRules.isAvailable(profile.Quests, questId) and markerByNpc[definition.giverNpcId] == nil then markerByNpc[definition.giverNpcId] = "!" end
+		if record and record.State == "ReadyToTurnIn" then
+			markerByNpc[definition.turnInNpcId] = "?"
+		elseif record and record.State == "Active" then
+			for _, objective in definition.objectives do
+				if objective.kind == "TalkToNpc"
+					and objective.npcId ~= nil
+					and (record.Progress[objective.id] or 0) < objective.required
+				then
+					markerByNpc[objective.npcId] = "?"
+				end
+			end
+		elseif QuestRules.isAvailable(profile.Quests, questId) and markerByNpc[definition.giverNpcId] == nil then
+			markerByNpc[definition.giverNpcId] = "!"
+		end
 	end
 	local markers = {}; for npcId, symbol in markerByNpc do table.insert(markers,{npcId=npcId,symbol=symbol}) end
 	return { quests=values, markers=markers }
@@ -103,14 +124,35 @@ function QuestService.openNpc(player: Player, npcId: string): ()
 	for questId, definition in QuestDefinitions do
 		local record = profile.Quests[questId]
 		if QuestRules.isAvailable(profile.Quests, questId) and definition.giverNpcId == npcId then
-			if message == nil then message = definition.description end
-			table.insert(topics, {kind="AcceptQuest",questId=questId,text="Принять: "..definition.displayName})
+			if message == nil then message = "Есть дело, с которым нужна помощь." end
+			table.insert(topics, {
+				kind="AcceptQuest",
+				questId=questId,
+				text="Квест",
+				title=definition.displayName,
+				description=definition.description,
+				rewardXP=definition.rewardXP,
+				rewardLuna=definition.rewardLuna,
+			})
 		elseif record and record.State == "ReadyToTurnIn" and definition.turnInNpcId == npcId and not definition.autoTurnIn then
-			if message == nil then message = "Похоже, ты справился. Расскажи, что удалось сделать." end
-			table.insert(topics, {kind="TurnInQuest",questId=questId,text="Завершить: "..definition.displayName})
+			if message == nil then message = "Похоже, ты справился." end
+			table.insert(topics, {
+				kind="TurnInQuest",
+				questId=questId,
+				text="Квест",
+				title=definition.displayName,
+				description=definition.description,
+				rewardXP=definition.rewardXP,
+				rewardLuna=definition.rewardLuna,
+			})
 		end
 	end
-	dialogueEvent:FireClient(player, { npcId=npcId, displayName=NpcDefinitions[npcId].displayName, message=message, topics=topics })
+	dialogueEvent:FireClient(player, {
+		npcId=npcId,
+		displayName=NpcDefinitions[npcId].displayName,
+		message=message,
+		topics=topics,
+	})
 end
 
 local function validId(value: unknown): boolean return typeof(value)=="string" and #value > 0 and #value <= 64 end
