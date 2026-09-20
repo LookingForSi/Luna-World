@@ -221,6 +221,34 @@ local function moveToward(record: Record, destination: Vector3, capturedGenerati
 	humanoid:MoveTo(moveDestination)
 end
 
+local function requestSocialAssist(record: Record, attacker: Player): ()
+	if livingRoot(attacker) == nil then return end
+	local socialGroupId = record.socialGroupId
+	if not MobAIRules.canRequestSocialAssist(record.state, socialGroupId) then return end
+	local _, sourceRoot = mobParts(record.model)
+	if sourceRoot == nil then return end
+
+	for otherModel, otherRecord in records do
+		if otherModel ~= record.model
+			and otherRecord.socialGroupId == socialGroupId
+			and otherRecord.state ~= "Return"
+			and otherRecord.state ~= "Dead"
+		then
+			local otherHumanoid, otherRoot = mobParts(otherModel)
+			local assistRadius = math.max(
+				record.definition.socialAssistRadius,
+				otherRecord.definition.socialAssistRadius
+			)
+			if otherHumanoid ~= nil and otherHumanoid.Health > 0 and otherRoot ~= nil
+				and assistRadius > 0
+				and (otherRoot.Position - sourceRoot.Position).Magnitude <= assistRadius
+			then
+				otherRecord.hostileAttacker = attacker
+			end
+		end
+	end
+end
+
 local function decide(record: Record, now: number): ()
 	local capturedGeneration = record.generation
 	local humanoid, root = mobParts(record.model)
@@ -242,6 +270,11 @@ local function decide(record: Record, now: number): ()
 	if record.state == "Idle" then
 		record.target = if hostile ~= nil and livingRoot(hostile) ~= nil then hostile else detected
 		targetRoot = if record.target ~= nil then livingRoot(record.target) else nil
+		if record.target ~= nil then
+			-- Proximity aggro is social too: a paired goblin should alert its local
+			-- group immediately, not only after the player lands the first hit.
+			requestSocialAssist(record, record.target)
+		end
 	end
 	local distanceFromHome = (root.Position - record.home).Magnitude
 	local targetDistance = if targetRoot ~= nil then (targetRoot.Position - root.Position).Magnitude else math.huge
@@ -345,27 +378,8 @@ function MobAIService.start(serverAttackRequest: AttackRequest): ()
 	table.insert(serviceConnections, MobService.HostileAction:Connect(function(model: Model, attacker: Player)
 		local record = records[model]
 		if record == nil or livingRoot(attacker) == nil then return end
-		local socialGroupId = model:GetAttribute("SocialGroupId")
-		local typedSocialGroupId = if typeof(socialGroupId) == "string" then socialGroupId else nil
 		if record.state ~= "Return" then record.hostileAttacker = attacker end
-		if not MobAIRules.canRequestSocialAssist(record.state, typedSocialGroupId) then return end
-		local _, sourceRoot = mobParts(model)
-		if sourceRoot == nil then return end
-		for otherModel, otherRecord in records do
-			if otherModel ~= model
-				and otherModel:GetAttribute("SocialGroupId") == typedSocialGroupId
-				and otherRecord.state ~= "Return"
-			then
-				local otherHumanoid, otherRoot = mobParts(otherModel)
-				local assistRadius = otherRecord.definition.socialAssistRadius
-				if otherHumanoid ~= nil and otherHumanoid.Health > 0 and otherRoot ~= nil
-					and assistRadius > 0
-					and (otherRoot.Position - sourceRoot.Position).Magnitude <= assistRadius
-				then
-					otherRecord.hostileAttacker = attacker
-				end
-			end
-		end
+		requestSocialAssist(record, attacker)
 	end))
 	for _, model in MobService.getAll() do
 		local definition = MobService.getDefinition(model)
