@@ -49,6 +49,10 @@ for token in (
     'Телепорт: %s · %d Luna',
     'travelRequest:FireServer(topic.travelId, value.npcId)',
     'InsufficientLuna = "Недостаточно Luna для телепорта."',
+    'showTravelConfirm(value, topic)',
+    'Вы действительно желаете переместиться в %s за %d Luna?',
+    '"Переместиться"',
+    '"Отмена"',
 ):
     if token not in client: raise AssertionError(f"travel client surface missing: {token}")
 for token in ("TravelService.start()", "TravelService.stop()"):
