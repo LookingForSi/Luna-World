@@ -23,7 +23,7 @@ end
 local definitions: { [string]: LootTypes.LootTableDefinition } = {
 	loot_young_wolf = loot({ id = "loot_young_wolf", lunaMin = 1, lunaMax = 3, entries = {
 		entry("material_wolf_pelt", 0.45), entry("material_sharp_fang", 0.15),
-		entry("consumable_minor_healing_draught", 0.05), entry("armor_worn_gloves", 0.03),
+		entry("consumable_minor_healing_draught", 0.05), entry("armor_worn_gloves", 0.01),
 	} }),
 	loot_grey_wolf = loot({ id = "loot_grey_wolf", lunaMin = 2, lunaMax = 5, entries = {
 		entry("material_wolf_pelt", 0.65, 1, 2), entry("material_sharp_fang", 0.35),
@@ -55,7 +55,7 @@ local definitions: { [string]: LootTypes.LootTableDefinition } = {
 	} }),
 	loot_brood_spider = loot({ id = "loot_brood_spider", lunaMin = 9, lunaMax = 15, entries = {
 		entry("material_spider_silk", 0.9, 1, 3), entry("material_venom_sac", 0.55),
-		entry("consumable_minor_resource_draught", 0.14), entry("accessory_silver_moon_charm", 0.015),
+		entry("consumable_minor_resource_draught", 0.14), entry("accessory_silver_moon_charm", 0.03),
 	} }),
 	loot_dire_wolf = loot({ id = "loot_dire_wolf", lunaMin = 8, lunaMax = 13, entries = {
 		entry("material_dire_hide", 0.55), entry("material_cured_leather", 0.65), entry("material_sharp_fang", 0.45, 1, 2),
