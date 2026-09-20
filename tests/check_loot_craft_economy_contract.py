@@ -21,9 +21,11 @@ client = read("src/client/ui/EconomyUi.luau")
 main = read("src/server/main.server.luau")
 
 require(loot, "local function resourceEntry", "material drop-rate helper is missing")
-require(loot, "chance * 0.5", "crafting material drop chances must be halved")
+require(loot, "chance * 0.5", "ordinary crafting material drop chances must stay reduced")
+require(loot, "local function signatureResourceEntry", "signature material helper is missing")
+require(loot, 'signatureResourceEntry("material_magic_dust", 1.0)', "Goblin Shaman must provide its early signature material reliably")
 if 'entry("material_' in loot:
-    raise AssertionError("crafting material entries must use the reduced resource drop helper")
+    raise AssertionError("crafting material entries must use an explicit resource helper")
 
 for grade in ('"Newbie"', '"NoGrade"', '"Future"'):
     require(items, grade, f"missing item grade {grade}")
