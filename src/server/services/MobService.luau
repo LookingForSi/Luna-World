@@ -142,10 +142,9 @@ local function addMobPresentation(
 		math.max(5, profile.size.Y + 3),
 		math.max(7, profile.size.Z + 3)
 	)
-	-- Keep the generous click proxy aligned to the visible silhouette instead of
-	-- letting its extra height extend mostly below short mobs such as wolves.
-	local hitboxVerticalOffset = math.max(0, (hitbox.Size.Y - profile.size.Y) * 0.5)
-	hitbox.CFrame = rootPart.CFrame * CFrame.new(0, hitboxVerticalOffset, 0)
+	-- Keep the larger click proxy centered on the visible primitive. Moving the
+	-- proxy upward made the selectable area drift away from short silhouettes.
+	hitbox.CFrame = rootPart.CFrame
 	hitbox.Transparency = 1
 	hitbox.CanCollide = false
 	hitbox.CanTouch = false
