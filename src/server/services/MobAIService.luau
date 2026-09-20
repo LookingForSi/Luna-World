@@ -28,7 +28,6 @@ type Record = {
 	patrolCycleSeconds: number,
 	nextPatrolAt: number,
 	patrolIndex: number,
-	patrolTarget: Vector3?,
 	spawnIndex: number,
 	socialGroupId: string?,
 	connections: { RBXScriptConnection },
@@ -92,9 +91,6 @@ local function setState(record: Record, state: State): ()
 		record.model:SetAttribute(CombatConfig.MobActionGenerationAttribute, if typeof(actionGeneration) == "number" then actionGeneration + 1 else 1)
 		record.model:SetAttribute(CombatConfig.MobActionStateAttribute, nil)
 		record.model:SetAttribute(CombatConfig.MobActionInterruptibleAttribute, nil)
-	end
-	if state ~= "Idle" then
-		record.patrolTarget = nil
 	end
 	record.model:SetAttribute(CombatConfig.MobAIStateAttribute, state)
 	record.model:SetAttribute(CombatConfig.MobAITargetAttribute, if record.target ~= nil then record.target.UserId else nil)
@@ -181,15 +177,32 @@ local function navigationDestination(record: Record, root: BasePart, destination
 	return destination
 end
 
+local function isCampPerimeterPatrol(record: Record): boolean
+	return record.socialGroupId ~= nil and string.sub(record.socialGroupId, 1, 14) == "goblin_patrol_"
+end
+
 local function patrolDestination(record: Record, currentY: number): Vector3
+	local formationOffset = if record.socialGroupId ~= nil then (record.spawnIndex - 1) * 4 else 0
+
+	if isCampPerimeterPatrol(record) then
+		-- The four goblin patrol pairs pace tangentially along the four camp sides
+		-- instead of orbiting tiny circles around their own spawn markers.
+		local phaseValues = { -1, -0.33, 0.33, 1 }
+		local phase = phaseValues[((record.patrolIndex - 1) % #phaseValues) + 1]
+		local alongX = record.socialGroupId == "goblin_patrol_south"
+			or record.socialGroupId == "goblin_patrol_north"
+		local axis = if alongX then Vector3.new(1, 0, 0) else Vector3.new(0, 0, 1)
+		local formationAxis = if alongX then Vector3.new(0, 0, 1) else Vector3.new(1, 0, 0)
+		return Vector3.new(record.home.X, currentY, record.home.Z)
+			+ axis * record.patrolRadius * phase
+			+ formationAxis * formationOffset
+	end
+
 	local steps = 8
 	local angle = ((record.patrolIndex - 1) % steps) / steps * math.pi * 2
 	local distance = record.patrolRadius * (if record.patrolIndex % 2 == 0 then 0.65 else 1)
 	local radial = Vector3.new(math.cos(angle), 0, math.sin(angle))
 	local tangent = Vector3.new(-radial.Z, 0, radial.X)
-	-- Linked groups share the same patrol phase so guards actually move as a
-	-- patrol. SpawnIndex supplies a small formation offset to avoid stacking.
-	local formationOffset = if record.socialGroupId ~= nil then (record.spawnIndex - 1) * 4 else 0
 	return Vector3.new(record.home.X, currentY, record.home.Z)
 		+ radial * distance
 		+ tangent * formationOffset
@@ -307,24 +320,19 @@ local function decide(record: Record, now: number): ()
 		if MobAIRules.shouldRestoreHealth(previousState, nextState, definition.restoreHealthOnReturn) then
 			humanoid.Health = humanoid.MaxHealth
 		end
-		if record.patrolRadius > 0 then
-			if record.patrolTarget ~= nil and flatDistance(root.Position, record.patrolTarget) <= 7 then
-				record.patrolTarget = nil
-				record.nextPatrolAt = now + record.patrolCycleSeconds
+		if record.patrolRadius > 0 and now >= record.nextPatrolAt then
+			record.patrolIndex += 1
+			record.nextPatrolAt = now + record.patrolCycleSeconds
+			local destination = patrolDestination(record, root.Position.Y)
+			if isCampPerimeterPatrol(record) then
+				-- Perimeter lanes are authored on open ground, so use the final
+				-- destination directly. This makes the pair visibly traverse the
+				-- side instead of moving only to PathfindingService's next waypoint.
+				humanoid:MoveTo(destination)
+			else
+				moveToward(record, destination, capturedGeneration, now)
 			end
-			if record.patrolTarget == nil and now >= record.nextPatrolAt then
-				record.patrolIndex += 1
-				record.patrolTarget = patrolDestination(record, root.Position.Y)
-			end
-			-- Patrol destinations are advanced every AI decision, not once per cycle.
-			-- Otherwise pathfinding only moves to its next local waypoint and patrols
-			-- appear to shuffle in place around their spawn.
-			if record.patrolTarget ~= nil then
-				moveToward(record, record.patrolTarget, capturedGeneration, now)
-			elseif previousState ~= "Idle" then
-				humanoid:MoveTo(root.Position)
-			end
-		elseif previousState ~= "Idle" then
+		elseif previousState ~= "Idle" or record.patrolRadius <= 0 then
 			humanoid:MoveTo(root.Position)
 		end
 	end
@@ -351,7 +359,6 @@ local function register(model: Model, definition: CombatTypes.MobDefinition, hom
 		patrolIndex = if typeof(model:GetAttribute("SocialGroupId")) == "string"
 			then 0
 			else (if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 0),
-		patrolTarget = nil,
 		spawnIndex = if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 1,
 		socialGroupId = if typeof(model:GetAttribute("SocialGroupId")) == "string" then model:GetAttribute("SocialGroupId") :: string else nil,
 		connections = {},
