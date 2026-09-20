@@ -11,19 +11,19 @@ Authoritative source остаётся в `src/shared/definitions/MobDefinitions.
 | Stone Circle | Волк | 2 | Ordinary | 105 | 2 | 2 | 20 Physical | — | — |
 | Stone Circle | Вожак стаи | 3 | Elite | 180 | 4 | 3 | 27 Physical | — | Вой стаи |
 | Goblin / Road | Гоблин-разведчик | 4 | Ordinary | 145 | 4 | 2 | 24 Physical | — | — |
-| Spider Hollow | Ядовитый паук | 4 | Ordinary | 175 | 4 | 11 | 20 Physical | — | Ядовитый плевок; Парализующий яд |
+| Spider Hollow | Ядовитый паук | 6 | Ordinary | 245 | 5 | 14 | 28 Physical | — | Ядовитый плевок; Парализующий яд |
 | Goblin Camp | Гоблин-воин | 5 | Ordinary | 225 | 7 | 3 | 28 Physical | — | Камень из пращи |
 | Goblin Camp | Гоблин-шаман | 6 | Ordinary | 240 | 4 | 12 | 22 Magic, ranged | 12% ×1.60 | Боевой напев; Духовный снаряд; Проклятие шамана |
-| Spider Hollow | Паук-матка | 7 | Ordinary | 380 | 7 | 16 | 32 Physical | — | Густой яд; Сковывающий яд |
+| Spider Hollow | Паук-матка | 8 | Ordinary | 430 | 8 | 18 | 36 Physical | — | Густой яд; Сковывающий яд |
 | Goblin Camp | Гоблин-вожак | 7 | Elite | 600 | 14 | 9 | 44 Physical | **20% ×1.80** | Боевой клич; Камень из пращи; Тяжёлый удар; Рассекающий удар |
-| Dark Woodland | Лютый волк | 8 | Ordinary | 285 | 8 | 5 | 36 Physical | — | Рывок |
-| Dark Woodland | Лесной паук | 9 | Ordinary | 260 | 7 | 13 | 32 Physical | — | Ядовитый плевок |
-| Dark Woodland | Альфа лютых волков | 10 | Elite | 540 | 13 | 9 | 48 Physical | — | Вой стаи; Рывок |
-| Old Cemetery | Скелет | 10 | Ordinary | 310 | 13 | 4 | 40 Physical | — | — |
-| Old Cemetery | Скелет-лучник | 11 | Ordinary | 245 | 8 | 4 | 24 Physical, ranged | — | Костяная стрела |
-| Fallen Shrine | Павший служитель | 11 | Ordinary | 280 | 7 | 14 | 22 Magic, ranged | — | Печать немощи; Осквернённый снаряд |
-| Old Cemetery | Могильный страж | 12 | Elite | 680 | 18 | 11 | 54 Physical | — | Могильный удар |
-| Fallen Shrine | Страж святилища | 12 | Ordinary | 500 | 17 | 10 | 50 Physical | — | Удар хранителя |
+| Dark Woodland | Лютый волк | 9 | Ordinary | 320 | 9 | 6 | 40 Physical | — | Рывок |
+| Dark Woodland | Лесной паук | 10 | Ordinary | 330 | 8 | 15 | 36 Physical | — | Ядовитый плевок |
+| Dark Woodland | Альфа лютых волков | 11 | Elite | 620 | 15 | 10 | 52 Physical | — | Вой стаи; Рывок |
+| Old Cemetery | Скелет | 11 | Ordinary | 350 | 14 | 5 | 44 Physical | — | — |
+| Old Cemetery | Скелет-лучник | 12 | Ordinary | 285 | 9 | 5 | 28 Physical, ranged | — | Костяная стрела |
+| Fallen Shrine | Павший служитель | 12 | Ordinary | 320 | 8 | 16 | 26 Magic, ranged | — | Печать немощи; Осквернённый снаряд |
+| Old Cemetery | Могильный страж | 13 | Elite | 760 | 20 | 12 | 58 Physical | — | Могильный удар |
+| Fallen Shrine | Страж святилища | 13 | Ordinary | 560 | 18 | 11 | 54 Physical | — | Удар хранителя |
 | Ancient Approach | Древний страж | 13 | Ordinary | 620 | 20 | 12 | 56 Physical | — | Удар древнего стража |
 | Ancient Approach | Древний наблюдатель | 14 | Ordinary | 410 | 10 | 18 | 30 Magic, ranged | — | Лунный импульс |
 | Ancient Approach | Лунный страж | 14 | Elite | 1200 | 25 | 20 | 62 Physical | — | Пробуждение стража; Лунный разряд; Сотрясение |
@@ -65,7 +65,7 @@ Authoritative source остаётся в `src/shared/definitions/MobDefinitions.
 - Обычные волки и goblins используют локальные social groups, а не глобальную faction aggro.
 - Goblin Shaman — ranged support/caster: не должен сваливаться в бессмысленный melee после cooldown.
 - Goblin Chieftain — локальный elite: должен быть опасен и на подходе за счёт пращи, а в melee — за счёт crit / Heavy Strike / Cleave.
-- Spider Hollow намеренно несоциальный: паук не зовёт соседей.
+- Spider Hollow намеренно несоциальный и пассивный: пауки не агрятся первыми и не зовут соседей; опасность строится на высоком HP/M.Def, ядах и затяжном одиночном бою.
 - Late-game зоны растянуты так, чтобы открытый мир заканчивался на LV14.
 - LV15 зарезервирован под Ruins of Selene и Selene's Fallen Guardian.
 
