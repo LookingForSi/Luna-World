@@ -7,6 +7,8 @@ local RunService = game:GetService("RunService")
 
 local AccountSchema = require(ReplicatedStorage.Shared.persistence.AccountSchema)
 local PersistenceConfig = require(ReplicatedStorage.Shared.config.PersistenceConfig)
+local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local CharacterConfig = require(ReplicatedStorage.Shared.config.CharacterConfig)
 local ProfileSchema = require(ReplicatedStorage.Shared.persistence.ProfileSchema)
 local PersistenceTypes = require(ReplicatedStorage.Shared.types.PersistenceTypes)
 local ProfileStoreContract = require(script.Parent.Parent.persistence.ProfileStoreContract)
@@ -248,8 +250,17 @@ function PlayerDataService.selectCharacter(player: Player, characterId: string):
 	s.activeCharacterId = characterId
 	s.account.SelectedCharacterId = characterId
 	character.LastPlayedAt = os.time()
-	setState(player, s, "CharacterReady")
+
+	-- Runtime identity must be projected before CharacterReady/LoadCharacter.
+	-- Combat, HUD and starter-gear systems read these attributes during the
+	-- initial CharacterAdded lifecycle.
 	player:SetAttribute("ActiveCharacterId", characterId)
+	player:SetAttribute(CombatConfig.ArchetypeAttribute, character.ArchetypeId)
+	player:SetAttribute(CharacterConfig.NicknameAttribute, character.Nickname or player.DisplayName)
+	player:SetAttribute(CharacterConfig.BodyTypeAttribute, character.BodyType or "male")
+	player:SetAttribute(CharacterConfig.AppearancePresetAttribute, character.AppearancePresetId or "default")
+
+	setState(player, s, "CharacterReady")
 	characterReadyEvent:Fire(player)
 	player:LoadCharacter()
 	return true, nil
