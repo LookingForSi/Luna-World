@@ -910,9 +910,8 @@ function QuestController.start(): ()
 	end))
 	table.insert(connections, UserInputService.InputBegan:Connect(function(input, processed)
 		if UserInputService:GetFocusedTextBox() ~= nil then return end
-		-- O is a Roblox camera key in some environments, so it must work even when
-		-- CoreScripts already marked the input as processed.
-		if input.KeyCode == Enum.KeyCode.O then
+		-- Y is kept away from Roblox camera controls; treat it as a dedicated UI hotkey.
+		if input.KeyCode == Enum.KeyCode.Y then
 			QuestController.toggleJournal()
 			return
 		end
