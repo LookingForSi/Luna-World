@@ -40,6 +40,26 @@ return function(TestRunner)
 		assert(mystic10.physicalDefense == 11.75)
 	end)
 
+	TestRunner.run("level fifteen continues archetype growth beyond the old vertical slice", function()
+		local knight15 = StatRules.derive("knight", 15, nil)
+		assert(knight15.maxHealth == 240)
+		assert(knight15.maxResource == 142)
+		assert(knight15.physicalAttack == 53)
+		assert(knight15.physicalDefense == 33)
+
+		local ranger15 = StatRules.derive("ranger", 15, nil)
+		assert(ranger15.maxHealth == 198)
+		assert(ranger15.maxResource == 156)
+		assert(ranger15.physicalAttack == 51)
+		assert(math.abs(ranger15.criticalChance - 0.169) < 0.000001)
+
+		local mystic15 = StatRules.derive("mystic", 15, nil)
+		assert(mystic15.maxHealth == 184)
+		assert(mystic15.maxResource == 184)
+		assert(mystic15.magicAttack == 62)
+		assert(mystic15.physicalDefense == 15.5)
+	end)
+
 	TestRunner.run("equipment modifiers compose once and cannot change movement speed", function()
 		local derived = StatRules.derive("knight", 2, {
 			maxHealth = 15,
