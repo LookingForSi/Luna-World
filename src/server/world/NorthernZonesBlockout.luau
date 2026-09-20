@@ -309,17 +309,100 @@ end
 
 local function prepareSpiderHollowTerrain(positions: { [string]: Vector3 })
 	local center = positions.poi_spider_hollow
-	local floorTopY = center.Y + 8
-	Workspace.Terrain:FillBlock(
-		CFrame.new(center.X, floorTopY - 12, center.Z),
-		Vector3.new(820, 24, 700),
-		Enum.Material.Ground
+	local shrine = positions.poi_fallen_shrine
+	local terrain = Workspace.Terrain
+	local floorTopY = center.Y + 6
+
+	-- Spider Hollow is a low, damp basin. Keep the combat floor broad enough for
+	-- the ten spiders, then build a real raised rim around it instead of leaving
+	-- the encounter on the same flat plane as Moonfall Road.
+	terrain:FillBlock(
+		CFrame.new(center.X, floorTopY - 10, center.Z),
+		Vector3.new(600, 20, 500),
+		Enum.Material.Mud
 	)
-	Workspace.Terrain:FillBlock(
-		CFrame.new(center.X - 250, floorTopY - 11, center.Z + 170),
-		Vector3.new(360, 22, 300),
-		Enum.Material.Ground
-	)
+
+	local function ridge(name: string, offset: Vector3, size: Vector3, topOffset: number)
+		local topY = floorTopY + topOffset
+		terrain:FillBlock(
+			CFrame.new(center.X + offset.X, topY - size.Y / 2, center.Z + offset.Z),
+			size,
+			Enum.Material.Ground
+		)
+	end
+
+	-- Three closed sides plus two eastern shoulders leave one readable entrance
+	-- from Moonfall Road while still reading as a bowl from inside.
+	ridge("SpiderBasinRimWest", Vector3.new(-330, 0, 0), Vector3.new(180, 44, 650), 34)
+	ridge("SpiderBasinRimSouth", Vector3.new(0, 0, -285), Vector3.new(760, 38, 150), 30)
+	ridge("SpiderBasinRimNorth", Vector3.new(0, 0, 285), Vector3.new(760, 50, 170), 40)
+	ridge("SpiderBasinRimEastSouth", Vector3.new(315, 0, -190), Vector3.new(155, 34, 230), 27)
+	ridge("SpiderBasinRimEastNorth", Vector3.new(315, 0, 190), Vector3.new(155, 38, 230), 31)
+
+	-- The north rim continues into the Fallen Shrine mountain mass so the hollow
+	-- feels geologically embedded rather than like a fenced patch in a field.
+	local northDistance = shrine.Z - center.Z
+	for index, alpha in ipairs({ 0.42, 0.62, 0.80 }) do
+		local z = center.Z + northDistance * alpha
+		local rise = 42 + index * 13
+		terrain:FillBall(
+			Vector3.new(center.X - 35 + index * 18, floorTopY + rise - 65, z),
+			150 + index * 18,
+			if index >= 2 then Enum.Material.Rock else Enum.Material.Ground
+		)
+	end
+end
+
+local function createSpiderWeb(
+	parent: Instance,
+	name: string,
+	center: Vector3,
+	yawDegrees: number,
+	radius: number
+)
+	local web = P.model(parent, name)
+	web:SetAttribute("Decorative", true)
+	local right = CFrame.Angles(0, math.rad(yawDegrees), 0).RightVector
+	local up = Vector3.yAxis
+	local spokes = 6
+	local options = { canCollide = false, transparency = 0.20 }
+
+	local function pointAt(angle: number, r: number): Vector3
+		return center + right * math.cos(angle) * r + up * math.sin(angle) * r
+	end
+
+	for index = 1, spokes do
+		local angle = (index - 1) / spokes * math.pi * 2
+		P.segment(
+			web,
+			string.format("Spoke%02d", index),
+			center,
+			pointAt(angle, radius),
+			0.22,
+			0.22,
+			Enum.Material.SmoothPlastic,
+			COLORS.web,
+			options
+		)
+	end
+
+	for ringIndex, fraction in ipairs({ 0.45, 0.78 }) do
+		for index = 1, spokes do
+			local a = (index - 1) / spokes * math.pi * 2
+			local b = index / spokes * math.pi * 2
+			P.segment(
+				web,
+				string.format("Ring%02d_%02d", ringIndex, index),
+				pointAt(a, radius * fraction),
+				pointAt(b, radius * fraction),
+				0.18,
+				0.18,
+				Enum.Material.SmoothPlastic,
+				COLORS.web,
+				options
+			)
+		end
+	end
 end
 
 local function createSpiderHollow(parent: Instance, positions: { [string]: Vector3 })
@@ -361,22 +444,9 @@ local function createSpiderHollow(parent: Instance, positions: { [string]: Vecto
 	P.part(hollow, "CavePillarRight", Vector3.new(12, 28, 12), CFrame.new(caveGround + Vector3.new(18, 14, 0)), Enum.Material.Rock, COLORS.darkStone)
 	P.part(hollow, "CaveLintel", Vector3.new(48, 10, 16), CFrame.new(caveGround + Vector3.new(0, 30, 0)), Enum.Material.Rock, COLORS.darkStone)
 
-	for index, offset in ipairs({
-		Vector3.new(-35, 13, -20),
-		Vector3.new(35, 12, 12),
-		Vector3.new(0, 16, 56),
-	}) do
-		local web = P.part(
-			hollow,
-			string.format("Web%02d", index),
-			Vector3.new(28, 18, 0.4),
-			CFrame.new(caveGround + offset) * CFrame.Angles(0, math.rad(index * 28), math.rad(index * 7)),
-			Enum.Material.Glass,
-			COLORS.web,
-			{ canCollide = false, transparency = 0.58 }
-		)
-		web:SetAttribute("Decorative", true)
-	end
+	createSpiderWeb(hollow, "Web01", caveGround + Vector3.new(-31, 13, -12), 18, 17)
+	createSpiderWeb(hollow, "Web02", caveGround + Vector3.new(31, 12, 9), -22, 15)
+	createSpiderWeb(hollow, "Web03", caveGround + Vector3.new(0, 17, 50), 4, 19)
 
 	createSpider(hollow, "Spider01", center + Vector3.new(-27, 0, -9), 1)
 	createSpider(hollow, "Spider02", center + Vector3.new(34, 0, 25), 1.1)
