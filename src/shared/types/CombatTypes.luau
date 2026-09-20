@@ -161,6 +161,8 @@ export type MobDefinition = {
 	basicAttackRange: number,
 	basicAttackDamage: number,
 	basicAttackDamageType: MobDamageType,
+	criticalChance: number?,
+	criticalDamageMultiplier: number?,
 	attackWindupSeconds: number,
 	attackIntervalSeconds: number,
 	chaseSpeed: number,
