@@ -34,13 +34,17 @@ require(SERVER_DEBUG, "RunService:IsStudio()", "Studio archetype switching must 
 require(SERVER_DEBUG, 'Instance.new("RemoteEvent")', "Studio archetype remote must be created dynamically by the Studio-only service")
 require(SERVER_DEBUG, 'createRemote("StudioSetArchetype")', "Studio archetype remote name is missing")
 require(SERVER_DEBUG, 'createRemote("StudioSetLevel")', "Studio level remote name is missing")
+require(SERVER_DEBUG, 'createRemote("StudioToggleSpeed")', "Studio x5 speed remote name is missing")
 require(SERVER_DEBUG, "ProgressionService._setLevelForStudio", "Studio debug service must delegate level changes to ProgressionService")
+require(SERVER_DEBUG, "CombatService._setMovementMultiplierForStudio", "Studio debug service must delegate speed changes to CombatService")
 require(SERVER_DEBUG, "CombatService._setArchetypeForStudio", "Studio debug service must delegate lifecycle reset to CombatService")
 require(COMBAT, "function CombatService._setArchetypeForStudio", "CombatService Studio archetype seam is missing")
 require(COMBAT, 'assert(RunService:IsStudio()', "Studio archetype seam must hard-fail outside Studio")
 require(COMBAT, "clearPlayerState(player, true)", "class switch must discard the old authoritative combat state before respawn")
 require(COMBAT, "player:SetAttribute(ARCHETYPE_ATTRIBUTE, archetypeId)", "new archetype must be written after old combat state cleanup")
 require(COMBAT, "player:LoadCharacter()", "class switch must rebuild combat state through the existing character lifecycle")
+require(COMBAT, "function CombatService._setMovementMultiplierForStudio", "CombatService Studio movement seam is missing")
+require(COMBAT, 'assert(RunService:IsStudio()', "Studio combat seams must hard-fail outside Studio")
 require(SERVER_MAIN, "StudioDebugService.start()", "server bootstrap must start the Studio debug service")
 
 # Client debug controls also have their own Studio guard; live clients must never render them.
@@ -49,6 +53,8 @@ for archetype_id in ("knight", "ranger", "mystic"):
     require(CLIENT_DEBUG, archetype_id, f"Studio class panel is missing {archetype_id}")
 for token in ('"LevelDown"', '"LevelUp"', '"LevelMax"'):
     require(CLIENT_DEBUG, token, f"Studio level controls are missing {token}")
+for token in ('"SpeedX5"', '"SPEED x5"', '"StudioToggleSpeed"'):
+    require(CLIENT_DEBUG, token, f"Studio speed control is missing {token}")
 require(CLIENT_MAIN, "StudioTestPanel.start()", "client bootstrap must start the Studio-only panel")
 
 # Player HUD has four rows: PvP-only CP, HP, archetype resource, and XP.
