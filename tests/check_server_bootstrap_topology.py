@@ -16,6 +16,7 @@ EXPECTED_SERVICES = {
 	"EconomyService",
 	"EconomyWorldService",
 	"InventoryNetworkService",
+	"WorldDropService",
 	"LootService",
     "MobAIService",
 	"MobAbilityService",
