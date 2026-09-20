@@ -335,43 +335,94 @@ local function prepareSpiderHollowTerrain(positions: { [string]: Vector3 })
 	local terrain = Workspace.Terrain
 	local floorTopY = center.Y + 6
 
-	-- Spider Hollow is a low, damp basin. Keep the combat floor broad enough for
-	-- the ten spiders, then build a real raised rim around it instead of leaving
-	-- the encounter on the same flat plane as Moonfall Road.
+	-- Keep the accepted combat-floor elevation, but reshape the Hollow from a
+	-- rectangular basin into a long rounded pocket following the east-west road.
+	-- The central block gives the encounter a stable fighting surface; the two
+	-- cylinders round the ends so the mud footprint reads as an oval/capsule from above.
+	local floorDepth = 20
+	local floorHalfLength = 170
+	local floorRadius = 135
 	terrain:FillBlock(
-		CFrame.new(center.X, floorTopY - 10, center.Z),
-		Vector3.new(600, 20, 500),
+		CFrame.new(center.X, floorTopY - floorDepth / 2, center.Z),
+		Vector3.new(floorHalfLength * 2, floorDepth, floorRadius * 2),
 		Enum.Material.Mud
 	)
+	for _, xOffset in ipairs({ -floorHalfLength, floorHalfLength }) do
+		terrain:FillCylinder(
+			CFrame.new(center.X + xOffset, floorTopY - floorDepth / 2, center.Z),
+			floorDepth,
+			floorRadius,
+			Enum.Material.Mud
+		)
+	end
 
-	local function ridge(name: string, offset: Vector3, size: Vector3, topOffset: number)
-		local topY = floorTopY + topOffset
-		terrain:FillBlock(
-			CFrame.new(center.X + offset.X, topY - size.Y / 2, center.Z + offset.Z),
-			size,
+	-- Shape each long side as one continuous curved hill rather than a row of
+	-- visually separate mounds. Dense overlapping caps follow a gentle arc; the
+	-- spacing is deliberately much smaller than the radius so the silhouette
+	-- reads as one ridge from inside the Hollow and from the road.
+	local function fillCurvedRidge(points: { Vector3 }, radius: number, rise: number): ()
+		for index = 1, #points - 1 do
+			local a = points[index]
+			local b = points[index + 1]
+			local horizontal = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
+			local steps = math.max(1, math.ceil(horizontal.Magnitude / 42))
+			for step = 0, steps - 1 do
+				local alpha = step / steps
+				local point = a:Lerp(b, alpha)
+				terrain:FillBall(
+					Vector3.new(point.X, floorTopY + rise - radius, point.Z),
+					radius,
+					Enum.Material.Ground
+				)
+			end
+		end
+		local last = points[#points]
+		terrain:FillBall(
+			Vector3.new(last.X, floorTopY + rise - radius, last.Z),
+			radius,
 			Enum.Material.Ground
 		)
 	end
 
-	-- Three closed sides plus two eastern shoulders leave one readable entrance
-	-- from Moonfall Road while still reading as a bowl from inside.
-	ridge("SpiderBasinRimWest", Vector3.new(-330, 0, 0), Vector3.new(180, 44, 650), 34)
-	ridge("SpiderBasinRimSouth", Vector3.new(0, 0, -285), Vector3.new(760, 38, 150), 30)
-	ridge("SpiderBasinRimNorth", Vector3.new(0, 0, 285), Vector3.new(760, 50, 170), 40)
-	ridge("SpiderBasinRimEastSouth", Vector3.new(315, 0, -190), Vector3.new(155, 34, 230), 27)
-	ridge("SpiderBasinRimEastNorth", Vector3.new(315, 0, 190), Vector3.new(155, 38, 230), 31)
+	local northRidge = {
+		center + Vector3.new(-250, 0, 175),
+		center + Vector3.new(-165, 0, 205),
+		center + Vector3.new(-55, 0, 218),
+		center + Vector3.new(60, 0, 212),
+		center + Vector3.new(155, 0, 182),
+	}
+	local southRidge = {
+		center + Vector3.new(-250, 0, -170),
+		center + Vector3.new(-165, 0, -202),
+		center + Vector3.new(-55, 0, -216),
+		center + Vector3.new(60, 0, -207),
+		center + Vector3.new(155, 0, -176),
+	}
+	fillCurvedRidge(northRidge, 205, 27)
+	fillCurvedRidge(southRidge, 200, 25)
 
-	-- The north rim continues into the Fallen Shrine mountain mass so the hollow
-	-- feels geologically embedded rather than like a fenced patch in a field.
+	-- One broad western connector closes the back of the oval while keeping the
+	-- eastern road entrance low and readable.
+	fillCurvedRidge({
+		center + Vector3.new(-235, 0, -155),
+		center + Vector3.new(-292, 0, -78),
+		center + Vector3.new(-310, 0, 0),
+		center + Vector3.new(-292, 0, 82),
+		center + Vector3.new(-235, 0, 160),
+	}, 210, 29)
+
+	-- Blend the northern shoulder into the Fallen Shrine mass with overlapping
+	-- smooth terrain instead of a hard ridge. This preserves the geological link
+	-- between the two zones without making the Hollow feel like a square crater.
 	local northDistance = shrine.Z - center.Z
-	for index, alpha in ipairs({ 0.42, 0.62, 0.80 }) do
+	for index, alpha in ipairs({ 0.46, 0.64, 0.81 }) do
 		local z = center.Z + northDistance * alpha
-		local rise = 42 + index * 13
-		local radius = 150 + index * 18
+		local radius = 175 + index * 18
+		local rise = 28 + index * 9
 		terrain:FillBall(
-			Vector3.new(center.X - 35 + index * 18, floorTopY + rise - radius, z),
+			Vector3.new(center.X - 55 + index * 22, floorTopY + rise - radius, z),
 			radius,
-			if index >= 2 then Enum.Material.Rock else Enum.Material.Ground
+			if index >= 3 then Enum.Material.Rock else Enum.Material.Ground
 		)
 	end
 end
@@ -502,48 +553,66 @@ local function createMoonfallLandmarks(parent: Instance, positions: { [string]: 
 	P.groundedPart(props, "CrossroadsPost", crossroads + Vector3.new(12, 0, -8), Vector3.new(3, 13, 3), Enum.Material.Wood, COLORS.darkTimber)
 end
 
-local function shapeGoblinCemeteryLakeHillCliff(center: Vector3, waterSurfaceY: number)
+local function prepareGoblinCampBoundaryShelf(positions: { [string]: Vector3 })
 	local terrain = Workspace.Terrain
-	local cliffSegments = {
-		{ xOffset = 300, zOffset = -35, zSize = 150 },
-		{ xOffset = 320, zOffset = 105, zSize = 170 },
-		{ xOffset = 285, zOffset = 235, zSize = 135 },
-	}
+	local center = positions.poi_goblin_camp
+	local bounds = WorldLayout.WorldBounds
+	local campGround = Grounding.surfaceAt(center)
+	local shelfTopY = campGround.Y
 
-	for _, spec in ipairs(cliffSegments) do
-		local hillSample = Grounding.surfaceAt(
-			center + Vector3.new(spec.xOffset + 70, 0, spec.zOffset)
-		)
-		local cliffBottomY = waterSurfaceY - 5
-		local cliffTopY = math.max(hillSample.Y + 6, waterSurfaceY + 28)
-		local cliffHeight = cliffTopY - cliffBottomY
+	-- Continue the raised camp shelf all the way to the outer map boundary on the
+	-- lake-facing side. This removes the artificial trench/dip immediately beyond
+	-- the palisade and makes the camp plateau read as one continuous land mass.
+	local shelfStartX = center.X + 145
+	local shelfEndX = bounds.maxX - 12
+	local shelfCenterX = (shelfStartX + shelfEndX) / 2
+	local shelfWidth = shelfEndX - shelfStartX
+	local shelfMinZ = center.Z - 250
+	local shelfMaxZ = center.Z + 165
+	local shelfDepth = shelfMaxZ - shelfMinZ
 
-		-- Cut away the grassy shelf on the lake side so the hill meets the water
-		-- as a readable vertical bank rather than appearing to hover above it.
-		terrain:FillBlock(
-			CFrame.new(
-				center.X + spec.xOffset - 24,
-				cliffBottomY + cliffHeight / 2,
-				center.Z + spec.zOffset
-			),
-			Vector3.new(64, cliffHeight, spec.zSize),
-			Enum.Material.Air
-		)
-		terrain:FillBlock(
-			CFrame.new(
-				center.X + spec.xOffset + 10,
-				cliffBottomY + cliffHeight / 2,
-				center.Z + spec.zOffset
-			),
-			Vector3.new(20, cliffHeight, spec.zSize),
-			Enum.Material.Rock
-		)
-	end
+	-- Remove stray high terrain first, then fill any low pockets to the camp level.
+	terrain:FillBlock(
+		CFrame.new(shelfCenterX, shelfTopY + 28, (shelfMinZ + shelfMaxZ) / 2),
+		Vector3.new(shelfWidth, 56, shelfDepth),
+		Enum.Material.Air
+	)
+	terrain:FillBlock(
+		CFrame.new(shelfCenterX, shelfTopY - 45, (shelfMinZ + shelfMaxZ) / 2),
+		Vector3.new(shelfWidth, 90, shelfDepth),
+		Enum.Material.Grass
+	)
+end
+
+local function excavateAndFillLakeWater(
+	terrain: Terrain,
+	position: Vector3,
+	sizeXZ: Vector2,
+	yaw: number,
+	waterSurfaceY: number,
+	waterDepth: number,
+	clearDepth: number,
+	airClearance: number,
+	clearMargin: number
+)
+	local rotation = CFrame.Angles(0, math.rad(yaw), 0)
+	local totalClearHeight = clearDepth + airClearance
+	local clearCenterY = waterSurfaceY + (airClearance - clearDepth) / 2
+	terrain:FillBlock(
+		CFrame.new(position.X, clearCenterY, position.Z) * rotation,
+		Vector3.new(sizeXZ.X + clearMargin * 2, totalClearHeight, sizeXZ.Y + clearMargin * 2),
+		Enum.Material.Air
+	)
+	terrain:FillBlock(
+		CFrame.new(position.X, waterSurfaceY - waterDepth / 2, position.Z) * rotation,
+		Vector3.new(sizeXZ.X, waterDepth, sizeXZ.Y),
+		Enum.Material.Water
+	)
 end
 
 local function createGoblinCemeteryLake(parent: Instance, positions: { [string]: Vector3 })
 	local lake = P.model(parent, "GoblinCemeteryLake")
-	lake:SetAttribute("Purpose", "TraversalBarrier")
+	lake:SetAttribute("Purpose", "SwimmableWater")
 	local terrain = Workspace.Terrain
 
 	local goblin = positions.poi_goblin_camp
@@ -551,8 +620,10 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 	local center = goblin:Lerp(cemetery, 0.52) + Vector3.new(85, 0, 0)
 	local ground = Grounding.surfaceAt(center)
 	local LAKE_SURFACE_DROP = 8
-	local LAKE_WATER_DEPTH = 12
-	local LAKE_AIR_CLEARANCE_HEIGHT = 28
+	local LAKE_WATER_DEPTH = 30
+	local LAKE_BASIN_CLEAR_DEPTH = 40
+	local LAKE_AIR_CLEARANCE_HEIGHT = 46
+	local LAKE_CLEAR_MARGIN = 34
 	local waterSurfaceY = ground.Y - LAKE_SURFACE_DROP
 
 	local lobes = {
@@ -561,46 +632,48 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 		{ offset = Vector3.new(10, 0, 145), size = Vector3.new(330, 32, 240), yaw = -3 },
 	}
 
-	for index, spec in ipairs(lobes) do
-		local position = center + spec.offset
-		local rotation = CFrame.Angles(0, math.rad(spec.yaw), 0)
-		terrain:FillBlock(
-			CFrame.new(
-				position.X,
-				waterSurfaceY + LAKE_AIR_CLEARANCE_HEIGHT / 2 - 2,
-				position.Z
-			) * rotation,
-			Vector3.new(spec.size.X, LAKE_AIR_CLEARANCE_HEIGHT, spec.size.Z),
-			Enum.Material.Air
-		)
-		terrain:FillBlock(
-			CFrame.new(position.X, waterSurfaceY - LAKE_WATER_DEPTH / 2, position.Z) * rotation,
-			Vector3.new(spec.size.X, LAKE_WATER_DEPTH, spec.size.Z),
-			Enum.Material.Water
-		)
-
-		P.part(
-			lake,
-			string.format("WaterRecovery%02d", index),
-			Vector3.new(spec.size.X - 10, 20, spec.size.Z - 10),
-			CFrame.new(position.X, waterSurfaceY - 4, position.Z) * rotation,
-			Enum.Material.SmoothPlastic,
-			Color3.new(1, 1, 1),
-			{
-				canCollide = false,
-				transparency = 1,
-				attributes = {
-					WaterRecovery = true,
-					WaterSurfaceY = waterSurfaceY,
-					HazardKind = "Lake",
-				},
-			}
+	for _, spec in ipairs(lobes) do
+		excavateAndFillLakeWater(
+			terrain,
+			center + spec.offset,
+			Vector2.new(spec.size.X, spec.size.Z),
+			spec.yaw,
+			waterSurfaceY,
+			LAKE_WATER_DEPTH,
+			LAKE_BASIN_CLEAR_DEPTH,
+			LAKE_AIR_CLEARANCE_HEIGHT,
+			LAKE_CLEAR_MARGIN
 		)
 	end
 
-	shapeGoblinCemeteryLakeHillCliff(center, waterSurfaceY)
+	-- The lake is the outer water boundary of this side of the world, not a closed
+	-- local bowl. Extend it eastward to the invisible world edge and southward
+	-- until it reaches the northern edge of the Goblin Camp shelf.
+	local bounds = WorldLayout.WorldBounds
+	local edgeX = bounds.maxX - 10
+	local waterStartX = center.X + 115
+	local edgeWidth = edgeX - waterStartX
+	local campWaterSouthZ = goblin.Z + 175
+	local edgeWaterNorthZ = center.Z + 320
+	local edgeWaterDepth = edgeWaterNorthZ - campWaterSouthZ
+	excavateAndFillLakeWater(
+		terrain,
+		Vector3.new((waterStartX + edgeX) / 2, waterSurfaceY, (campWaterSouthZ + edgeWaterNorthZ) / 2),
+		Vector2.new(edgeWidth, edgeWaterDepth),
+		0,
+		waterSurfaceY,
+		LAKE_WATER_DEPTH,
+		LAKE_BASIN_CLEAR_DEPTH,
+		LAKE_AIR_CLEARANCE_HEIGHT,
+		16
+	)
+	lake:SetAttribute("ExtendsToWorldEdge", true)
+	lake:SetAttribute("CampShorelineZ", campWaterSouthZ)
+
 	lake:SetAttribute("WaterSurfaceDrop", LAKE_SURFACE_DROP)
-	lake:SetAttribute("HillBankCliff", true)
+	lake:SetAttribute("WaterDepth", LAKE_WATER_DEPTH)
+	lake:SetAttribute("DeepBasinExcavated", true)
+	lake:SetAttribute("OpenWaterBoundary", true)
 end
 
 local function createDarkWoodland(parent: Instance, positions: { [string]: Vector3 })
@@ -740,6 +813,7 @@ end
 function NorthernZonesBlockout.build(parent: Instance)
 	local positions = poiPositions()
 	prepareSpiderHollowTerrain(positions)
+	prepareGoblinCampBoundaryShelf(positions)
 	local north = P.model(parent, "NorthWorld")
 
 	createGroundedRoad(north, "MoonfallRoad", WorldLayout.MoonfallRoadRoute, 22)
