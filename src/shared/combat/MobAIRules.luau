@@ -51,10 +51,14 @@ end
 function MobAIRules.nextState(state: State, context: Context, aggressionMode: CombatTypes.AggressionMode): State
 	if not context.alive then return "Dead" end
 	if state == "Dead" then return "Dead" end
+	-- Fresh hostile damage always re-engages a living mob, even if it had already
+	-- started returning home. This prevents "invulnerable leash walks" while the
+	-- player is visibly still fighting it.
+	if context.hostileAttacker then return "Aggro" end
 	if state == "Return" then return if context.atHome then "Idle" else "Return" end
 	if context.beyondLeash then return "Return" end
 	if state == "Idle" then
-		if context.hostileAttacker or (aggressionMode == "Aggressive" and context.detectedTarget) then return "Aggro" end
+		if aggressionMode == "Aggressive" and context.detectedTarget then return "Aggro" end
 		return "Idle"
 	end
 	if not context.hasTarget then return "Return" end
