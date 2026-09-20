@@ -168,7 +168,7 @@ local function handle(player: Player, action: string, ...: unknown): ()
 		if not mutated then ok=false;reason=mutationReason end
 	else ok,reason=finish(player,questId :: string,npcId :: string) end
 	resultEvent:FireClient(player,{action=action,questId=questId,ok=ok,reason=reason})
-	if ok then QuestService.push(player); QuestService.openNpc(player,npcId :: string) end
+	if ok then QuestService.push(player) end
 end
 
 function QuestService.start(): ()
