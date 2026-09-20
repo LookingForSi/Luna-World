@@ -36,6 +36,7 @@ local mapCanvas: Frame? = nil
 local playerDot: TextLabel? = nil
 
 local snapshot: any = { quests = {}, markers = {} }
+local firstSnapshotReceived = false
 local connections: { RBXScriptConnection } = {}
 local markerGuis: { BillboardGui } = {}
 local waypointLabels: { [string]: TextLabel } = {}
@@ -710,6 +711,7 @@ end
 
 local function setSnapshot(value: any): ()
 	if typeof(value) ~= "table" or typeof(value.quests) ~= "table" then return end
+	firstSnapshotReceived = true
 	snapshot = value
 	syncActiveQuestState()
 	buildJournal()
@@ -967,10 +969,19 @@ function QuestController.start(): ()
 
 
 	task.delay(0.8, rebuildMarkers)
+	firstSnapshotReceived = false
 	snapshotRequest:FireServer()
+	for _, delaySeconds in { 0.35, 0.9, 1.8, 3.0 } do
+		task.delay(delaySeconds, function()
+			if gui ~= nil and not firstSnapshotReceived then
+				snapshotRequest:FireServer()
+			end
+		end)
+	end
 end
 
 function QuestController.stop(): ()
+	firstSnapshotReceived = false
 	for _, connection in connections do connection:Disconnect() end
 	table.clear(connections)
 
