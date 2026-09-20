@@ -10,6 +10,7 @@ local ProgressionRules = require(ReplicatedStorage.Shared.progression.Progressio
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local CombatPresentationService = require(script.Parent.CombatPresentationService)
 local PlayerDataService = require(script.Parent.PlayerDataService)
+local CombatService = require(script.Parent.CombatService)
 
 local ProgressionService = {}
 
@@ -53,16 +54,21 @@ function ProgressionService.awardXP(player: Player, amount: number): boolean
 
 	local appliedLevel: number? = nil
 	local appliedXP: number? = nil
+	local levelsGained = 0
 	local ok = PlayerDataService.mutate(player, function(profile)
 		local result = ProgressionRules.applyXP(profile.Level, profile.XP, amount)
 		profile.Level = result.level
 		profile.XP = result.xp
 		appliedLevel = result.level
 		appliedXP = result.xp
+		levelsGained = result.levelsGained
 	end)
 	if not ok or appliedLevel == nil or appliedXP == nil then return false end
 
 	replicateProgression(player, appliedLevel, appliedXP)
+	if levelsGained > 0 then
+		CombatService.restorePlayerVitalsAfterLevelUp(player)
+	end
 	return true
 end
 
@@ -75,12 +81,17 @@ function ProgressionService._setLevelForStudio(player: Player, level: number): b
 	if player.Parent ~= Players or not PlayerDataService.isReady(player) then return false end
 	if level ~= level or level % 1 ~= 0 or level < 1 or level > ProgressionConfig.LevelCap then return false end
 
+	local previousLevel: number? = nil
 	local ok = PlayerDataService.mutate(player, function(profile)
+		previousLevel = profile.Level
 		profile.Level = level
 		profile.XP = 0
 	end)
 	if not ok then return false end
 	replicateProgression(player, level, 0)
+	if previousLevel ~= nil and level > previousLevel then
+		CombatService.restorePlayerVitalsAfterLevelUp(player)
+	end
 	return true
 end
 
