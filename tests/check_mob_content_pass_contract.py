@@ -213,7 +213,9 @@ for token in (
         raise AssertionError(f"MobService population contract missing {token}")
 
 for token in (
-	'otherModel:GetAttribute("SocialGroupId") == typedSocialGroupId',
+    "otherRecord.socialGroupId == socialGroupId",
+    "requestSocialAssist(record, record.target)",
+    "math.max(",
     "definition.socialAssistRadius",
 	"MobAIRules.canRequestSocialAssist",
     "patrolDestination",
