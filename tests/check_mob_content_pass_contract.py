@@ -208,7 +208,7 @@ for token in (
     "MOB_NAMEPLATE_MAX_DISTANCE = 100",
     'string.format("LV %d · %s"',
     "GLOBAL_MOB_MOVEMENT_MULTIPLIER = 1.2",
-    "hitboxVerticalOffset",
+    "hitbox.CFrame = rootPart.CFrame",
 ):
     if token not in MOB_SERVICE:
         raise AssertionError(f"MobService population contract missing {token}")
