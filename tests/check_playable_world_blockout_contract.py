@@ -81,7 +81,6 @@ def main() -> None:
         "BridgeApproachSouth",
         "BridgeBankApronSouth",
         "BridgeBankApronNorth",
-        "WaterRecovery%02d",
         "StoneCircle",
         "LunaVillageSpawn",
         "Vector3.new(-34, 0, -8)",
@@ -94,17 +93,21 @@ def main() -> None:
         assert token in south
     assert "BillboardGui" not in south
     assert "EarlySpiderPocket" not in south
+    assert "WaterRecovery" not in south
+    assert "Enum.Material.Water" in south
     assert "spawn_spider_meadow_pocket" not in south
 
 
     recovery = read(ROOT / "src/server/world/TraversalRecovery.luau")
+    assert "WaterRecovery" not in recovery
+    assert "fellIntoRiver" not in recovery
+    assert "or swimming" not in recovery
     for token in (
-        "WaterRecovery",
         "lastSafe",
         "FALL_RECOVERY_Y",
         "FloorMaterial",
         "character:PivotTo",
-        "HumanoidStateType.Swimming",
+        "Terrain water is valid traversal",
     ):
         assert token in recovery
 
@@ -119,15 +122,25 @@ def main() -> None:
         "SpiderHollow",
         "prepareSpiderHollowTerrain",
         "BasinFloorFilled",
-        "SpiderBasinRimWest",
-        "SpiderBasinRimNorth",
+        "fillCurvedRidge",
+        "northRidge",
+        "southRidge",
+        "terrain:FillCylinder",
+        "floorHalfLength = 170",
+        "floorRadius = 135",
         "createSpiderWeb",
         "Enum.Material.Mud",
         "GoblinCemeteryLake",
-        'HazardKind = "Lake"',
         "LAKE_SURFACE_DROP = 8",
-        "shapeGoblinCemeteryLakeHillCliff",
-        'HillBankCliff", true',
+        "LAKE_WATER_DEPTH = 30",
+        "LAKE_BASIN_CLEAR_DEPTH = 40",
+        "LAKE_CLEAR_MARGIN = 34",
+        'DeepBasinExcavated", true',
+        "prepareGoblinCampBoundaryShelf",
+        "excavateAndFillLakeWater",
+        'ExtendsToWorldEdge", true',
+        'CampShorelineZ',
+        'OpenWaterBoundary", true',
         "DarkWoodlandThreshold",
         "OldCemetery",
         "FallenShrine",
@@ -136,12 +149,26 @@ def main() -> None:
     ):
         assert token in north
     assert "BillboardGui" not in north
+    assert 'Purpose", "SwimmableWater"' in north
+    assert "WaterRecovery" not in north
+    assert "shapeGoblinCemeteryLakeHillCliff" not in north
+    assert "Enum.Material.Water" in north
     assert "Enum.Material.Glass" not in north
     assert "postSpacing = 4.0" in north
     assert "PalisadeCollision = true" in north
     assert "fenceSegments" in north
     assert "Grounding.treeSurfaceAt(position)" in north
     assert "for index = 1, 11 do" in north
+
+    for removed_square_rim in (
+        "SpiderBasinRimWest",
+        "SpiderBasinRimSouth",
+        "SpiderBasinRimNorth",
+        "SpiderBasinRimEastSouth",
+        "SpiderBasinRimEastNorth",
+    ):
+        assert removed_square_rim not in north
+
 
     dressing = read(ROOT / "src/server/world/WorldDressingBlockout.luau")
     for token in (
@@ -163,6 +190,7 @@ def main() -> None:
     assert "Grounding.treeSurfaceAt(position)" in dressing
 
     composition = read(ROOT / "src/server/world/WorldCompositionBlockout.luau")
+    assert "GoblinShelfEdge" not in composition
     for token in (
         "MacroComposition",
         "VillageHillComposition",
@@ -176,7 +204,6 @@ def main() -> None:
         "MoonfallWestScreen",
         "GoblinCemeteryEastForest",
         "GoblinCemeteryRoadsideForest",
-        "GoblinShelfEdge",
         "SpiderBasinRearDeadwood",
         "DarkWoodlandWestMass",
         "CemeteryRearDeadwood",
@@ -200,9 +227,9 @@ def main() -> None:
     presentation = read(ROOT / "src/client/world-preview/ZonePresentation.client.luau")
     assert "ZoneToast" in presentation
     assert "task.delay(2.5" in presentation
-    assert "JumpPower = 0" in presentation
-    assert "JumpHeight = 0" in presentation
-    assert "JumpButton" in presentation
+    assert "JumpPower = 0" not in presentation
+    assert "JumpHeight = 0" not in presentation
+    assert "LunaWorldPreviewDisableJump" not in presentation
     assert "BillboardGui" not in presentation
 
     layout = read(ROOT / "src/shared/world/WorldLayout.luau")
