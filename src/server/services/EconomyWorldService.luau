@@ -8,6 +8,7 @@ local EconomyNetworkService = require(script.Parent.EconomyNetworkService)
 local EconomyWorldService = {}
 local folder: Folder? = nil
 local connections: { RBXScriptConnection } = {}
+local ownedInstances: { Instance } = {}
 
 local function point(id: string): Vector3
 	for _, poi in WorldLayout.PointsOfInterest do if poi.id == id then return poi.position end end
@@ -33,6 +34,7 @@ local function addNameplate(model: Model, roleText: string): ()
 	billboard.Size = UDim2.fromOffset(190, 44)
 	billboard.StudsOffset = Vector3.new(0, 2.8, 0)
 	billboard.Parent = head
+	table.insert(ownedInstances, billboard)
 
 	local label = Instance.new("TextLabel")
 	label.BackgroundColor3 = Color3.fromRGB(20, 22, 29)
@@ -53,6 +55,7 @@ local function addNameplate(model: Model, roleText: string): ()
 	highlight.OutlineTransparency = 0.2
 	highlight.OutlineColor = Color3.fromRGB(215, 184, 105)
 	highlight.Parent = model
+	table.insert(ownedInstances, highlight)
 end
 
 local function createPoint(
@@ -88,6 +91,7 @@ local function createPoint(
 	prompt.RequiresLineOfSight = false
 	prompt.HoldDuration = 0
 	prompt.Parent = target
+	table.insert(ownedInstances, prompt)
 	table.insert(connections, prompt.Triggered:Connect(function(player) EconomyNetworkService.openFor(player, mode) end))
 end
 function EconomyWorldService.start(): ()
@@ -98,7 +102,12 @@ function EconomyWorldService.start(): ()
 	folder = created
 end
 function EconomyWorldService.stop(): ()
-	for _, connection in connections do connection:Disconnect() end; table.clear(connections)
+	for _, connection in connections do connection:Disconnect() end
+	table.clear(connections)
+	for _, instance in ownedInstances do
+		if instance.Parent ~= nil then instance:Destroy() end
+	end
+	table.clear(ownedInstances)
 	if folder ~= nil then folder:Destroy(); folder = nil end
 end
 return EconomyWorldService
