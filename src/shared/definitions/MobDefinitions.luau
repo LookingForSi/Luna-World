@@ -18,7 +18,7 @@ local definitions: { [string]: CombatTypes.MobDefinition } = {
 		physicalDefense = 1, magicDefense = 1, rewardXP = 15, lootTableId = "loot_young_wolf", respawnSeconds = 18,
 		aggressionMode = "Passive", rank = "Ordinary", attackKind = "Melee", faction = "wolf", visualProfile = "WolfYoung",
 		detectionRadius = 25, aggroRadius = 20, reacquireRadius = 25, leashDistance = 60,
-		attackRange = 10, basicAttackRange = 10, basicAttackDamage = 8, basicAttackDamageType = "Physical",
+		attackRange = 10, basicAttackRange = 10, basicAttackDamage = 12, basicAttackDamageType = "Physical",
 		attackWindupSeconds = 0.25, attackIntervalSeconds = 1.6, chaseSpeed = 12, decisionIntervalSeconds = 0.45,
 		restoreHealthOnReturn = true, socialAssistRadius = 0, abilityIds = ids({}),
 	}),
