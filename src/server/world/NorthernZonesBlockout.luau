@@ -560,9 +560,9 @@ local function prepareGoblinCampBoundaryShelf(positions: { [string]: Vector3 })
 	local campGround = Grounding.surfaceAt(center)
 	local shelfTopY = campGround.Y
 
-	-- Continue the raised camp shelf all the way to the outer map boundary on the
-	-- lake-facing side. This removes the artificial trench/dip immediately beyond
-	-- the palisade and makes the camp plateau read as one continuous land mass.
+	-- Keep the raised camp-side plateau at its accepted elevation all the way to
+	-- the outer map boundary. The inner/lake-facing edge is then blended down with
+	-- broad overlapping terrain caps instead of ending as a vertical FillBlock wall.
 	local shelfStartX = center.X + 145
 	local shelfEndX = bounds.maxX - 12
 	local shelfCenterX = (shelfStartX + shelfEndX) / 2
@@ -571,7 +571,6 @@ local function prepareGoblinCampBoundaryShelf(positions: { [string]: Vector3 })
 	local shelfMaxZ = center.Z + 165
 	local shelfDepth = shelfMaxZ - shelfMinZ
 
-	-- Remove stray high terrain first, then fill any low pockets to the camp level.
 	terrain:FillBlock(
 		CFrame.new(shelfCenterX, shelfTopY + 28, (shelfMinZ + shelfMaxZ) / 2),
 		Vector3.new(shelfWidth, 56, shelfDepth),
@@ -582,31 +581,103 @@ local function prepareGoblinCampBoundaryShelf(positions: { [string]: Vector3 })
 		Vector3.new(shelfWidth, 90, shelfDepth),
 		Enum.Material.Grass
 	)
+
+	-- A continuous gentle shoulder from plateau level down toward the lake.
+	-- Dense overlap makes the result read as one long natural slope rather than
+	-- terraces or a row of separate mounds.
+	local slopeRadius = 105
+	local slopeRows = {
+		{ x = shelfStartX + 25, top = shelfTopY + 1 },
+		{ x = shelfStartX - 35, top = shelfTopY - 5 },
+		{ x = shelfStartX - 95, top = shelfTopY - 13 },
+		{ x = shelfStartX - 155, top = shelfTopY - 23 },
+		{ x = shelfStartX - 205, top = shelfTopY - 32 },
+	}
+	for _, row in ipairs(slopeRows) do
+		for z = shelfMinZ - 25, shelfMaxZ + 25, 58 do
+			terrain:FillBall(
+				Vector3.new(row.x, row.top - slopeRadius, z),
+				slopeRadius,
+				Enum.Material.Grass
+			)
+		end
+	end
 end
 
-local function excavateAndFillLakeWater(
+local function carveLakeDisc(
 	terrain: Terrain,
 	position: Vector3,
-	sizeXZ: Vector2,
-	yaw: number,
+	radius: number,
 	waterSurfaceY: number,
 	waterDepth: number,
 	clearDepth: number,
 	airClearance: number,
-	clearMargin: number
+	shoreMargin: number
 )
-	local rotation = CFrame.Angles(0, math.rad(yaw), 0)
+	-- Excavate slightly beyond the water radius so grass/rock never survives
+	-- immediately under the transparent water surface.
 	local totalClearHeight = clearDepth + airClearance
 	local clearCenterY = waterSurfaceY + (airClearance - clearDepth) / 2
-	terrain:FillBlock(
-		CFrame.new(position.X, clearCenterY, position.Z) * rotation,
-		Vector3.new(sizeXZ.X + clearMargin * 2, totalClearHeight, sizeXZ.Y + clearMargin * 2),
+	terrain:FillCylinder(
+		CFrame.new(position.X, clearCenterY, position.Z),
+		totalClearHeight,
+		radius + shoreMargin,
 		Enum.Material.Air
 	)
-	terrain:FillBlock(
-		CFrame.new(position.X, waterSurfaceY - waterDepth / 2, position.Z) * rotation,
-		Vector3.new(sizeXZ.X, waterDepth, sizeXZ.Y),
+	terrain:FillCylinder(
+		CFrame.new(position.X, waterSurfaceY - waterDepth / 2, position.Z),
+		waterDepth,
+		radius,
 		Enum.Material.Water
+	)
+end
+
+local function fillContinuousLakePath(
+	terrain: Terrain,
+	points: { { position: Vector3, radius: number } },
+	waterSurfaceY: number,
+	waterDepth: number,
+	clearDepth: number,
+	airClearance: number,
+	shoreMargin: number
+)
+	for index = 1, #points - 1 do
+		local a = points[index]
+		local b = points[index + 1]
+		local delta = Vector3.new(
+			b.position.X - a.position.X,
+			0,
+			b.position.Z - a.position.Z
+		)
+		-- Sample much more densely than the local radius. Overlap is intentional:
+		-- Terrain.Water becomes one body with no dry seam between generated parts.
+		local steps = math.max(1, math.ceil(delta.Magnitude / 34))
+		for step = 0, steps - 1 do
+			local alpha = step / steps
+			local point = a.position:Lerp(b.position, alpha)
+			local radius = a.radius + (b.radius - a.radius) * alpha
+			carveLakeDisc(
+				terrain,
+				point,
+				radius,
+				waterSurfaceY,
+				waterDepth,
+				clearDepth,
+				airClearance,
+				shoreMargin
+			)
+		end
+	end
+	local last = points[#points]
+	carveLakeDisc(
+		terrain,
+		last.position,
+		last.radius,
+		waterSurfaceY,
+		waterDepth,
+		clearDepth,
+		airClearance,
+		shoreMargin
 	)
 end
 
@@ -619,57 +690,57 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 	local cemetery = positions.poi_old_cemetery
 	local center = goblin:Lerp(cemetery, 0.52) + Vector3.new(85, 0, 0)
 	local ground = Grounding.surfaceAt(center)
+	local bounds = WorldLayout.WorldBounds
 	local LAKE_SURFACE_DROP = 8
 	local LAKE_WATER_DEPTH = 30
-	local LAKE_BASIN_CLEAR_DEPTH = 40
-	local LAKE_AIR_CLEARANCE_HEIGHT = 46
-	local LAKE_CLEAR_MARGIN = 34
+	local LAKE_BASIN_CLEAR_DEPTH = 42
+	local LAKE_AIR_CLEARANCE_HEIGHT = 48
+	local LAKE_SHORE_CLEAR_MARGIN = 18
 	local waterSurfaceY = ground.Y - LAKE_SURFACE_DROP
 
-	local lobes = {
-		{ offset = Vector3.new(-90, 0, -35), size = Vector3.new(420, 32, 300), yaw = -8 },
-		{ offset = Vector3.new(90, 0, 45), size = Vector3.new(430, 32, 320), yaw = 10 },
-		{ offset = Vector3.new(10, 0, 145), size = Vector3.new(330, 32, 240), yaw = -3 },
+	-- One organic shoreline/path from the camp side through the original lake and
+	-- out to the invisible map boundary. Different radii bend the shoreline and
+	-- deliberately avoid a rectangular silhouette.
+	local edgeX = bounds.maxX + 80
+	local lakePath = {
+		{ position = goblin + Vector3.new(205, 0, 175), radius = 115 },
+		{ position = center + Vector3.new(-155, 0, -105), radius = 155 },
+		{ position = center + Vector3.new(-55, 0, 10), radius = 205 },
+		{ position = center + Vector3.new(55, 0, 105), radius = 220 },
+		{ position = center + Vector3.new(150, 0, 190), radius = 185 },
+		{ position = Vector3.new(edgeX - 145, center.Y, center.Z + 225), radius = 205 },
+		{ position = Vector3.new(edgeX, center.Y, center.Z + 195), radius = 235 },
 	}
-
-	for _, spec in ipairs(lobes) do
-		excavateAndFillLakeWater(
-			terrain,
-			center + spec.offset,
-			Vector2.new(spec.size.X, spec.size.Z),
-			spec.yaw,
-			waterSurfaceY,
-			LAKE_WATER_DEPTH,
-			LAKE_BASIN_CLEAR_DEPTH,
-			LAKE_AIR_CLEARANCE_HEIGHT,
-			LAKE_CLEAR_MARGIN
-		)
-	end
-
-	-- The lake is the outer water boundary of this side of the world, not a closed
-	-- local bowl. Extend it eastward to the invisible world edge and southward
-	-- until it reaches the northern edge of the Goblin Camp shelf.
-	local bounds = WorldLayout.WorldBounds
-	local edgeX = bounds.maxX - 10
-	local waterStartX = center.X + 115
-	local edgeWidth = edgeX - waterStartX
-	local campWaterSouthZ = goblin.Z + 175
-	local edgeWaterNorthZ = center.Z + 320
-	local edgeWaterDepth = edgeWaterNorthZ - campWaterSouthZ
-	excavateAndFillLakeWater(
+	fillContinuousLakePath(
 		terrain,
-		Vector3.new((waterStartX + edgeX) / 2, waterSurfaceY, (campWaterSouthZ + edgeWaterNorthZ) / 2),
-		Vector2.new(edgeWidth, edgeWaterDepth),
-		0,
+		lakePath,
 		waterSurfaceY,
 		LAKE_WATER_DEPTH,
 		LAKE_BASIN_CLEAR_DEPTH,
 		LAKE_AIR_CLEARANCE_HEIGHT,
-		16
+		LAKE_SHORE_CLEAR_MARGIN
 	)
-	lake:SetAttribute("ExtendsToWorldEdge", true)
-	lake:SetAttribute("CampShorelineZ", campWaterSouthZ)
 
+	-- Widen the central swimming pocket without introducing another independent
+	-- water rectangle; these discs heavily overlap the same continuous body.
+	local swimmingPocket = {
+		{ position = center + Vector3.new(-95, 0, 85), radius = 175 },
+		{ position = center + Vector3.new(20, 0, 145), radius = 205 },
+		{ position = center + Vector3.new(115, 0, 115), radius = 175 },
+	}
+	fillContinuousLakePath(
+		terrain,
+		swimmingPocket,
+		waterSurfaceY,
+		LAKE_WATER_DEPTH,
+		LAKE_BASIN_CLEAR_DEPTH,
+		LAKE_AIR_CLEARANCE_HEIGHT,
+		LAKE_SHORE_CLEAR_MARGIN
+	)
+
+	lake:SetAttribute("ExtendsToWorldEdge", true)
+	lake:SetAttribute("ContinuousWaterBody", true)
+	lake:SetAttribute("OrganicShoreline", true)
 	lake:SetAttribute("WaterSurfaceDrop", LAKE_SURFACE_DROP)
 	lake:SetAttribute("WaterDepth", LAKE_WATER_DEPTH)
 	lake:SetAttribute("DeepBasinExcavated", true)
