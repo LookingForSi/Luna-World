@@ -127,6 +127,7 @@ MobService.MobSpawned = mobSpawnedEvent.Event
 MobService.HostileAction = hostileActionEvent.Event
 
 local MOB_NAMEPLATE_MAX_DISTANCE = 100
+local GLOBAL_MOB_MOVEMENT_MULTIPLIER = 1.2
 
 local function addMobPresentation(
 	model: Model,
@@ -138,10 +139,13 @@ local function addMobPresentation(
 	hitbox.Name = "TargetHitbox"
 	hitbox.Size = Vector3.new(
 		math.max(7, profile.size.X + 4),
-		math.max(8, profile.size.Y + 5),
+		math.max(5, profile.size.Y + 3),
 		math.max(7, profile.size.Z + 3)
 	)
-	hitbox.CFrame = rootPart.CFrame * CFrame.new(0, math.max(0.5, profile.size.Y * 0.12), 0)
+	-- Keep the generous click proxy aligned to the visible silhouette instead of
+	-- letting its extra height extend mostly below short mobs such as wolves.
+	local hitboxVerticalOffset = math.max(0, (hitbox.Size.Y - profile.size.Y) * 0.5)
+	hitbox.CFrame = rootPart.CFrame * CFrame.new(0, hitboxVerticalOffset, 0)
 	hitbox.Transparency = 1
 	hitbox.CanCollide = false
 	hitbox.CanTouch = false
@@ -201,7 +205,8 @@ local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
 	model:SetAttribute("PatrolRadius", spawn.patrolRadius)
 	model:SetAttribute("PatrolCycleSeconds", spawn.patrolCycleSeconds)
 	model:SetAttribute(CombatConfig.MobHomePositionAttribute, spawnCFrame.Position)
-	model:SetAttribute(CombatConfig.MobMovementSpeedAttribute, definition.chaseSpeed)
+	local movementSpeed = definition.chaseSpeed * GLOBAL_MOB_MOVEMENT_MULTIPLIER
+	model:SetAttribute(CombatConfig.MobMovementSpeedAttribute, movementSpeed)
 	model:SetAttribute(CombatConfig.MobOutgoingDamageMultiplierAttribute, 1)
 
 	local rootPart = Instance.new("Part")
@@ -219,7 +224,7 @@ local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
 	humanoid.RequiresNeck = false
 	humanoid.MaxHealth = definition.maxHealth
 	humanoid.Health = definition.maxHealth
-	humanoid.WalkSpeed = definition.chaseSpeed
+	humanoid.WalkSpeed = movementSpeed
 	humanoid.Parent = model
 
 	model.PrimaryPart = rootPart
