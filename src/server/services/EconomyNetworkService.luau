@@ -67,7 +67,10 @@ end
 function EconomyNetworkService.openFor(player: Player, mode: string): ()
 	local poiId = if mode == "Craft" then EconomyConfig.BlacksmithPoiId else EconomyConfig.MerchantPoiId
 	if mode ~= "Craft" and mode ~= "Merchant" then return end
-	if nearby(player, poiId) and PlayerDataService.isReady(player) then push(player); openEvent:FireClient(player, mode) end
+	if nearby(player, poiId) and PlayerDataService.isReady(player) then
+		push(player)
+		openEvent:FireClient(player, if mode == "Craft" then "DialogueBlacksmith" else "DialogueMerchant")
+	end
 end
 function EconomyNetworkService.start(): ()
 	if started then return end; started = true
