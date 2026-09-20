@@ -46,7 +46,7 @@ local function nearLivingNpc(player: Player, npcId: string): boolean
 end
 
 local function objectiveSnapshot(objective: any, progress: number): any
-	return { id=objective.id, kind=objective.kind, required=objective.required, progress=progress, mobId=objective.mobId, npcId=objective.npcId, poiId=objective.poiId, waypointPoiId=objective.waypointPoiId }
+	return { id=objective.id, displayText=objective.displayText, kind=objective.kind, required=objective.required, progress=progress, mobId=objective.mobId, npcId=objective.npcId, poiId=objective.poiId, waypointPoiId=objective.waypointPoiId }
 end
 
 local function createSnapshot(player: Player): any
@@ -99,12 +99,18 @@ function QuestService.openNpc(player: Player, npcId: string): ()
 	local profile = PlayerDataService.getProfileCopy(player)
 	if profile == nil then return end
 	local topics = {}
+	local message: string? = nil
 	for questId, definition in QuestDefinitions do
 		local record = profile.Quests[questId]
-		if QuestRules.isAvailable(profile.Quests, questId) and definition.giverNpcId == npcId then table.insert(topics, {kind="AcceptQuest",questId=questId,text="Принять: "..definition.displayName})
-		elseif record and record.State == "ReadyToTurnIn" and definition.turnInNpcId == npcId and not definition.autoTurnIn then table.insert(topics, {kind="TurnInQuest",questId=questId,text="Завершить: "..definition.displayName}) end
+		if QuestRules.isAvailable(profile.Quests, questId) and definition.giverNpcId == npcId then
+			if message == nil then message = definition.description end
+			table.insert(topics, {kind="AcceptQuest",questId=questId,text="Принять: "..definition.displayName})
+		elseif record and record.State == "ReadyToTurnIn" and definition.turnInNpcId == npcId and not definition.autoTurnIn then
+			if message == nil then message = "Похоже, ты справился. Расскажи, что удалось сделать." end
+			table.insert(topics, {kind="TurnInQuest",questId=questId,text="Завершить: "..definition.displayName})
+		end
 	end
-	dialogueEvent:FireClient(player, { npcId=npcId, displayName=NpcDefinitions[npcId].displayName, topics=topics })
+	dialogueEvent:FireClient(player, { npcId=npcId, displayName=NpcDefinitions[npcId].displayName, message=message, topics=topics })
 end
 
 local function validId(value: unknown): boolean return typeof(value)=="string" and #value > 0 and #value <= 64 end
