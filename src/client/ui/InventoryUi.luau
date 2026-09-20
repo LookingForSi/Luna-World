@@ -22,6 +22,7 @@ local equipButton: TextButton? = nil
 local unequipButton: TextButton? = nil
 local useButton: TextButton? = nil
 local discardButton: TextButton? = nil
+local toggleButton: TextButton? = nil
 local closeConnection: RBXScriptConnection? = nil
 local actionConnections: { RBXScriptConnection } = {}
 local currentSnapshot: any = nil
@@ -278,8 +279,15 @@ function InventoryUi.showResult(result: any): ()
 	end
 end
 
+local function setPanelOpen(open: boolean): ()
+	if root ~= nil then root.Visible = open end
+	if toggleButton ~= nil then
+		toggleButton.Text = if open then "ЗАКРЫТЬ [I]" else "ИНВЕНТАРЬ [I]"
+	end
+end
+
 function InventoryUi.toggle(): ()
-	if root ~= nil then root.Visible = not root.Visible end
+	if root ~= nil then setPanelOpen(not root.Visible) end
 end
 
 function InventoryUi.start(actionCallbacks: any): ()
@@ -301,6 +309,21 @@ function InventoryUi.start(actionCallbacks: any): ()
 	HudLayout.applyPanelStyle(panel)
 	panel.Visible = false
 	panel.Parent = gui
+	root = panel
+
+	toggleButton = makeButton(
+		gui,
+		"InventoryToggleButton",
+		"ИНВЕНТАРЬ [I]",
+		UDim2.new(1, -194, 0, 220),
+		UDim2.fromOffset(170, 38)
+	)
+	local inventoryToggle = toggleButton :: TextButton
+	inventoryToggle.AnchorPoint = Vector2.new(0, 0)
+	inventoryToggle.TextSize = 13
+	table.insert(actionConnections, inventoryToggle.Activated:Connect(function()
+		InventoryUi.toggle()
+	end))
 
 	makeLabel(panel, "ИНВЕНТАРЬ", UDim2.fromOffset(16, 8), UDim2.fromOffset(220, 28), 17)
 	lunaLabel = makeLabel(panel, "Luna: 0", UDim2.fromOffset(250, 8), UDim2.fromOffset(170, 28), 13)
@@ -308,7 +331,7 @@ function InventoryUi.start(actionCallbacks: any): ()
 
 	local close = makeButton(panel, "Close", "×", UDim2.new(1, -46, 0, 8), UDim2.fromOffset(32, 28))
 	close.TextSize = 18
-	closeConnection = close.Activated:Connect(function() panel.Visible = false end)
+	closeConnection = close.Activated:Connect(function() setPanelOpen(false) end)
 
 	local divider = Instance.new("Frame")
 	divider.Position = UDim2.fromOffset(16, 44)
@@ -385,7 +408,7 @@ function InventoryUi.start(actionCallbacks: any): ()
 	end))
 
 	screenGui = gui
-	root = panel
+	setPanelOpen(false)
 	rebuild()
 end
 
@@ -405,6 +428,7 @@ function InventoryUi.stop(): ()
 	unequipButton = nil
 	useButton = nil
 	discardButton = nil
+	toggleButton = nil
 	currentSnapshot = nil
 	selectedKind = nil
 	selectedIdentifier = nil
