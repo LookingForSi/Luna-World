@@ -860,7 +860,9 @@ function QuestController.start(): ()
 	blocker.Name = "ModalBlocker"
 	blocker.Size = UDim2.fromScale(1, 1)
 	blocker.BackgroundColor3 = Color3.new(0, 0, 0)
-	blocker.BackgroundTransparency = 0.45
+	-- Keep modal behaviour without a fullscreen dark veil. Each dialog/panel is
+	-- responsible for its own readable background.
+	blocker.BackgroundTransparency = 1
 	blocker.Text = ""
 	blocker.Active = true
 	blocker.Modal = true
@@ -875,6 +877,7 @@ function QuestController.start(): ()
 	dialogueFrame.Position = UDim2.fromScale(0.5, 0.48)
 	dialogueFrame.Size = UDim2.fromScale(0.42, 0.40)
 	HudLayout.applyPanelStyle(dialogueFrame)
+	dialogueFrame.BackgroundTransparency = 0.03
 	dialogueFrame.Visible = false
 	dialogueFrame.ZIndex = 10
 	dialogueFrame.Parent = rootGui
@@ -886,6 +889,7 @@ function QuestController.start(): ()
 	offerFrame.Position = UDim2.fromScale(0.5, 0.48)
 	offerFrame.Size = UDim2.fromOffset(560, 360)
 	HudLayout.applyPanelStyle(offerFrame)
+	offerFrame.BackgroundTransparency = 0.03
 	offerFrame.Visible = false
 	offerFrame.ZIndex = 20
 	offerFrame.Parent = rootGui
@@ -897,6 +901,7 @@ function QuestController.start(): ()
 	travelFrame.Position = UDim2.fromScale(0.5, 0.48)
 	travelFrame.Size = UDim2.fromOffset(520, 250)
 	HudLayout.applyPanelStyle(travelFrame)
+	travelFrame.BackgroundTransparency = 0.03
 	travelFrame.Visible = false
 	travelFrame.ZIndex = 24
 	travelFrame.Parent = rootGui
