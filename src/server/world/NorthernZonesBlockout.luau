@@ -345,9 +345,10 @@ local function prepareSpiderHollowTerrain(positions: { [string]: Vector3 })
 	for index, alpha in ipairs({ 0.42, 0.62, 0.80 }) do
 		local z = center.Z + northDistance * alpha
 		local rise = 42 + index * 13
+		local radius = 150 + index * 18
 		terrain:FillBall(
-			Vector3.new(center.X - 35 + index * 18, floorTopY + rise - 65, z),
-			150 + index * 18,
+			Vector3.new(center.X - 35 + index * 18, floorTopY + rise - radius, z),
+			radius,
 			if index >= 2 then Enum.Material.Rock else Enum.Material.Ground
 		)
 	end
