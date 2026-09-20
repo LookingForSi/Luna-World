@@ -6,6 +6,17 @@
 
 ## [Unreleased]
 
+### Playtest RC — consolidated build
+
+- Собрана единая playtest-сборка: Crafting World Pass, responsive mobile UI, Character Lobby, reordered LV1–14 mob route, Spider Hollow polish, swimming, lake/world-edge polish и full restore при level-up.
+- Character Lobby дополнительно защищён для playtest: Roblox auto-spawn отключается до world bootstrap, Studio nickname index работает без включённого API Services, creation modal адаптирован под phone portrait и показывает результат проверки nickname внутри окна.
+- Добавлена кнопка «Мой Roblox ник» и сохранена генерация случайного fantasy nickname.
+- Spider Hollow использует непрерывные изогнутые terrain-ridges вместо отдельных куч.
+- Озеро перестроено как единый глубокий swimmable water body: непрерывная плотная цепочка перекрывающихся Terrain.Water-сечений, единая вырезанная чаша, organic shoreline и продолжение воды к внешней границе мира.
+- Поднятая boundary-facing площадка Goblin Camp сохраняет высоту, но внутренний край переходит в длинный пологий terrain-склон вместо резкого обрыва.
+- При фактическом level-up CP, HP и class resource полностью восстанавливаются до новых максимумов; обычный XP без повышения уровня refill не даёт.
+
+
 ### Changed
 
 - Добавлен единый responsive layout для desktop, tablet и телефонов в portrait/landscape: HUD стал компактнее, модальные окна ограничиваются safe area, а торговля на узком экране переходит в вертикальный flow.
