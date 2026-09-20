@@ -7,6 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local WorldLayout = require(ReplicatedStorage.Shared.world.WorldLayout)
 local NpcDefinitions = require(ReplicatedStorage.Shared.definitions.NpcDefinitions)
+local HudLayout = require(script.Parent.Parent.ui.HudLayout)
 
 local QuestController = {}
 
@@ -75,7 +76,8 @@ local function normalizedMapPoint(position: Vector3): Vector2
 	local bounds = WorldLayout.WorldBounds
 	local x = (position.X - bounds.minX) / (bounds.maxX - bounds.minX)
 	local z = (position.Z - bounds.minZ) / (bounds.maxZ - bounds.minZ)
-	return Vector2.new(math.clamp(x, 0, 1), math.clamp(z, 0, 1))
+	-- World north is +Z. Rotate the authored X/Z view by 180° so north is at the top.
+	return Vector2.new(1 - math.clamp(x, 0, 1), 1 - math.clamp(z, 0, 1))
 end
 
 local function mapPosition(position: Vector3): UDim2
@@ -122,12 +124,16 @@ local function addZoneBlocks(parent: Instance): ()
 		local max = volume.center + volume.size / 2
 		local p1 = normalizedMapPoint(min)
 		local p2 = normalizedMapPoint(max)
+		local left = math.min(p1.X, p2.X)
+		local top = math.min(p1.Y, p2.Y)
+		local right = math.max(p1.X, p2.X)
+		local bottom = math.max(p1.Y, p2.Y)
 
 		local zone = Instance.new("Frame")
-		zone.Position = UDim2.fromScale(0.04 + p1.X * 0.92, 0.04 + p1.Y * 0.92)
+		zone.Position = UDim2.fromScale(0.04 + left * 0.92, 0.04 + top * 0.92)
 		zone.Size = UDim2.fromScale(
-			math.max(0.02, (p2.X - p1.X) * 0.92),
-			math.max(0.02, (p2.Y - p1.Y) * 0.92)
+			math.max(0.02, (right - left) * 0.92),
+			math.max(0.02, (bottom - top) * 0.92)
 		)
 		zone.BackgroundColor3 = if index % 2 == 0
 			then Color3.fromRGB(74, 88, 64)
@@ -225,13 +231,10 @@ local function buildMap(parent: ScreenGui): Frame
 	title.Font = Enum.Font.GothamBold
 	title.ZIndex = 22
 
-	local hint = makeText(frame, "M — закрыть", 11)
-	hint.AnchorPoint = Vector2.new(1, 0)
-	hint.Position = UDim2.new(1, -16, 0, 15)
-	hint.Size = UDim2.fromOffset(90, 20)
-	hint.TextXAlignment = Enum.TextXAlignment.Right
-	hint.TextTransparency = 0.25
-	hint.ZIndex = 22
+	local close = HudLayout.makeCloseButton(frame, 24)
+	table.insert(connections, close.Activated:Connect(function()
+		QuestController.toggleMap()
+	end))
 
 	local canvas = Instance.new("Frame")
 	canvas.Name = "MapCanvas"
@@ -244,6 +247,14 @@ local function buildMap(parent: ScreenGui): Frame
 	canvas.ZIndex = 21
 	canvas.Parent = frame
 	mapCanvas = canvas
+
+	local north = makeText(canvas, "N ↑", 12)
+	north.AnchorPoint = Vector2.new(0.5, 0)
+	north.Position = UDim2.fromScale(0.5, 0.01)
+	north.Size = UDim2.fromOffset(42, 20)
+	north.TextXAlignment = Enum.TextXAlignment.Center
+	north.TextColor3 = Color3.fromRGB(220, 220, 210)
+	north.ZIndex = 10
 
 	addZoneBlocks(canvas)
 	addRiver(canvas)
@@ -391,29 +402,41 @@ local function openDialogue(value: any): ()
 	clearChildren(dialogue)
 	dialogue.Visible = true
 
+	local close = HudLayout.makeCloseButton(dialogue, 12)
+	table.insert(connections, close.Activated:Connect(function()
+		if dialogue ~= nil then dialogue.Visible = false end
+	end))
+
+	local content = Instance.new("Frame")
+	content.Name = "DialogueContent"
+	content.Position = UDim2.fromOffset(16, 14)
+	content.Size = UDim2.new(1, -64, 1, -28)
+	content.BackgroundTransparency = 1
+	content.Parent = dialogue
+
 	local layout = Instance.new("UIListLayout")
 	layout.Padding = UDim.new(0, 8)
-	layout.Parent = dialogue
+	layout.Parent = content
 
-	local header = makeText(dialogue, "ДИАЛОГ — " .. string.upper(value.displayName), 18)
-	header.Size = UDim2.new(1, -16, 0, 42)
+	local header = makeText(content, "ДИАЛОГ — " .. string.upper(value.displayName), 18)
+	header.Size = UDim2.new(1, 0, 0, 42)
 	header.Font = Enum.Font.GothamBold
 
 	if typeof(value.message) == "string" and value.message ~= "" then
-		local body = makeText(dialogue, value.message, 14)
-		body.Size = UDim2.new(1, -16, 0, 92)
+		local body = makeText(content, value.message, 14)
+		body.Size = UDim2.new(1, 0, 0, 92)
 		body.TextYAlignment = Enum.TextYAlignment.Top
 	end
 
 	for _, topic in value.topics do
 		local button = Instance.new("TextButton")
-		button.Size = UDim2.new(1, -16, 0, 45)
+		button.Size = UDim2.new(1, 0, 0, 45)
 		button.BackgroundColor3 = Color3.fromRGB(48, 52, 61)
 		button.TextColor3 = Color3.fromRGB(235, 220, 180)
 		button.Font = Enum.Font.GothamBold
 		button.TextSize = 14
 		button.Text = topic.text
-		button.Parent = dialogue
+		button.Parent = content
 
 		table.insert(connections, button.Activated:Connect(function()
 			if topic.kind == "AcceptQuest" then
@@ -423,14 +446,6 @@ local function openDialogue(value: any): ()
 			end
 		end))
 	end
-
-	local close = Instance.new("TextButton")
-	close.Size = UDim2.new(1, -16, 0, 36)
-	close.Text = "Закрыть"
-	close.Parent = dialogue
-	table.insert(connections, close.Activated:Connect(function()
-		if dialogue ~= nil then dialogue.Visible = false end
-	end))
 end
 
 local function updateMapAndWaypoint(): ()
