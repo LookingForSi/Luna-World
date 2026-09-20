@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### dev0.2 — Mob route rebalance
+
+- Open-world progression is reordered to read as Young Wolves → Wolves → Goblins → Spider Hollow → Dark Woodland → Cemetery/Shrine → Ancient Approach, with LV15 still reserved for Ruins of Selene.
+- Spider Hollow moved from the old LV4–7 band to LV6–8: Venom Spider is now LV6 and Brood Spider LV8, with higher HP/defenses/damage/XP.
+- Spider-family mobs are passive and non-social: they do not initiate combat and do not call nearby spiders, so their threat comes from durability, magic defense and poison once engaged.
+- Dark Woodland now starts at LV9; Cemetery and Fallen Shrine were shifted one tier upward to preserve clearer spacing through LV14.
+
 ### dev0.2 — Economy usability / crafting planning
 
 - Стартовое Newbie-оружие приведено к классовой схеме: Рыцарь — «Учебный меч», Следопыт — «Учебный лук», Мистик — «Учебный посох»; Studio-переключение класса теперь атомарно обновляет persistent archetype и экипирует соответствующее стартовое оружие.
