@@ -39,5 +39,9 @@ assert "HudLayout.makeCloseButton(questOffer" in quest
 assert "blocker.Modal = true" in quest
 assert "blocker.Modal = true" in economy
 assert "blocker.Modal = true" in inventory
+assert "blocker.BackgroundTransparency = 1" in quest
+assert "blocker.BackgroundTransparency = 1" in economy
+assert "blocker.BackgroundTransparency = 1" in inventory
+assert "screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling" in economy
 
 print("Responsive UI contract: PASS")
