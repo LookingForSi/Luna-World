@@ -186,10 +186,10 @@ function ActionBar.start(
 	local auto = autoButton :: TextButton
 	auto.Position = UDim2.new(0, 0, 0, 42)
 
-	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.32, -2, 0, 48))
+	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.32, -2, 0, 44))
 	clearButton.Position = UDim2.new(0, 0, 0, 90)
 
-	attackButton = makeButton(content, "Attack", "АТАКА", UDim2.new(0.66, -2, 0, if UserInputService.TouchEnabled then 102 else 96))
+	attackButton = makeButton(content, "Attack", "АТАКА", UDim2.new(0.66, -2, 0, if UserInputService.TouchEnabled then 104 else 92))
 	local attack = attackButton :: TextButton
 	attack.Position = UDim2.new(0.34, 0, 0, 42)
 	attack.TextSize = 19
