@@ -20,6 +20,11 @@ world = read("src/server/services/EconomyWorldService.luau")
 client = read("src/client/ui/EconomyUi.luau")
 main = read("src/server/main.server.luau")
 
+require(loot, "local function resourceEntry", "material drop-rate helper is missing")
+require(loot, "chance * 0.5", "crafting material drop chances must be halved")
+if 'entry("material_' in loot:
+    raise AssertionError("crafting material entries must use the reduced resource drop helper")
+
 for grade in ('"Newbie"', '"NoGrade"', '"Future"'):
     require(items, grade, f"missing item grade {grade}")
 for item_id in ("weapon_iron_blade", "weapon_hunter_bow", "weapon_rune_staff", "armor_guard_head",
