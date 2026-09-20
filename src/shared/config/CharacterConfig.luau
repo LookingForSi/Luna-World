@@ -7,5 +7,5 @@ return table.freeze({
 	RequestWindowSeconds = 10,
 	RequestsPerWindow = 12,
 	DeleteConfirmationPrefix = "DELETE:",
-	BuildLabel = "dev0.3",
+	BuildLabel = "dev0.3-playtest-rc1",
 })
