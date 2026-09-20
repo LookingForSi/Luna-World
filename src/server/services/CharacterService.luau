@@ -175,7 +175,11 @@ function CharacterService.start(storeOverride: any?): ()
 					response(result, player, id, action, false, "IdentityAlreadyComplete")
 					return
 				end
-				local canonical = normalizeNickname(p.nickname)
+				local canonical, canonicalError = normalizeNickname(p.nickname)
+				if canonical == nil then
+					response(result, player, id, action, false, canonicalError or "InvalidNickname")
+					return
+				end
 				local display = displayNickname(p.nickname)
 				if display == nil then
 					response(result, player, id, action, false, "InvalidNickname")
@@ -211,12 +215,16 @@ function CharacterService.start(storeOverride: any?): ()
 				return
 			end
 			if action == "Create" then
-				local valid, reason = CharacterRules.validateCreation(p)
+				local valid, reason = CharacterRules.validateCreation(p, looseStudioNicknames())
 				if not valid then
 					response(result, player, id, action, false, reason)
 					return
 				end
-				local canonical = normalizeNickname(p.nickname)
+				local canonical, canonicalError = normalizeNickname(p.nickname)
+				if canonical == nil then
+					response(result, player, id, action, false, canonicalError or "InvalidNickname")
+					return
+				end
 				local display = displayNickname(p.nickname)
 				if display == nil then
 					response(result, player, id, action, false, "InvalidNickname")
