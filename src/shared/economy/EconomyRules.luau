@@ -8,7 +8,7 @@ local ProfileSchema = require(script.Parent.Parent.persistence.ProfileSchema)
 local PersistenceTypes = require(script.Parent.Parent.types.PersistenceTypes)
 
 local EconomyRules = {}
-export type FailureReason = "InvalidItem" | "InvalidCraft" | "InvalidQuantity" | "NotForSale" | "NotOwned" | "EquippedItem" | "InsufficientLuna" | "InsufficientMaterials" | "InventoryFull" | "DuplicateInstance"
+export type FailureReason = "InvalidItem" | "InvalidCraft" | "InvalidQuantity" | "NotForSale" | "NotOwned" | "EquippedItem" | "LevelTooLow" | "InsufficientLuna" | "InsufficientMaterials" | "InventoryFull" | "DuplicateInstance"
 local stock: { [string]: boolean } = {}
 for _, itemId in MerchantDefinitions.Stock do stock[itemId] = true end
 
@@ -36,7 +36,7 @@ end
 
 function EconomyRules.expectedCraftRetail(recipeId: string): number?
 	local cost = EconomyRules.craftCost(recipeId)
-	return if cost == nil then nil else math.floor(cost * MerchantDefinitions.CraftMarkup + 0.5)
+	return if cost == nil then nil else math.floor((cost / CraftingDefinitions[recipeId].outputQuantity) * MerchantDefinitions.CraftMarkup + 0.5)
 end
 
 local function ownedQuantity(profile: PersistenceTypes.Profile, itemId: string): number
@@ -130,6 +130,7 @@ end
 function EconomyRules.craft(profile: PersistenceTypes.Profile, recipeId: string, generateId: () -> string): (PersistenceTypes.Profile?, FailureReason?)
 	local recipe = CraftingDefinitions[recipeId]
 	if recipe == nil then return nil, "InvalidCraft" end
+	if profile.Level < recipe.requiredLevel then return nil, "LevelTooLow" end
 	if profile.Luna < recipe.fee then return nil, "InsufficientLuna" end
 	for _, ingredient in recipe.ingredients do
 		if ownedQuantity(profile, ingredient.itemId) < ingredient.quantity then return nil, "InsufficientMaterials" end
@@ -140,7 +141,7 @@ function EconomyRules.craft(profile: PersistenceTypes.Profile, recipeId: string,
 		if after == nil then return nil, "InsufficientMaterials" end
 		nextProfile = after
 	end
-	local afterAdd, reason = InventoryRules.add(nextProfile, recipe.outputItemId, 1, generateId)
+	local afterAdd, reason = InventoryRules.add(nextProfile, recipe.outputItemId, recipe.outputQuantity, generateId)
 	if afterAdd == nil then return nil, reason :: FailureReason end
 	afterAdd.Luna -= recipe.fee
 	return afterAdd, nil

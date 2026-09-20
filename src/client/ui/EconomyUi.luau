@@ -173,7 +173,7 @@ local function addTopic(text: string, nextMode: string): ()
 end
 
 local function dialogueModeForCurrent(): string
-	return if mode == "Craft" then "DialogueBlacksmith" else "DialogueMerchant"
+	return if string.sub(mode, 1, 5) == "Craft" then "DialogueBlacksmith" else "DialogueMerchant"
 end
 
 local function addBackToDialogue(): ()
@@ -194,7 +194,10 @@ local function rebuildDialogue(): boolean
 		return true
 	elseif mode == "DialogueBlacksmith" then
 		title.Text = "ДИАЛОГ — КУЗНЕЦ"
-		addTopic("Ковать", "Craft")
+		addTopic("Ковать — Рыцарь", "CraftKnight")
+		addTopic("Ковать — Следопыт", "CraftRanger")
+		addTopic("Ковать — Мистик", "CraftMystic")
+		addTopic("Обработать материалы", "CraftMaterial")
 		return true
 	end
 	return false
@@ -330,16 +333,21 @@ rebuild = function(): ()
 
 	addBackToDialogue()
 
-	if mode == "Craft" then
-		if title ~= nil then title.Text = "КУЗНЕЦ — КОВАТЬ" end
+	if string.sub(mode, 1, 5) == "Craft" then
+		local discipline = string.sub(mode, 6)
+		local disciplineNames = { Knight = "РЫЦАРЬ", Ranger = "СЛЕДОПЫТ", Mystic = "МИСТИК" }
+		if title ~= nil then title.Text = if discipline == "Material" then "КУЗНЕЦ — ОБРАБОТКА" else "КУЗНЕЦ — " .. disciplineNames[discipline] end
 		for _, entry in snapshot.crafts do
 			local recipe = CraftingDefinitions[entry.craftId]
+			if recipe.discipline ~= discipline and not (recipe.outputItemId == "accessory_silver_moon_charm" and discipline ~= "Material") then continue end
 			local output = ItemDefinitions[recipe.outputItemId]
 			local parts = {}
-			local available = snapshot.luna >= recipe.fee
+			local levelReady = snapshot.level >= recipe.requiredLevel
+			local lunaReady = snapshot.luna >= recipe.fee
+			local materialsReady = true
 			for _, material in recipe.ingredients do
 				local have = owned(material.itemId)
-				if have < material.quantity then available = false end
+				if have < material.quantity then materialsReady = false end
 				table.insert(parts, string.format(
 					"%s %d/%d",
 					ItemDefinitions[material.itemId].displayName,
@@ -347,19 +355,28 @@ rebuild = function(): ()
 					material.quantity
 				))
 			end
+			local available = levelReady and lunaReady and materialsReady
+			local state = if not levelReady then "Нужен уровень" else if not lunaReady then "Не хватает Luna" else if not materialsReady then "Не хватает материалов" else "Доступно"
+			local outputSuffix = if recipe.outputQuantity > 1 then string.format(" ×%d", recipe.outputQuantity) else ""
+			local details = if discipline == "Material"
+				then string.format("%s → %s%s · %d Luna", table.concat(parts, ", "), output.displayName, outputSuffix, recipe.fee)
+				else string.format("%s\n%s · %d Luna", statSummary(output), table.concat(parts, ", "), recipe.fee)
 			local row = button(list, string.format(
-				"%s [%s] · %s · %d Luna\n%s",
+				"%s%s [%s] · LV%d\n%s · %s",
 				output.displayName,
+				outputSuffix,
 				output.grade,
-				statSummary(output),
-				recipe.fee,
-				table.concat(parts, ", ")
+				recipe.requiredLevel,
+				details,
+				state
 			))
+			row.Size = UDim2.new(1, -12, 0, 68)
+			row.Active = available
 			row.AutoButtonColor = available
 			row.BackgroundTransparency = if available then 0 else 0.45
-			table.insert(rowConnections, row.Activated:Connect(function()
-				callbacks.craft(entry.craftId)
-			end))
+			if available then
+				table.insert(rowConnections, row.Activated:Connect(function() callbacks.craft(entry.craftId) end))
+			end
 		end
 	elseif mode == "Buy" then
 		if title ~= nil then title.Text = "ТОРГОВЕЦ — КУПИТЬ" end
@@ -409,6 +426,7 @@ function EconomyUi.showResult(value: any): ()
 			TooFar = "Подойдите ближе к NPC.",
 			InsufficientLuna = "Недостаточно Luna.",
 			InsufficientMaterials = "Не хватает материалов.",
+			LevelTooLow = "Недостаточный уровень.",
 			InventoryFull = "Инвентарь заполнен.",
 			EquippedItem = "Сначала снимите предмет.",
 			NotForSale = "Этот предмет не продаётся.",

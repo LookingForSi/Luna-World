@@ -307,6 +307,8 @@ Roblox platform services используются до тех пор, пока �
 
 `CraftingDefinitions`, `MerchantDefinitions` и `ItemDefinitions` являются единственным shared источником рецептов, stock, grade и reference retail. `EconomyRules` выполняет чистые clone-based buy/sell/craft переходы, а `EconomyService` применяет готовый результат одной validated mutation профиля. Клиент никогда не передаёт цену, fee, состав рецепта или output.
 
+Рецепт дополнительно задаёт stable `id`, дисциплину (`Knight`, `Ranger`, `Mystic`, `Material`), требуемый уровень, количество результата и стабильный порядок. `EconomyRules` проверяет уровень, Luna и материалы на сервере и атомарно выдаёт `outputQuantity`; snapshot передаёт эти metadata клиенту. Обработанные материалы и готовые No-Grade классовые наборы исключены из обычного stock торговца: их основной источник — кузнец.
+
 `EconomyNetworkService` владеет schema/rate/profile/distance validation для `EconomyRequest`; `EconomyWorldService` владеет только lifecycle village prompts. `InventoryService` обрабатывает data-driven return effect через тот же tagged settlement anchor, что и respawn.
 
 ## 15. Quest vertical slice dev0.2

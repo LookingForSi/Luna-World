@@ -74,9 +74,15 @@ function EconomyService.createSnapshot(player: Player): any?
 	end
 	local crafts = {}
 	for craftId, recipe in CraftingDefinitions do
-		table.insert(crafts, { craftId = craftId, outputItemId = recipe.outputItemId, fee = recipe.fee, ingredients = recipe.ingredients })
+		table.insert(crafts, { craftId = craftId, outputItemId = recipe.outputItemId, outputQuantity = recipe.outputQuantity, discipline = recipe.discipline, requiredLevel = recipe.requiredLevel, sortOrder = recipe.sortOrder, fee = recipe.fee, ingredients = recipe.ingredients })
 	end
-	table.sort(crafts, function(a, b) return a.craftId < b.craftId end)
+	local disciplineOrder = { Knight = 1, Ranger = 2, Mystic = 3, Material = 4 }
+	table.sort(crafts, function(a, b)
+		local ad, bd = disciplineOrder[a.discipline], disciplineOrder[b.discipline]
+		if ad ~= bd then return ad < bd end
+		if a.sortOrder ~= b.sortOrder then return a.sortOrder < b.sortOrder end
+		return a.craftId < b.craftId
+	end)
 	return { luna = profile.Luna, level = profile.Level, inventory = inventory, stock = stock, crafts = crafts }
 end
 

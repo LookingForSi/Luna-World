@@ -1,6 +1,7 @@
 --!strict
 
 local EconomyRules = require(script.Parent.EconomyRules)
+local CraftingDefinitions = require(script.Parent.Parent.definitions.CraftingDefinitions)
 local ItemDefinitions = require(script.Parent.Parent.definitions.ItemDefinitions)
 local LootTableDefinitions = require(script.Parent.Parent.definitions.LootTableDefinitions)
 
@@ -14,9 +15,9 @@ EconomyBalance.NaturalRoute = table.freeze({
 	loot_moonbound_warden = 1,
 })
 EconomyBalance.LevelSixRoute = table.freeze({
-	loot_young_wolf = 5, loot_grey_wolf = 5, loot_wolf_pack_leader = 1,
-	loot_goblin_scout = 6, loot_goblin_warrior = 3, loot_goblin_shaman = 1,
-	loot_spider = 5, loot_brood_spider = 1,
+	loot_young_wolf = 12, loot_grey_wolf = 12, loot_wolf_pack_leader = 2,
+	loot_spider = 14, loot_brood_spider = 3,
+	loot_goblin_scout = 24, loot_goblin_warrior = 14, loot_goblin_shaman = 14,
 })
 
 function EconomyBalance.expectedRouteValue(route: { [string]: number }): number
@@ -34,13 +35,35 @@ function EconomyBalance.expectedRouteValue(route: { [string]: number }): number
 	return value
 end
 
+function EconomyBalance.expectedDirectLuna(route: { [string]: number }): number
+	local value = 0
+	for lootId, kills in route do
+		local loot = LootTableDefinitions[lootId]
+		value += ((loot.lunaMin + loot.lunaMax) / 2) * kills
+	end
+	return value
+end
+
 function EconomyBalance.fullSetCraftCost(archetypeId: string): number
 	local weapon = if archetypeId == "ranger" then "craft_weapon_hunter_bow" else if archetypeId == "mystic" then "craft_weapon_rune_staff" else "craft_weapon_iron_blade"
+	local prefix = if archetypeId == "ranger" then "craft_armor_hunter_" else if archetypeId == "mystic" then "craft_armor_adept_" else "craft_armor_guard_"
 	local total = 0
-	for _, id in { weapon, "craft_armor_guard_head", "craft_armor_guard_chest", "craft_armor_guard_gloves", "craft_armor_guard_boots", "craft_accessory_silver_moon_charm" } do
+	for _, id in { weapon, prefix .. "head", prefix .. "chest", prefix .. "gloves", prefix .. "boots" } do
 		total += EconomyRules.craftCost(id) or 0
 	end
 	return total
+end
+
+function EconomyBalance.expectedRouteItems(route: { [string]: number }): { [string]: number }
+	local items = {}
+	for lootId, kills in route do
+		for _, entry in LootTableDefinitions[lootId].entries do
+			if ItemDefinitions[entry.itemId].category == "Material" then
+				items[entry.itemId] = (items[entry.itemId] or 0) + entry.chance * ((entry.minQuantity + entry.maxQuantity) / 2) * kills
+			end
+		end
+	end
+	return items
 end
 
 return table.freeze(EconomyBalance)
