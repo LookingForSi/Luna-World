@@ -18,6 +18,7 @@ local autoButton: TextButton? = nil
 local attackButton: TextButton? = nil
 local inventoryButton: TextButton? = nil
 local mapButton: TextButton? = nil
+local questButton: TextButton? = nil
 local autoConnection: RBXScriptConnection? = nil
 local renderConnection: RBXScriptConnection? = nil
 local inputTypeConnection: RBXScriptConnection? = nil
@@ -66,12 +67,23 @@ local function mapBindingText(): string
 	return "КАРТА [M]"
 end
 
+local function questBindingText(): string
+	local inputType = UserInputService:GetLastInputType()
+	if inputType == Enum.UserInputType.Touch or string.find(inputType.Name, "Gamepad") ~= nil then
+		return "ЗАДАНИЯ"
+	end
+	return "ЗАДАНИЯ [O]"
+end
+
 local function updateBindingHints(): ()
 	if inventoryButton ~= nil then
 		inventoryButton.Text = inventoryBindingText()
 	end
 	if mapButton ~= nil then
 		mapButton.Text = mapBindingText()
+	end
+	if questButton ~= nil then
+		questButton.Text = questBindingText()
 	end
 end
 
@@ -181,7 +193,8 @@ function ActionBar.start(
 	onSkill: (string) -> (),
 	onClearTarget: () -> (),
 	onInventoryToggle: () -> (),
-	onMapToggle: () -> ()
+	onMapToggle: () -> (),
+	onQuestToggle: () -> ()
 ): ()
 	ActionBar.stop()
 
@@ -211,11 +224,16 @@ function ActionBar.start(
 	content.BackgroundTransparency = 1
 	content.Parent = frame
 
-	mapButton = makeButton(content, "Map", mapBindingText(), UDim2.new(0.32, -2, 0, 36))
+	mapButton = makeButton(content, "Map", mapBindingText(), UDim2.new(0.31, -2, 0, 36))
 	local mapToggle = mapButton :: TextButton
-	inventoryButton = makeButton(content, "Inventory", inventoryBindingText(), UDim2.new(0.66, -2, 0, 36))
+
+	questButton = makeButton(content, "Quests", questBindingText(), UDim2.new(0.31, -2, 0, 36))
+	local quests = questButton :: TextButton
+	quests.Position = UDim2.new(0.345, 0, 0, 0)
+
+	inventoryButton = makeButton(content, "Inventory", inventoryBindingText(), UDim2.new(0.31, -2, 0, 36))
 	local inventory = inventoryButton :: TextButton
-	inventory.Position = UDim2.new(0.34, 0, 0, 0)
+	inventory.Position = UDim2.new(0.69, 0, 0, 0)
 
 	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.32, -2, 0, 44))
 	local auto = autoButton :: TextButton
@@ -239,6 +257,7 @@ function ActionBar.start(
 
 	table.insert(buttonConnections, inventory.Activated:Connect(onInventoryToggle))
 	table.insert(buttonConnections, mapToggle.Activated:Connect(onMapToggle))
+	table.insert(buttonConnections, quests.Activated:Connect(onQuestToggle))
 	table.insert(buttonConnections, attack.Activated:Connect(onAttack))
 	table.insert(buttonConnections, auto.Activated:Connect(onAutoToggle))
 	table.insert(buttonConnections, clearButton.Activated:Connect(onClearTarget))
@@ -262,7 +281,7 @@ function ActionBar.stop(): ()
 	table.clear(skillButtons)
 	table.clear(skillResourceTypes)
 	if screenGui ~= nil then screenGui:Destroy() end
-	screenGui, autoButton, attackButton, inventoryButton, mapButton = nil, nil, nil, nil, nil
+	screenGui, autoButton, attackButton, inventoryButton, mapButton, questButton = nil, nil, nil, nil, nil, nil
 end
 
 return ActionBar
