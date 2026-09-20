@@ -3,7 +3,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local QuestDefinitions = require(ReplicatedStorage.Shared.definitions.QuestDefinitions)
 local NpcDefinitions = require(ReplicatedStorage.Shared.definitions.NpcDefinitions)
+local TravelDefinitions = require(ReplicatedStorage.Shared.definitions.TravelDefinitions)
 local QuestRules = require(ReplicatedStorage.Shared.quests.QuestRules)
+local TravelRules = require(ReplicatedStorage.Shared.travel.TravelRules)
 local WorldLayout = require(ReplicatedStorage.Shared.world.WorldLayout)
 local MobService = require(script.Parent.MobService)
 local PlayerDataService = require(script.Parent.PlayerDataService)
@@ -145,6 +147,24 @@ function QuestService.openNpc(player: Player, npcId: string): ()
 				rewardXP=definition.rewardXP,
 				rewardLuna=definition.rewardLuna,
 			})
+		end
+	end
+
+	for travelId, definition in TravelDefinitions do
+		if TravelRules.isUnlocked(profile.Quests, definition) then
+			local destinationNpcId = TravelRules.destinationNpcId(definition, npcId)
+			local destination = if destinationNpcId ~= nil then NpcDefinitions[destinationNpcId] else nil
+			if destination ~= nil then
+				table.insert(topics, {
+					kind="Travel",
+					travelId=travelId,
+					text="Телепорт",
+					destinationNpcId=destinationNpcId,
+					destinationName=destination.displayName,
+					routeName=definition.displayName,
+					costLuna=TravelRules.costLuna(definition),
+				})
+			end
 		end
 	end
 	dialogueEvent:FireClient(player, {
