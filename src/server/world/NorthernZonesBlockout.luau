@@ -553,195 +553,105 @@ local function createMoonfallLandmarks(parent: Instance, positions: { [string]: 
 	P.groundedPart(props, "CrossroadsPost", crossroads + Vector3.new(12, 0, -8), Vector3.new(3, 13, 3), Enum.Material.Wood, COLORS.darkTimber)
 end
 
-local function prepareGoblinCampBoundaryShelf(positions: { [string]: Vector3 })
+local function shapeGoblinCemeteryLakeHillCliff(center: Vector3, waterSurfaceY: number)
 	local terrain = Workspace.Terrain
-	local center = positions.poi_goblin_camp
-	local bounds = WorldLayout.WorldBounds
-	local campGround = Grounding.surfaceAt(center)
-	local shelfTopY = campGround.Y
-
-	-- Keep the raised camp-side plateau at its accepted elevation all the way to
-	-- the outer map boundary. The inner/lake-facing edge is then blended down with
-	-- broad overlapping terrain caps instead of ending as a vertical FillBlock wall.
-	local shelfStartX = center.X + 145
-	local shelfEndX = bounds.maxX - 12
-	local shelfCenterX = (shelfStartX + shelfEndX) / 2
-	local shelfWidth = shelfEndX - shelfStartX
-	local shelfMinZ = center.Z - 250
-	local shelfMaxZ = center.Z + 165
-	local shelfDepth = shelfMaxZ - shelfMinZ
-
-	terrain:FillBlock(
-		CFrame.new(shelfCenterX, shelfTopY + 28, (shelfMinZ + shelfMaxZ) / 2),
-		Vector3.new(shelfWidth, 56, shelfDepth),
-		Enum.Material.Air
-	)
-	terrain:FillBlock(
-		CFrame.new(shelfCenterX, shelfTopY - 45, (shelfMinZ + shelfMaxZ) / 2),
-		Vector3.new(shelfWidth, 90, shelfDepth),
-		Enum.Material.Grass
-	)
-
-	-- A continuous gentle shoulder from plateau level down toward the lake.
-	-- Dense overlap makes the result read as one long natural slope rather than
-	-- terraces or a row of separate mounds.
-	local slopeRadius = 105
-	local slopeRows = {
-		{ x = shelfStartX + 25, top = shelfTopY + 1 },
-		{ x = shelfStartX - 35, top = shelfTopY - 5 },
-		{ x = shelfStartX - 95, top = shelfTopY - 13 },
-		{ x = shelfStartX - 155, top = shelfTopY - 23 },
-		{ x = shelfStartX - 205, top = shelfTopY - 32 },
+	local cliffSegments = {
+		{ xOffset = 300, zOffset = -35, zSize = 150 },
+		{ xOffset = 320, zOffset = 105, zSize = 170 },
+		{ xOffset = 285, zOffset = 235, zSize = 135 },
 	}
-	for _, row in ipairs(slopeRows) do
-		for z = shelfMinZ - 25, shelfMaxZ + 25, 58 do
-			terrain:FillBall(
-				Vector3.new(row.x, row.top - slopeRadius, z),
-				slopeRadius,
-				Enum.Material.Grass
-			)
-		end
+
+	for _, spec in ipairs(cliffSegments) do
+		local hillSample = Grounding.surfaceAt(
+			center + Vector3.new(spec.xOffset + 70, 0, spec.zOffset)
+		)
+		local cliffBottomY = waterSurfaceY - 5
+		local cliffTopY = math.max(hillSample.Y + 6, waterSurfaceY + 28)
+		local cliffHeight = cliffTopY - cliffBottomY
+
+		-- Cut away the grassy shelf on the lake side so the hill meets the water
+		-- as a readable vertical bank rather than appearing to hover above it.
+		terrain:FillBlock(
+			CFrame.new(
+				center.X + spec.xOffset - 24,
+				cliffBottomY + cliffHeight / 2,
+				center.Z + spec.zOffset
+			),
+			Vector3.new(64, cliffHeight, spec.zSize),
+			Enum.Material.Air
+		)
+		terrain:FillBlock(
+			CFrame.new(
+				center.X + spec.xOffset + 10,
+				cliffBottomY + cliffHeight / 2,
+				center.Z + spec.zOffset
+			),
+			Vector3.new(20, cliffHeight, spec.zSize),
+			Enum.Material.Rock
+		)
 	end
-end
-
-local function fillFlatLakeSlab(
-	terrain: Terrain,
-	westX: number,
-	eastX: number,
-	centerZ: number,
-	length: number,
-	waterSurfaceY: number,
-	waterDepth: number,
-	clearDepth: number,
-	airClearance: number,
-	shoreWaterOverlap: number,
-	bedOverlap: number,
-	bounds: { minX: number, maxX: number, minZ: number, maxZ: number }
-)
-	-- Keep the accepted flat-water approach, but build a real basin around it.
-	-- Earlier revisions cleared 22 studs wider than the water and 12 studs deeper
-	-- than the water without restoring terrain; that literally left air trenches
-	-- at the shore and an air pocket underneath the lake.
-	local safeWest = math.max(bounds.minX + 20, westX)
-	local safeEast = math.min(bounds.maxX - 20, eastX)
-	local safeHalfLength = math.max(8, math.min(
-		length / 2,
-		bounds.maxZ - 20 - centerZ,
-		centerZ - (bounds.minZ + 20)
-	))
-	if safeEast <= safeWest or safeHalfLength <= 0 then return end
-
-	local clearWidth = safeEast - safeWest
-	local clearHeight = clearDepth + airClearance
-	local clearCenterY = waterSurfaceY + (airClearance - clearDepth) / 2
-	terrain:FillBlock(
-		CFrame.new((safeWest + safeEast) / 2, clearCenterY, centerZ),
-		Vector3.new(clearWidth, clearHeight, safeHalfLength * 2),
-		Enum.Material.Air
-	)
-
-	-- Restore a continuous mud lakebed from the bottom of the excavated basin up
-	-- to the water volume. A small vertical overlap is intentional: the following
-	-- Water fill replaces the overlap voxels and guarantees no air seam remains.
-	local basinBottomY = waterSurfaceY - clearDepth
-	local waterBottomY = waterSurfaceY - waterDepth
-	local bedBottomY = basinBottomY - bedOverlap
-	local bedTopY = waterBottomY + bedOverlap
-	terrain:FillBlock(
-		CFrame.new(
-			(safeWest + safeEast) / 2,
-			(bedBottomY + bedTopY) / 2,
-			centerZ
-		),
-		Vector3.new(clearWidth, bedTopY - bedBottomY, safeHalfLength * 2),
-		Enum.Material.Mud
-	)
-
-	-- Let water overlap a few studs under the uncut bank. This hides Terrain voxel
-	-- quantisation at the waterline without opening a trench around the lake.
-	local waterWest = math.max(bounds.minX + 12, safeWest - shoreWaterOverlap)
-	local waterEast = math.min(bounds.maxX - 12, safeEast + shoreWaterOverlap)
-	terrain:FillBlock(
-		CFrame.new((waterWest + waterEast) / 2, waterSurfaceY - waterDepth / 2, centerZ),
-		Vector3.new(waterEast - waterWest, waterDepth, safeHalfLength * 2),
-		Enum.Material.Water
-	)
 end
 
 local function createGoblinCemeteryLake(parent: Instance, positions: { [string]: Vector3 })
 	local lake = P.model(parent, "GoblinCemeteryLake")
-	lake:SetAttribute("Purpose", "SwimmableWater")
+	lake:SetAttribute("Purpose", "TraversalBarrier")
 	local terrain = Workspace.Terrain
 
 	local goblin = positions.poi_goblin_camp
 	local cemetery = positions.poi_old_cemetery
 	local center = goblin:Lerp(cemetery, 0.52) + Vector3.new(85, 0, 0)
 	local ground = Grounding.surfaceAt(center)
-	local bounds = WorldLayout.WorldBounds
 	local LAKE_SURFACE_DROP = 8
-	local LAKE_WATER_DEPTH = 30
-	local LAKE_BASIN_CLEAR_DEPTH = 42
-	local LAKE_AIR_CLEARANCE_HEIGHT = 48
-	local LAKE_SHORE_WATER_OVERLAP = 8
-	local LAKE_BED_OVERLAP = 6
-	local LAKE_BOUNDARY_MARGIN = 28
-	local LAKE_SLAB_STEP = 56
-	local LAKE_SLAB_OVERLAP = 28
+	local LAKE_WATER_DEPTH = 12
+	local LAKE_AIR_CLEARANCE_HEIGHT = 28
 	local waterSurfaceY = ground.Y - LAKE_SURFACE_DROP
 
-	-- The water body stays entirely inside WorldBounds. Its east side approaches
-	-- the authored boundary, while the west shoreline meanders through the world.
-	-- Many short slabs overlap at one identical surface elevation, so Roblox
-	-- Terrain resolves them as one flat swimmable body instead of separate slices.
-	local zStart = math.max(bounds.minZ + 80, goblin.Z - 70)
-	local zEnd = math.min(bounds.maxZ - 80, center.Z + 430)
-	local eastX = bounds.maxX - LAKE_BOUNDARY_MARGIN
-	local slabLength = LAKE_SLAB_STEP + LAKE_SLAB_OVERLAP
-	local span = math.max(1, zEnd - zStart)
+	local lobes = {
+		{ offset = Vector3.new(-90, 0, -35), size = Vector3.new(420, 32, 300), yaw = -8 },
+		{ offset = Vector3.new(90, 0, 45), size = Vector3.new(430, 32, 320), yaw = 10 },
+		{ offset = Vector3.new(10, 0, 145), size = Vector3.new(330, 32, 240), yaw = -3 },
+	}
 
-	for z = zStart, zEnd, LAKE_SLAB_STEP do
-		local t = math.clamp((z - zStart) / span, 0, 1)
-		local middleWidening = math.sin(math.pi * t)
-		local shorelineNoise =
-			44 * math.sin(t * math.pi * 3.1 + 0.35)
-			+ 24 * math.sin(t * math.pi * 7.4 + 1.15)
-		local westX = 675 - 235 * middleWidening + shorelineNoise
+	for index, spec in ipairs(lobes) do
+		local position = center + spec.offset
+		local rotation = CFrame.Angles(0, math.rad(spec.yaw), 0)
+		terrain:FillBlock(
+			CFrame.new(
+				position.X,
+				waterSurfaceY + LAKE_AIR_CLEARANCE_HEIGHT / 2 - 2,
+				position.Z
+			) * rotation,
+			Vector3.new(spec.size.X, LAKE_AIR_CLEARANCE_HEIGHT, spec.size.Z),
+			Enum.Material.Air
+		)
+		terrain:FillBlock(
+			CFrame.new(position.X, waterSurfaceY - LAKE_WATER_DEPTH / 2, position.Z) * rotation,
+			Vector3.new(spec.size.X, LAKE_WATER_DEPTH, spec.size.Z),
+			Enum.Material.Water
+		)
 
-		-- Narrow the two ends so the lake reads as a natural basin rather than a
-		-- rectangular reservoir while retaining a broad central swimming area.
-		if t < 0.12 then
-			westX += (0.12 - t) / 0.12 * 95
-		elseif t > 0.88 then
-			westX += (t - 0.88) / 0.12 * 115
-		end
-
-		fillFlatLakeSlab(
-			terrain,
-			westX,
-			eastX,
-			z,
-			slabLength,
-			waterSurfaceY,
-			LAKE_WATER_DEPTH,
-			LAKE_BASIN_CLEAR_DEPTH,
-			LAKE_AIR_CLEARANCE_HEIGHT,
-			LAKE_SHORE_WATER_OVERLAP,
-			LAKE_BED_OVERLAP,
-			bounds
+		P.part(
+			lake,
+			string.format("WaterRecovery%02d", index),
+			Vector3.new(spec.size.X - 10, 20, spec.size.Z - 10),
+			CFrame.new(position.X, waterSurfaceY - 4, position.Z) * rotation,
+			Enum.Material.SmoothPlastic,
+			Color3.new(1, 1, 1),
+			{
+				canCollide = false,
+				transparency = 1,
+				attributes = {
+					WaterRecovery = true,
+					WaterSurfaceY = waterSurfaceY,
+					HazardKind = "Lake",
+				},
+			}
 		)
 	end
 
-	lake:SetAttribute("ExtendsToWorldEdge", false)
-	lake:SetAttribute("ContainedWithinWorldBounds", true)
-	lake:SetAttribute("ContinuousWaterBody", true)
-	lake:SetAttribute("FlatWaterSurface", true)
-	lake:SetAttribute("OrganicShoreline", true)
+	shapeGoblinCemeteryLakeHillCliff(center, waterSurfaceY)
 	lake:SetAttribute("WaterSurfaceDrop", LAKE_SURFACE_DROP)
-	lake:SetAttribute("WaterDepth", LAKE_WATER_DEPTH)
-	lake:SetAttribute("DeepBasinExcavated", true)
-	lake:SetAttribute("LakeBedFilled", true)
-	lake:SetAttribute("ShorelineWaterOverlap", LAKE_SHORE_WATER_OVERLAP)
-	lake:SetAttribute("OpenWaterBoundary", false)
+	lake:SetAttribute("HillBankCliff", true)
 end
 
 local function createDarkWoodland(parent: Instance, positions: { [string]: Vector3 })
@@ -881,7 +791,6 @@ end
 function NorthernZonesBlockout.build(parent: Instance)
 	local positions = poiPositions()
 	prepareSpiderHollowTerrain(positions)
-	prepareGoblinCampBoundaryShelf(positions)
 	local north = P.model(parent, "NorthWorld")
 
 	createGroundedRoad(north, "MoonfallRoad", WorldLayout.MoonfallRoadRoute, 22)
