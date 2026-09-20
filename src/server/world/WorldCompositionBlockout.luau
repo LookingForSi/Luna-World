@@ -513,14 +513,7 @@ local function buildCombatBlock(parent: Instance, p: { [string]: Vector3 })
 		28
 	)
 
-	createRockLine(
-		combat,
-		"GoblinShelfEdge",
-		goblin + Vector3.new(250, 0, -190),
-		goblin + Vector3.new(330, 0, 190),
-		7,
-		1.15
-	)
+	-- The boundary-facing side of the Goblin Camp is now a continuous terrain shelf; no rock-wall edge.
 	createTreeBelt(
 		combat,
 		"GoblinRearTrees",
