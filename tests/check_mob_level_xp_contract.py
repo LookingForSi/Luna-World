@@ -21,7 +21,14 @@ for token in (
     'id = "mob_grey_wolf", displayName = "Волк", level = 2',
     'id = "mob_wolf_pack_leader", displayName = "Вожак стаи", level = 3',
     'id = "mob_spider", displayName = "Ядовитый паук", level = 4',
-    'id = "mob_moonbound_warden", displayName = "Лунный страж", level = 10',
+    'id = "mob_brood_spider", displayName = "Паук-матка", level = 7',
+    'id = "mob_dire_wolf", displayName = "Лютый волк", level = 8',
+    'id = "mob_dire_wolf_alpha", displayName = "Альфа лютых волков", level = 10',
+    'id = "mob_skeleton_archer", displayName = "Скелет-лучник", level = 11',
+    'id = "mob_grave_guardian", displayName = "Могильный страж", level = 12',
+    'id = "mob_ancient_sentinel", displayName = "Древний страж", level = 13',
+    'id = "mob_ancient_watcher", displayName = "Древний наблюдатель", level = 14',
+    'id = "mob_moonbound_warden", displayName = "Лунный страж", level = 14',
 ):
     if token not in MOBS:
         raise AssertionError(f"v0.1 mob level tuning is missing {token}")
