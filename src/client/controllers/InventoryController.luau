@@ -2,7 +2,6 @@
 
 local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 
 local InventoryController = {}
 
@@ -15,7 +14,6 @@ local actionResult = remotes:WaitForChild("InventoryActionResult") :: RemoteEven
 local TOGGLE_ACTION = "LunaInventoryToggle"
 local snapshotConnection: RBXScriptConnection? = nil
 local resultConnection: RBXScriptConnection? = nil
-local keyboardConnection: RBXScriptConnection? = nil
 local onToggle: (() -> ())? = nil
 local onSnapshot: ((any) -> ())? = nil
 local onResult: ((any) -> ())? = nil
@@ -72,18 +70,14 @@ function InventoryController.start(
 		end
 	end)
 
-	ContextActionService:BindAction(
+	ContextActionService:BindActionAtPriority(
 		TOGGLE_ACTION,
 		toggleAction,
 		false,
+		Enum.ContextActionPriority.High.Value + 50,
+		Enum.KeyCode.I,
 		Enum.KeyCode.ButtonSelect
 	)
-	keyboardConnection = UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
-		if processed then return end
-		if input.KeyCode == Enum.KeyCode.I and onToggle ~= nil then
-			onToggle()
-		end
-	end)
 
 	task.defer(InventoryController.requestSnapshot)
 end
@@ -92,7 +86,6 @@ function InventoryController.stop(): ()
 	ContextActionService:UnbindAction(TOGGLE_ACTION)
 	if snapshotConnection ~= nil then snapshotConnection:Disconnect(); snapshotConnection = nil end
 	if resultConnection ~= nil then resultConnection:Disconnect(); resultConnection = nil end
-	if keyboardConnection ~= nil then keyboardConnection:Disconnect(); keyboardConnection = nil end
 	onToggle = nil
 	onSnapshot = nil
 	onResult = nil
