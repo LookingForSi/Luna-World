@@ -56,7 +56,7 @@ for token in ("Enum.KeyCode.T", "Enum.KeyCode.Zero", "Enum.KeyCode.ButtonSelect"
     if token not in CONTROLLER:
         raise AssertionError(f"inventory controller missing {token}")
 
-for token in ('"InventoryPanel"', '"InventoryList"', '"EquipmentList"', '"Equip"', '"Unequip"', '"Use"', '"Discard"', '"QuickSlot"', '"FilterConsumables"', '"FilterEquipment"', '"FilterMaterials"', "UIGridLayout", "AutomaticCanvasSize", "assignQuickSlot"):
+for token in ('"InventoryPanel"', '"InventoryList"', '"EquipmentList"', '"Equip"', '"Unequip"', '"Use"', '"Discard"', '"QuickSlot"', '"Filter" .. selectedFilter', '"ЗЕЛЬЯ"', '"ВЕЩИ"', '"РЕСУРСЫ"', "matchesFilter", "UIGridLayout", "AutomaticCanvasSize", "assignQuickSlot"):
     if token not in UI:
         raise AssertionError(f"inventory UI missing {token}")
 
