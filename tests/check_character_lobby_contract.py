@@ -17,11 +17,17 @@ for field in ("CharacterOrder", "Characters", "SelectedCharacterId", "CharacterS
     assert field in account and field in migration
 for action in ('action == "Create"', 'action == "Select"', 'action == "Delete"', 'action == "CheckNickname"', 'action == "CompleteIdentity"'):
     assert action in service
-assert "UpdateAsync" in read("src/server/persistence/NicknameStore.luau")
+nickname_store = read("src/server/persistence/NicknameStore.luau")
+assert "UpdateAsync" in nickname_store
+assert "UseDataStoreInStudio" in nickname_store and "studioIndex" in nickname_store
 assert "FilterStringAsync" in service and "CharacterNotOwned" in service
 assert "Players.CharacterAutoLoads = false" in data
 assert "AccountReady" in data and "CharacterReady" in data
 assert client.index("CharacterLobbyController.start()") < client.index('GetAttribute("CharacterReady")')
 assert "ResponsiveLayout.observe" in lobby and "DeleteConfirmation" in lobby
+assert "MobilePortrait" in lobby and "CreationModal" in lobby and 'Name = "Close"' in lobby
+assert "Мой Roblox ник" in lobby and "Имя свободно" in lobby
 assert "CharacterRequest" in project["tree"]["ReplicatedStorage"]["Remotes"]
+server_bootstrap = read("src/server/main.server.luau")
+assert server_bootstrap.index("Players.CharacterAutoLoads = false") < server_bootstrap.index('WaitForChild("LunaWorldPlayableBlockout"')
 print("character lobby contract: PASS")
