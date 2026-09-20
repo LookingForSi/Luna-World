@@ -47,7 +47,12 @@ InventoryUi.start({
 	assignQuickSlot = InventoryController.assignQuickSlot,
 })
 InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult)
-EconomyUi.start({ buy = EconomyController.buy, sell = EconomyController.sell, craft = EconomyController.craft })
+EconomyUi.start({
+	buy = EconomyController.buy,
+	sell = EconomyController.sell,
+	sellBatch = EconomyController.sellBatch,
+	craft = EconomyController.craft,
+})
 EconomyController.start(EconomyUi.open, EconomyUi.setSnapshot, EconomyUi.showResult)
 QuestController.start()
 TargetController.start(function(target: Model?)
