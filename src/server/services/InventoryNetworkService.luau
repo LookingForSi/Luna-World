@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local InventoryConfig = require(ReplicatedStorage.Shared.config.InventoryConfig)
 local InventoryRequestRules = require(ReplicatedStorage.Shared.inventory.InventoryRequestRules)
 local InventoryService = require(script.Parent.InventoryService)
+local WorldDropService = require(script.Parent.WorldDropService)
 local PlayerDataService = require(script.Parent.PlayerDataService)
 
 local InventoryNetworkService = {}
@@ -63,7 +64,12 @@ local function onActionRequest(player: Player, ...: unknown): ()
 	elseif action == "Consume" then
 		ok, reason = InventoryService.consume(player, identifier)
 	elseif action == "Discard" then
-		ok, reason = InventoryService.discard(player, identifier)
+		local itemId: string? = nil
+		local quantity: number? = nil
+		ok, reason, itemId, quantity = InventoryService.discard(player, identifier)
+		if ok and itemId ~= nil and quantity ~= nil then
+			WorldDropService.spawnForPlayer(player, itemId, quantity)
+		end
 	end
 
 	actionResult:FireClient(player, {
