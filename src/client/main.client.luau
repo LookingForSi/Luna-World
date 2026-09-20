@@ -58,15 +58,10 @@ local function startGameplay(): ()
 		assignQuickSlot = InventoryController.assignQuickSlot,
 	})
 	InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult)
-	EconomyUi.start({
-		buy = EconomyController.buy,
-		sell = EconomyController.sell,
-		sellBatch = EconomyController.sellBatch,
-		craft = EconomyController.craft,
-	})
-	EconomyController.start(EconomyUi.open, EconomyUi.setSnapshot, EconomyUi.showResult)
-	QuestController.start()
-	ResponsiveUiController.start()
+
+	-- Core combat input must become operational before optional economy/quest/
+	-- responsive UI. A presentation error must never leave the player with HUD
+	-- but without targeting and the action bar.
 	TargetController.start(function(target: Model?)
 		CombatHud.setTarget(target)
 	end)
@@ -91,6 +86,16 @@ local function startGameplay(): ()
 	syncActionBar()
 	local archetypeConnection =
 		Players.LocalPlayer:GetAttributeChangedSignal(CombatConfig.ArchetypeAttribute):Connect(syncActionBar)
+
+	EconomyUi.start({
+		buy = EconomyController.buy,
+		sell = EconomyController.sell,
+		sellBatch = EconomyController.sellBatch,
+		craft = EconomyController.craft,
+	})
+	EconomyController.start(EconomyUi.open, EconomyUi.setSnapshot, EconomyUi.showResult)
+	QuestController.start()
+	ResponsiveUiController.start()
 
 	script.Destroying:Connect(function()
 		archetypeConnection:Disconnect()
