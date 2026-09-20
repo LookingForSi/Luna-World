@@ -68,7 +68,14 @@ local function onActionRequest(player: Player, ...: unknown): ()
 		local quantity: number? = nil
 		ok, reason, itemId, quantity = InventoryService.discard(player, identifier)
 		if ok and itemId ~= nil and quantity ~= nil then
-			WorldDropService.spawnForPlayer(player, itemId, quantity)
+			local spawned = WorldDropService.spawnForPlayer(player, itemId, quantity)
+			if not spawned then
+				-- A discard must never silently destroy an item just because the
+				-- world could not produce its visual drop.
+				InventoryService.grantItem(player, itemId, quantity)
+				ok = false
+				reason = "DropUnavailable"
+			end
 		end
 	end
 
