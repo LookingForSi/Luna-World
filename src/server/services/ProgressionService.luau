@@ -66,6 +66,10 @@ function ProgressionService.awardXP(player: Player, amount: number): boolean
 	return true
 end
 
+function ProgressionService.syncFromProfile(player: Player): ()
+	initializeFromProfile(player)
+end
+
 function ProgressionService._setLevelForStudio(player: Player, level: number): boolean
 	assert(RunService:IsStudio(), "Studio level switch is unavailable outside Studio")
 	if player.Parent ~= Players or not PlayerDataService.isReady(player) then return false end

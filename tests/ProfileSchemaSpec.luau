@@ -6,7 +6,7 @@ return function(TestRunner)
 	TestRunner.run("new profile starts at current DataVersion with isolated tables", function()
 		local first = ProfileSchema.createDefault()
 		local second = ProfileSchema.createDefault()
-		assert(first.DataVersion == 1 and first.Level == 1 and first.XP == 0 and first.Luna == 0)
+		assert(first.DataVersion == 2 and first.Level == 1 and first.XP == 0 and first.Luna == 0)
 		assert(first.ArchetypeId == "knight")
 		first.Inventory[1] = "mutated"
 		assert(second.Inventory[1] == nil)

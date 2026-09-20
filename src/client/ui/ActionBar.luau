@@ -17,6 +17,7 @@ local screenGui: ScreenGui? = nil
 local autoButton: TextButton? = nil
 local attackButton: TextButton? = nil
 local inventoryButton: TextButton? = nil
+local mapButton: TextButton? = nil
 local autoConnection: RBXScriptConnection? = nil
 local renderConnection: RBXScriptConnection? = nil
 local inputTypeConnection: RBXScriptConnection? = nil
@@ -168,7 +169,8 @@ function ActionBar.start(
 	onAutoToggle: () -> (),
 	onSkill: (string) -> (),
 	onClearTarget: () -> (),
-	onInventoryToggle: () -> ()
+	onInventoryToggle: () -> (),
+	onMapToggle: () -> ()
 ): ()
 	ActionBar.stop()
 
@@ -198,6 +200,8 @@ function ActionBar.start(
 	content.BackgroundTransparency = 1
 	content.Parent = frame
 
+	mapButton = makeButton(content, "Map", if UserInputService.TouchEnabled then "КАРТА" else "КАРТА [M]", UDim2.new(0.32, -2, 0, 36))
+	local mapToggle = mapButton :: TextButton
 	inventoryButton = makeButton(content, "Inventory", inventoryBindingText(), UDim2.new(0.66, -2, 0, 36))
 	local inventory = inventoryButton :: TextButton
 	inventory.Position = UDim2.new(0.34, 0, 0, 0)
@@ -217,6 +221,7 @@ function ActionBar.start(
 	buildSkillBar(gui, skillIds, onSkill)
 
 	table.insert(buttonConnections, inventory.Activated:Connect(onInventoryToggle))
+	table.insert(buttonConnections, mapToggle.Activated:Connect(onMapToggle))
 	table.insert(buttonConnections, attack.Activated:Connect(onAttack))
 	table.insert(buttonConnections, auto.Activated:Connect(onAutoToggle))
 	table.insert(buttonConnections, clearButton.Activated:Connect(onClearTarget))
@@ -240,7 +245,7 @@ function ActionBar.stop(): ()
 	table.clear(skillButtons)
 	table.clear(skillResourceTypes)
 	if screenGui ~= nil then screenGui:Destroy() end
-	screenGui, autoButton, attackButton, inventoryButton = nil, nil, nil, nil
+	screenGui, autoButton, attackButton, inventoryButton, mapButton = nil, nil, nil, nil, nil
 end
 
 return ActionBar

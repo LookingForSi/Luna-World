@@ -307,4 +307,8 @@ Roblox platform services используются до тех пор, пока �
 
 `CraftingDefinitions`, `MerchantDefinitions` и `ItemDefinitions` являются единственным shared источником рецептов, stock, grade и reference retail. `EconomyRules` выполняет чистые clone-based buy/sell/craft переходы, а `EconomyService` применяет готовый результат одной validated mutation профиля. Клиент никогда не передаёт цену, fee, состав рецепта или output.
 
-`EconomyNetworkService` владеет schema/rate/profile/distance validation для `EconomyRequest`; `EconomyWorldService` владеет только lifecycle village prompts. `InventoryService` обрабатывает data-driven return effect через тот же tagged settlement anchor, что и respawn. Новых persistent полей нет, поэтому `DataVersion = 1` сохраняется.
+`EconomyNetworkService` владеет schema/rate/profile/distance validation для `EconomyRequest`; `EconomyWorldService` владеет только lifecycle village prompts. `InventoryService` обрабатывает data-driven return effect через тот же tagged settlement anchor, что и respawn.
+
+## 15. Quest vertical slice dev0.2
+
+`QuestDefinitions` и `QuestRules` задают Q1–Q7 и чистые переходы состояния. `QuestService` потребляет только authoritative `MobService.MobDied`, проверяет talk/proximity и ReachLocation на сервере и применяет reward вместе с `Completed` одной profile mutation. Клиент получает display snapshot для dialogue, tracker, карты, waypoint и NPC markers, но не может отправить objective progress или reward. Persistent schema использует `DataVersion = 2`; migration v1→v2 добавляет изолированную таблицу `Quests` без изменения данных dev0.1.

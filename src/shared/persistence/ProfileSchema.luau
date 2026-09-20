@@ -3,12 +3,13 @@
 local ArchetypeDefinitions = require(script.Parent.Parent.definitions.ArchetypeDefinitions)
 local InventoryConfig = require(script.Parent.Parent.config.InventoryConfig)
 local ItemDefinitions = require(script.Parent.Parent.definitions.ItemDefinitions)
+local QuestDefinitions = require(script.Parent.Parent.definitions.QuestDefinitions)
 local ProgressionRules = require(script.Parent.Parent.progression.ProgressionRules)
 local PersistenceTypes = require(script.Parent.Parent.types.PersistenceTypes)
 
 local ProfileSchema = {}
 
-ProfileSchema.DataVersion = 1
+ProfileSchema.DataVersion = 2
 
 local function finiteInteger(value: unknown): boolean
 	return typeof(value) == "number"
@@ -39,6 +40,7 @@ function ProfileSchema.createDefault(): PersistenceTypes.Profile
 			Boots = nil,
 			Accessory = nil,
 		},
+		Quests = {},
 	}
 end
 
@@ -56,6 +58,10 @@ function ProfileSchema.clone(profile: PersistenceTypes.Profile): PersistenceType
 		Boots = profile.Equipment.Boots,
 		Accessory = profile.Equipment.Accessory,
 	}
+	local quests: { [string]: PersistenceTypes.QuestRecord } = {}
+	for questId, quest in profile.Quests do
+		quests[questId] = { State = quest.State, Progress = table.clone(quest.Progress) }
+	end
 	return {
 		DataVersion = profile.DataVersion,
 		Level = profile.Level,
@@ -65,6 +71,7 @@ function ProfileSchema.clone(profile: PersistenceTypes.Profile): PersistenceType
 		Items = items,
 		Inventory = inventory,
 		Equipment = equipment,
+		Quests = quests,
 	}
 end
 
@@ -90,6 +97,21 @@ function ProfileSchema.validateCurrent(profile: unknown): (boolean, string?)
 	if typeof(value.Items) ~= "table" then return fail("profile Items must be a table") end
 	if typeof(value.Inventory) ~= "table" then return fail("profile Inventory must be a table") end
 	if typeof(value.Equipment) ~= "table" then return fail("profile Equipment must be a table") end
+	if typeof(value.Quests) ~= "table" then return fail("profile Quests must be a table") end
+	for questId, record in value.Quests do
+		local definition = if typeof(questId) == "string" then QuestDefinitions[questId] else nil
+		if definition == nil or typeof(record) ~= "table" or (record.State ~= "Active" and record.State ~= "ReadyToTurnIn" and record.State ~= "Completed") or typeof(record.Progress) ~= "table" then
+			return fail("quest record is invalid")
+		end
+		local known = {}
+		for _, objective in definition.objectives do known[objective.id] = objective.required end
+		for objectiveId, progress in record.Progress do
+			if typeof(objectiveId) ~= "string" or known[objectiveId] == nil or not finiteInteger(progress) or progress < 0 or progress > known[objectiveId] then return fail("quest objective progress is invalid") end
+		end
+		if record.State == "ReadyToTurnIn" or record.State == "Completed" then
+			for objectiveId, required in known do if record.Progress[objectiveId] ~= required then return fail("finished quest has incomplete objectives") end end
+		end
+	end
 
 	local locations: { [string]: number } = {}
 	for instanceId, record in value.Items do

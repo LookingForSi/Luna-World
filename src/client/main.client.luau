@@ -12,6 +12,7 @@ local MovementController = require(clientRoot.controllers.MovementController)
 local InventoryController = require(clientRoot.controllers.InventoryController)
 local InventoryUi = require(clientRoot.ui.InventoryUi)
 local EconomyController = require(clientRoot.controllers.EconomyController)
+local QuestController = require(clientRoot.controllers.QuestController)
 local EconomyUi = require(clientRoot.ui.EconomyUi)
 local CombatPresentationController = require(clientRoot.controllers.CombatPresentationController)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -47,6 +48,7 @@ InventoryUi.start({
 InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult)
 EconomyUi.start({ buy = EconomyController.buy, sell = EconomyController.sell, craft = EconomyController.craft })
 EconomyController.start(EconomyUi.open, EconomyUi.setSnapshot, EconomyUi.showResult)
+QuestController.start()
 TargetController.start(function(target: Model?)
 	CombatHud.setTarget(target)
 end)
@@ -59,7 +61,8 @@ local function syncActionBar(): ()
 		CombatInputController.requestAutoToggle,
 		CombatInputController.requestSkill,
 		TargetController.clearTarget,
-		InventoryUi.toggle
+		InventoryUi.toggle,
+		QuestController.toggleMap
 	)
 end
 
@@ -70,6 +73,7 @@ script.Destroying:Connect(function()
 	archetypeConnection:Disconnect()
 	InventoryController.stop()
 	EconomyController.stop()
+	QuestController.stop()
 	EconomyUi.stop()
 	InventoryUi.stop()
 	StudioTestPanel.stop()

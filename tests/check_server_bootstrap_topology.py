@@ -20,9 +20,11 @@ EXPECTED_SERVICES = {
 	"LootService",
     "MobAIService",
 	"MobAbilityService",
-    "MobService",
+	"MobService",
+	"NpcWorldService",
 	"PlayerDataService",
     "ProgressionService",
+	"QuestService",
     "RespawnService",
     "StudioDebugService",
 }
