@@ -260,10 +260,10 @@ local WorldLayout: WorldLayoutDefinition = {
 
 		-- Goblin Camp: four roaming perimeter patrols, two paired gate blocks,
 		-- then two deliberately separated interior encounter groups.
-		{ id = "spawn_goblin_patrol_south", mobId = "mob_goblin_scout", position = scaleXZ(215, 48, 900), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_south", patrolRadius = scaleDistance(56), patrolCycleSeconds = 2 },
-		{ id = "spawn_goblin_patrol_east", mobId = "mob_goblin_scout", position = scaleXZ(345, 58, 945), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_east", patrolRadius = scaleDistance(52), patrolCycleSeconds = 2 },
-		{ id = "spawn_goblin_patrol_north", mobId = "mob_goblin_scout", position = scaleXZ(305, 62, 1040), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_north", patrolRadius = scaleDistance(56), patrolCycleSeconds = 2 },
-		{ id = "spawn_goblin_patrol_west", mobId = "mob_goblin_scout", position = scaleXZ(205, 54, 1000), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_west", patrolRadius = scaleDistance(52), patrolCycleSeconds = 2 },
+		{ id = "spawn_goblin_patrol_south", mobId = "mob_goblin_scout", position = scaleXZ(215, 48, 900), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_south", patrolRadius = scaleDistance(56), patrolCycleSeconds = 6 },
+		{ id = "spawn_goblin_patrol_east", mobId = "mob_goblin_scout", position = scaleXZ(345, 58, 945), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_east", patrolRadius = scaleDistance(52), patrolCycleSeconds = 6 },
+		{ id = "spawn_goblin_patrol_north", mobId = "mob_goblin_scout", position = scaleXZ(305, 62, 1040), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_north", patrolRadius = scaleDistance(56), patrolCycleSeconds = 6 },
+		{ id = "spawn_goblin_patrol_west", mobId = "mob_goblin_scout", position = scaleXZ(205, 54, 1000), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_west", patrolRadius = scaleDistance(52), patrolCycleSeconds = 6 },
 
 		-- Two compact social pairs flank the camp approach and stay near their post.
 		{ id = "spawn_goblin_gate_pair_south", mobId = "mob_goblin_scout", position = scaleXZ(228, 52, 936), radius = scaleDistance(9), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_gate_pair_south", patrolRadius = scaleDistance(10), patrolCycleSeconds = 9 },
