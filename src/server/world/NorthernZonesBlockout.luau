@@ -604,80 +604,47 @@ local function prepareGoblinCampBoundaryShelf(positions: { [string]: Vector3 })
 	end
 end
 
-local function carveLakeDisc(
+local function fillFlatLakeSlab(
 	terrain: Terrain,
-	position: Vector3,
-	radius: number,
+	westX: number,
+	eastX: number,
+	centerZ: number,
+	length: number,
 	waterSurfaceY: number,
 	waterDepth: number,
 	clearDepth: number,
 	airClearance: number,
-	shoreMargin: number
+	shoreMargin: number,
+	bounds: { minX: number, maxX: number, minZ: number, maxZ: number }
 )
-	-- Excavate slightly beyond the water radius so grass/rock never survives
-	-- immediately under the transparent water surface.
-	local totalClearHeight = clearDepth + airClearance
+	-- Terrain cylinders are aligned differently than Parts and produced visible
+	-- upright water "slices" in runtime. The lake uses flat overlapping blocks,
+	-- just like the accepted river implementation, while the authored west edge
+	-- supplies the irregular shoreline.
+	local safeWest = math.max(bounds.minX + 20, westX)
+	local safeEast = math.min(bounds.maxX - 20, eastX)
+	local safeHalfLength = math.max(8, math.min(
+		length / 2,
+		bounds.maxZ - 20 - centerZ,
+		centerZ - (bounds.minZ + 20)
+	))
+	if safeEast <= safeWest or safeHalfLength <= 0 then return end
+
+	local clearWest = math.max(bounds.minX + 20, safeWest - shoreMargin)
+	local clearEast = math.min(bounds.maxX - 20, safeEast + shoreMargin)
+	local clearWidth = clearEast - clearWest
+	local clearHeight = clearDepth + airClearance
 	local clearCenterY = waterSurfaceY + (airClearance - clearDepth) / 2
-	terrain:FillCylinder(
-		CFrame.new(position.X, clearCenterY, position.Z),
-		totalClearHeight,
-		radius + shoreMargin,
+	terrain:FillBlock(
+		CFrame.new((clearWest + clearEast) / 2, clearCenterY, centerZ),
+		Vector3.new(clearWidth, clearHeight, safeHalfLength * 2),
 		Enum.Material.Air
 	)
-	terrain:FillCylinder(
-		CFrame.new(position.X, waterSurfaceY - waterDepth / 2, position.Z),
-		waterDepth,
-		radius,
-		Enum.Material.Water
-	)
-end
 
-local function fillContinuousLakePath(
-	terrain: Terrain,
-	points: { { position: Vector3, radius: number } },
-	waterSurfaceY: number,
-	waterDepth: number,
-	clearDepth: number,
-	airClearance: number,
-	shoreMargin: number
-)
-	for index = 1, #points - 1 do
-		local a = points[index]
-		local b = points[index + 1]
-		local delta = Vector3.new(
-			b.position.X - a.position.X,
-			0,
-			b.position.Z - a.position.Z
-		)
-		-- Sample much more densely than the local radius. Overlap is intentional:
-		-- Terrain.Water becomes one body with no dry seam between generated parts.
-		local steps = math.max(1, math.ceil(delta.Magnitude / 34))
-		for step = 0, steps - 1 do
-			local alpha = step / steps
-			local point = a.position:Lerp(b.position, alpha)
-			local radius = a.radius + (b.radius - a.radius) * alpha
-			carveLakeDisc(
-				terrain,
-				point,
-				radius,
-				waterSurfaceY,
-				waterDepth,
-				clearDepth,
-				airClearance,
-				shoreMargin
-			)
-		end
-	end
-	local last = points[#points]
-	carveLakeDisc(
-		terrain,
-		last.position,
-		last.radius,
-		waterSurfaceY,
-		waterDepth,
-		clearDepth,
-		airClearance,
-		shoreMargin
+	terrain:FillBlock(
+		CFrame.new((safeWest + safeEast) / 2, waterSurfaceY - waterDepth / 2, centerZ),
+		Vector3.new(safeEast - safeWest, waterDepth, safeHalfLength * 2),
+		Enum.Material.Water
 	)
 end
 
@@ -695,56 +662,62 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 	local LAKE_WATER_DEPTH = 30
 	local LAKE_BASIN_CLEAR_DEPTH = 42
 	local LAKE_AIR_CLEARANCE_HEIGHT = 48
-	local LAKE_SHORE_CLEAR_MARGIN = 18
+	local LAKE_SHORE_CLEAR_MARGIN = 22
+	local LAKE_BOUNDARY_MARGIN = 28
+	local LAKE_SLAB_STEP = 56
+	local LAKE_SLAB_OVERLAP = 28
 	local waterSurfaceY = ground.Y - LAKE_SURFACE_DROP
 
-	-- One organic shoreline/path from the camp side through the original lake and
-	-- out to the invisible map boundary. Different radii bend the shoreline and
-	-- deliberately avoid a rectangular silhouette.
-	local edgeX = bounds.maxX + 80
-	local lakePath = {
-		{ position = goblin + Vector3.new(205, 0, 175), radius = 115 },
-		{ position = center + Vector3.new(-155, 0, -105), radius = 155 },
-		{ position = center + Vector3.new(-55, 0, 10), radius = 205 },
-		{ position = center + Vector3.new(55, 0, 105), radius = 220 },
-		{ position = center + Vector3.new(150, 0, 190), radius = 185 },
-		{ position = Vector3.new(edgeX - 145, center.Y, center.Z + 225), radius = 205 },
-		{ position = Vector3.new(edgeX, center.Y, center.Z + 195), radius = 235 },
-	}
-	fillContinuousLakePath(
-		terrain,
-		lakePath,
-		waterSurfaceY,
-		LAKE_WATER_DEPTH,
-		LAKE_BASIN_CLEAR_DEPTH,
-		LAKE_AIR_CLEARANCE_HEIGHT,
-		LAKE_SHORE_CLEAR_MARGIN
-	)
+	-- The water body stays entirely inside WorldBounds. Its east side approaches
+	-- the authored boundary, while the west shoreline meanders through the world.
+	-- Many short slabs overlap at one identical surface elevation, so Roblox
+	-- Terrain resolves them as one flat swimmable body instead of separate slices.
+	local zStart = math.max(bounds.minZ + 80, goblin.Z - 70)
+	local zEnd = math.min(bounds.maxZ - 80, center.Z + 430)
+	local eastX = bounds.maxX - LAKE_BOUNDARY_MARGIN
+	local slabLength = LAKE_SLAB_STEP + LAKE_SLAB_OVERLAP
+	local span = math.max(1, zEnd - zStart)
 
-	-- Widen the central swimming pocket without introducing another independent
-	-- water rectangle; these discs heavily overlap the same continuous body.
-	local swimmingPocket = {
-		{ position = center + Vector3.new(-95, 0, 85), radius = 175 },
-		{ position = center + Vector3.new(20, 0, 145), radius = 205 },
-		{ position = center + Vector3.new(115, 0, 115), radius = 175 },
-	}
-	fillContinuousLakePath(
-		terrain,
-		swimmingPocket,
-		waterSurfaceY,
-		LAKE_WATER_DEPTH,
-		LAKE_BASIN_CLEAR_DEPTH,
-		LAKE_AIR_CLEARANCE_HEIGHT,
-		LAKE_SHORE_CLEAR_MARGIN
-	)
+	for z = zStart, zEnd, LAKE_SLAB_STEP do
+		local t = math.clamp((z - zStart) / span, 0, 1)
+		local middleWidening = math.sin(math.pi * t)
+		local shorelineNoise =
+			44 * math.sin(t * math.pi * 3.1 + 0.35)
+			+ 24 * math.sin(t * math.pi * 7.4 + 1.15)
+		local westX = 675 - 235 * middleWidening + shorelineNoise
 
-	lake:SetAttribute("ExtendsToWorldEdge", true)
+		-- Narrow the two ends so the lake reads as a natural basin rather than a
+		-- rectangular reservoir while retaining a broad central swimming area.
+		if t < 0.12 then
+			westX += (0.12 - t) / 0.12 * 95
+		elseif t > 0.88 then
+			westX += (t - 0.88) / 0.12 * 115
+		end
+
+		fillFlatLakeSlab(
+			terrain,
+			westX,
+			eastX,
+			z,
+			slabLength,
+			waterSurfaceY,
+			LAKE_WATER_DEPTH,
+			LAKE_BASIN_CLEAR_DEPTH,
+			LAKE_AIR_CLEARANCE_HEIGHT,
+			LAKE_SHORE_CLEAR_MARGIN,
+			bounds
+		)
+	end
+
+	lake:SetAttribute("ExtendsToWorldEdge", false)
+	lake:SetAttribute("ContainedWithinWorldBounds", true)
 	lake:SetAttribute("ContinuousWaterBody", true)
+	lake:SetAttribute("FlatWaterSurface", true)
 	lake:SetAttribute("OrganicShoreline", true)
 	lake:SetAttribute("WaterSurfaceDrop", LAKE_SURFACE_DROP)
 	lake:SetAttribute("WaterDepth", LAKE_WATER_DEPTH)
 	lake:SetAttribute("DeepBasinExcavated", true)
-	lake:SetAttribute("OpenWaterBoundary", true)
+	lake:SetAttribute("OpenWaterBoundary", false)
 end
 
 local function createDarkWoodland(parent: Instance, positions: { [string]: Vector3 })
