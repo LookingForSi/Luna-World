@@ -15,6 +15,8 @@ movement = read("src/client/controllers/MovementController.luau")
 progression = read("src/server/services/ProgressionService.luau")
 combat = read("src/server/services/CombatService.luau")
 server = read("src/server/main.server.luau")
+client = read("src/client/main.client.luau")
+target_controller = read("src/client/controllers/TargetController.luau")
 player_data = read("src/server/services/PlayerDataService.luau")
 respawn = read("src/server/services/RespawnService.luau")
 hud = read("src/client/ui/CombatHud.luau")
@@ -58,5 +60,9 @@ assert "blocker.BackgroundTransparency = 1" in inventory_ui
 assert "panel.BackgroundTransparency = 0.03" in inventory_ui
 
 assert server.index("Players.CharacterAutoLoads = false") < server.index('WaitForChild("LunaWorldPlayableBlockout"')
+assert client.index("TargetController.start") < client.index("EconomyUi.start")
+assert client.index("TargetController.start") < client.index("QuestController.start")
+assert client.index("syncActionBar()") < client.index("EconomyUi.start")
+assert "localGuiBlocksPointer" in target_controller
 
 print("Consolidated playtest release candidate contract: PASS")
