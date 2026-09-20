@@ -53,8 +53,6 @@ return table.freeze({
 	CombatPointsCurrentAttribute = "CombatPointsCurrent",
 	CombatPointsMaximumAttribute = "CombatPointsMaximum",
 	CombatPointsDefaultMaximum = 100,
-	-- UI-only reference until the real level/XP progression curve is implemented.
-	SessionXpHudReference = 500,
 	-- Skill identifiers are appended to this prefix. Values are authoritative server-time deadlines.
 	SkillCooldownAttributePrefix = "CombatSkillCooldown_",
 	MobStunnedAttribute = "CombatStunned",
@@ -69,6 +67,11 @@ return table.freeze({
 	MobAITargetAttribute = "MobAITargetUserId",
 	MobHomePositionAttribute = "MobHomePosition",
 	MobHomeArrivalDistance = 4,
+	HostileMovementMultiplierAttribute = "HostileMovementMultiplier",
+	HostileAttackSpeedMultiplierAttribute = "HostileAttackSpeedMultiplier",
+	StudioMovementMultiplierAttribute = "StudioMovementMultiplier",
+	HostileDebuffUntilAttribute = "HostileDebuffUntil",
+	MobOutgoingDamageMultiplierAttribute = "MobOutgoingDamageMultiplier",
 	DefenseStanceActiveAttribute = "DefenseStanceActive",
 	RapidShotActiveAttribute = "RapidShotActive",
 })

@@ -37,7 +37,7 @@ require("src/client/ui/RespawnPrompt.luau", "Вернуться в город", 
 require("src/server/services/CombatService.luau", 'presentationKey = "mob_basic_attack"', "incoming mob damage must be published as confirmed presentation data")
 require("src/server/services/CombatService.luau", "definitionId = definition.id", "incoming damage presentation needs the mob definition id")
 require("src/client/ui/CombatLog.luau", "ClientCombatLogRules.isRelevant", "combat log must filter to local incoming/outgoing events")
-require("src/client/ui/CombatLog.luau", "БОЙ  ▲", "combat log must be user-toggleable")
+require("src/client/ui/CombatLog.luau", "Лог  ▲", "combat log must be user-toggleable")
 require("src/client/ui/CombatLog.luau", "цель замедлена", "combat log must make Snare confirmation visible")
 require("src/client/ui/CombatLog.luau", "защита +%d%%", "combat log must expose Defensive Stance magnitude")
 require("src/client/main.client.luau", "CombatLog.start()", "client bootstrap must start combat log")

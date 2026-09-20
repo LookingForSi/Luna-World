@@ -51,4 +51,13 @@ return function(TestRunner)
 		assert(not MobAIRules.shouldRestoreHealth("Idle", "Idle", true), "idle mobs must not heal every decision")
 		assert(not MobAIRules.shouldRestoreHealth("Return", "Idle", false))
 	end)
+
+	TestRunner.run("returning and dead mobs cannot start social assist", function()
+		assert(MobAIRules.canRequestSocialAssist("Idle", "local_pack"))
+		assert(MobAIRules.canRequestSocialAssist("Attack", "local_pack"))
+		assert(not MobAIRules.canRequestSocialAssist("Return", "local_pack"))
+		assert(not MobAIRules.canRequestSocialAssist("Dead", "local_pack"))
+		assert(not MobAIRules.canRequestSocialAssist("Attack", nil))
+		assert(not MobAIRules.canRequestSocialAssist("Attack", ""))
+	end)
 end

@@ -12,8 +12,15 @@ PROJECT_FILE = ROOT / "default.project.json"
 BOOTSTRAP_FILE = ROOT / "src/server/main.server.luau"
 EXPECTED_SERVICES = {
     "CombatService",
+	"EconomyNetworkService",
+	"EconomyService",
+	"EconomyWorldService",
+	"InventoryNetworkService",
+	"LootService",
     "MobAIService",
+	"MobAbilityService",
     "MobService",
+	"PlayerDataService",
     "ProgressionService",
     "RespawnService",
     "StudioDebugService",

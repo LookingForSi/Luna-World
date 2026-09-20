@@ -6,6 +6,8 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
+local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local HudLayout = require(script.Parent.HudLayout)
 
@@ -34,10 +36,19 @@ local function makeButton(parent: Instance, name: string, text: string, size: UD
 	return button
 end
 
+local function autoBindingHint(): string
+	if UserInputService.GamepadEnabled and not UserInputService.KeyboardEnabled then
+		return "L2"
+	end
+	return "G"
+end
+
 local function updateAuto(): ()
 	if autoButton == nil then return end
 	local enabled = player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == true
-	autoButton.Text = if enabled then "AUTO\nВКЛ" else "AUTO\nВЫКЛ"
+	autoButton.Text = if enabled
+		then string.format("AUTO [%s]\nВКЛ", autoBindingHint())
+		else string.format("AUTO [%s]\nВЫКЛ", autoBindingHint())
 	autoButton.BackgroundColor3 = if enabled then Color3.fromRGB(91, 105, 58) else Color3.fromRGB(42, 45, 56)
 end
 
@@ -53,17 +64,21 @@ local function updateCooldowns(): ()
 		if definition ~= nil then
 			local readyAt = player:GetAttribute(CombatConfig.SkillCooldownAttributePrefix .. skillId)
 			local remaining = if typeof(readyAt) == "number" then math.max(0, readyAt - now) else 0
-			button.Text = if remaining > 0
-				then string.format("%s\n%.1f", definition.displayName, remaining)
+			local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
+			local level = if typeof(rawLevel) == "number" then rawLevel else 1
+			local unlocked = ProgressionRules.isSkillUnlocked(definition.unlockLevel, level)
+			button.Text = if not unlocked
+				then string.format("%s\nLV %d", definition.displayName, definition.unlockLevel)
+				elseif remaining > 0 then string.format("%s\n%.1f", definition.displayName, remaining)
 				else definition.displayName
-			button.BackgroundColor3 = if remaining > 0 then Color3.fromRGB(33, 35, 43) else Color3.fromRGB(42, 45, 56)
+			button.BackgroundColor3 = if not unlocked or remaining > 0 then Color3.fromRGB(33, 35, 43) else Color3.fromRGB(42, 45, 56)
 			local currentResource = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
 			local resourceType = player:GetAttribute(CombatConfig.ResourceTypeAttribute)
 			local hasResource = typeof(currentResource) == "number"
 				and resourceType == skillResourceTypes[skillId]
 				and currentResource >= definition.resourceCost
-			button.Active = hasResource
-			button.TextTransparency = if hasResource then 0 else 0.45
+			button.Active = unlocked and hasResource
+			button.TextTransparency = if unlocked and hasResource then 0 else 0.45
 		end
 	end
 end
@@ -80,7 +95,11 @@ function ActionBar.start(skillIds: { string }, onAttack: () -> (), onAutoToggle:
 	frame.Name = "PrimaryActions"
 	frame.AnchorPoint = Vector2.new(1, 1)
 	frame.Position = UDim2.new(1, -HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)
-	frame.Size = UDim2.fromOffset(HudLayout.ActionBarSize.X, HudLayout.ActionBarSize.Y)
+	frame.Size = UDim2.new(1, -HudLayout.CornerMargin * 2, 0, HudLayout.ActionBarSize.Y)
+	local sizeConstraint = Instance.new("UISizeConstraint")
+	sizeConstraint.MaxSize = Vector2.new(HudLayout.ActionBarSize.X, HudLayout.ActionBarSize.Y)
+	sizeConstraint.MinSize = Vector2.new(300, HudLayout.ActionBarSize.Y)
+	sizeConstraint.Parent = frame
 	HudLayout.applyPanelStyle(frame)
 	frame.Parent = gui
 
@@ -104,7 +123,7 @@ function ActionBar.start(skillIds: { string }, onAttack: () -> (), onAutoToggle:
 
 	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.2, -4, 0, 70))
 	clearButton.Position = UDim2.new(0, 0, 0, 62)
-	autoButton = makeButton(content, "Auto", "AUTO\nВЫКЛ", UDim2.new(0.25, -4, 0, 70))
+	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.25, -4, 0, 70))
 	local auto = autoButton :: TextButton
 	auto.Position = UDim2.new(0.21, 0, 0, 62)
 	local attackSize = UDim2.new(0.52, -4, 0, if UserInputService.TouchEnabled then 80 else 70)

@@ -1,47 +1,58 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
-local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local CombatService = require(script.Parent.services.CombatService)
 local MobService = require(script.Parent.services.MobService)
 local MobAIService = require(script.Parent.services.MobAIService)
+local MobAbilityService = require(script.Parent.services.MobAbilityService)
+local LootService = require(script.Parent.services.LootService)
+local InventoryNetworkService = require(script.Parent.services.InventoryNetworkService)
+local EconomyService = require(script.Parent.services.EconomyService)
+local EconomyNetworkService = require(script.Parent.services.EconomyNetworkService)
+local EconomyWorldService = require(script.Parent.services.EconomyWorldService)
+local PlayerDataService = require(script.Parent.services.PlayerDataService)
 local ProgressionService = require(script.Parent.services.ProgressionService)
 local RespawnService = require(script.Parent.services.RespawnService)
 local StudioDebugService = require(script.Parent.services.StudioDebugService)
+local RespawnConfig = require(game:GetService("ReplicatedStorage").Shared.config.RespawnConfig)
 
-local function findMobDefinitionById(mobId: string)
-	for _, definition in MobDefinitions do
-		if definition.id == mobId then
-			return definition
-		end
-	end
-	return nil
+local worldRoot = workspace:WaitForChild("LunaWorldPlayableBlockout", 15)
+assert(worldRoot ~= nil, "Luna World blockout failed to initialize before gameplay services")
+
+local worldSpawn = worldRoot:FindFirstChild("LunaVillageSpawn", true)
+if worldSpawn ~= nil and worldSpawn:IsA("SpawnLocation") then
+	worldSpawn:SetAttribute(RespawnConfig.SettlementIdAttribute, RespawnConfig.LunaVillageSettlementId)
+	worldSpawn:SetAttribute(RespawnConfig.AnchorIdAttribute, "luna_village_spawn")
+	CollectionService:AddTag(worldSpawn, RespawnConfig.AnchorTag)
 end
 
+EconomyService.start()
+PlayerDataService.start()
 ProgressionService.start()
 CombatService.start()
 RespawnService.start()
 StudioDebugService.start()
-MobAIService.start(CombatService.requestMobBasicAttack)
+MobAbilityService.start()
+MobAIService.start(MobAbilityService.requestAttack)
 MobService.start()
-
-local mobDiedConnection = MobService.MobDied:Connect(function(killer: Player?, mobId: string, _entityId: string)
-	local definition = findMobDefinitionById(mobId)
-	if definition ~= nil and killer ~= nil then
-		-- Milestone 0 intentionally awards the kill to MobService's last valid attacker;
-		-- this is session-only behavior, not the final shared-reward economy.
-		ProgressionService.awardXP(killer, definition.rewardXP)
-	end
-end)
-
+LootService.start()
+InventoryNetworkService.start()
+EconomyNetworkService.start()
+EconomyWorldService.start()
 
 game:BindToClose(function()
-	mobDiedConnection:Disconnect()
 	StudioDebugService.stop()
 	RespawnService.stop()
+	InventoryNetworkService.stop()
+	EconomyWorldService.stop()
+	EconomyNetworkService.stop()
+	EconomyService.stop()
+	LootService.stop()
 	MobAIService.stop()
+	MobAbilityService.stop()
 	MobService.stop()
 	CombatService.stop()
 	ProgressionService.stop()
+	PlayerDataService.stop()
 end)

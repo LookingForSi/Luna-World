@@ -2,7 +2,7 @@
 
 local CombatPresentationRules = {}
 
-export type Kind = "Action" | "Result" | "Interruption" | "Effect" | "Death" | "Respawn"
+export type Kind = "Action" | "Result" | "Interruption" | "Effect" | "Death" | "Respawn" | "Reward"
 export type ReasonCode = "Cooldown" | "InvalidTarget" | "OutOfRange" | "InsufficientResource" | "ForbiddenState" | "RateLimited"
 export type Fields = {
 	targetEntityId: string?,
@@ -29,6 +29,7 @@ local supportedKinds: { [string]: boolean } = {
 	Effect = true,
 	Death = true,
 	Respawn = true,
+	Reward = true,
 }
 local supportedOutcomes: { [string]: boolean } = {
 	Accepted = true,
@@ -39,6 +40,7 @@ local supportedOutcomes: { [string]: boolean } = {
 	Dead = true,
 	Respawned = true,
 	Ended = true,
+	Granted = true,
 }
 local publicFields: { [string]: boolean } = {
 	kind = true,

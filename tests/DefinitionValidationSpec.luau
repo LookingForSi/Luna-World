@@ -4,7 +4,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ArchetypeDefinitions = require(ReplicatedStorage.Shared.definitions.ArchetypeDefinitions)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
+local MobAbilityDefinitions = require(ReplicatedStorage.Shared.definitions.MobAbilityDefinitions)
+local LootTableDefinitions = require(ReplicatedStorage.Shared.definitions.LootTableDefinitions)
+local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 
 local SUPPORTED_RESOURCES = { Stamina = true, Focus = true, Mana = true }
@@ -22,6 +26,15 @@ local SUPPORTED_EFFECTS = {
 local SUPPORTED_AGGRESSION_MODES = { Passive = true, Aggressive = true }
 local SUPPORTED_MOB_RANKS = { Ordinary = true, Elite = true, Boss = true }
 local SUPPORTED_MOB_ATTACK_KINDS = { Melee = true, Ranged = true }
+local SUPPORTED_MOB_DAMAGE_TYPES = { Physical = true, Magic = true }
+local SUPPORTED_MOB_ABILITY_KINDS = {
+	DirectDamage = true,
+	AreaDamage = true,
+	DamageOverTime = true,
+	Crippling = true,
+	AllyDamageBuff = true,
+	SelfDamageBuff = true,
+}
 
 local function assertFiniteNumber(value: any, field: string, allowZero: boolean?)
 	assert(type(value) == "number", field .. " must be a number")
@@ -48,6 +61,7 @@ return function(TestRunner)
 		assertUniqueStableIds(ArchetypeDefinitions, "archetype")
 		assertUniqueStableIds(SkillDefinitions, "skill")
 		assertUniqueStableIds(MobDefinitions, "mob")
+		assertUniqueStableIds(MobAbilityDefinitions, "mob ability")
 	end)
 
 	TestRunner.run("archetypes declare their approved resource and basic attack", function()
@@ -77,6 +91,8 @@ return function(TestRunner)
 			local archetype = ArchetypeDefinitions[definition.archetypeId]
 			local prefix = definition.id .. "."
 			assert(type(definition.displayName) == "string" and definition.displayName ~= "", prefix .. "displayName is required")
+			assertFiniteNumber(definition.unlockLevel, prefix .. "unlockLevel")
+			assert(definition.unlockLevel % 1 == 0 and definition.unlockLevel <= ProgressionConfig.LevelCap, prefix .. "unlockLevel must be a supported integer level")
 			assert(archetype ~= nil, prefix .. "archetypeId must reference an archetype")
 			assert(definition.resourceType == archetype.resourceType, prefix .. "resourceType must match archetype")
 			assert(SUPPORTED_TARGETS[definition.targetType], prefix .. "targetType is unsupported")
@@ -166,32 +182,109 @@ return function(TestRunner)
 		assert(SkillDefinitions.mystic_basic_attack.cooldownSeconds == CombatConfig.MysticBasicAttackInterval)
 	end)
 
-	TestRunner.run("mob definitions declare approved aggression and AI radii", function()
+	TestRunner.run("mob definitions cover the v0.1 world population and combat contract", function()
+		assert(MobDefinitions.young_wolf.level == 1 and MobDefinitions.young_wolf.rewardXP == 15)
+		assert(MobDefinitions.grey_wolf.level == 2 and MobDefinitions.grey_wolf.rewardXP == 25)
+		assert(MobDefinitions.wolf_pack_leader.level == 3)
+		assert(MobDefinitions.spider.level == 4 and MobDefinitions.spider.rewardXP == 50)
+		assert(MobDefinitions.goblin_chieftain.rank == "Elite")
+		assert(MobDefinitions.spider.socialAssistRadius == 0)
+		assert(MobDefinitions.brood_spider.socialAssistRadius == 0)
+		assert(MobDefinitions.moonbound_warden.level == 10 and MobDefinitions.moonbound_warden.rank == "Elite")
 		assert(MobDefinitions.young_wolf.aggressionMode == "Passive")
 		assert(MobDefinitions.grey_wolf.aggressionMode == "Aggressive")
 		assert(MobDefinitions.grey_wolf.attackKind == "Melee")
 		assert(MobDefinitions.spider.attackKind == "Ranged")
+
 		for _, definition in MobDefinitions do
 			local prefix = definition.id .. "."
 			assert(type(definition.displayName) == "string" and definition.displayName ~= "", prefix .. "displayName is required")
+			assertFiniteNumber(definition.level, prefix .. "level")
+			assert(definition.level % 1 == 0 and definition.level >= 1 and definition.level <= ProgressionConfig.LevelCap, prefix .. "level must be a supported integer")
 			assert(SUPPORTED_AGGRESSION_MODES[definition.aggressionMode], prefix .. "aggressionMode is unsupported")
 			assert(SUPPORTED_MOB_RANKS[definition.rank], prefix .. "rank is unsupported")
 			assert(SUPPORTED_MOB_ATTACK_KINDS[definition.attackKind], prefix .. "attackKind is unsupported")
+			assert(SUPPORTED_MOB_DAMAGE_TYPES[definition.basicAttackDamageType], prefix .. "basicAttackDamageType is unsupported")
+			assert(type(definition.faction) == "string" and definition.faction ~= "", prefix .. "faction is required")
+			assert(type(definition.visualProfile) == "string" and definition.visualProfile ~= "", prefix .. "visualProfile is required")
 			assertFiniteNumber(definition.maxHealth, prefix .. "maxHealth")
+			assertFiniteNumber(definition.physicalDefense, prefix .. "physicalDefense", true)
+			assertFiniteNumber(definition.magicDefense, prefix .. "magicDefense", true)
 			assertFiniteNumber(definition.rewardXP, prefix .. "rewardXP", true)
+			assert(type(definition.lootTableId) == "string" and LootTableDefinitions[definition.lootTableId] ~= nil, prefix .. "lootTableId must reference a loot table")
 			assertFiniteNumber(definition.respawnSeconds, prefix .. "respawnSeconds")
 			assertFiniteNumber(definition.detectionRadius, prefix .. "detectionRadius", true)
 			assertFiniteNumber(definition.aggroRadius, prefix .. "aggroRadius", true)
 			assertFiniteNumber(definition.reacquireRadius, prefix .. "reacquireRadius", true)
 			assertFiniteNumber(definition.leashDistance, prefix .. "leashDistance")
 			assertFiniteNumber(definition.attackRange, prefix .. "attackRange")
+			assertFiniteNumber(definition.basicAttackRange, prefix .. "basicAttackRange")
+			assert(definition.basicAttackRange <= definition.attackRange, prefix .. "basic attack range cannot exceed engagement range")
 			assertFiniteNumber(definition.basicAttackDamage, prefix .. "basicAttackDamage")
 			assertFiniteNumber(definition.attackWindupSeconds, prefix .. "attackWindupSeconds", true)
 			assertFiniteNumber(definition.attackIntervalSeconds, prefix .. "attackIntervalSeconds")
 			assert(definition.attackWindupSeconds < definition.attackIntervalSeconds, prefix .. "attack windup must finish before the next attack")
 			assertFiniteNumber(definition.chaseSpeed, prefix .. "chaseSpeed")
 			assertFiniteNumber(definition.decisionIntervalSeconds, prefix .. "decisionIntervalSeconds")
+			assertFiniteNumber(definition.socialAssistRadius, prefix .. "socialAssistRadius", true)
 			assert(type(definition.restoreHealthOnReturn) == "boolean", prefix .. "restoreHealthOnReturn must be boolean")
+			assert(type(definition.abilityIds) == "table", prefix .. "abilityIds must be a table")
+			local seenAbilities = {}
+			for _, abilityId in definition.abilityIds do
+				assert(not seenAbilities[abilityId], prefix .. "abilityIds must be unique")
+				seenAbilities[abilityId] = true
+				assert(MobAbilityDefinitions[abilityId] ~= nil, prefix .. "references unknown ability " .. abilityId)
+			end
+		end
+	end)
+
+	TestRunner.run("mob abilities use bounded server-authoritative tuning", function()
+		for key, ability in MobAbilityDefinitions do
+			local prefix = ability.id .. "."
+			assert(key == ability.id)
+			assert(type(ability.displayName) == "string" and ability.displayName ~= "", prefix .. "displayName is required")
+			assert(SUPPORTED_MOB_ABILITY_KINDS[ability.kind], prefix .. "kind is unsupported")
+			assert(SUPPORTED_MOB_DAMAGE_TYPES[ability.damageType], prefix .. "damageType is unsupported")
+			assertFiniteNumber(ability.range, prefix .. "range", true)
+			assertFiniteNumber(ability.damage, prefix .. "damage", true)
+			assertFiniteNumber(ability.windupSeconds, prefix .. "windupSeconds", true)
+			assertFiniteNumber(ability.cooldownSeconds, prefix .. "cooldownSeconds")
+			assert(type(ability.presentationKey) == "string" and ability.presentationKey ~= "", prefix .. "presentationKey is required")
+			if ability.durationSeconds ~= nil then assertFiniteNumber(ability.durationSeconds, prefix .. "durationSeconds", true) end
+			if ability.tickDamage ~= nil then assertFiniteNumber(ability.tickDamage, prefix .. "tickDamage", true) end
+			if ability.tickIntervalSeconds ~= nil then assertFiniteNumber(ability.tickIntervalSeconds, prefix .. "tickIntervalSeconds") end
+			if ability.movementMultiplier ~= nil then
+				assertFiniteNumber(ability.movementMultiplier, prefix .. "movementMultiplier")
+				assert(ability.movementMultiplier <= 1, prefix .. "movementMultiplier must not speed the player up")
+			end
+			if ability.attackSpeedMultiplier ~= nil then
+				assertFiniteNumber(ability.attackSpeedMultiplier, prefix .. "attackSpeedMultiplier")
+				assert(ability.attackSpeedMultiplier <= 1, prefix .. "attackSpeedMultiplier must not speed the player up")
+			end
+			if ability.damageMultiplier ~= nil then assertFiniteNumber(ability.damageMultiplier, prefix .. "damageMultiplier") end
+			if ability.radius ~= nil then assertFiniteNumber(ability.radius, prefix .. "radius") end
+			if ability.healthBelowFraction ~= nil then
+				assert(ability.healthBelowFraction > 0 and ability.healthBelowFraction <= 1, prefix .. "healthBelowFraction must be in (0, 1]")
+			end
+		end
+
+		assert(MobAbilityDefinitions.spider_venom_spit.kind == "DamageOverTime")
+		assert(MobAbilityDefinitions.spider_crippling_venom.kind == "Crippling")
+		assert(MobAbilityDefinitions.goblin_war_chant.kind == "AllyDamageBuff")
+		assert(MobAbilityDefinitions.goblin_cleave.kind == "AreaDamage")
+		assert(MobAbilityDefinitions.goblin_cleave.radius ~= nil and MobAbilityDefinitions.goblin_cleave.radius > 0)
+		assert(MobAbilityDefinitions.warden_enrage.healthBelowFraction == 0.50)
+	end)
+
+	TestRunner.run("loot tables reference known stable item ids", function()
+		for key, definition in LootTableDefinitions do
+			assert(key == definition.id)
+			assert(definition.lunaMin >= 0 and definition.lunaMin <= definition.lunaMax)
+			for _, entry in definition.entries do
+				assert(ItemDefinitions[entry.itemId] ~= nil, definition.id .. " references unknown item " .. entry.itemId)
+				assert(entry.chance >= 0 and entry.chance <= 1)
+				assert(entry.minQuantity >= 1 and entry.minQuantity <= entry.maxQuantity)
+			end
 		end
 	end)
 

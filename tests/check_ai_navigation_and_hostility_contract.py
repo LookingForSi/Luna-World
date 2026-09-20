@@ -29,6 +29,6 @@ require(AI, "workspace:Raycast", "mob navigation must detect a blocking low obst
 require(AI, "chooseObstacleDetour", "mob navigation needs a deterministic lateral detour around blocked direct movement")
 require(MOBS, "function MobService.registerHostileAction", "non-damaging hostile effects need a server-owned aggro seam")
 require(EFFECTS, "MobService.registerHostileAction(target.entityId, actor)", "movement debuffs such as Snare must provoke the affected mob")
-require(LOG, 'root.Position = UDim2.new(0, 8, 1, -8)', "combat log must sit in the bottom-left corner")
+require(LOG, 'root.Position = UDim2.new(0, HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)', "combat log must use the shared bottom-left HUD corner margin")
 
 print("AI navigation, hostile debuff, and combat-log placement contract: PASS")

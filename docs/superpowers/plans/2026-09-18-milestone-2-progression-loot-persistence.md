@@ -178,7 +178,9 @@ Action bar показывает locked state.
 
 **Commit:** `feat: add level based stat growth`
 
-### Gate A — progression review
+### Gate A — progression review — PASS 2026-09-19
+
+Owner runtime/TestRunner evidence: **142 passed, 0 failed**. Базовый combat loop, progression rules, profile/migration/lease unit specs и M1 runtime characterization прошли без regression.
 
 Независимо проверить:
 
@@ -309,6 +311,9 @@ Manual Studio/DataStore acceptance пока может быть DEFERRED, есл
 # Phase C — progression поверх profile
 
 ## Task 10. Перевести ProgressionService с SessionXP на profile
+
+**Progression UX/tuning feedback 2026-09-19:** до persistent profile integration добавлены явные mob levels, разные base XP по типам существ и server-authoritative XP multiplier по разнице уровней. При отставании mob на 5+ levels награда становится 0; higher-level mobs дают умеренный бонус. Target HUD показывает уровень mob. AUTO уже имел binding `G / L2`, теперь он явно подписан на action bar.
+
 
 Убрать временную модель `SessionXP` как source of truth.
 
@@ -580,6 +585,11 @@ Gamepad/mobile semantic actions подключить через существу
 **Commit:** `feat: add inventory and equipment interface`
 
 ## Task 22. Real level/XP HUD
+
+**Combat log UX feedback 2026-09-19:** панель переименована из «БОЙ» в «ЛОГ», переведена на вертикально прокручиваемый history view (до 200 записей), live-follow не сбивает пользователя, если он прокрутил историю вверх, а server-replicated level-up добавляет запись «Получен уровень N».
+
+
+**Частично выполнено досрочно 2026-09-19 по owner UX feedback:** временный `SessionXpHudReference` удалён из HUD; XP теперь считается относительно текущего level threshold, добавлен отдельный level badge, точные current/maximum значения CP/HP/resource и отключён дублирующий Roblox stock health bar. Combat-log rewards из этого task остаются до появления loot/Luna.
 
 Заменить временный `SessionXpHudReference`.
 

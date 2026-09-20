@@ -2,6 +2,12 @@
 
 Roadmap описывает порядок доказательства основных рисков vertical slice. Это не обещание календарных сроков.
 
+## Текущий checkpoint — dev0.1 / 0.1.0-dev.2 — 2026-09-20
+
+Первая целостная playable-база собрана в `main`-кандидат: combat/skills, progression/persistence, Luna Village и открытая карта до Ancient Approach, полный Mob Content Pass и узкая No-Grade деревенская экономика работают как единый контур.
+
+Это development checkpoint, а не закрытие полного v0.1 release gate. Quest chain, party, Ruins of Selene, финальный boss и последующие polish/multiplayer acceptance остаются впереди.
+
 ## Milestone 0 — Playground
 
 Цель: доказать базовую multiplayer combat loop на серой тестовой арене.
@@ -53,9 +59,9 @@ Roadmap описывает порядок доказательства осно�
 - особенно проверить Следопыта как потенциально доминирующий набор: Snare + Power Shot + Rapid Shot + ranged basic attack;
 - убрать очевидный безусловный выбор одного класса, но не пытаться финализировать численный баланс до появления levels/equipment и более полного PvE-контента.
 
-Следующий активный milestone: **Milestone 2 — Progression, Loot & Persistence**.
+Следующий крупный продуктовый фокус после checkpoint: **закрытие оставшихся M3–M6 блоков полного v0.1**.
 
-## Milestone 2 — Progression, Loot & Persistence
+## Milestone 2 — Progression, Loot & Persistence — реализован в dev0.1
 
 Добавить:
 
@@ -73,9 +79,9 @@ Roadmap описывает порядок доказательства осно�
 
 ### Stabilization gate M2
 
-Особое внимание persistence safety и item IDs.
+Базовый контур progression/inventory/equipment/persistence интегрирован. DataVersion остаётся отдельным контрактом; перед финальным v0.1 требуется повторная multiplayer/save-load приёмка.
 
-## Milestone 3 — Luna Village & Quests
+## Milestone 3 — Luna Village & Quests — частично реализован
 
 Добавить:
 
@@ -84,16 +90,20 @@ Roadmap описывает порядок доказательства осно�
 - quest chain;
 - merchant;
 - blacksmith/equipment interaction;
+- узкий No-Grade crafting catalog без профессий и recipe items;
+- merchant buy/sell, материалы, consumables и return scroll;
 - onboarding;
 - respawn/safe zone flow.
 
-Результат: проект впервые выглядит как маленькая игра, а не набор systems.
+Текущее состояние dev0.1: Luna Village, merchant, blacksmith, No-Grade economy, return flow и LV6 onboarding реализованы; полноценная quest chain ещё не реализована.
+
+Результат milestone после завершения quests: проект впервые выглядит как маленькая игра, а не набор systems.
 
 ### Stabilization gate M3
 
 Проверить onboarding без подсказок разработчика и убрать технические заглушки, мешающие playtest.
 
-## Milestone 4 — Moonfall Valley
+## Milestone 4 — Moonfall Valley — основной open-world контур реализован
 
 Добавить полноценную первую open-world зону:
 
@@ -104,7 +114,9 @@ Roadmap описывает порядок доказательства осно�
 - progression от village к ruins;
 - первый целостный art/environment pass.
 
-Результат: игровой маршрут 1–10 существует в одном общем мире.
+Текущее состояние dev0.1: маршрут Luna Meadows → Moonfall Road → Goblin Camp / Spider Hollow → Dark Woodland → Cemetery / Shrine → Ancient Approach населён authoritative mobs уровней 1–10 и open-world elites.
+
+Результат: игровой маршрут 1–10 существует в одном общем мире. Art/environment и balance passes продолжаются.
 
 ### Stabilization gate M4
 
@@ -189,7 +201,7 @@ v0.2 не проектируется детально до результато�
 - более глубокая party/social игра;
 - экономика;
 - PvP;
-- professions/crafting;
+- профессии и расширенный crafting;
 - monetization cosmetics/convenience.
 
 Приоритеты определяются поведением реальных игроков, а не желанием заранее реализовать полный список MMO-функций.

@@ -45,7 +45,7 @@ require(HUD, "getRejectionText", "known server rejection reasons must be rendere
 require(HUD, "TextChatService.ChatWindowConfiguration", "HUD must place the stock chat explicitly")
 require(HUD, "Enum.VerticalAlignment.Bottom", "chat window must live at the lower-left")
 require(HUD, "Vector2.new(1, 0)", "player status HUD must anchor from the upper-right")
-require(HUD, "UDim2.new(1, -18, 0, 24)", "player status HUD must sit below the Roblox top bar")
+require(HUD, "UDim2.new(1, -HudLayout.CornerMargin, 0, HudLayout.CornerMargin)", "player status HUD must use the shared upper-right corner margin")
 
 server = (ROOT / "src/server/services/CombatService.luau").read_text(encoding="utf-8")
 if 'if entityId == "" then' not in server or 'select("#", ...)' not in server:

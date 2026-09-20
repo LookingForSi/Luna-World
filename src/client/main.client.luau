@@ -9,11 +9,28 @@ local RespawnPrompt = require(clientRoot.ui.RespawnPrompt)
 local ActionBar = require(clientRoot.ui.ActionBar)
 local StudioTestPanel = require(clientRoot.ui.StudioTestPanel)
 local MovementController = require(clientRoot.controllers.MovementController)
+local InventoryController = require(clientRoot.controllers.InventoryController)
+local InventoryUi = require(clientRoot.ui.InventoryUi)
+local EconomyController = require(clientRoot.controllers.EconomyController)
+local EconomyUi = require(clientRoot.ui.EconomyUi)
 local CombatPresentationController = require(clientRoot.controllers.CombatPresentationController)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombatUiRules)
+
+local function disableStockHealthGui(): ()
+	for _ = 1, 5 do
+		local ok = pcall(function()
+			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+		end)
+		if ok then return end
+		task.wait(0.1)
+	end
+end
+
+disableStockHealthGui()
 
 MovementController.start()
 CombatPresentationController.start()
@@ -21,6 +38,15 @@ CombatHud.start()
 CombatLog.start()
 RespawnPrompt.start()
 StudioTestPanel.start()
+InventoryUi.start({
+	equip = InventoryController.requestEquip,
+	unequip = InventoryController.requestUnequip,
+	consume = InventoryController.requestConsume,
+	discard = InventoryController.requestDiscard,
+})
+InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult)
+EconomyUi.start({ buy = EconomyController.buy, sell = EconomyController.sell, craft = EconomyController.craft })
+EconomyController.start(EconomyUi.open, EconomyUi.setSnapshot, EconomyUi.showResult)
 TargetController.start(function(target: Model?)
 	CombatHud.setTarget(target)
 end)
@@ -35,6 +61,10 @@ local archetypeConnection = Players.LocalPlayer:GetAttributeChangedSignal(Combat
 
 script.Destroying:Connect(function()
 	archetypeConnection:Disconnect()
+	InventoryController.stop()
+	EconomyController.stop()
+	EconomyUi.stop()
+	InventoryUi.stop()
 	StudioTestPanel.stop()
 	MovementController.stop()
 	CombatPresentationController.stop()
