@@ -16,8 +16,10 @@ local player = Players.LocalPlayer
 local screenGui: ScreenGui? = nil
 local autoButton: TextButton? = nil
 local attackButton: TextButton? = nil
+local inventoryButton: TextButton? = nil
 local autoConnection: RBXScriptConnection? = nil
 local renderConnection: RBXScriptConnection? = nil
+local inputTypeConnection: RBXScriptConnection? = nil
 local buttonConnections: { RBXScriptConnection } = {}
 local skillButtons: { [string]: TextButton } = {}
 local skillResourceTypes: { [string]: string } = {}
@@ -42,6 +44,23 @@ local function autoBindingHint(): string
 		return "L2"
 	end
 	return "G"
+end
+
+local function inventoryBindingText(): string
+	local inputType = UserInputService:GetLastInputType()
+	if inputType == Enum.UserInputType.Touch then
+		return "ИНВЕНТАРЬ"
+	end
+	if string.find(inputType.Name, "Gamepad") ~= nil then
+		return "ИНВЕНТАРЬ [SELECT]"
+	end
+	return "ИНВЕНТАРЬ [I]"
+end
+
+local function updateInventoryHint(): ()
+	if inventoryButton ~= nil then
+		inventoryButton.Text = inventoryBindingText()
+	end
 end
 
 local function updateAuto(): ()
@@ -179,8 +198,9 @@ function ActionBar.start(
 	content.BackgroundTransparency = 1
 	content.Parent = frame
 
-	local inventoryButton = makeButton(content, "Inventory", "ИНВЕНТАРЬ [I]", UDim2.new(0.66, -2, 0, 36))
-	inventoryButton.Position = UDim2.new(0.34, 0, 0, 0)
+	inventoryButton = makeButton(content, "Inventory", inventoryBindingText(), UDim2.new(0.66, -2, 0, 36))
+	local inventory = inventoryButton :: TextButton
+	inventory.Position = UDim2.new(0.34, 0, 0, 0)
 
 	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.32, -2, 0, 44))
 	local auto = autoButton :: TextButton
@@ -196,28 +216,31 @@ function ActionBar.start(
 
 	buildSkillBar(gui, skillIds, onSkill)
 
-	table.insert(buttonConnections, inventoryButton.Activated:Connect(onInventoryToggle))
+	table.insert(buttonConnections, inventory.Activated:Connect(onInventoryToggle))
 	table.insert(buttonConnections, attack.Activated:Connect(onAttack))
 	table.insert(buttonConnections, auto.Activated:Connect(onAutoToggle))
 	table.insert(buttonConnections, clearButton.Activated:Connect(onClearTarget))
 
 	autoConnection = player:GetAttributeChangedSignal(CombatConfig.AutoAttackEnabledAttribute):Connect(updateAuto)
 	renderConnection = RunService.RenderStepped:Connect(updateCooldowns)
+	inputTypeConnection = UserInputService.LastInputTypeChanged:Connect(updateInventoryHint)
 	screenGui = gui
 	updateAuto()
 	updateCooldowns()
+	updateInventoryHint()
 end
 
 function ActionBar.stop(): ()
 	if autoConnection ~= nil then autoConnection:Disconnect() end
 	if renderConnection ~= nil then renderConnection:Disconnect() end
-	autoConnection, renderConnection = nil, nil
+	if inputTypeConnection ~= nil then inputTypeConnection:Disconnect() end
+	autoConnection, renderConnection, inputTypeConnection = nil, nil, nil
 	for _, connection in buttonConnections do connection:Disconnect() end
 	table.clear(buttonConnections)
 	table.clear(skillButtons)
 	table.clear(skillResourceTypes)
 	if screenGui ~= nil then screenGui:Destroy() end
-	screenGui, autoButton, attackButton = nil, nil, nil
+	screenGui, autoButton, attackButton, inventoryButton = nil, nil, nil, nil
 end
 
 return ActionBar
