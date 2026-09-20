@@ -43,6 +43,14 @@ def main() -> None:
     assert "workspace:Raycast" not in grounding  # use explicit Workspace service consistently
     assert "Workspace:Raycast" in grounding
     assert "Enum.RaycastFilterType.Include" in grounding
+    for token in (
+        "treeSurfaceAt",
+        "treeParams.IgnoreWater = false",
+        "TREE_MIN_NORMAL_Y",
+        "Enum.Material.Grass",
+        "Enum.Material.LeafyGrass",
+    ):
+        assert token in grounding
 
     bootstrap = read(ROOT / "src/server/world/WorldBootstrap.server.luau")
     assert "PlayableWorldBlockout" in bootstrap
@@ -52,7 +60,7 @@ def main() -> None:
     assert "baseplate.CanCollide = false" in bootstrap
 
     builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
-    assert 'TerrainRevision", "terrain-v06"' in builder
+    assert 'TerrainRevision", "terrain-v07"' in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
     assert "WorldDressingBlockout" in builder
@@ -106,6 +114,9 @@ def main() -> None:
         "BasinFloorFilled",
         "GoblinCemeteryLake",
         'HazardKind = "Lake"',
+        "LAKE_SURFACE_DROP = 8",
+        "shapeGoblinCemeteryLakeHillCliff",
+        'HillBankCliff", true',
         "DarkWoodlandThreshold",
         "OldCemetery",
         "FallenShrine",
@@ -114,6 +125,8 @@ def main() -> None:
     ):
         assert token in north
     assert "BillboardGui" not in north
+    assert "Grounding.treeSurfaceAt(position)" in north
+    assert "for index = 1, 11 do" in north
 
     dressing = read(ROOT / "src/server/world/WorldDressingBlockout.luau")
     for token in (
@@ -131,6 +144,7 @@ def main() -> None:
         assert token in dressing
     assert "MobPlaceholder" not in dressing
     assert "spawn_spider_meadow_pocket" not in dressing
+    assert "Grounding.treeSurfaceAt(position)" in dressing
 
     composition = read(ROOT / "src/server/world/WorldCompositionBlockout.luau")
     for token in (
@@ -160,6 +174,8 @@ def main() -> None:
     assert "MobPlaceholder" not in composition
     assert "FarmFieldRow" not in composition
     assert "createCliffWall" not in composition
+    assert composition.count("Grounding.treeSurfaceAt(position)") >= 2
+    assert '"DarkWoodlandWestMass"' in composition and "\n\t\t15,\n\t\t45\n" in composition
 
     presentation = read(ROOT / "src/client/world-preview/ZonePresentation.client.luau")
     assert "ZoneToast" in presentation
