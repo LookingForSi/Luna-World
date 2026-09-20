@@ -124,6 +124,9 @@ def main() -> None:
         "FallenShrine",
         "AncientApproach",
         "SeleneGateLeft",
+        "gateHalfWidth = 32",
+        "center + Vector3.new(-halfX, 0, -gateHalfWidth)",
+        "center + Vector3.new(-halfX, 0, gateHalfWidth)",
     ):
         assert token in north
     assert "BillboardGui" not in north
@@ -198,6 +201,7 @@ def main() -> None:
         "zone_fallen_shrine",
         "zone_ancient_approach",
         "poi_moonfall_farm",
+        "poi_young_wolf_staging",
         "spawn_young_wolf_farm",
         "poi_old_cemetery",
         "poi_fallen_shrine",
