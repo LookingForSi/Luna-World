@@ -28,4 +28,33 @@ function HudLayout.applyPanelStyle(frame: Frame): ()
 	stroke.Parent = frame
 end
 
+function HudLayout.makeCloseButton(parent: Instance, zIndex: number?): TextButton
+	local button = Instance.new("TextButton")
+	button.Name = "Close"
+	button.AnchorPoint = Vector2.new(1, 0)
+	button.Position = UDim2.new(1, -10, 0, 10)
+	button.Size = UDim2.fromOffset(32, 30)
+	button.BackgroundColor3 = Color3.fromRGB(42, 45, 56)
+	button.BackgroundTransparency = 0.05
+	button.BorderSizePixel = 0
+	button.Text = "×"
+	button.TextColor3 = Color3.fromRGB(240, 240, 244)
+	button.Font = Enum.Font.GothamBold
+	button.TextSize = 19
+	button.ZIndex = zIndex or 20
+	button.Parent = parent
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 4)
+	corner.Parent = button
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = HudLayout.PanelStrokeColor
+	stroke.Transparency = 0.18
+	stroke.Thickness = 1
+	stroke.Parent = button
+
+	return button
+end
+
 return table.freeze(HudLayout)
