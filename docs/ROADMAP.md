@@ -65,7 +65,7 @@ Roadmap описывает порядок доказательства осно�
 
 Добавить:
 
-- levels 1–10;
+- levels 1–15;
 - progression curve;
 - loot tables;
 - inventory;
@@ -114,9 +114,9 @@ Roadmap описывает порядок доказательства осно�
 - progression от village к ruins;
 - первый целостный art/environment pass.
 
-Текущее состояние dev0.1: маршрут Luna Meadows → Moonfall Road → Goblin Camp / Spider Hollow → Dark Woodland → Cemetery / Shrine → Ancient Approach населён authoritative mobs уровней 1–10 и open-world elites.
+Текущее состояние dev0.2: маршрут Luna Meadows → Moonfall Road → Goblin Camp / Spider Hollow → Dark Woodland → Cemetery / Shrine → Ancient Approach растянут по authoritative mobs уровней 1–14 и open-world elites.
 
-Результат: игровой маршрут 1–10 существует в одном общем мире. Art/environment и balance passes продолжаются.
+Результат: открытый игровой маршрут 1–14 существует в одном общем мире; уровень 15 зарезервирован под Ruins of Selene и финального boss. Art/environment и balance passes продолжаются.
 
 ### Stabilization gate M4
 
