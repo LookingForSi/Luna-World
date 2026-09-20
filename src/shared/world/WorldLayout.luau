@@ -239,7 +239,7 @@ local WorldLayout: WorldLayoutDefinition = {
 
 	SpawnMarkers = {
 		-- Farm / Meadows: intentionally non-social starter wolves.
-		{ id = "spawn_young_wolf_farm", mobId = "mob_young_wolf", position = scaleXZ(-170, 8, 375), radius = scaleDistance(72), zoneId = "zone_luna_meadows", count = 6, patrolRadius = scaleDistance(28), patrolCycleSeconds = 8 },
+		{ id = "spawn_young_wolf_farm", mobId = "mob_young_wolf", position = scaleXZ(-145, 8, 320), radius = scaleDistance(55), zoneId = "zone_luna_meadows", count = 8, patrolRadius = scaleDistance(44), patrolCycleSeconds = 6 },
 
 		-- Stone Circle: three small linked wolf pairs plus a leader.
 		{ id = "spawn_wolf_pack_south", mobId = "mob_grey_wolf", position = scaleXZ(105, 7, 555), radius = scaleDistance(32), zoneId = "zone_luna_meadows", count = 2, socialGroupId = "wolf_pack_south", patrolRadius = scaleDistance(24), patrolCycleSeconds = 7 },
