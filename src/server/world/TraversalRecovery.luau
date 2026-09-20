@@ -13,33 +13,6 @@ local RECOVERY_OFFSET = Vector3.new(0, 5, 0)
 local SAFE_SAMPLE_MAX_ABOVE_TERRAIN = 28
 local BOUNDS_MARGIN = 10
 
-local function collectWaterHazards(worldRoot: Instance): { BasePart }
-	local hazards: { BasePart } = {}
-	for _, descendant in ipairs(worldRoot:GetDescendants()) do
-		if descendant:IsA("BasePart") and descendant:GetAttribute("WaterRecovery") == true then
-			table.insert(hazards, descendant)
-		end
-	end
-	return hazards
-end
-
-local function containsPoint(part: BasePart, position: Vector3): boolean
-	local localPosition = part.CFrame:PointToObjectSpace(position)
-	local half = part.Size / 2
-	return math.abs(localPosition.X) <= half.X
-		and math.abs(localPosition.Y) <= half.Y
-		and math.abs(localPosition.Z) <= half.Z
-end
-
-local function isInsideWaterHazard(hazards: { BasePart }, position: Vector3): boolean
-	for _, hazard in ipairs(hazards) do
-		if hazard.Parent ~= nil and containsPoint(hazard, position) then
-			return true
-		end
-	end
-	return false
-end
-
 local function insidePlayableBounds(position: Vector3): boolean
 	local bounds = WorldLayout.WorldBounds
 	return position.X >= bounds.minX + BOUNDS_MARGIN
@@ -65,15 +38,14 @@ local function terrainSurfaceY(position: Vector3): number?
 	return result.Position.Y
 end
 
-local function isSafeGroundedPosition(
-	humanoid: Humanoid,
-	rootPart: BasePart,
-	hazards: { BasePart }
-): boolean
-	if humanoid.Health <= 0 or humanoid.FloorMaterial == Enum.Material.Air then
+local function isSafeGroundedPosition(humanoid: Humanoid, rootPart: BasePart): boolean
+	if humanoid.Health <= 0
+		or humanoid:GetState() == Enum.HumanoidStateType.Swimming
+		or humanoid.FloorMaterial == Enum.Material.Air
+	then
 		return false
 	end
-	if not insidePlayableBounds(rootPart.Position) or isInsideWaterHazard(hazards, rootPart.Position) then
+	if not insidePlayableBounds(rootPart.Position) then
 		return false
 	end
 
@@ -92,7 +64,6 @@ local function clearVelocity(rootPart: BasePart)
 end
 
 function TraversalRecovery.start(worldRoot: Instance, spawn: SpawnLocation)
-	local hazards = collectWaterHazards(worldRoot)
 	local lastSafe: { [Player]: CFrame } = {}
 
 	local function spawnCFrame(): CFrame
@@ -128,13 +99,14 @@ function TraversalRecovery.start(worldRoot: Instance, spawn: SpawnLocation)
 					continue
 				end
 
+				-- Terrain water is valid traversal. Recovery only handles genuine
+				-- out-of-world failures; swimming never teleports the player.
 				local fellOut = rootPart.Position.Y < FALL_RECOVERY_Y
-				local fellIntoRiver = isInsideWaterHazard(hazards, rootPart.Position)
-				local swimming = humanoid:GetState() == Enum.HumanoidStateType.Swimming
-				if fellOut or fellIntoRiver or swimming then
+				local leftBounds = not insidePlayableBounds(rootPart.Position)
+				if fellOut or leftBounds then
 					character:PivotTo(lastSafe[player] or spawnCFrame())
 					clearVelocity(rootPart)
-				elseif isSafeGroundedPosition(humanoid, rootPart, hazards) then
+				elseif isSafeGroundedPosition(humanoid, rootPart) then
 					lastSafe[player] = character:GetPivot()
 				end
 			end
