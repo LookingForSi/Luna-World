@@ -1,6 +1,11 @@
 --!strict
 
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
+
+-- Character Lobby owns the first spawn. Disable Roblox auto-spawn before any
+-- world/service waits so a player can never briefly enter gameplay first.
+Players.CharacterAutoLoads = false
 
 local CombatService = require(script.Parent.services.CombatService)
 local MobService = require(script.Parent.services.MobService)
