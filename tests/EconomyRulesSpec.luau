@@ -112,20 +112,35 @@ return function(TestRunner)
 		assert(rejected == nil)
 		assert(profile.Items[peltId].Quantity == 5, "failed batch must not mutate the source profile")
 	end)
-	TestRunner.run("starter grant is archetype-specific and idempotent", function()
+	TestRunner.run("starter grant repairs legacy mismatch without downgrading valid class gear", function()
 		for _, archetype in { "knight", "ranger", "mystic" } do
 			local profile = ProfileSchema.createDefault(); profile.ArchetypeId = archetype
 			local first = assert(StarterGearRules.grantAndEquip(profile, generator(archetype))); local second = assert(StarterGearRules.grantAndEquip(first, generator("again")))
 			assert(#first.Inventory == 0 and #second.Inventory == 0); assert(first.Equipment.Weapon ~= nil and first.Equipment.Weapon == second.Equipment.Weapon)
 			assert(first.Items[first.Equipment.Weapon].ItemId == StarterGearRules.itemForArchetype(archetype))
 		end
-		local inventoryOnly = ProfileSchema.createDefault(); inventoryOnly = assert(InventoryRules.add(inventoryOnly, "weapon_training_sword", 1, generator("legacy")))
-		local equipped = assert(StarterGearRules.grantAndEquip(inventoryOnly, generator("unused"))); assert(equipped.Equipment.Weapon ~= nil and #equipped.Inventory == 0)
 
-		local switched = assert(StarterGearRules.switchArchetype(equipped, "ranger", generator("switch")))
-		assert(switched.ArchetypeId == "ranger")
+		local legacyRanger = ProfileSchema.createDefault()
+		legacyRanger.ArchetypeId = "ranger"
+		legacyRanger.Items.legacySword = { ItemId = "weapon_training_sword", Quantity = 1 }
+		legacyRanger.Equipment.Weapon = "legacySword"
+		local repaired = assert(StarterGearRules.grantAndEquip(legacyRanger, generator("repair")))
+		assert(repaired.Equipment.Weapon ~= nil)
+		assert(repaired.Items[repaired.Equipment.Weapon].ItemId == "weapon_ash_bow")
+		assert(repaired.Inventory[1] == "legacySword")
+
+		local gearedRanger = ProfileSchema.createDefault()
+		gearedRanger.ArchetypeId = "ranger"
+		gearedRanger.Items.hunterBow = { ItemId = "weapon_hunter_bow", Quantity = 1 }
+		gearedRanger.Equipment.Weapon = "hunterBow"
+		gearedRanger = assert(InventoryRules.add(gearedRanger, "weapon_ash_bow", 1, generator("starter")))
+		local preserved = assert(StarterGearRules.grantAndEquip(gearedRanger, generator("unused")))
+		assert(preserved.Equipment.Weapon == "hunterBow")
+
+		local switched = assert(StarterGearRules.switchArchetype(preserved, "mystic", generator("switch")))
+		assert(switched.ArchetypeId == "mystic")
 		assert(switched.Equipment.Weapon ~= nil)
-		assert(switched.Items[switched.Equipment.Weapon].ItemId == "weapon_ash_bow")
+		assert(switched.Items[switched.Equipment.Weapon].ItemId == "weapon_ash_staff")
 		assert(ItemDefinitions.weapon_ash_bow.displayName == "Учебный лук")
 		assert(ItemDefinitions.weapon_ash_staff.displayName == "Учебный посох")
 	end)
