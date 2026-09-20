@@ -18,7 +18,13 @@ return function(TestRunner)
 			assert(ItemDefinitions[recipe.outputItemId] ~= nil)
 			local output = ItemDefinitions[recipe.outputItemId]
 			assert(output.category == "Material" or output.grade == "NoGrade")
-			if recipe.discipline ~= "Material" and output.equipmentSlot ~= nil then slots[recipe.discipline][output.equipmentSlot] = true end
+			if recipe.discipline ~= "Material" and output.equipmentSlot ~= nil then
+				slots[recipe.discipline][output.equipmentSlot] = true
+				if output.equipmentSlot ~= "Accessory" then
+					local expected = if recipe.discipline == "Knight" then "knight" else if recipe.discipline == "Ranger" then "ranger" else "mystic"
+					assert(output.allowedArchetypes ~= nil and #output.allowedArchetypes == 1 and output.allowedArchetypes[1] == expected, recipe.id .. " class ownership")
+				end
+			end
 			for _, ingredient in recipe.ingredients do assert(ItemDefinitions[ingredient.itemId] ~= nil) end
 		end
 		assert(counts.Knight >= 5 and counts.Ranger >= 5 and counts.Mystic >= 5 and counts.Material == 4)
