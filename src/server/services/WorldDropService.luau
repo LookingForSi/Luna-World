@@ -98,9 +98,9 @@ function WorldDropService.spawnForPlayer(player: Player, itemId: string, quantit
 	part.Anchored = true
 	part.CanCollide = false
 	part.CanTouch = false
-	part.CFrame = CFrame.new(position) * if definition.category == "Weapon"
+	part.CFrame = CFrame.new(position) * (if definition.category == "Weapon"
 		then CFrame.Angles(0, 0, math.rad(65))
-		else CFrame.new()
+		else CFrame.new())
 	part.Parent = model
 	model.PrimaryPart = part
 
