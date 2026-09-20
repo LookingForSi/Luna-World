@@ -44,6 +44,7 @@ InventoryUi.start({
 	unequip = InventoryController.requestUnequip,
 	consume = InventoryController.requestConsume,
 	discard = InventoryController.requestDiscard,
+	assignQuickSlot = InventoryController.assignQuickSlot,
 })
 InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult)
 EconomyUi.start({ buy = EconomyController.buy, sell = EconomyController.sell, craft = EconomyController.craft })
@@ -63,7 +64,9 @@ local function syncActionBar(): ()
 		TargetController.clearTarget,
 		InventoryUi.toggle,
 		QuestController.toggleMap,
-		QuestController.toggleJournal
+		QuestController.toggleJournal,
+		InventoryController.requestQuickUse,
+		InventoryController.getQuickSlotState
 	)
 end
 
