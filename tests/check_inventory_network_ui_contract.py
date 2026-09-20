@@ -52,7 +52,7 @@ if "createClientSnapshot" not in SERVICE:
 if "InventoryNetworkService.start()" not in MAIN or "InventoryNetworkService.stop()" not in MAIN:
     raise AssertionError("server bootstrap must own inventory network lifecycle")
 
-for token in ("Enum.KeyCode.I", "Enum.KeyCode.ButtonSelect", "BindActionAtPriority", "ContextActionPriority.High", "requestSnapshot"):
+for token in ("Enum.KeyCode.I", "Enum.KeyCode.ButtonSelect", "BindActionAtPriority", "ContextActionPriority.High", "UserInputService.InputBegan", "GetFocusedTextBox", "requestSnapshot"):
     if token not in CONTROLLER:
         raise AssertionError(f"inventory controller missing {token}")
 
