@@ -200,6 +200,8 @@ local function rebuildDialogue(): boolean
 	return false
 end
 
+local rebuild: () -> ()
+
 local function rebuildSell(): ()
 	if list == nil or snapshot == nil then return end
 	reconcileSellCart()
@@ -316,7 +318,7 @@ local function rebuildSell(): ()
 	end
 end
 
-local function rebuild(): ()
+rebuild = function(): ()
 	clearList()
 	if list == nil then return end
 
