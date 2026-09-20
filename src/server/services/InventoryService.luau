@@ -100,12 +100,22 @@ function InventoryService.grantItem(player: Player, itemId: string, quantity: nu
 	return commit(player, nextProfile)
 end
 
-function InventoryService.discard(player: Player, instanceId: string, quantity: number?): (boolean, string?)
+function InventoryService.discard(
+	player: Player,
+	instanceId: string,
+	quantity: number?
+): (boolean, string?, string?, number?)
 	local profile = PlayerDataService.getProfileCopy(player)
-	if profile == nil then return false, "ProfileNotReady" end
+	if profile == nil then return false, "ProfileNotReady", nil, nil end
+	local record = profile.Items[instanceId]
+	if record == nil then return false, "NotOwned", nil, nil end
+	local removedQuantity = quantity or record.Quantity
+	local itemId = record.ItemId
 	local nextProfile, reason = InventoryRules.discard(profile, instanceId, quantity)
-	if nextProfile == nil then return false, reason end
-	return commit(player, nextProfile)
+	if nextProfile == nil then return false, reason, nil, nil end
+	local ok, commitReason = commit(player, nextProfile)
+	if not ok then return false, commitReason, nil, nil end
+	return true, nil, itemId, removedQuantity
 end
 
 function InventoryService.equip(player: Player, instanceId: string): (boolean, string?)
