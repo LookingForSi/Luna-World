@@ -28,6 +28,7 @@ type Record = {
 	patrolCycleSeconds: number,
 	nextPatrolAt: number,
 	patrolIndex: number,
+	patrolTarget: Vector3?,
 	spawnIndex: number,
 	socialGroupId: string?,
 	connections: { RBXScriptConnection },
@@ -91,6 +92,9 @@ local function setState(record: Record, state: State): ()
 		record.model:SetAttribute(CombatConfig.MobActionGenerationAttribute, if typeof(actionGeneration) == "number" then actionGeneration + 1 else 1)
 		record.model:SetAttribute(CombatConfig.MobActionStateAttribute, nil)
 		record.model:SetAttribute(CombatConfig.MobActionInterruptibleAttribute, nil)
+	end
+	if state ~= "Idle" then
+		record.patrolTarget = nil
 	end
 	record.model:SetAttribute(CombatConfig.MobAIStateAttribute, state)
 	record.model:SetAttribute(CombatConfig.MobAITargetAttribute, if record.target ~= nil then record.target.UserId else nil)
@@ -270,11 +274,24 @@ local function decide(record: Record, now: number): ()
 		if MobAIRules.shouldRestoreHealth(previousState, nextState, definition.restoreHealthOnReturn) then
 			humanoid.Health = humanoid.MaxHealth
 		end
-		if record.patrolRadius > 0 and now >= record.nextPatrolAt then
-			record.patrolIndex += 1
-			record.nextPatrolAt = now + record.patrolCycleSeconds
-			moveToward(record, patrolDestination(record, root.Position.Y), capturedGeneration, now)
-		elseif previousState ~= "Idle" or record.patrolRadius <= 0 then
+		if record.patrolRadius > 0 then
+			if record.patrolTarget ~= nil and flatDistance(root.Position, record.patrolTarget) <= 7 then
+				record.patrolTarget = nil
+				record.nextPatrolAt = now + record.patrolCycleSeconds
+			end
+			if record.patrolTarget == nil and now >= record.nextPatrolAt then
+				record.patrolIndex += 1
+				record.patrolTarget = patrolDestination(record, root.Position.Y)
+			end
+			-- Patrol destinations are advanced every AI decision, not once per cycle.
+			-- Otherwise pathfinding only moves to its next local waypoint and patrols
+			-- appear to shuffle in place around their spawn.
+			if record.patrolTarget ~= nil then
+				moveToward(record, record.patrolTarget, capturedGeneration, now)
+			elseif previousState ~= "Idle" then
+				humanoid:MoveTo(root.Position)
+			end
+		elseif previousState ~= "Idle" then
 			humanoid:MoveTo(root.Position)
 		end
 	end
@@ -301,6 +318,7 @@ local function register(model: Model, definition: CombatTypes.MobDefinition, hom
 		patrolIndex = if typeof(model:GetAttribute("SocialGroupId")) == "string"
 			then 0
 			else (if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 0),
+		patrolTarget = nil,
 		spawnIndex = if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 1,
 		socialGroupId = if typeof(model:GetAttribute("SocialGroupId")) == "string" then model:GetAttribute("SocialGroupId") :: string else nil,
 		connections = {},
