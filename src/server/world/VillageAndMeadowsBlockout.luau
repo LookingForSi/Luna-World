@@ -69,17 +69,27 @@ local function createHouse(
 	return model
 end
 
-local function createSimpleNpc(parent: Instance, name: string, position: Vector3)
+local function createSimpleNpc(parent: Instance, name: string, position: Vector3, role: string?): Model
 	local model = P.model(parent, name)
+	if role ~= nil then
+		model:SetAttribute("NpcRole", role)
+		model:SetAttribute("InteractiveNpc", true)
+	end
+
 	local ground = Grounding.surfaceAt(position)
+	local bodyColor = if role == "Merchant"
+		then Color3.fromRGB(128, 93, 60)
+		elseif role == "Blacksmith"
+		then Color3.fromRGB(82, 88, 96)
+		else COLORS.npc
 	P.part(
 		model,
 		"Body",
 		Vector3.new(3, 5, 2),
 		CFrame.new(ground + Vector3.new(0, 3.5, 0)),
 		Enum.Material.SmoothPlastic,
-		COLORS.npc,
-		{ canCollide = false, attributes = { Decorative = true } }
+		bodyColor,
+		{ canCollide = false, attributes = { Decorative = role == nil } }
 	)
 	P.part(
 		model,
@@ -88,8 +98,9 @@ local function createSimpleNpc(parent: Instance, name: string, position: Vector3
 		CFrame.new(ground + Vector3.new(0, 7, 0)),
 		Enum.Material.SmoothPlastic,
 		Color3.fromRGB(190, 166, 142),
-		{ canCollide = false, shape = Enum.PartType.Ball, attributes = { Decorative = true } }
+		{ canCollide = false, shape = Enum.PartType.Ball, attributes = { Decorative = role == nil } }
 	)
+	return model
 end
 
 local function createSheep(parent: Instance, name: string, position: Vector3)
@@ -264,7 +275,8 @@ local function createVillage(parent: Instance, positions: { [string]: Vector3 })
 	P.groundedPart(village, "VillageShrine", shrine, Vector3.new(22, 12, 18), Enum.Material.Limestone, Color3.fromRGB(136, 136, 128))
 
 	createSimpleNpc(village, "VillageNpc01", square + Vector3.new(16, 0, -12))
-	createSimpleNpc(village, "VillageNpc02", merchant + Vector3.new(-10, 0, 12))
+	createSimpleNpc(village, "MerchantNpc", merchant + Vector3.new(-8, 0, 6), "Merchant")
+	createSimpleNpc(village, "BlacksmithNpc", positions.poi_blacksmith + Vector3.new(-8, 0, 8), "Blacksmith")
 end
 
 local function createFenceLine(parent: Instance, name: string, fromPosition: Vector3, toPosition: Vector3)
