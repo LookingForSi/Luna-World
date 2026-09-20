@@ -132,7 +132,7 @@ function StudioTestPanel.start(): ()
 	levelValue.AutoButtonColor = false
 	levelValueLabel = levelValue
 	local levelUp = makeLevelButton("LevelUp", "LV +", 154, 62)
-	local levelMax = makeLevelButton("LevelMax", "LV 10", 222, 70)
+	local levelMax = makeLevelButton("LevelMax", string.format("LV %d", ProgressionConfig.LevelCap), 222, 70)
 
 	table.insert(buttonConnections, levelDown.Activated:Connect(function()
 		levelRemote:FireServer(math.max(1, currentLevel() - 1))
