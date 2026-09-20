@@ -89,8 +89,12 @@ local function createStump(parent: Instance, name: string, position: Vector3, he
 end
 
 local function createTree(parent: Instance, name: string, position: Vector3, height: number, dead: boolean?)
+	local ground, plantable = Grounding.treeSurfaceAt(position)
+	if not plantable or ground == nil then
+		return
+	end
+
 	local model = P.model(parent, name)
-	local ground = Grounding.surfaceAt(position)
 	local trunkColor = if dead then COLORS.deadWood else COLORS.darkTimber
 
 	P.part(
