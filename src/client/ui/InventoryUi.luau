@@ -379,7 +379,9 @@ function InventoryUi.start(actionCallbacks: any): ()
 	blocker.Name = "ModalBlocker"
 	blocker.Size = UDim2.fromScale(1, 1)
 	blocker.BackgroundColor3 = Color3.new(0, 0, 0)
-	blocker.BackgroundTransparency = 0.45
+	-- Keep the blocker only as an input shield. The previous 55% black overlay
+	-- made both the world and low-ZIndex inventory contents look unreadably dim.
+	blocker.BackgroundTransparency = 1
 	blocker.Text = ""
 	blocker.Active = true
 	blocker.Modal = true
@@ -394,6 +396,9 @@ function InventoryUi.start(actionCallbacks: any): ()
 	panel.Position = UDim2.fromScale(0.5, 0.5)
 	panel.Size = UDim2.fromOffset(720, 500)
 	HudLayout.applyPanelStyle(panel)
+	-- Inventory is a reading-heavy screen; keep it effectively opaque even though
+	-- the shared HUD panels intentionally use translucency.
+	panel.BackgroundTransparency = 0.03
 	panel.Visible = false
 	panel.ZIndex = 2
 	panel.Parent = gui
