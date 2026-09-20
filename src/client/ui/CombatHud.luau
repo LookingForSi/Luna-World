@@ -6,6 +6,7 @@ local TextChatService = game:GetService("TextChatService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
+local CharacterConfig = require(ReplicatedStorage.Shared.config.CharacterConfig)
 local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombatUiRules)
@@ -28,6 +29,7 @@ local playerResourceValueLabel: TextLabel? = nil
 local xpFill: Frame? = nil
 local xpValueLabel: TextLabel? = nil
 local levelLabel: TextLabel? = nil
+local playerNameLabel: TextLabel? = nil
 local feedbackLabel: TextLabel? = nil
 local targetHealthConnection: RBXScriptConnection? = nil
 local targetAncestryConnection: RBXScriptConnection? = nil
@@ -241,12 +243,19 @@ local function makePlayerStatusRow(
 	return label, valueLabel, fill
 end
 
+local function updatePlayerName(): ()
+	if playerNameLabel == nil then return end
+	local nickname = player:GetAttribute(CharacterConfig.NicknameAttribute)
+	playerNameLabel.Text = if typeof(nickname) == "string" and nickname ~= "" then nickname else player.DisplayName
+end
+
 local function createPlayerHeader(parent: Frame): TextLabel
 	local nameLabel = makeTextLabel(parent, "PlayerName", UDim2.fromOffset(8, 7))
 	nameLabel.Size = UDim2.new(1, -82, 0, 20)
 	nameLabel.Font = Enum.Font.GothamBold
-	nameLabel.Text = player.DisplayName
 	nameLabel.TextSize = 14
+	playerNameLabel = nameLabel
+	updatePlayerName()
 
 	local level = makeTextLabel(parent, "PlayerLevel", UDim2.fromOffset(8, 7))
 	level.Size = UDim2.new(1, -16, 0, 20)
@@ -358,12 +367,15 @@ function CombatHud.start(): ()
 		CombatConfig.ResourceTypeAttribute,
 		CombatConfig.ResourceCurrentAttribute,
 		CombatConfig.ResourceMaximumAttribute,
+		CharacterConfig.NicknameAttribute,
 	} do
 		table.insert(statusConnections, player:GetAttributeChangedSignal(attributeName):Connect(function()
 			if attributeName == ProgressionConfig.LevelAttribute or attributeName == ProgressionConfig.ExperienceAttribute then
 				updateProgression()
 			elseif attributeName == CombatConfig.CombatPointsCurrentAttribute or attributeName == CombatConfig.CombatPointsMaximumAttribute then
 				updateCombatPoints()
+			elseif attributeName == CharacterConfig.NicknameAttribute then
+				updatePlayerName()
 			else
 				updateResource()
 			end
@@ -436,6 +448,7 @@ function CombatHud.stop(): ()
 	xpFill = nil
 	xpValueLabel = nil
 	levelLabel = nil
+	playerNameLabel = nil
 	feedbackLabel = nil
 end
 
