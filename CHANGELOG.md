@@ -6,6 +6,16 @@
 
 ## [Unreleased]
 
+### dev0.2 — Gameplay polish pass
+
+- Expanded all Q1–Q7 quest descriptions and moved the young-wolf objective waypoint from the farmer to the wolf staging meadow.
+- Rebalanced the combat action block after adding the quest journal button; inventory `I` and quest journal `O` now bypass camera CoreScript processing when no text box is focused.
+- Mob target selection now aligns its forgiving screen-space pick area and physical hitbox with the visible silhouette.
+- All mobs receive a 1.2× movement-speed multiplier for this tuning pass.
+- Goblins have wider aggro/reacquire/social-assist radii; proximity aggro now alerts nearby members of the same social group.
+- Goblin camp patrol pairs use authored perimeter pacing lanes, the shaman group stays inside the camp, and two mixed scout/warrior pairs were added to the interior.
+- The goblin camp entrance was moved to the road-facing west wall; the accidental wolf-side opening is closed.
+
 ### dev0.2 — Quest UI polish
 
 - Quest NPC dialog now opens a generic `Квест` topic before the dedicated quest offer window.
