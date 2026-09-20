@@ -21,9 +21,14 @@ local function entry(itemId: string, chance: number, minQuantity: number?, maxQu
 end
 
 local function resourceEntry(itemId: string, chance: number, minQuantity: number?, maxQuantity: number?): any
-	-- Crafting materials were filling the 40-slot bag too quickly. Keep the
-	-- existing quantity ranges, but halve the independent drop chance globally.
+	-- Ordinary crafting materials keep the reduced global drop rate.
 	return entry(itemId, chance * 0.5, minQuantity, maxQuantity)
+end
+
+local function signatureResourceEntry(itemId: string, chance: number, minQuantity: number?, maxQuantity: number?): any
+	-- Signature materials with a single thematic source must not require
+	-- repetitive farming of one rare mob just to unlock an early class recipe.
+	return entry(itemId, chance, minQuantity, maxQuantity)
 end
 
 local definitions: { [string]: LootTypes.LootTableDefinition } = {
@@ -40,15 +45,15 @@ local definitions: { [string]: LootTypes.LootTableDefinition } = {
 		entry("armor_guard_gloves", 0.04), entry("weapon_hunter_bow", 0.03),
 	} }),
 	loot_goblin_scout = loot({ id = "loot_goblin_scout", lunaMin = 4, lunaMax = 8, entries = {
-		resourceEntry("material_goblin_token", 0.55), resourceEntry("material_iron_scrap", 0.45), entry("consumable_minor_healing_draught", 0.07),
+		resourceEntry("material_goblin_token", 0.55), resourceEntry("material_iron_scrap", 0.70), entry("consumable_minor_healing_draught", 0.07),
 		entry("armor_guard_boots", 0.015),
 	} }),
 	loot_goblin_warrior = loot({ id = "loot_goblin_warrior", lunaMin = 6, lunaMax = 11, entries = {
-		resourceEntry("material_goblin_token", 0.75, 1, 2), resourceEntry("material_iron_scrap", 0.65, 1, 2), entry("consumable_minor_healing_draught", 0.10),
+		resourceEntry("material_goblin_token", 0.75, 1, 2), resourceEntry("material_iron_scrap", 0.80, 1, 2), entry("consumable_minor_healing_draught", 0.10),
 		entry("armor_guard_head", 0.015), entry("weapon_iron_blade", 0.015),
 	} }),
 	loot_goblin_shaman = loot({ id = "loot_goblin_shaman", lunaMin = 8, lunaMax = 14, entries = {
-		resourceEntry("material_goblin_token", 0.8, 1, 2), resourceEntry("material_magic_dust", 0.45), entry("consumable_minor_resource_draught", 0.14),
+		resourceEntry("material_goblin_token", 0.8, 1, 2), signatureResourceEntry("material_magic_dust", 1.0), entry("consumable_minor_resource_draught", 0.14),
 		entry("accessory_silver_moon_charm", 0.05), entry("weapon_rune_staff", 0.03),
 	} }),
 	loot_goblin_chieftain = loot({ id = "loot_goblin_chieftain", lunaMin = 18, lunaMax = 28, entries = {
