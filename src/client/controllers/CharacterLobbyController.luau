@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
 local ResponsiveLayout = require(script.Parent.Parent.ui.ResponsiveLayout)
 local CharacterLobbyController = {}
 local screen: ScreenGui?
@@ -15,12 +16,19 @@ local lastViewport: Vector2?
 local result = ReplicatedStorage.Remotes.CharacterResult
 local request = ReplicatedStorage.Remotes.CharacterRequest
 local palette = {
-	bg = Color3.fromRGB(12, 17, 27),
-	panel = Color3.fromRGB(27, 35, 49),
-	gold = Color3.fromRGB(211, 174, 91),
-	text = Color3.fromRGB(235, 231, 217),
-	muted = Color3.fromRGB(154, 164, 181),
-	danger = Color3.fromRGB(155, 54, 54),
+	bg = Color3.fromRGB(5, 10, 24),
+	bgDeep = Color3.fromRGB(3, 7, 18),
+	panel = Color3.fromRGB(12, 22, 46),
+	panelSoft = Color3.fromRGB(18, 33, 67),
+	panelHover = Color3.fromRGB(25, 47, 88),
+	accent = Color3.fromRGB(96, 145, 255),
+	accentBright = Color3.fromRGB(151, 199, 255),
+	moon = Color3.fromRGB(220, 233, 255),
+	text = Color3.fromRGB(239, 245, 255),
+	muted = Color3.fromRGB(151, 169, 204),
+	line = Color3.fromRGB(68, 91, 146),
+	danger = Color3.fromRGB(215, 83, 112),
+	success = Color3.fromRGB(111, 207, 190),
 }
 local function new(class: string, parent: Instance, props: any): any
 	local x = Instance.new(class)
@@ -29,6 +37,78 @@ local function new(class: string, parent: Instance, props: any): any
 	end
 	x.Parent = parent
 	return x
+end
+
+local function rounded(gui: GuiObject, radius: number?): ()
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius or 8)
+	corner.Parent = gui
+end
+
+local function outlined(gui: GuiObject, color: Color3?, transparency: number?): UIStroke
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color or palette.line
+	stroke.Transparency = transparency or 0.15
+	stroke.Thickness = 1
+	stroke.Parent = gui
+	return stroke
+end
+
+local function stylePanel(gui: GuiObject, radius: number?): ()
+	rounded(gui, radius or 10)
+	outlined(gui)
+end
+
+local function styleButton(button: TextButton, selectedState: boolean?): ()
+	button.AutoButtonColor = false
+	button.BackgroundColor3 = if selectedState then palette.accent else palette.panelSoft
+	button.TextColor3 = palette.text
+	button.Font = Enum.Font.GothamSemibold
+	rounded(button, 8)
+	outlined(button, if selectedState then palette.accentBright else palette.line, if selectedState then 0 else 0.2)
+end
+
+local function sectionLabel(parent: Instance, textValue: string, y: number): TextLabel
+	return new("TextLabel", parent, {
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(32, y),
+		Size = UDim2.new(1, -64, 0, 22),
+		Text = textValue,
+		TextColor3 = palette.muted,
+		TextSize = 13,
+		Font = Enum.Font.GothamMedium,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 7,
+	})
+end
+
+local function createModalShade(root: Frame): TextButton
+	local shade = new("TextButton", root, {
+		Name = "ModalShade",
+		Position = UDim2.fromScale(0, 0),
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.38,
+		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false,
+		ZIndex = 4,
+	})
+	shade.Active = true
+	return shade
+end
+
+local function friendlyReason(reason: any): string
+	local map = {
+		InvalidCharacters = "Допустимы латинские буквы, цифры, _ и -",
+		InvalidLength = "Имя должно быть от 3 до 16 символов",
+		InvalidNickname = "Введите имя",
+		NicknameTaken = "Это имя уже занято",
+		Filtered = "Имя не прошло фильтрацию Roblox",
+		SlotLimit = "Все слоты персонажей заняты",
+		StoreError = "Сервис имён временно недоступен",
+	}
+	return map[tostring(reason)] or tostring(reason)
 end
 local function send(action: string, data: any?)
 	local id = HttpService:GenerateGUID(false)
@@ -56,13 +136,22 @@ local function render()
 		return
 	end
 	clear(root)
+	root.BackgroundColor3 = palette.bg
+	local backgroundGradient = new("UIGradient", root, {
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, palette.bgDeep),
+			ColorSequenceKeypoint.new(0.52, palette.bg),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 18, 42)),
+		}),
+		Rotation = 28,
+	})
 	new("TextLabel", root, {
 		Name = "Title",
 		BackgroundTransparency = 1,
 		Position = UDim2.fromOffset(edge, edge),
 		Size = UDim2.new(1, -edge * 2, 0, 56),
 		Text = "LUNA WORLD",
-		TextColor3 = palette.gold,
+		TextColor3 = palette.moon,
 		Font = Enum.Font.GothamBold,
 		TextScaled = true,
 	})
@@ -93,13 +182,20 @@ local function render()
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollBarThickness = 5,
 	})
+	stylePanel(cards, 12)
+	new("UIPadding", cards, {
+		PaddingTop = UDim.new(0, 8),
+		PaddingBottom = UDim.new(0, 8),
+		PaddingLeft = UDim.new(0, 8),
+		PaddingRight = UDim.new(0, 8),
+	})
 	new("UIListLayout", cards, { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder })
 	for _, c in roster.characters do
 		local b = new("TextButton", cards, {
 			Name = "CharacterCard",
 			Size = UDim2.new(1, -8, 0, 76),
-			BackgroundColor3 = if selected == c.characterId then palette.gold else palette.bg,
-			TextColor3 = if selected == c.characterId then palette.bg else palette.text,
+			BackgroundColor3 = if selected == c.characterId then palette.accent else palette.panelSoft,
+			TextColor3 = palette.text,
 			Text = string.format(
 				"%s  •  LV %d\n%s  •  %s",
 				c.nickname or "Завершить создание",
@@ -110,6 +206,7 @@ local function render()
 			TextSize = 16,
 			Font = Enum.Font.GothamSemibold,
 		})
+		styleButton(b, selected == c.characterId)
 		b.Activated:Connect(function()
 			selected = c.characterId
 			render()
@@ -122,10 +219,12 @@ local function render()
 			AutoButtonColor = true,
 			Size = UDim2.new(1, -8, 0, 56),
 			BackgroundColor3 = palette.panel,
-			TextColor3 = palette.gold,
+			TextColor3 = palette.accentBright,
 			Text = "＋ Создать персонажа",
 			TextSize = 16,
 		})
+		styleButton(add, false)
+		add.TextColor3 = palette.accentBright
 		add.Activated:Connect(function()
 			local modalSize = ResponsiveLayout.modalSize(metrics, Vector2.new(460, 420))
 			local modal = new("ScrollingFrame", root, {
@@ -143,7 +242,7 @@ local function render()
 				BackgroundTransparency = 1,
 				Size = UDim2.new(1, 0, 0, 50),
 				Text = "СОЗДАНИЕ ГЕРОЯ",
-				TextColor3 = palette.gold,
+				TextColor3 = palette.accentBright,
 				TextSize = 22,
 				Font = Enum.Font.GothamBold,
 				ZIndex = 6,
@@ -245,7 +344,7 @@ local function render()
 			local create = new("TextButton", modal, {
 				Position = UDim2.fromOffset(30, 355),
 				Size = UDim2.new(1, -60, 0, 50),
-				BackgroundColor3 = palette.gold,
+				BackgroundColor3 = palette.accentBright,
 				TextColor3 = palette.bg,
 				Text = "СОЗДАТЬ",
 				Font = Enum.Font.GothamBold,
@@ -299,7 +398,7 @@ local function render()
 		Name = "EnterWorld",
 		Position = UDim2.new(0, 24, 1, -78),
 		Size = UDim2.new(1, -48, 0, 54),
-		BackgroundColor3 = palette.gold,
+		BackgroundColor3 = palette.accentBright,
 		TextColor3 = palette.bg,
 		Text = if chosen and chosen.needsIdentity
 			then "ЗАВЕРШИТЬ СОЗДАНИЕ"
@@ -345,7 +444,7 @@ local function render()
 				{
 					Position = UDim2.fromOffset(24, 364),
 					Size = UDim2.new(1, -48, 0, 48),
-					BackgroundColor3 = palette.gold,
+					BackgroundColor3 = palette.accentBright,
 					Text = "СОХРАНИТЬ ИМЯ И ТИП ТЕЛА",
 					TextSize = 14,
 				}
@@ -447,7 +546,7 @@ function CharacterLobbyController.start(): ()
 			local s = modalStatus or (rootNow and rootNow:FindFirstChild("Status"))
 			if s and s:IsA("TextLabel") then
 				s.Text = if p.ok then "Имя свободно" else "Имя недоступно: " .. tostring(p.reason)
-				s.TextColor3 = if p.ok then palette.gold else palette.danger
+				s.TextColor3 = if p.ok then palette.accentBright else palette.danger
 			end
 			return
 		end
