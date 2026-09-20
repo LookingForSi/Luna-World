@@ -104,8 +104,12 @@ local function createRock(parent: Instance, name: string, position: Vector3, siz
 end
 
 local function createTree(parent: Instance, name: string, position: Vector3, height: number, dead: boolean?)
+	local ground, plantable = Grounding.treeSurfaceAt(position)
+	if not plantable or ground == nil then
+		return
+	end
+
 	local model = P.model(parent, name)
-	local ground = Grounding.surfaceAt(position)
 	local trunkColor = if dead then COLORS.deadTree else COLORS.tree
 	P.part(
 		model,
@@ -402,6 +406,45 @@ local function createMoonfallLandmarks(parent: Instance, positions: { [string]: 
 	P.groundedPart(props, "CrossroadsPost", crossroads + Vector3.new(12, 0, -8), Vector3.new(3, 13, 3), Enum.Material.Wood, COLORS.darkTimber)
 end
 
+local function shapeGoblinCemeteryLakeHillCliff(center: Vector3, waterSurfaceY: number)
+	local terrain = Workspace.Terrain
+	local cliffSegments = {
+		{ xOffset = 300, zOffset = -35, zSize = 150 },
+		{ xOffset = 320, zOffset = 105, zSize = 170 },
+		{ xOffset = 285, zOffset = 235, zSize = 135 },
+	}
+
+	for _, spec in ipairs(cliffSegments) do
+		local hillSample = Grounding.surfaceAt(
+			center + Vector3.new(spec.xOffset + 70, 0, spec.zOffset)
+		)
+		local cliffBottomY = waterSurfaceY - 5
+		local cliffTopY = math.max(hillSample.Y + 6, waterSurfaceY + 28)
+		local cliffHeight = cliffTopY - cliffBottomY
+
+		-- Cut away the grassy shelf on the lake side so the hill meets the water
+		-- as a readable vertical bank rather than appearing to hover above it.
+		terrain:FillBlock(
+			CFrame.new(
+				center.X + spec.xOffset - 24,
+				cliffBottomY + cliffHeight / 2,
+				center.Z + spec.zOffset
+			),
+			Vector3.new(64, cliffHeight, spec.zSize),
+			Enum.Material.Air
+		)
+		terrain:FillBlock(
+			CFrame.new(
+				center.X + spec.xOffset + 10,
+				cliffBottomY + cliffHeight / 2,
+				center.Z + spec.zOffset
+			),
+			Vector3.new(20, cliffHeight, spec.zSize),
+			Enum.Material.Rock
+		)
+	end
+end
+
 local function createGoblinCemeteryLake(parent: Instance, positions: { [string]: Vector3 })
 	local lake = P.model(parent, "GoblinCemeteryLake")
 	lake:SetAttribute("Purpose", "TraversalBarrier")
@@ -411,7 +454,10 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 	local cemetery = positions.poi_old_cemetery
 	local center = goblin:Lerp(cemetery, 0.52) + Vector3.new(85, 0, 0)
 	local ground = Grounding.surfaceAt(center)
-	local waterSurfaceY = ground.Y - 3
+	local LAKE_SURFACE_DROP = 8
+	local LAKE_WATER_DEPTH = 12
+	local LAKE_AIR_CLEARANCE_HEIGHT = 28
+	local waterSurfaceY = ground.Y - LAKE_SURFACE_DROP
 
 	local lobes = {
 		{ offset = Vector3.new(-90, 0, -35), size = Vector3.new(420, 32, 300), yaw = -8 },
@@ -423,21 +469,25 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 		local position = center + spec.offset
 		local rotation = CFrame.Angles(0, math.rad(spec.yaw), 0)
 		terrain:FillBlock(
-			CFrame.new(position.X, waterSurfaceY + 7, position.Z) * rotation,
-			spec.size,
+			CFrame.new(
+				position.X,
+				waterSurfaceY + LAKE_AIR_CLEARANCE_HEIGHT / 2 - 2,
+				position.Z
+			) * rotation,
+			Vector3.new(spec.size.X, LAKE_AIR_CLEARANCE_HEIGHT, spec.size.Z),
 			Enum.Material.Air
 		)
 		terrain:FillBlock(
-			CFrame.new(position.X, waterSurfaceY - 4, position.Z) * rotation,
-			Vector3.new(spec.size.X, 10, spec.size.Z),
+			CFrame.new(position.X, waterSurfaceY - LAKE_WATER_DEPTH / 2, position.Z) * rotation,
+			Vector3.new(spec.size.X, LAKE_WATER_DEPTH, spec.size.Z),
 			Enum.Material.Water
 		)
 
 		P.part(
 			lake,
 			string.format("WaterRecovery%02d", index),
-			Vector3.new(spec.size.X - 10, 24, spec.size.Z - 10),
-			CFrame.new(position.X, waterSurfaceY - 2, position.Z) * rotation,
+			Vector3.new(spec.size.X - 10, 20, spec.size.Z - 10),
+			CFrame.new(position.X, waterSurfaceY - 4, position.Z) * rotation,
 			Enum.Material.SmoothPlastic,
 			Color3.new(1, 1, 1),
 			{
@@ -451,6 +501,10 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 			}
 		)
 	end
+
+	shapeGoblinCemeteryLakeHillCliff(center, waterSurfaceY)
+	lake:SetAttribute("WaterSurfaceDrop", LAKE_SURFACE_DROP)
+	lake:SetAttribute("HillBankCliff", true)
 end
 
 local function createDarkWoodland(parent: Instance, positions: { [string]: Vector3 })
@@ -458,8 +512,17 @@ local function createDarkWoodland(parent: Instance, positions: { [string]: Vecto
 	woodland:SetAttribute("ZoneId", "zone_dark_woodland")
 	local gate = positions.poi_dark_woodland_gate
 
-	for index = 1, 9 do
-		local x = 110 + (index - 1) * 55
+	-- Apply the rocky threshold before tree placement so foliage validation sees
+	-- the final terrain material and never leaves a trunk rooted in rock.
+	P.replaceTerrainMaterials(
+		gate + Vector3.new(-345, 0, 65),
+		Vector3.new(280, 28, 190),
+		{ Enum.Material.Grass, Enum.Material.LeafyGrass },
+		Enum.Material.Rock
+	)
+
+	for index = 1, 11 do
+		local x = 105 + (index - 1) * 48
 		local zOffset = ((index % 3) - 1) * 26
 		createTree(woodland, string.format("TreeLeft%02d", index), gate + Vector3.new(-x, 0, zOffset), 30 + index % 4 * 3)
 		createTree(woodland, string.format("TreeRight%02d", index), gate + Vector3.new(x, 0, -zOffset), 31 + index % 5 * 3)
