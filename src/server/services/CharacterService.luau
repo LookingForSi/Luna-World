@@ -3,8 +3,10 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextService = game:GetService("TextService")
+local RunService = game:GetService("RunService")
 local ArchetypeDefinitions = require(ReplicatedStorage.Shared.definitions.ArchetypeDefinitions)
 local CharacterConfig = require(ReplicatedStorage.Shared.config.CharacterConfig)
+local PersistenceConfig = require(ReplicatedStorage.Shared.config.PersistenceConfig)
 local CharacterRules = require(ReplicatedStorage.Shared.characters.CharacterRules)
 local NicknameRules = require(ReplicatedStorage.Shared.characters.NicknameRules)
 local ProfileSchema = require(ReplicatedStorage.Shared.persistence.ProfileSchema)
@@ -15,6 +17,36 @@ local connections = {}
 local started = false
 local nicknameStore: any
 local rate = {}
+
+local function looseStudioNicknames(): boolean
+	return RunService:IsStudio() and not PersistenceConfig.UseDataStoreInStudio
+end
+
+local function studioTrim(raw: unknown): (string?, string?)
+	if typeof(raw) ~= "string" then return nil, "InvalidType" end
+	local trimmed = string.match(raw, "^%s*(.-)%s*$") or ""
+	if trimmed == "" then return nil, "InvalidNickname" end
+	-- Studio stub intentionally accepts spaces, Cyrillic and symbols so owner
+	-- acceptance is never blocked by TextService/DataStore/naming policy.
+	if #trimmed > 64 then return nil, "InvalidLength" end
+	return trimmed, nil
+end
+
+local function normalizeNickname(raw: unknown): (string?, string?)
+	if looseStudioNicknames() then
+		local display, err = studioTrim(raw)
+		if display == nil then return nil, err end
+		return string.lower(display), nil
+	end
+	return NicknameRules.normalize(raw)
+end
+
+local function displayNickname(raw: unknown): (string?, string?)
+	if looseStudioNicknames() then return studioTrim(raw) end
+	if typeof(raw) ~= "string" then return nil, "InvalidType" end
+	return NicknameRules.display(raw), nil
+end
+
 local function allowed(player: Player): boolean
 	local now = os.clock()
 	local state = rate[player]
@@ -57,6 +89,9 @@ local function roster(player: Player): any
 	}
 end
 local function filtered(player: Player, name: string): boolean
+	if looseStudioNicknames() then
+		return true
+	end
 	local ok, result = pcall(function()
 		return TextService:FilterStringAsync(name, player.UserId, Enum.TextFilterContext.PrivateChat)
 	end)
@@ -106,7 +141,7 @@ function CharacterService.start(storeOverride: any?): ()
 				return
 			end
 			if action == "CheckNickname" then
-				local canonical, err = NicknameRules.normalize(p.nickname)
+				local canonical, err = normalizeNickname(p.nickname)
 				if not canonical then
 					response(result, player, id, action, false, err)
 					return
@@ -125,7 +160,7 @@ function CharacterService.start(storeOverride: any?): ()
 				return
 			end
 			if action == "CompleteIdentity" then
-				local valid, reason = CharacterRules.validateCreation(p)
+				local valid, reason = CharacterRules.validateCreation(p, looseStudioNicknames())
 				if not valid or typeof(p.characterId) ~= "string" then
 					response(result, player, id, action, false, reason or "InvalidCharacterId")
 					return
@@ -140,8 +175,12 @@ function CharacterService.start(storeOverride: any?): ()
 					response(result, player, id, action, false, "IdentityAlreadyComplete")
 					return
 				end
-				local canonical = NicknameRules.normalize(p.nickname)
-				local display = NicknameRules.display(p.nickname)
+				local canonical = normalizeNickname(p.nickname)
+				local display = displayNickname(p.nickname)
+				if display == nil then
+					response(result, player, id, action, false, "InvalidNickname")
+					return
+				end
 				if not filtered(player, display) then
 					response(result, player, id, action, false, "Filtered")
 					return
@@ -177,8 +216,12 @@ function CharacterService.start(storeOverride: any?): ()
 					response(result, player, id, action, false, reason)
 					return
 				end
-				local canonical = NicknameRules.normalize(p.nickname)
-				local display = NicknameRules.display(p.nickname)
+				local canonical = normalizeNickname(p.nickname)
+				local display = displayNickname(p.nickname)
+				if display == nil then
+					response(result, player, id, action, false, "InvalidNickname")
+					return
+				end
 				if not filtered(player, display) then
 					response(result, player, id, action, false, "Filtered")
 					return
@@ -223,6 +266,22 @@ function CharacterService.start(storeOverride: any?): ()
 				response(result, player, id, action, true, nil, roster(player))
 				return
 			end
+			if action == "UpdateSettings" then
+				local uiScale = tonumber(p.uiScale)
+				local textScale = tonumber(p.textScale)
+				local soundVolume = tonumber(p.soundVolume)
+				if uiScale == nil or textScale == nil or soundVolume == nil then
+					response(result, player, id, action, false, "InvalidSettings")
+					return
+				end
+				local ok, reason = PlayerDataService.mutateAccount(player, function(value)
+					value.Settings.UiScale = math.clamp(uiScale, 0.8, 1.2)
+					value.Settings.TextScale = math.clamp(textScale, 0.85, 1.25)
+					value.Settings.SoundVolume = math.clamp(soundVolume, 0, 1)
+				end)
+				response(result, player, id, action, ok, reason, if ok then roster(player) else nil)
+				return
+			end
 			if action == "Delete" then
 				if typeof(p.characterId) ~= "string" or typeof(p.confirmation) ~= "string" then
 					response(result, player, id, action, false, "InvalidRequest")
@@ -238,7 +297,7 @@ function CharacterService.start(storeOverride: any?): ()
 					response(result, player, id, action, false, "ConfirmationMismatch")
 					return
 				end
-				local canonical = NicknameRules.normalize(c.Nickname)
+				local canonical = normalizeNickname(c.Nickname)
 				local ok, why = PlayerDataService.mutateAccount(player, function(value)
 					value.Characters[p.characterId] = nil
 					local i = table.find(value.CharacterOrder, p.characterId)
