@@ -62,6 +62,55 @@ local function createGroundedRoad(parent: Instance, name: string, points: { Vect
 	end
 end
 
+local function createCampPalisadeLine(
+	parent: Instance,
+	name: string,
+	fromPosition: Vector3,
+	toPosition: Vector3,
+	postHeight: number
+)
+	local wall = P.model(parent, name)
+	local horizontal = Vector3.new(toPosition.X - fromPosition.X, 0, toPosition.Z - fromPosition.Z)
+	local postSpacing = 4.0
+	local segments = math.max(1, math.ceil(horizontal.Magnitude / postSpacing))
+	local groundedPoints: { Vector3 } = {}
+
+	for index = 0, segments do
+		local authored = fromPosition:Lerp(toPosition, index / segments)
+		local ground = Grounding.surfaceAt(authored)
+		table.insert(groundedPoints, ground)
+		local height = postHeight + ((index % 4) - 1.5) * 0.7
+		P.part(
+			wall,
+			string.format("Stake%03d", index + 1),
+			Vector3.new(3.4, height, 3.4),
+			CFrame.new(ground + Vector3.new(0, height / 2 - 0.5, 0)),
+			Enum.Material.Wood,
+			COLORS.darkTimber
+		)
+	end
+
+	for index = 1, #groundedPoints - 1 do
+		local a = groundedPoints[index]
+		local b = groundedPoints[index + 1]
+		P.segment(
+			wall,
+			string.format("PalisadeCollision_%03d", index),
+			a + Vector3.new(0, postHeight * 0.45, 0),
+			b + Vector3.new(0, postHeight * 0.45, 0),
+			2.0,
+			postHeight * 0.9,
+			Enum.Material.SmoothPlastic,
+			Color3.new(1, 1, 1),
+			{
+				canCollide = true,
+				transparency = 1,
+				attributes = { PalisadeCollision = true },
+			}
+		)
+	end
+end
+
 local function createRock(parent: Instance, name: string, position: Vector3, size: Vector3)
 	local rock = P.groundedPart(
 		parent,
@@ -221,9 +270,28 @@ local function createGoblinCamp(parent: Instance, positions: { [string]: Vector3
 	local camp = P.model(parent, "GoblinCamp")
 	camp:SetAttribute("ZoneId", "zone_goblin_camp")
 	local center = positions.poi_goblin_camp
-	-- dev0.2: the temporary palisade is intentionally removed. The camp now reads
-	-- through terrain, huts, patrols and encounter density; final fortifications
-	-- will come from the later Blender/environment pass.
+	local halfX, halfZ = 137, 110
+	local gateHalfWidth = 32
+
+	-- Keep one readable guarded entrance on the authored road (west side).
+	-- The wolf/forest side stays closed; this is a palisade, not the low rail fence
+	-- that was removed in the previous pass.
+	local fenceSegments = {
+		{ center + Vector3.new(-halfX, 0, -halfZ), center + Vector3.new(halfX, 0, -halfZ) },
+		{ center + Vector3.new(-halfX, 0, -halfZ), center + Vector3.new(-halfX, 0, -gateHalfWidth) },
+		{ center + Vector3.new(-halfX, 0, gateHalfWidth), center + Vector3.new(-halfX, 0, halfZ) },
+		{ center + Vector3.new(halfX, 0, -halfZ), center + Vector3.new(halfX, 0, halfZ) },
+		{ center + Vector3.new(-halfX, 0, halfZ), center + Vector3.new(halfX, 0, halfZ) },
+	}
+	for index, endpoints in fenceSegments do
+		createCampPalisadeLine(
+			camp,
+			string.format("CampPalisade%02d", index),
+			endpoints[1],
+			endpoints[2],
+			18
+		)
+	end
 
 	createHut(camp, "Hut01", center + Vector3.new(-65, 0, 22), 18)
 	createHut(camp, "Hut02", center + Vector3.new(63, 0, 38), -22)
