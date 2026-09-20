@@ -14,7 +14,9 @@
         "QuestSnapshotRequest": { "$className": "RemoteEvent" },
         "QuestSnapshot": { "$className": "RemoteEvent" },
         "QuestActionResult": { "$className": "RemoteEvent" },
-        "DialogueOpen": { "$className": "RemoteEvent" }
+        "DialogueOpen": { "$className": "RemoteEvent" },
+        "TravelRequest": { "$className": "RemoteEvent" },
+        "TravelResult": { "$className": "RemoteEvent" }
       }
     },
     "ServerScriptService": {
