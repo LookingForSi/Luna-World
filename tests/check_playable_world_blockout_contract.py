@@ -128,6 +128,10 @@ def main() -> None:
         "Enum.Material.Mud",
         "GoblinCemeteryLake",
         "LAKE_SURFACE_DROP = 8",
+        "LAKE_WATER_DEPTH = 30",
+        "LAKE_BASIN_CLEAR_DEPTH = 40",
+        "LAKE_CLEAR_MARGIN = 34",
+        'DeepBasinExcavated", true',
         "shapeGoblinCemeteryLakeHillCliff",
         'HillBankCliff", true',
         "DarkWoodlandThreshold",
@@ -140,6 +144,8 @@ def main() -> None:
     assert "BillboardGui" not in north
     assert 'Purpose", "SwimmableWater"' in north
     assert "WaterRecovery" not in north
+    assert "clearBottomY = waterSurfaceY + 1" in north
+    assert "Vector3.new(118, clearHeight, spec.zSize)" in north
     assert "Enum.Material.Water" in north
     assert "Enum.Material.Glass" not in north
     assert "postSpacing = 4.0" in north
