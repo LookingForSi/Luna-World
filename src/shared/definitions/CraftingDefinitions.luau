@@ -21,12 +21,12 @@ end
 local i = ingredient
 
 local definitions: { [string]: CraftDefinition } = {
-	craft_material_cured_leather = r("craft_material_cured_leather", "Material", 2, "material_cured_leather", 2, 4, 10, { i("material_wolf_pelt", 3) }),
-	craft_material_sturdy_thread = r("craft_material_sturdy_thread", "Material", 4, "material_sturdy_thread", 2, 4, 20, { i("material_spider_silk", 3) }),
-	craft_material_iron_billet = r("craft_material_iron_billet", "Material", 4, "material_iron_billet", 1, 8, 30, { i("material_iron_scrap", 4), i("material_goblin_token", 1) }),
+	craft_material_cured_leather = r("craft_material_cured_leather", "Material", 2, "material_cured_leather", 3, 4, 10, { i("material_wolf_pelt", 3) }),
+	craft_material_sturdy_thread = r("craft_material_sturdy_thread", "Material", 4, "material_sturdy_thread", 3, 4, 20, { i("material_spider_silk", 3) }),
+	craft_material_iron_billet = r("craft_material_iron_billet", "Material", 4, "material_iron_billet", 2, 8, 30, { i("material_iron_scrap", 2), i("material_goblin_token", 1) }),
 	craft_material_arcane_thread = r("craft_material_arcane_thread", "Material", 6, "material_arcane_thread", 1, 10, 40, { i("material_sturdy_thread", 2), i("material_magic_dust", 2) }),
 
-	craft_weapon_iron_blade = r("craft_weapon_iron_blade", "Knight", 4, "weapon_iron_blade", 1, 30, 10, { i("material_iron_billet", 2), i("material_sharp_fang", 1) }),
+	craft_weapon_iron_blade = r("craft_weapon_iron_blade", "Knight", 4, "weapon_iron_blade", 1, 30, 10, { i("material_iron_billet", 1), i("material_sharp_fang", 1) }),
 	craft_armor_guard_head = r("craft_armor_guard_head", "Knight", 4, "armor_guard_head", 1, 18, 20, { i("material_iron_billet", 1), i("material_cured_leather", 1) }),
 	craft_armor_guard_chest = r("craft_armor_guard_chest", "Knight", 5, "armor_guard_chest", 1, 35, 30, { i("material_iron_billet", 2), i("material_cured_leather", 3) }),
 	craft_armor_guard_gloves = r("craft_armor_guard_gloves", "Knight", 4, "armor_guard_gloves", 1, 16, 40, { i("material_iron_billet", 1), i("material_cured_leather", 1), i("material_sturdy_thread", 1) }),
@@ -38,8 +38,8 @@ local definitions: { [string]: CraftDefinition } = {
 	craft_armor_hunter_gloves = r("craft_armor_hunter_gloves", "Ranger", 4, "armor_hunter_gloves", 1, 18, 40, { i("material_cured_leather", 2), i("material_sturdy_thread", 2), i("material_sharp_fang", 1) }),
 	craft_armor_hunter_boots = r("craft_armor_hunter_boots", "Ranger", 4, "armor_hunter_boots", 1, 16, 50, { i("material_cured_leather", 2), i("material_sturdy_thread", 1) }),
 
-	craft_weapon_rune_staff = r("craft_weapon_rune_staff", "Mystic", 6, "weapon_rune_staff", 1, 30, 10, { i("material_iron_billet", 1), i("material_magic_dust", 2), i("material_sturdy_thread", 2) }),
-	craft_armor_adept_head = r("craft_armor_adept_head", "Mystic", 5, "armor_adept_head", 1, 18, 20, { i("material_cured_leather", 1), i("material_sturdy_thread", 2), i("material_magic_dust", 1) }),
+	craft_weapon_rune_staff = r("craft_weapon_rune_staff", "Mystic", 6, "weapon_rune_staff", 1, 30, 10, { i("material_iron_billet", 1), i("material_magic_dust", 1), i("material_sturdy_thread", 2) }),
+	craft_armor_adept_head = r("craft_armor_adept_head", "Mystic", 5, "armor_adept_head", 1, 18, 20, { i("material_cured_leather", 1), i("material_sturdy_thread", 1) }),
 	craft_armor_adept_chest = r("craft_armor_adept_chest", "Mystic", 6, "armor_adept_chest", 1, 32, 30, { i("material_cured_leather", 2), i("material_sturdy_thread", 3), i("material_magic_dust", 2) }),
 	craft_armor_adept_gloves = r("craft_armor_adept_gloves", "Mystic", 6, "armor_adept_gloves", 1, 18, 40, { i("material_cured_leather", 1), i("material_arcane_thread", 1), i("material_magic_dust", 1) }),
 	craft_armor_adept_boots = r("craft_armor_adept_boots", "Mystic", 5, "armor_adept_boots", 1, 16, 50, { i("material_cured_leather", 1), i("material_sturdy_thread", 2), i("material_magic_dust", 1) }),
