@@ -11,6 +11,7 @@ local connections: { RBXScriptConnection } = {}
 
 function EconomyController.buy(itemId: string): () request:FireServer("Buy", itemId, 1) end
 function EconomyController.sell(instanceId: string): () request:FireServer("Sell", instanceId, 1) end
+function EconomyController.sellBatch(selections: { any }): () request:FireServer("SellBatch", selections) end
 function EconomyController.craft(craftId: string): () request:FireServer("Craft", craftId, 1) end
 function EconomyController.start(onOpen: (string) -> (), onSnapshot: (any) -> (), onResult: (any) -> ()): ()
 	EconomyController.stop()
