@@ -17,6 +17,8 @@ combat = read("src/server/services/CombatService.luau")
 server = read("src/server/main.server.luau")
 client = read("src/client/main.client.luau")
 target_controller = read("src/client/controllers/TargetController.luau")
+quest_client = read("src/client/controllers/QuestController.luau")
+quest_server = read("src/server/services/QuestService.luau")
 player_data = read("src/server/services/PlayerDataService.luau")
 respawn = read("src/server/services/RespawnService.luau")
 hud = read("src/client/ui/CombatHud.luau")
@@ -70,5 +72,8 @@ assert client.index("TargetController.start") < client.index("EconomyUi.start")
 assert client.index("TargetController.start") < client.index("QuestController.start")
 assert client.index("syncActionBar()") < client.index("EconomyUi.start")
 assert "localGuiBlocksPointer" in target_controller
+assert "firstSnapshotReceived" in quest_client
+assert "0.35, 0.9, 1.8, 3.0" in quest_client
+assert "task.defer(QuestService.push, player)" in quest_server
 
 print("Consolidated playtest release candidate contract: PASS")
