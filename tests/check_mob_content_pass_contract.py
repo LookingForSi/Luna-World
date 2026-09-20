@@ -219,9 +219,9 @@ for token in (
     "definition.socialAssistRadius",
 	"MobAIRules.canRequestSocialAssist",
     "patrolDestination",
+    "isCampPerimeterPatrol",
+    "humanoid:MoveTo(destination)",
     "record.patrolRadius",
-    "record.patrolTarget",
-    "flatDistance(root.Position, record.patrolTarget) <= 7",
     "definition.basicAttackRange",
 ):
     if token not in MOB_AI:
@@ -266,5 +266,5 @@ for token in (
 
 for marker_id in ("spawn_goblin_patrol_south", "spawn_goblin_patrol_east", "spawn_goblin_patrol_north", "spawn_goblin_patrol_west"):
     body = LAYOUT.split(f'id = "{marker_id}"', 1)[1].split("}", 1)[0]
-    if "patrolCycleSeconds = 2" not in body:
+    if "patrolCycleSeconds = 6" not in body:
         raise AssertionError(f"{marker_id} must actively traverse its perimeter patrol")
