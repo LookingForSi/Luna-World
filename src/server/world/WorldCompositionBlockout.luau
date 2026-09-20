@@ -45,10 +45,13 @@ local function createTree(
 	crownScale: number,
 	dead: boolean?
 )
+	local ground, plantable = Grounding.treeSurfaceAt(position)
+	if not plantable or ground == nil then
+		return
+	end
+
 	local model = P.model(parent, name)
 	model:SetAttribute("ReplacementCategory", if dead then "dead_tree" else "tree")
-
-	local ground = Grounding.surfaceAt(position)
 	P.part(
 		model,
 		"Trunk",
@@ -226,9 +229,13 @@ local function createRuinPillar(
 end
 
 local function createPine(parent: Instance, name: string, position: Vector3, height: number)
+	local ground, plantable = Grounding.treeSurfaceAt(position)
+	if not plantable or ground == nil then
+		return
+	end
+
 	local model = P.model(parent, name)
 	model:SetAttribute("ReplacementCategory", "conifer")
-	local ground = Grounding.surfaceAt(position)
 
 	P.part(
 		model,
@@ -464,13 +471,6 @@ local function buildCombatBlock(parent: Instance, p: { [string]: Vector3 })
 		{ Enum.Material.Grass, Enum.Material.LeafyGrass },
 		Enum.Material.Rock
 	)
-	P.replaceTerrainMaterials(
-		darkGate + Vector3.new(-345, 0, 65),
-		Vector3.new(280, 28, 190),
-		{ Enum.Material.Grass, Enum.Material.LeafyGrass },
-		Enum.Material.Rock
-	)
-
 	createTreeBelt(
 		combat,
 		"MoonfallWestScreen",
@@ -553,7 +553,7 @@ local function buildCombatBlock(parent: Instance, p: { [string]: Vector3 })
 		"DarkWoodlandWestMass",
 		darkGate + Vector3.new(-520, 0, -120),
 		darkGate + Vector3.new(-350, 0, 280),
-		12,
+		15,
 		45
 	)
 	createTreeBelt(
@@ -561,7 +561,7 @@ local function buildCombatBlock(parent: Instance, p: { [string]: Vector3 })
 		"DarkWoodlandEastMass",
 		darkGate + Vector3.new(520, 0, -120),
 		darkGate + Vector3.new(350, 0, 280),
-		12,
+		15,
 		45
 	)
 end
