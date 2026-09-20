@@ -208,6 +208,8 @@ for token in (
     "MOB_NAMEPLATE_MAX_DISTANCE = 100",
     'string.format("LV %d · %s"',
     "GLOBAL_MOB_MOVEMENT_MULTIPLIER = 1.2",
+    "WOLF_MOVEMENT_MULTIPLIER = 1.25",
+    'definition.faction == "wolf"',
     "hitbox.CFrame = rootPart.CFrame",
 ):
     if token not in MOB_SERVICE:
@@ -289,5 +291,21 @@ for token in (
 ):
     if token not in MOB_ABILITY_SERVICE:
         raise AssertionError(f"server-authoritative mob critical contract missing: {token}")
+
+
+for token in (
+    'displayName = "Молодой волк", level = 1, maxHealth = 70',
+    'basicAttackRange = 10, basicAttackDamage = 12, basicAttackDamageType = "Physical"',
+):
+    if token not in MOBS:
+        raise AssertionError(f"starter wolf danger tuning missing: {token}")
+
+for token in (
+    "PhysicalDefenseMitigationPerPoint",
+    "rawDamage / (1 + defense * CombatConfig.PhysicalDefenseMitigationPerPoint)",
+):
+    source = text("src/shared/config/CombatConfig.luau") if token == "PhysicalDefenseMitigationPerPoint" else MOB_ABILITY_SERVICE
+    if token not in source:
+        raise AssertionError(f"proportional player defense contract missing: {token}")
 
 print("Mob Content Pass v0.1 + dev0.2 tuning contract: PASS")
