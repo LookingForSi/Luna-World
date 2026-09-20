@@ -134,6 +134,7 @@ export type MobAbilityDefinition = {
 	attackSpeedMultiplier: number?,
 	damageMultiplier: number?,
 	radius: number?,
+	callsAllies: boolean?,
 	healthBelowFraction: number?,
 }
 
