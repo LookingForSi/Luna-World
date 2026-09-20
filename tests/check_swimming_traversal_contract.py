@@ -37,20 +37,23 @@ for source_name, source in (("river", south), ("recovery", recovery)):
     if "WaterRecovery" in source:
         raise AssertionError(f"{source_name} still contains a hidden water teleport hazard")
 
-# Lake terrain is intentionally rolled back to the last accepted pre-experiment
-# geometry. Stock Swimming remains enabled globally by MovementController.
+if 'Purpose", "SwimmableWater"' not in north:
+    raise AssertionError("lake must be explicitly marked as swimmable")
+
+if "WaterRecovery" in north:
+    raise AssertionError("lake must not contain a hidden water teleport hazard")
+
 for token in (
-    'Purpose", "TraversalBarrier"',
-    "LAKE_SURFACE_DROP = 8",
-    "LAKE_WATER_DEPTH = 12",
-    "LAKE_AIR_CLEARANCE_HEIGHT = 28",
+    "LAKE_WATER_DEPTH = 30",
+    "LAKE_BASIN_CLEAR_DEPTH = 40",
+    "LAKE_CLEAR_MARGIN = 34",
+    'DeepBasinExcavated", true',
+    "clearBottomY = waterSurfaceY + 1",
     "shapeGoblinCemeteryLakeHillCliff",
-    '"WaterRecovery%02d"',
-    'HazardKind = "Lake"',
     'HillBankCliff", true',
 ):
     if token not in north:
-        raise AssertionError(f"pre-experiment lake rollback contract missing: {token}")
+        raise AssertionError(f"accepted 21:20 lake contract missing: {token}")
 
 for lake_forbidden in (
     "prepareGoblinCampBoundaryShelf",
@@ -59,9 +62,10 @@ for lake_forbidden in (
     "carveLakeDisc",
     "LakeBedFilled",
     "ContainedWithinWorldBounds",
+    "ExtendsToWorldEdge",
 ):
     if lake_forbidden in north:
-        raise AssertionError(f"experimental lake terrain still present after rollback: {lake_forbidden}")
+        raise AssertionError(f"post-21:20 lake experiment still present: {lake_forbidden}")
 
 for forbidden in (
     "fellIntoRiver",
