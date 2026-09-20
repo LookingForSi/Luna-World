@@ -1,6 +1,7 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
@@ -172,7 +173,11 @@ local function applyPlayerCalculatedStats(
 	local hostileAttackSpeed = player:GetAttribute(CombatConfig.HostileAttackSpeedMultiplierAttribute)
 	local movementMultiplier = if typeof(hostileMovement) == "number" then math.clamp(hostileMovement, 0.1, 1) else 1
 	local attackSpeedMultiplier = if typeof(hostileAttackSpeed) == "number" then math.clamp(hostileAttackSpeed, 0.1, 1) else 1
-	stats.movementSpeed = values.movementSpeed * movementMultiplier
+	local studioMovement = player:GetAttribute(CombatConfig.StudioMovementMultiplierAttribute)
+	local studioMovementMultiplier = if RunService:IsStudio() and typeof(studioMovement) == "number"
+		then math.clamp(studioMovement, 1, 5)
+		else 1
+	stats.movementSpeed = values.movementSpeed * movementMultiplier * studioMovementMultiplier
 	local rapidShot = rapidShotStates[player]
 	local friendlyAttackSpeed = EffectRules.resolveAttackSpeed(
 		stats.baseAttackSpeedMultiplier,
