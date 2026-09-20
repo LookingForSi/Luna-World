@@ -114,6 +114,10 @@ def main() -> None:
         "SpiderHollow",
         "prepareSpiderHollowTerrain",
         "BasinFloorFilled",
+        "SpiderBasinRimWest",
+        "SpiderBasinRimNorth",
+        "createSpiderWeb",
+        "Enum.Material.Mud",
         "GoblinCemeteryLake",
         'HazardKind = "Lake"',
         "LAKE_SURFACE_DROP = 8",
@@ -130,6 +134,7 @@ def main() -> None:
     ):
         assert token in north
     assert "BillboardGui" not in north
+    assert "Enum.Material.Glass" not in north
     assert "Grounding.treeSurfaceAt(position)" in north
     assert "for index = 1, 11 do" in north
 
@@ -138,7 +143,8 @@ def main() -> None:
         "EnvironmentDressing",
         "VillageRetainingWallWest",
         "FarmRoadFenceA",
-        "MoonfallBrokenFenceWest",
+        "SpiderApproachStumpA",
+        "SpiderApproachRocks",
         "GoblinSupplyCrates",
         "SpiderDeadTree",
         "CemeteryBoundarySouth",
