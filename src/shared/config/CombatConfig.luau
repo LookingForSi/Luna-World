@@ -21,6 +21,7 @@ return table.freeze({
 	MinAttackSpeedMultiplier = 0.5,
 	MaxAttackSpeedMultiplier = 2,
 	CriticalDamageMultiplier = 1.5,
+	PhysicalDefenseMitigationPerPoint = 0.04,
 	ResourceRegenerationIntervalSeconds = 0.2,
 	HealthRegenerationIntervalSeconds = 0.2,
 	HealthRegenerationDelaySeconds = 5,
