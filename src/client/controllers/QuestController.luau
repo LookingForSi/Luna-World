@@ -18,6 +18,8 @@ local turnInRemote = remotes:WaitForChild("QuestTurnInRequest") :: RemoteEvent
 local snapshotRequest = remotes:WaitForChild("QuestSnapshotRequest") :: RemoteEvent
 local snapshotEvent = remotes:WaitForChild("QuestSnapshot") :: RemoteEvent
 local dialogueEvent = remotes:WaitForChild("DialogueOpen") :: RemoteEvent
+local travelRequest = remotes:WaitForChild("TravelRequest") :: RemoteEvent
+local travelResult = remotes:WaitForChild("TravelResult") :: RemoteEvent
 
 local WAYPOINT_HIDE_DISTANCE = 80
 local STUDS_PER_METER = 10
@@ -569,6 +571,18 @@ local function openDialogue(value: any): ()
 			showQuestOffer(value, questTopic)
 		end))
 	end
+
+	for _, topic in value.topics or {} do
+		if topic.kind ~= "Travel" then continue end
+		local travelButton = makeButton(
+			content,
+			string.format("Телепорт: %s · %d Luna", topic.destinationName or "?", topic.costLuna or 0)
+		)
+		travelButton.Size = UDim2.new(1, 0, 0, 46)
+		table.insert(connections, travelButton.Activated:Connect(function()
+			travelRequest:FireServer(topic.travelId, value.npcId)
+		end))
+	end
 end
 
 local function rebuildMarkers(): ()
@@ -795,6 +809,31 @@ function QuestController.start(): ()
 
 	table.insert(connections, snapshotEvent.OnClientEvent:Connect(setSnapshot))
 	table.insert(connections, dialogueEvent.OnClientEvent:Connect(openDialogue))
+	table.insert(connections, travelResult.OnClientEvent:Connect(function(result)
+		if typeof(result) ~= "table" then return end
+		if result.ok == true then
+			if dialogue ~= nil then dialogue.Visible = false end
+			return
+		end
+		if dialogue == nil or not dialogue.Visible then return end
+		local content = dialogue:FindFirstChild("DialogueContent")
+		if content == nil then return end
+		local status = content:FindFirstChild("TravelStatus")
+		if status == nil then
+			status = makeText(content, "", 13)
+			status.Name = "TravelStatus"
+			status.Size = UDim2.new(1, 0, 0, 30)
+			status.TextColor3 = Color3.fromRGB(235, 150, 130)
+		end
+		local messages = {
+			InsufficientLuna = "Недостаточно Luna для телепорта.",
+			Locked = "Этот маршрут ещё не открыт.",
+			TooFar = "Подойдите ближе к NPC.",
+			DestinationUnavailable = "Точка назначения сейчас недоступна.",
+			TeleportFailed = "Телепорт не сработал. Luna возвращена.",
+		}
+		status.Text = messages[result.reason] or "Телепорт сейчас недоступен."
+	end))
 	table.insert(connections, UserInputService.InputBegan:Connect(function(input, processed)
 		if UserInputService:GetFocusedTextBox() ~= nil then return end
 		-- O is a Roblox camera key in some environments, so it must work even when
