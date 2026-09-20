@@ -19,7 +19,7 @@ Ruins of Selene остаётся отдельным будущим dungeon-pass.
 - Взрослые Wolves социальны только внутри малых стай.
 - Goblins организованы в небольшие linked groups; один удар не должен агрить весь лагерь.
 - Goblin patrols реально двигаются вокруг лагеря.
-- Spider Hollow намеренно несоциальный: соседние пауки не помогают друг другу.
+- Spider Hollow намеренно несоциальный и пассивный: соседние пауки не помогают друг другу и не начинают бой первыми.
 - Dark Woodland смешивает уже знакомые угрозы.
 - Old Cemetery строится на связках melee + ranged undead.
 - Fallen Shrine — более магическая encounter-зона.
@@ -54,7 +54,7 @@ Warrior сочетает melee и Sling Stone.
 Shaman использует Spirit Bolt, War Chant и Проклятие шамана; его базовая атака является магической дальней.
 Chieftain — локальный elite с Sling Stone, Heavy Strike, Cleave и Battle Cry, повышенным шансом и множителем критического удара.
 
-### Spider Hollow, lvl 4–7
+### Spider Hollow, lvl 6–8
 - 8 Venom Spider;
 - 2 Brood Spider.
 - Social assist отсутствует.
@@ -62,18 +62,18 @@ Chieftain — локальный elite с Sling Stone, Heavy Strike, Cleave и B
 - Crippling Venom: временно снижает movement speed и attack speed.
 - Brood Spider имеет больше HP/damage и усиленные варианты яда.
 
-### Dark Woodland, lvl 8–10
+### Dark Woodland, lvl 9–11
 - Dire Wolf в малых стаях;
 - Forest Spider одиночками;
 - 1 Dire Wolf Alpha.
 
-### Old Cemetery, lvl 10–12
+### Old Cemetery, lvl 11–13
 - Skeleton;
 - Skeleton Archer;
 - Grave Guardian elite.
 - Небольшие encounter-groups, а не глобальная social aggro.
 
-### Fallen Shrine, lvl 11–12
+### Fallen Shrine, lvl 12–13
 - Fallen Acolyte — magic ranged;
 - Shrine Guardian — тяжёлый melee.
 
