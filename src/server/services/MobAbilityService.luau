@@ -70,7 +70,15 @@ local function resolveIncomingDamage(
 	local stats = CombatService.getPlayerCombatStats(target)
 	if stats == nil then return nil end
 	local defense = if damageType == "Physical" then stats.physicalDefense else 0
-	return math.max(1, math.floor(rawDamage - defense + 0.5))
+	if damageType == "Physical" then
+		-- Flat subtraction collapsed early mob hits to the 1-damage floor as soon
+		-- as starter defense matched their raw damage. Proportional mitigation
+		-- preserves the tanking value of defense without making low-level mobs
+		-- harmless.
+		local mitigated = rawDamage / (1 + defense * CombatConfig.PhysicalDefenseMitigationPerPoint)
+		return math.max(1, math.floor(mitigated + 0.5))
+	end
+	return math.max(1, math.floor(rawDamage + 0.5))
 end
 
 local function publishToTarget(
