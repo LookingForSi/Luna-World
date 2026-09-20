@@ -6,14 +6,18 @@ local NicknameRules = require(script.Parent.NicknameRules)
 
 local CharacterRules = {}
 
-function CharacterRules.validateCreation(payload: unknown): (boolean, string?)
+function CharacterRules.validateCreation(payload: unknown, allowAnyNickname: boolean?): (boolean, string?)
 	if typeof(payload) ~= "table" then
 		return false, "InvalidPayload"
 	end
 	local value: any = payload
-	local _, nicknameError = NicknameRules.normalize(value.nickname)
-	if nicknameError ~= nil then
-		return false, nicknameError
+	if allowAnyNickname ~= true then
+		local _, nicknameError = NicknameRules.normalize(value.nickname)
+		if nicknameError ~= nil then
+			return false, nicknameError
+		end
+	elseif typeof(value.nickname) ~= "string" or string.match(value.nickname, "%S") == nil then
+		return false, "InvalidNickname"
 	end
 	if typeof(value.archetypeId) ~= "string" or ArchetypeDefinitions[value.archetypeId] == nil then
 		return false, "InvalidArchetype"
