@@ -614,13 +614,14 @@ local function fillFlatLakeSlab(
 	waterDepth: number,
 	clearDepth: number,
 	airClearance: number,
-	shoreMargin: number,
+	shoreWaterOverlap: number,
+	bedOverlap: number,
 	bounds: { minX: number, maxX: number, minZ: number, maxZ: number }
 )
-	-- Terrain cylinders are aligned differently than Parts and produced visible
-	-- upright water "slices" in runtime. The lake uses flat overlapping blocks,
-	-- just like the accepted river implementation, while the authored west edge
-	-- supplies the irregular shoreline.
+	-- Keep the accepted flat-water approach, but build a real basin around it.
+	-- Earlier revisions cleared 22 studs wider than the water and 12 studs deeper
+	-- than the water without restoring terrain; that literally left air trenches
+	-- at the shore and an air pocket underneath the lake.
 	local safeWest = math.max(bounds.minX + 20, westX)
 	local safeEast = math.min(bounds.maxX - 20, eastX)
 	local safeHalfLength = math.max(8, math.min(
@@ -630,20 +631,39 @@ local function fillFlatLakeSlab(
 	))
 	if safeEast <= safeWest or safeHalfLength <= 0 then return end
 
-	local clearWest = math.max(bounds.minX + 20, safeWest - shoreMargin)
-	local clearEast = math.min(bounds.maxX - 20, safeEast + shoreMargin)
-	local clearWidth = clearEast - clearWest
+	local clearWidth = safeEast - safeWest
 	local clearHeight = clearDepth + airClearance
 	local clearCenterY = waterSurfaceY + (airClearance - clearDepth) / 2
 	terrain:FillBlock(
-		CFrame.new((clearWest + clearEast) / 2, clearCenterY, centerZ),
+		CFrame.new((safeWest + safeEast) / 2, clearCenterY, centerZ),
 		Vector3.new(clearWidth, clearHeight, safeHalfLength * 2),
 		Enum.Material.Air
 	)
 
+	-- Restore a continuous mud lakebed from the bottom of the excavated basin up
+	-- to the water volume. A small vertical overlap is intentional: the following
+	-- Water fill replaces the overlap voxels and guarantees no air seam remains.
+	local basinBottomY = waterSurfaceY - clearDepth
+	local waterBottomY = waterSurfaceY - waterDepth
+	local bedBottomY = basinBottomY - bedOverlap
+	local bedTopY = waterBottomY + bedOverlap
 	terrain:FillBlock(
-		CFrame.new((safeWest + safeEast) / 2, waterSurfaceY - waterDepth / 2, centerZ),
-		Vector3.new(safeEast - safeWest, waterDepth, safeHalfLength * 2),
+		CFrame.new(
+			(safeWest + safeEast) / 2,
+			(bedBottomY + bedTopY) / 2,
+			centerZ
+		),
+		Vector3.new(clearWidth, bedTopY - bedBottomY, safeHalfLength * 2),
+		Enum.Material.Mud
+	)
+
+	-- Let water overlap a few studs under the uncut bank. This hides Terrain voxel
+	-- quantisation at the waterline without opening a trench around the lake.
+	local waterWest = math.max(bounds.minX + 12, safeWest - shoreWaterOverlap)
+	local waterEast = math.min(bounds.maxX - 12, safeEast + shoreWaterOverlap)
+	terrain:FillBlock(
+		CFrame.new((waterWest + waterEast) / 2, waterSurfaceY - waterDepth / 2, centerZ),
+		Vector3.new(waterEast - waterWest, waterDepth, safeHalfLength * 2),
 		Enum.Material.Water
 	)
 end
@@ -662,7 +682,8 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 	local LAKE_WATER_DEPTH = 30
 	local LAKE_BASIN_CLEAR_DEPTH = 42
 	local LAKE_AIR_CLEARANCE_HEIGHT = 48
-	local LAKE_SHORE_CLEAR_MARGIN = 22
+	local LAKE_SHORE_WATER_OVERLAP = 8
+	local LAKE_BED_OVERLAP = 6
 	local LAKE_BOUNDARY_MARGIN = 28
 	local LAKE_SLAB_STEP = 56
 	local LAKE_SLAB_OVERLAP = 28
@@ -704,7 +725,8 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 			LAKE_WATER_DEPTH,
 			LAKE_BASIN_CLEAR_DEPTH,
 			LAKE_AIR_CLEARANCE_HEIGHT,
-			LAKE_SHORE_CLEAR_MARGIN,
+			LAKE_SHORE_WATER_OVERLAP,
+			LAKE_BED_OVERLAP,
 			bounds
 		)
 	end
@@ -717,6 +739,8 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 	lake:SetAttribute("WaterSurfaceDrop", LAKE_SURFACE_DROP)
 	lake:SetAttribute("WaterDepth", LAKE_WATER_DEPTH)
 	lake:SetAttribute("DeepBasinExcavated", true)
+	lake:SetAttribute("LakeBedFilled", true)
+	lake:SetAttribute("ShorelineWaterOverlap", LAKE_SHORE_WATER_OVERLAP)
 	lake:SetAttribute("OpenWaterBoundary", false)
 end
 
