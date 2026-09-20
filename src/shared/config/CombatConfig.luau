@@ -69,6 +69,7 @@ return table.freeze({
 	MobHomeArrivalDistance = 4,
 	HostileMovementMultiplierAttribute = "HostileMovementMultiplier",
 	HostileAttackSpeedMultiplierAttribute = "HostileAttackSpeedMultiplier",
+	StudioMovementMultiplierAttribute = "StudioMovementMultiplier",
 	HostileDebuffUntilAttribute = "HostileDebuffUntil",
 	MobOutgoingDamageMultiplierAttribute = "MobOutgoingDamageMultiplier",
 	DefenseStanceActiveAttribute = "DefenseStanceActive",
