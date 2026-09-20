@@ -74,8 +74,11 @@ for marker in (
     "spawn_goblin_patrol_east",
     "spawn_goblin_patrol_north",
     "spawn_goblin_patrol_west",
+    "spawn_goblin_gate_pair_south",
+    "spawn_goblin_gate_pair_north",
     "spawn_goblin_shaman_camp",
     "spawn_goblin_chieftain_camp",
+    "spawn_goblin_chieftain_guard",
     "spawn_spider_hollow_swarm",
     "spawn_spider_hollow_brood",
     "spawn_dire_wolf_alpha",
@@ -148,6 +151,28 @@ for marker_id, count in (
     marker_body = LAYOUT.split(f'id = "{marker_id}"', 1)[1].split("}", 1)[0]
     if f"count = {count}" not in marker_body:
         raise AssertionError(f"{marker_id} must use the approved population count {count}")
+for marker_id, group_id in (
+    ("spawn_goblin_gate_pair_south", "goblin_gate_pair_south"),
+    ("spawn_goblin_gate_pair_north", "goblin_gate_pair_north"),
+):
+    marker_body = LAYOUT.split(f'id = "{marker_id}"', 1)[1].split("}", 1)[0]
+    if "count = 2" not in marker_body or f'socialGroupId = "{group_id}"' not in marker_body:
+        raise AssertionError(f"{marker_id} must remain a compact social pair near the camp approach")
+
+shaman_body = LAYOUT.split('id = "spawn_goblin_shaman_camp"', 1)[1].split("}", 1)[0]
+warrior_body = LAYOUT.split('id = "spawn_goblin_warrior_camp"', 1)[1].split("}", 1)[0]
+for body in (shaman_body, warrior_body):
+    if 'socialGroupId = "goblin_courtyard"' not in body:
+        raise AssertionError("shaman and his two warriors must remain one social interior group")
+if "count = 2" not in warrior_body:
+    raise AssertionError("shaman encounter must include two warriors")
+
+chief_body = LAYOUT.split('id = "spawn_goblin_chieftain_camp"', 1)[1].split("}", 1)[0]
+chief_guard_body = LAYOUT.split('id = "spawn_goblin_chieftain_guard"', 1)[1].split("}", 1)[0]
+for body in (chief_body, chief_guard_body):
+    if 'socialGroupId = "goblin_chief_group"' not in body:
+        raise AssertionError("chieftain and dedicated warrior must remain one social group")
+
 if 'socialGroupId = "goblin_patrol_' not in LAYOUT:
     raise AssertionError("Goblin patrols must use linked encounter groups")
 if 'socialGroupId' in LAYOUT.split('id = "spawn_spider_hollow_swarm"', 1)[1].split("\n", 1)[0]:
@@ -160,6 +185,11 @@ for token in (
     'model:SetAttribute("PhysicalDefense"',
     'model:SetAttribute("MagicDefense"',
     "removeMobPlaceholders",
+    '"TargetHitbox"',
+    "hitbox.CanQuery = true",
+    '"MobNameplate"',
+    "MOB_NAMEPLATE_MAX_DISTANCE = 100",
+    'string.format("LV %d · %s"',
 ):
     if token not in MOB_SERVICE:
         raise AssertionError(f"MobService population contract missing {token}")
