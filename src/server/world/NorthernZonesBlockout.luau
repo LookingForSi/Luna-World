@@ -251,10 +251,13 @@ local function createGoblinCamp(parent: Instance, positions: { [string]: Vector3
 	local center = positions.poi_goblin_camp
 	local halfX, halfZ = 137, 110
 
+	-- The authored road approaches from the west. Keep the southern/wolf-facing
+	-- palisade closed and put the real guarded entrance on the road side.
+	local gateHalfWidth = 32
 	local fenceSegments = {
-		{ center + Vector3.new(-halfX, 0, -halfZ), center + Vector3.new(-50, 0, -halfZ) },
-		{ center + Vector3.new(50, 0, -halfZ), center + Vector3.new(halfX, 0, -halfZ) },
-		{ center + Vector3.new(-halfX, 0, -halfZ), center + Vector3.new(-halfX, 0, halfZ) },
+		{ center + Vector3.new(-halfX, 0, -halfZ), center + Vector3.new(halfX, 0, -halfZ) },
+		{ center + Vector3.new(-halfX, 0, -halfZ), center + Vector3.new(-halfX, 0, -gateHalfWidth) },
+		{ center + Vector3.new(-halfX, 0, gateHalfWidth), center + Vector3.new(-halfX, 0, halfZ) },
 		{ center + Vector3.new(halfX, 0, -halfZ), center + Vector3.new(halfX, 0, halfZ) },
 		{ center + Vector3.new(-halfX, 0, halfZ), center + Vector3.new(halfX, 0, halfZ) },
 	}
