@@ -85,6 +85,11 @@ def main() -> None:
         "StoneCircle",
         "LunaVillageSpawn",
         "Vector3.new(-34, 0, -8)",
+        'FenceCollision = true',
+        'string.format("Collision_%02d", index)',
+        "postSpacing = 4.0",
+        "PalisadeCollision = true",
+        'string.format("PalisadeCollision_%03d", index)',
     ):
         assert token in south
     assert "BillboardGui" not in south
@@ -107,11 +112,17 @@ def main() -> None:
     for token in (
         "MoonfallRoad",
         "GoblinCamp",
-        "createPalisadeLine",
+        "createCampPalisadeLine",
+        "gateHalfWidth = 32",
+        '"CampPalisade%02d"',
         '"Foundation"',
         "SpiderHollow",
         "prepareSpiderHollowTerrain",
         "BasinFloorFilled",
+        "SpiderBasinRimWest",
+        "SpiderBasinRimNorth",
+        "createSpiderWeb",
+        "Enum.Material.Mud",
         "GoblinCemeteryLake",
         'HazardKind = "Lake"',
         "LAKE_SURFACE_DROP = 8",
@@ -125,6 +136,10 @@ def main() -> None:
     ):
         assert token in north
     assert "BillboardGui" not in north
+    assert "Enum.Material.Glass" not in north
+    assert "postSpacing = 4.0" in north
+    assert "PalisadeCollision = true" in north
+    assert "fenceSegments" in north
     assert "Grounding.treeSurfaceAt(position)" in north
     assert "for index = 1, 11 do" in north
 
@@ -133,7 +148,8 @@ def main() -> None:
         "EnvironmentDressing",
         "VillageRetainingWallWest",
         "FarmRoadFenceA",
-        "MoonfallBrokenFenceWest",
+        "SpiderApproachStumpA",
+        "SpiderApproachRocks",
         "GoblinSupplyCrates",
         "SpiderDeadTree",
         "CemeteryBoundarySouth",
@@ -177,6 +193,10 @@ def main() -> None:
     assert composition.count("Grounding.treeSurfaceAt(position)") >= 2
     assert '"DarkWoodlandWestMass"' in composition and "\n\t\t15,\n\t\t45\n" in composition
 
+    assert "solidCollision: boolean?" in dressing
+    assert "FarmRoadFenceA" in dressing and "FarmRoadFenceB" in dressing
+    assert dressing.count("FenceCollision = true") >= 1
+
     presentation = read(ROOT / "src/client/world-preview/ZonePresentation.client.luau")
     assert "ZoneToast" in presentation
     assert "task.delay(2.5" in presentation
@@ -192,6 +212,7 @@ def main() -> None:
         "zone_fallen_shrine",
         "zone_ancient_approach",
         "poi_moonfall_farm",
+        "poi_young_wolf_staging",
         "spawn_young_wolf_farm",
         "poi_old_cemetery",
         "poi_fallen_shrine",

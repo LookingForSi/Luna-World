@@ -44,13 +44,44 @@ local function push(player: Player): ()
 end
 
 local function onRequest(player: Player, ...: unknown): ()
-	local action, identifier, quantity = EconomyRequestRules.validate(select("#", ...), select(1, ...), select(2, ...), select(3, ...))
-	if action == nil or identifier == nil or quantity == nil then return end
-	local now = workspace:GetServerTimeNow(); if lastAt[player] ~= nil and now - lastAt[player] < EconomyConfig.RequestMinIntervalSeconds then return end
-	lastAt[player] = now
+	local argumentCount = select("#", ...)
+	local rawAction = select(1, ...)
+	local now = workspace:GetServerTimeNow()
+	if lastAt[player] ~= nil and now - lastAt[player] < EconomyConfig.RequestMinIntervalSeconds then return end
 	if not PlayerDataService.isReady(player) then return end
+
+	if rawAction == "SellBatch" then
+		local selections = EconomyRequestRules.validateSellBatch(argumentCount, rawAction, select(2, ...))
+		if selections == nil then return end
+		lastAt[player] = now
+		if not nearby(player, EconomyConfig.MerchantPoiId) then
+			resultEvent:FireClient(player, { action = "SellBatch", ok = false, reason = "TooFar" })
+			return
+		end
+		local ok, reason, totalLuna = EconomyService.sellBatch(player, selections)
+		resultEvent:FireClient(player, {
+			action = "SellBatch",
+			ok = ok,
+			reason = reason,
+			totalLuna = totalLuna,
+		})
+		if ok then push(player) end
+		return
+	end
+
+	local action, identifier, quantity = EconomyRequestRules.validate(
+		argumentCount,
+		rawAction,
+		select(2, ...),
+		select(3, ...)
+	)
+	if action == nil or identifier == nil or quantity == nil then return end
+	lastAt[player] = now
 	local poiId = if action == "Craft" then EconomyConfig.BlacksmithPoiId else EconomyConfig.MerchantPoiId
-	if not nearby(player, poiId) then resultEvent:FireClient(player, { action = action, ok = false, reason = "TooFar" }); return end
+	if not nearby(player, poiId) then
+		resultEvent:FireClient(player, { action = action, ok = false, reason = "TooFar" })
+		return
+	end
 	local ok = false
 	local reason: string? = nil
 	if action == "Buy" then

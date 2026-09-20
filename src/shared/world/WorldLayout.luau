@@ -113,31 +113,31 @@ local WorldLayout: WorldLayoutDefinition = {
 			id = "zone_spider_hollow",
 			displayName = "Spider Hollow",
 			levelMin = 4,
-			levelMax = 6,
+			levelMax = 7,
 		},
 		{
 			id = "zone_dark_woodland",
 			displayName = "Dark Woodland",
-			levelMin = 6,
-			levelMax = 8,
+			levelMin = 8,
+			levelMax = 10,
 		},
 		{
 			id = "zone_old_cemetery",
 			displayName = "Old Cemetery",
-			levelMin = 7,
-			levelMax = 9,
+			levelMin = 10,
+			levelMax = 12,
 		},
 		{
 			id = "zone_fallen_shrine",
 			displayName = "Fallen Shrine",
-			levelMin = 7,
-			levelMax = 9,
+			levelMin = 11,
+			levelMax = 12,
 		},
 		{
 			id = "zone_ancient_approach",
 			displayName = "Ancient Approach",
-			levelMin = 8,
-			levelMax = 10,
+			levelMin = 13,
+			levelMax = 14,
 		},
 	},
 
@@ -217,6 +217,7 @@ local WorldLayout: WorldLayoutDefinition = {
 		{ id = "poi_elder_house", position = scaleXZ(55, 64, -185) },
 		{ id = "poi_shrine", position = scaleXZ(-55, 64, -195) },
 		{ id = "poi_moonfall_farm", position = scaleXZ(-180, 8, 365) },
+		{ id = "poi_young_wolf_staging", position = scaleXZ(-255, 8, 485) },
 		{ id = "poi_meadow_bridge", position = scaleXZ(-35, 7, 300) },
 		{ id = "poi_stone_circle", position = scaleXZ(135, 6, 545) },
 		{ id = "exit_moonfall_road", position = scaleXZ(0, 6, 790) },
@@ -257,15 +258,31 @@ local WorldLayout: WorldLayoutDefinition = {
 		-- Moonfall Road warning patrol.
 		{ id = "spawn_goblin_scout_road", mobId = "mob_goblin_scout", position = scaleXZ(70, 22, 900), radius = scaleDistance(34), zoneId = "zone_moonfall_road", count = 2, socialGroupId = "goblin_road_patrol", patrolRadius = scaleDistance(48), patrolCycleSeconds = 10 },
 
-		-- Goblin Camp: four paired perimeter patrols plus interior groups.
-		{ id = "spawn_goblin_patrol_south", mobId = "mob_goblin_scout", position = scaleXZ(215, 48, 900), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_south", patrolRadius = scaleDistance(48), patrolCycleSeconds = 10 },
-		{ id = "spawn_goblin_patrol_east", mobId = "mob_goblin_scout", position = scaleXZ(345, 58, 945), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_east", patrolRadius = scaleDistance(42), patrolCycleSeconds = 10 },
-		{ id = "spawn_goblin_patrol_north", mobId = "mob_goblin_scout", position = scaleXZ(305, 62, 1040), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_north", patrolRadius = scaleDistance(44), patrolCycleSeconds = 10 },
-		{ id = "spawn_goblin_patrol_west", mobId = "mob_goblin_scout", position = scaleXZ(205, 54, 1000), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_west", patrolRadius = scaleDistance(40), patrolCycleSeconds = 10 },
+		-- Goblin Camp: four roaming perimeter patrols, two paired gate blocks,
+		-- then two deliberately separated interior encounter groups.
+		{ id = "spawn_goblin_patrol_south", mobId = "mob_goblin_scout", position = scaleXZ(215, 48, 900), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_south", patrolRadius = scaleDistance(56), patrolCycleSeconds = 6 },
+		{ id = "spawn_goblin_patrol_east", mobId = "mob_goblin_scout", position = scaleXZ(345, 58, 945), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_east", patrolRadius = scaleDistance(52), patrolCycleSeconds = 6 },
+		{ id = "spawn_goblin_patrol_north", mobId = "mob_goblin_scout", position = scaleXZ(305, 62, 1040), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_north", patrolRadius = scaleDistance(56), patrolCycleSeconds = 6 },
+		{ id = "spawn_goblin_patrol_west", mobId = "mob_goblin_scout", position = scaleXZ(205, 54, 1000), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_patrol_west", patrolRadius = scaleDistance(52), patrolCycleSeconds = 6 },
+
+		-- Two compact social pairs flank the camp approach and stay near their post.
+		{ id = "spawn_goblin_gate_pair_south", mobId = "mob_goblin_scout", position = scaleXZ(228, 52, 936), radius = scaleDistance(9), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_gate_pair_south", patrolRadius = scaleDistance(10), patrolCycleSeconds = 9 },
+		{ id = "spawn_goblin_gate_pair_north", mobId = "mob_goblin_scout", position = scaleXZ(228, 54, 982), radius = scaleDistance(9), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_gate_pair_north", patrolRadius = scaleDistance(10), patrolCycleSeconds = 9 },
 		{ id = "spawn_goblin_scout_inner", mobId = "mob_goblin_scout", position = scaleXZ(265, 60, 955), radius = scaleDistance(24), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_gate_group" },
-		{ id = "spawn_goblin_warrior_camp", mobId = "mob_goblin_warrior", position = scaleXZ(300, 61, 980), radius = scaleDistance(26), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_courtyard" },
-		{ id = "spawn_goblin_shaman_camp", mobId = "mob_goblin_shaman", position = scaleXZ(285, 62, 1010), radius = scaleDistance(14), zoneId = "zone_goblin_camp", socialGroupId = "goblin_courtyard" },
-		{ id = "spawn_goblin_chieftain_camp", mobId = "mob_goblin_chieftain", position = scaleXZ(330, 65, 1020), radius = scaleDistance(12), zoneId = "zone_goblin_camp", socialGroupId = "goblin_chief_group" },
+
+		-- Two extra mixed social pairs keep the camp interior populated.
+		{ id = "spawn_goblin_inner_pair_a_scout", mobId = "mob_goblin_scout", position = scaleXZ(250, 60, 940), radius = scaleDistance(7), zoneId = "zone_goblin_camp", socialGroupId = "goblin_inner_pair_a", patrolRadius = scaleDistance(12), patrolCycleSeconds = 5 },
+		{ id = "spawn_goblin_inner_pair_a_warrior", mobId = "mob_goblin_warrior", position = scaleXZ(262, 60, 940), radius = scaleDistance(7), zoneId = "zone_goblin_camp", socialGroupId = "goblin_inner_pair_a", patrolRadius = scaleDistance(12), patrolCycleSeconds = 5 },
+		{ id = "spawn_goblin_inner_pair_b_scout", mobId = "mob_goblin_scout", position = scaleXZ(322, 61, 980), radius = scaleDistance(7), zoneId = "zone_goblin_camp", socialGroupId = "goblin_inner_pair_b", patrolRadius = scaleDistance(12), patrolCycleSeconds = 5 },
+		{ id = "spawn_goblin_inner_pair_b_warrior", mobId = "mob_goblin_warrior", position = scaleXZ(334, 61, 980), radius = scaleDistance(7), zoneId = "zone_goblin_camp", socialGroupId = "goblin_inner_pair_b", patrolRadius = scaleDistance(12), patrolCycleSeconds = 5 },
+
+		-- Shaman encounter: shaman plus his two warriors stay together inside the court.
+		{ id = "spawn_goblin_warrior_camp", mobId = "mob_goblin_warrior", position = scaleXZ(255, 61, 1000), radius = scaleDistance(20), zoneId = "zone_goblin_camp", count = 2, socialGroupId = "goblin_courtyard" },
+		{ id = "spawn_goblin_shaman_camp", mobId = "mob_goblin_shaman", position = scaleXZ(250, 62, 1005), radius = scaleDistance(9), zoneId = "zone_goblin_camp", socialGroupId = "goblin_courtyard" },
+
+		-- Chieftain is now inside the camp with a dedicated warrior bodyguard.
+		{ id = "spawn_goblin_chieftain_camp", mobId = "mob_goblin_chieftain", position = scaleXZ(300, 62, 995), radius = scaleDistance(10), zoneId = "zone_goblin_camp", socialGroupId = "goblin_chief_group" },
+		{ id = "spawn_goblin_chieftain_guard", mobId = "mob_goblin_warrior", position = scaleXZ(316, 61, 1000), radius = scaleDistance(10), zoneId = "zone_goblin_camp", socialGroupId = "goblin_chief_group" },
 
 		-- Spider Hollow: deliberately no socialGroupId.
 		{ id = "spawn_spider_hollow_swarm", mobId = "mob_spider", position = scaleXZ(-280, 5, 970), radius = scaleDistance(82), zoneId = "zone_spider_hollow", count = 8, patrolRadius = scaleDistance(16), patrolCycleSeconds = 11 },

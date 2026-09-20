@@ -23,6 +23,7 @@ local mode = "DialogueMerchant"
 local callbacks: any = nil
 local connections: { RBXScriptConnection } = {}
 local rowConnections: { RBXScriptConnection } = {}
+local sellCart: { [string]: number } = {}
 local onboarded = false
 
 local function updateOnboarding(): ()
@@ -74,7 +75,9 @@ local function clearList(): ()
 	table.clear(rowConnections)
 	if list == nil then return end
 	for _, child in list:GetChildren() do
-		if child:IsA("GuiButton") then child:Destroy() end
+		if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+			child:Destroy()
+		end
 	end
 end
 
@@ -85,6 +88,64 @@ local function owned(itemId: string): number
 		if entry.itemId == itemId then total += entry.quantity end
 	end
 	return total
+end
+
+local function inventoryEntry(instanceId: string): any?
+	if snapshot == nil then return nil end
+	for _, entry in snapshot.inventory do
+		if entry.instanceId == instanceId then return entry end
+	end
+	return nil
+end
+
+local function reconcileSellCart(): ()
+	for instanceId, quantity in sellCart do
+		local entry = inventoryEntry(instanceId)
+		local price = if entry ~= nil then EconomyRules.buybackPrice(entry.itemId) else nil
+		if entry == nil or price == nil then
+			sellCart[instanceId] = nil
+		else
+			sellCart[instanceId] = math.clamp(math.floor(quantity), 1, entry.quantity)
+		end
+	end
+end
+
+local function sellCartTotal(): number
+	local total = 0
+	for instanceId, quantity in sellCart do
+		local entry = inventoryEntry(instanceId)
+		if entry ~= nil then
+			local price = EconomyRules.buybackPrice(entry.itemId)
+			if price ~= nil then total += price * quantity end
+		end
+	end
+	return total
+end
+
+local function createSellPane(parent: Instance, name: string, position: UDim2): ScrollingFrame
+	local pane = Instance.new("ScrollingFrame")
+	pane.Name = name
+	pane.Position = position
+	pane.Size = UDim2.new(0.49, 0, 1, -74)
+	pane.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	pane.CanvasSize = UDim2.fromOffset(0, 0)
+	pane.BackgroundColor3 = Color3.fromRGB(29, 31, 39)
+	pane.BorderSizePixel = 0
+	pane.ScrollBarThickness = 5
+	pane.Parent = parent
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 4)
+	layout.Parent = pane
+	return pane
+end
+
+local function sellRow(parent: Instance, height: number): Frame
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(1, -6, 0, height)
+	row.BackgroundColor3 = Color3.fromRGB(43, 46, 54)
+	row.BorderSizePixel = 0
+	row.Parent = parent
+	return row
 end
 
 local function statSummary(item: any): string
@@ -139,7 +200,125 @@ local function rebuildDialogue(): boolean
 	return false
 end
 
-local function rebuild(): ()
+local rebuild: () -> ()
+
+local function rebuildSell(): ()
+	if list == nil or snapshot == nil then return end
+	reconcileSellCart()
+	if title ~= nil then title.Text = "ТОРГОВЕЦ — ПРОДАТЬ" end
+
+	local workspace = Instance.new("Frame")
+	workspace.Name = "SellWorkspace"
+	workspace.Size = UDim2.new(1, -12, 0, 350)
+	workspace.BackgroundTransparency = 1
+	workspace.Parent = list
+
+	label(workspace, "ИНВЕНТАРЬ", UDim2.fromOffset(4, 0), UDim2.new(0.49, -4, 0, 24), 12).Font = Enum.Font.GothamBold
+	label(workspace, "К ПРОДАЖЕ", UDim2.new(0.51, 0, 0, 0), UDim2.new(0.49, -4, 0, 24), 12).Font = Enum.Font.GothamBold
+
+	local inventoryPane = createSellPane(workspace, "SellInventory", UDim2.fromOffset(0, 28))
+	local cartPane = createSellPane(workspace, "SellCart", UDim2.new(0.51, 0, 0, 28))
+
+	for _, entry in snapshot.inventory do
+		local item = ItemDefinitions[entry.itemId]
+		local price = EconomyRules.buybackPrice(entry.itemId)
+		local row = sellRow(inventoryPane, 62)
+		local itemText = if price ~= nil
+			then string.format("%s ×%d\n%d Luna / шт.", item.displayName, entry.quantity, price)
+			else string.format("%s ×%d\nне продаётся", item.displayName, entry.quantity)
+		local name = label(row, itemText, UDim2.fromOffset(8, 4), UDim2.new(1, -108, 1, -8), 11)
+		name.TextWrapped = true
+
+		local quantity = Instance.new("TextBox")
+		quantity.Name = "Quantity"
+		quantity.Position = UDim2.new(1, -98, 0, 8)
+		quantity.Size = UDim2.fromOffset(42, 28)
+		quantity.BackgroundColor3 = Color3.fromRGB(31, 34, 41)
+		quantity.BorderSizePixel = 0
+		quantity.TextColor3 = Color3.fromRGB(238, 235, 224)
+		quantity.Font = Enum.Font.GothamBold
+		quantity.TextSize = 12
+		quantity.ClearTextOnFocus = false
+		quantity.Text = tostring(sellCart[entry.instanceId] or 1)
+		quantity.Active = price ~= nil
+		quantity.Parent = row
+
+		local add = button(row, "→")
+		add.Position = UDim2.new(1, -50, 0, 8)
+		add.Size = UDim2.fromOffset(42, 28)
+		add.TextSize = 16
+		add.Active = price ~= nil
+		add.AutoButtonColor = price ~= nil
+		add.BackgroundTransparency = if price ~= nil then 0 else 0.55
+		if price ~= nil then
+			table.insert(rowConnections, add.Activated:Connect(function()
+				local requested = tonumber(quantity.Text) or 1
+				local normalized = math.clamp(math.floor(requested), 1, entry.quantity)
+				sellCart[entry.instanceId] = normalized
+				rebuild()
+			end))
+		end
+	end
+
+	for _, entry in snapshot.inventory do
+		local selectedQuantity = sellCart[entry.instanceId]
+		if selectedQuantity == nil then continue end
+		local item = ItemDefinitions[entry.itemId]
+		local price = EconomyRules.buybackPrice(entry.itemId)
+		if price == nil then continue end
+		local row = sellRow(cartPane, 54)
+		local name = label(
+			row,
+			string.format("%s ×%d\n+%d Luna", item.displayName, selectedQuantity, price * selectedQuantity),
+			UDim2.fromOffset(8, 3),
+			UDim2.new(1, -60, 1, -6),
+			11
+		)
+		name.TextWrapped = true
+		local remove = button(row, "←")
+		remove.Position = UDim2.new(1, -50, 0, 10)
+		remove.Size = UDim2.fromOffset(42, 28)
+		remove.TextSize = 16
+		table.insert(rowConnections, remove.Activated:Connect(function()
+			sellCart[entry.instanceId] = nil
+			rebuild()
+		end))
+	end
+
+	local total = sellCartTotal()
+	local totalLabel = label(
+		workspace,
+		string.format("Итого к получению: %d Luna", total),
+		UDim2.new(0, 4, 1, -38),
+		UDim2.new(0.51, -8, 0, 34),
+		13
+	)
+	totalLabel.Font = Enum.Font.GothamBold
+
+	local confirm = button(workspace, if total > 0 then string.format("ПРОДАТЬ ВЫБРАННОЕ · +%d Luna", total) else "ПРОДАТЬ ВЫБРАННОЕ")
+	confirm.Position = UDim2.new(0.51, 0, 1, -42)
+	confirm.Size = UDim2.new(0.49, 0, 0, 36)
+	confirm.TextSize = 11
+	confirm.Active = total > 0
+	confirm.AutoButtonColor = total > 0
+	confirm.BackgroundTransparency = if total > 0 then 0 else 0.55
+	if total > 0 then
+		table.insert(rowConnections, confirm.Activated:Connect(function()
+			local selections = {}
+			for _, entry in snapshot.inventory do
+				local selectedQuantity = sellCart[entry.instanceId]
+				if selectedQuantity ~= nil then
+					table.insert(selections, { instanceId = entry.instanceId, quantity = selectedQuantity })
+				end
+			end
+			if #selections > 0 and callbacks ~= nil and callbacks.sellBatch ~= nil then
+				callbacks.sellBatch(selections)
+			end
+		end))
+	end
+end
+
+rebuild = function(): ()
 	clearList()
 	if list == nil then return end
 
@@ -198,22 +377,7 @@ local function rebuild(): ()
 			end))
 		end
 	elseif mode == "Sell" then
-		if title ~= nil then title.Text = "ТОРГОВЕЦ — ПРОДАТЬ" end
-		for _, entry in snapshot.inventory do
-			local item = ItemDefinitions[entry.itemId]
-			local price = EconomyRules.buybackPrice(entry.itemId)
-			if price ~= nil then
-				local row = button(list, string.format(
-					"%s ×%d · %d Luna",
-					item.displayName,
-					entry.quantity,
-					price
-				))
-				table.insert(rowConnections, row.Activated:Connect(function()
-					callbacks.sell(entry.instanceId)
-				end))
-			end
-		end
+		rebuildSell()
 	end
 end
 
@@ -232,7 +396,13 @@ end
 function EconomyUi.showResult(value: any): ()
 	if status == nil then return end
 	if value.ok then
-		status.Text = "Готово."
+		if value.action == "SellBatch" then
+			table.clear(sellCart)
+			status.Text = string.format("Продано. Получено %d Luna.", value.totalLuna or 0)
+			rebuild()
+		else
+			status.Text = "Готово."
+		end
 		status.TextColor3 = Color3.fromRGB(145, 211, 161)
 	else
 		local reasons = {
@@ -242,6 +412,8 @@ function EconomyUi.showResult(value: any): ()
 			InventoryFull = "Инвентарь заполнен.",
 			EquippedItem = "Сначала снимите предмет.",
 			NotForSale = "Этот предмет не продаётся.",
+			InvalidQuantity = "Количество изменилось. Обновите корзину.",
+			NotOwned = "Предмет уже отсутствует в инвентаре.",
 		}
 		status.Text = reasons[value.reason] or "Операция отклонена."
 		status.TextColor3 = Color3.fromRGB(222, 145, 145)
@@ -269,9 +441,7 @@ function EconomyUi.start(actionCallbacks: any): ()
 	title = label(root, "ДИАЛОГ", UDim2.fromOffset(16, 10), UDim2.fromOffset(350, 28), 17)
 	balance = label(root, "Luna: 0", UDim2.fromOffset(400, 10), UDim2.fromOffset(160, 28), 13)
 
-	local close = button(root, "×")
-	close.Position = UDim2.new(1, -48, 0, 8)
-	close.Size = UDim2.fromOffset(32, 30)
+	local close = HudLayout.makeCloseButton(root, 12)
 	table.insert(connections, close.Activated:Connect(function()
 		root.Visible = false
 	end))
@@ -324,6 +494,7 @@ function EconomyUi.stop(): ()
 	toast = nil
 	snapshot = nil
 	callbacks = nil
+	table.clear(sellCart)
 	mode = "DialogueMerchant"
 end
 

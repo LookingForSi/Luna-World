@@ -18,7 +18,7 @@ return function(TestRunner)
 
 	TestRunner.run("combat log exposes readable rejection reasons", function()
 		assert(Rules.rejectionText("Cooldown") == "перезарядка")
-		assert(Rules.rejectionText("OutOfRange") == "слишком далеко")
+		assert(Rules.rejectionText("OutOfRange") == "цель слишком далеко")
 		assert(Rules.rejectionText(nil) == "неизвестная причина")
 	end)
 end

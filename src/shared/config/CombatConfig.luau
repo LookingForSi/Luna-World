@@ -17,16 +17,23 @@ return table.freeze({
 	AutoAttackRetryIntervalSeconds = 0.1,
 	ClientAutoToggleTimeoutSeconds = 0.75,
 	RangeTolerance = 1.5,
+	ApproachMoveRefreshSeconds = 0.15,
 	FacingArcDegrees = 120,
 	MinAttackSpeedMultiplier = 0.5,
 	MaxAttackSpeedMultiplier = 2,
 	CriticalDamageMultiplier = 1.5,
-	ResourceRegenerationIntervalSeconds = 0.25,
+	PhysicalDefenseMitigationPerPoint = 0.04,
+	ResourceRegenerationIntervalSeconds = 0.2,
+	HealthRegenerationIntervalSeconds = 0.2,
+	HealthRegenerationDelaySeconds = 5,
+	-- Roblox's stock regeneration is effectively ~1% max HP/s. Luna uses 2/3 of
+	-- that rate so damage persists longer without making downtime excessive.
+	HealthRegenerationFractionPerSecond = 1 / 150,
 	-- Working vertical-slice defaults. Progression and equipment may provide calculated snapshots later.
 	ArchetypeStats = table.freeze({
-		knight = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 5, physicalAttack = 25, magicAttack = 0, physicalDefense = 12, attackSpeedMultiplier = 1, criticalChance = 0.1, movementSpeed = 17 }),
-		ranger = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 6, physicalAttack = 23, magicAttack = 0, physicalDefense = 7, attackSpeedMultiplier = 1, criticalChance = 0.12, movementSpeed = 16 }),
-		mystic = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 4, physicalAttack = 8, magicAttack = 27, physicalDefense = 5, attackSpeedMultiplier = 1, criticalChance = 0.08, movementSpeed = 16 }),
+		knight = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 2.5, physicalAttack = 25, magicAttack = 0, physicalDefense = 12, attackSpeedMultiplier = 1, criticalChance = 0.1, movementSpeed = 17 }),
+		ranger = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 3, physicalAttack = 23, magicAttack = 0, physicalDefense = 7, attackSpeedMultiplier = 1, criticalChance = 0.12, movementSpeed = 16 }),
+		mystic = table.freeze({ maximumResource = 100, resourceRegenerationPerSecond = 2, physicalAttack = 8, magicAttack = 27, physicalDefense = 5, attackSpeedMultiplier = 1, criticalChance = 0.08, movementSpeed = 16 }),
 	}),
 	CooldownGroups = table.freeze({
 		basic_attack = true,

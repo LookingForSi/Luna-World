@@ -52,15 +52,15 @@ if "createClientSnapshot" not in SERVICE:
 if "InventoryNetworkService.start()" not in MAIN or "InventoryNetworkService.stop()" not in MAIN:
     raise AssertionError("server bootstrap must own inventory network lifecycle")
 
-for token in ("Enum.KeyCode.I", "Enum.KeyCode.ButtonSelect", "UserInputService.InputBegan", "requestSnapshot"):
+for token in ("Enum.KeyCode.T", "Enum.KeyCode.Zero", "Enum.KeyCode.ButtonSelect", "BindActionAtPriority", "ContextActionPriority.High", "UserInputService.InputBegan", "GetFocusedTextBox", "requestSnapshot", "assignQuickSlot", "requestQuickUse", "getQuickSlotState"):
     if token not in CONTROLLER:
         raise AssertionError(f"inventory controller missing {token}")
 
-for token in ('"InventoryPanel"', '"InventoryList"', '"EquipmentList"', '"Equip"', '"Unequip"', '"Use"', '"Discard"', "UIGridLayout", "AutomaticCanvasSize"):
+for token in ('"InventoryPanel"', '"InventoryList"', '"EquipmentList"', '"Equip"', '"Unequip"', '"Use"', '"Discard"', '"QuickSlot"', '"Filter" .. selectedFilter', '"ЗЕЛЬЯ"', '"ВЕЩИ"', '"РЕСУРСЫ"', "matchesFilter", "UIGridLayout", "AutomaticCanvasSize", "assignQuickSlot"):
     if token not in UI:
         raise AssertionError(f"inventory UI missing {token}")
 
-for token in ('"Inventory"', '"ИНВЕНТАРЬ [I]"', '"ИНВЕНТАРЬ [SELECT]"', "GetLastInputType", "LastInputTypeChanged"):
+for token in ('"Inventory"', '"ИНВЕНТАРЬ [T]"', '"ИНВЕНТАРЬ [SELECT]"', '"[0]"', "quickSlotButton", "GetLastInputType", "LastInputTypeChanged"):
     if token not in BAR:
         raise AssertionError(f"primary action block missing inventory access: {token}")
 

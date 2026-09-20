@@ -16,7 +16,7 @@ function ClientCombatLogRules.rejectionText(reasonCode: string?): string
 	local messages = {
 		Cooldown = "перезарядка",
 		InvalidTarget = "неверная цель",
-		OutOfRange = "слишком далеко",
+		OutOfRange = "цель слишком далеко",
 		InsufficientResource = "не хватает ресурса",
 		ForbiddenState = "действие сейчас недоступно",
 		RateLimited = "слишком частые команды",

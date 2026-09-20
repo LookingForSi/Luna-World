@@ -65,7 +65,7 @@ Roadmap описывает порядок доказательства осно�
 
 Добавить:
 
-- levels 1–10;
+- levels 1–15;
 - progression curve;
 - loot tables;
 - inventory;
@@ -81,7 +81,7 @@ Roadmap описывает порядок доказательства осно�
 
 Базовый контур progression/inventory/equipment/persistence интегрирован. DataVersion остаётся отдельным контрактом; перед финальным v0.1 требуется повторная multiplayer/save-load приёмка.
 
-## Milestone 3 — Luna Village & Quests — частично реализован
+## Milestone 3 — Luna Village & Quests — реализован, ожидает runtime-приёмку
 
 Добавить:
 
@@ -95,7 +95,7 @@ Roadmap описывает порядок доказательства осно�
 - onboarding;
 - respawn/safe zone flow.
 
-Текущее состояние dev0.1: Luna Village, merchant, blacksmith, No-Grade economy, return flow и LV6 onboarding реализованы; полноценная quest chain ещё не реализована.
+Текущее состояние dev0.2: реализованы Q1–Q7, persistent quest progress, общий quest dialogue, tracker, карта, waypoint и NPC markers. Multiplayer/visual acceptance в Roblox Studio остаётся обязательным перед merge.
 
 Результат milestone после завершения quests: проект впервые выглядит как маленькая игра, а не набор systems.
 
@@ -114,9 +114,9 @@ Roadmap описывает порядок доказательства осно�
 - progression от village к ruins;
 - первый целостный art/environment pass.
 
-Текущее состояние dev0.1: маршрут Luna Meadows → Moonfall Road → Goblin Camp / Spider Hollow → Dark Woodland → Cemetery / Shrine → Ancient Approach населён authoritative mobs уровней 1–10 и open-world elites.
+Текущее состояние dev0.2: маршрут Luna Meadows → Moonfall Road → Goblin Camp / Spider Hollow → Dark Woodland → Cemetery / Shrine → Ancient Approach растянут по authoritative mobs уровней 1–14 и open-world elites.
 
-Результат: игровой маршрут 1–10 существует в одном общем мире. Art/environment и balance passes продолжаются.
+Результат: открытый игровой маршрут 1–14 существует в одном общем мире; уровень 15 зарезервирован под Ruins of Selene и финального boss. Art/environment и balance passes продолжаются.
 
 ### Stabilization gate M4
 

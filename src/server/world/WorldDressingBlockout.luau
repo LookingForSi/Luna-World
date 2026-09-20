@@ -150,7 +150,7 @@ local function createTree(parent: Instance, name: string, position: Vector3, hei
 	end
 end
 
-local function createFenceLine(parent: Instance, name: string, fromPosition: Vector3, toPosition: Vector3, postSpacing: number)
+local function createFenceLine(parent: Instance, name: string, fromPosition: Vector3, toPosition: Vector3, postSpacing: number, solidCollision: boolean?)
 	local fence = P.model(parent, name)
 	local horizontal = Vector3.new(toPosition.X - fromPosition.X, 0, toPosition.Z - fromPosition.Z)
 	local length = horizontal.Magnitude
@@ -187,6 +187,28 @@ local function createFenceLine(parent: Instance, name: string, fromPosition: Vec
 				Enum.Material.Wood,
 				COLORS.timber,
 				decorativeOptions(false)
+			)
+		end
+
+		if solidCollision == true then
+			P.segment(
+				fence,
+				string.format("Collision_%02d", index),
+				a + Vector3.new(0, 2.7, 0),
+				b + Vector3.new(0, 2.7, 0),
+				1.1,
+				5.4,
+				Enum.Material.SmoothPlastic,
+				Color3.new(1, 1, 1),
+				{
+					canCollide = true,
+					transparency = 1,
+					attributes = {
+						Decorative = true,
+						DressingPass = "v01",
+						FenceCollision = true,
+					},
+				}
 			)
 		end
 	end
@@ -285,14 +307,16 @@ local function buildVillageAndMeadows(parent: Instance, positions: { [string]: V
 		"FarmRoadFenceA",
 		farm + Vector3.new(-190, 0, -120),
 		farm + Vector3.new(-145, 0, 145),
-		30
+		30,
+		true
 	)
 	createFenceLine(
 		dressing,
 		"FarmRoadFenceB",
 		farm + Vector3.new(175, 0, -95),
 		farm + Vector3.new(155, 0, 125),
-		30
+		30,
+		true
 	)
 	createLogPile(dressing, "FarmLogPile", farm + Vector3.new(96, 0, -62))
 	createCrateStack(dressing, "FarmCrates", farm + Vector3.new(-105, 0, -58), 3)
@@ -318,13 +342,12 @@ local function buildMoonfallAndEncounters(parent: Instance, positions: { [string
 	local dressing = P.model(parent, "MoonfallEncounterDressing")
 
 	local crossroads = positions.poi_moonfall_crossroads
-	createFenceLine(
-		dressing,
-		"MoonfallBrokenFenceWest",
-		crossroads + Vector3.new(-170, 0, -130),
-		crossroads + Vector3.new(-260, 0, 70),
-		38
-	)
+	-- The western branch leads directly into Spider Hollow. A farm-style fence
+	-- across this route looked arbitrary, so the approach is now marked by debris
+	-- and deadwood rather than a traversal-looking barrier.
+	createStump(dressing, "SpiderApproachStumpA", crossroads + Vector3.new(-185, 0, -105), 7)
+	createStump(dressing, "SpiderApproachStumpB", crossroads + Vector3.new(-225, 0, 55), 9)
+	createRockCluster(dressing, "SpiderApproachRocks", crossroads + Vector3.new(-235, 0, -25), 0.85)
 	createFenceLine(
 		dressing,
 		"MoonfallBrokenFenceEast",

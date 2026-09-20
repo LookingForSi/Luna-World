@@ -9,6 +9,7 @@ local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
+local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local HudLayout = require(script.Parent.HudLayout)
 
 local ActionBar = {}
@@ -17,6 +18,11 @@ local screenGui: ScreenGui? = nil
 local autoButton: TextButton? = nil
 local attackButton: TextButton? = nil
 local inventoryButton: TextButton? = nil
+local mapButton: TextButton? = nil
+local questButton: TextButton? = nil
+local quickSlotButton: TextButton? = nil
+local quickUseCallback: (() -> ())? = nil
+local quickStateCallback: (() -> any)? = nil
 local autoConnection: RBXScriptConnection? = nil
 local renderConnection: RBXScriptConnection? = nil
 local inputTypeConnection: RBXScriptConnection? = nil
@@ -54,12 +60,34 @@ local function inventoryBindingText(): string
 	if string.find(inputType.Name, "Gamepad") ~= nil then
 		return "ИНВЕНТАРЬ [SELECT]"
 	end
-	return "ИНВЕНТАРЬ [I]"
+	return "ИНВЕНТАРЬ [T]"
 end
 
-local function updateInventoryHint(): ()
+local function mapBindingText(): string
+	local inputType = UserInputService:GetLastInputType()
+	if inputType == Enum.UserInputType.Touch or string.find(inputType.Name, "Gamepad") ~= nil then
+		return "КАРТА"
+	end
+	return "КАРТА [M]"
+end
+
+local function questBindingText(): string
+	local inputType = UserInputService:GetLastInputType()
+	if inputType == Enum.UserInputType.Touch or string.find(inputType.Name, "Gamepad") ~= nil then
+		return "ЗАДАНИЯ"
+	end
+	return "ЗАДАНИЯ [Y]"
+end
+
+local function updateBindingHints(): ()
 	if inventoryButton ~= nil then
 		inventoryButton.Text = inventoryBindingText()
+	end
+	if mapButton ~= nil then
+		mapButton.Text = mapBindingText()
+	end
+	if questButton ~= nil then
+		questButton.Text = questBindingText()
 	end
 end
 
@@ -78,6 +106,25 @@ local function updateCooldowns(): ()
 		local readyAt = player:GetAttribute(CombatConfig.BasicAttackReadyAtAttribute)
 		local remaining = if typeof(readyAt) == "number" then math.max(0, readyAt - now) else 0
 		attackButton.Text = if remaining > 0 then string.format("АТАКА\n%.1f", remaining) else "АТАКА"
+	end
+
+	if quickSlotButton ~= nil and quickStateCallback ~= nil then
+		local quickState = quickStateCallback()
+		local itemId = if typeof(quickState) == "table" then quickState.itemId else nil
+		local quantity = if typeof(quickState) == "table" and typeof(quickState.quantity) == "number" then quickState.quantity else 0
+		if typeof(itemId) == "string" then
+			local definition = ItemDefinitions[itemId]
+			local displayName = if definition ~= nil then definition.displayName else itemId
+			quickSlotButton.Text = string.format("[0]\n%s ×%d", displayName, quantity)
+			quickSlotButton.Active = quantity > 0
+			quickSlotButton.TextTransparency = if quantity > 0 then 0 else 0.45
+			quickSlotButton.BackgroundColor3 = if quantity > 0 then Color3.fromRGB(42, 45, 56) else Color3.fromRGB(33, 35, 43)
+		else
+			quickSlotButton.Text = "[0]"
+			quickSlotButton.Active = false
+			quickSlotButton.TextTransparency = 0.45
+			quickSlotButton.BackgroundColor3 = Color3.fromRGB(33, 35, 43)
+		end
 	end
 
 	local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
@@ -146,6 +193,15 @@ local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (str
 		button.Position = UDim2.new((index - 1) * 0.1, 2, 0, 0)
 		button.TextSize = if UserInputService.TouchEnabled then 8 else 10
 
+		if index == 10 then
+			quickSlotButton = button
+			button.Text = "[0]"
+			table.insert(buttonConnections, button.Activated:Connect(function()
+				if quickUseCallback ~= nil then quickUseCallback() end
+			end))
+			continue
+		end
+
 		if skillId ~= nil then
 			local definition = SkillDefinitions[skillId]
 			if definition ~= nil then
@@ -168,9 +224,15 @@ function ActionBar.start(
 	onAutoToggle: () -> (),
 	onSkill: (string) -> (),
 	onClearTarget: () -> (),
-	onInventoryToggle: () -> ()
+	onInventoryToggle: () -> (),
+	onMapToggle: () -> (),
+	onQuestToggle: () -> (),
+	onQuickUse: () -> (),
+	getQuickState: () -> any
 ): ()
 	ActionBar.stop()
+	quickUseCallback = onQuickUse
+	quickStateCallback = getQuickState
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CombatActionBar"
@@ -198,36 +260,52 @@ function ActionBar.start(
 	content.BackgroundTransparency = 1
 	content.Parent = frame
 
-	inventoryButton = makeButton(content, "Inventory", inventoryBindingText(), UDim2.new(0.66, -2, 0, 36))
-	local inventory = inventoryButton :: TextButton
-	inventory.Position = UDim2.new(0.34, 0, 0, 0)
+	mapButton = makeButton(content, "Map", mapBindingText(), UDim2.new(0.31, -2, 0, 36))
+	local mapToggle = mapButton :: TextButton
 
-	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.32, -2, 0, 44))
+	questButton = makeButton(content, "Quests", questBindingText(), UDim2.new(0.31, -2, 0, 36))
+	local quests = questButton :: TextButton
+	quests.Position = UDim2.new(0.345, 0, 0, 0)
+
+	inventoryButton = makeButton(content, "Inventory", inventoryBindingText(), UDim2.new(0.31, -2, 0, 36))
+	local inventory = inventoryButton :: TextButton
+	inventory.Position = UDim2.new(0.69, 0, 0, 0)
+
+	local lowerRowHeight = if UserInputService.TouchEnabled then 104 else 92
+	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.31, -2, 0, lowerRowHeight))
 	local auto = autoButton :: TextButton
 	auto.Position = UDim2.new(0, 0, 0, 42)
 
-	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.32, -2, 0, 44))
-	clearButton.Position = UDim2.new(0, 0, 0, 90)
+	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.31, -2, 0, lowerRowHeight))
+	clearButton.Position = UDim2.new(0.345, 0, 0, 42)
 
-	attackButton = makeButton(content, "Attack", "АТАКА", UDim2.new(0.66, -2, 0, if UserInputService.TouchEnabled then 104 else 92))
+	local attackDiameter = lowerRowHeight
+	attackButton = makeButton(content, "Attack", "АТАКА", UDim2.fromOffset(attackDiameter, attackDiameter))
 	local attack = attackButton :: TextButton
-	attack.Position = UDim2.new(0.34, 0, 0, 42)
+	attack.AnchorPoint = Vector2.new(1, 0)
+	attack.Position = UDim2.new(1, 0, 0, 42)
 	attack.TextSize = 19
+
+	local attackCorner = Instance.new("UICorner")
+	attackCorner.CornerRadius = UDim.new(1, 0)
+	attackCorner.Parent = attack
 
 	buildSkillBar(gui, skillIds, onSkill)
 
 	table.insert(buttonConnections, inventory.Activated:Connect(onInventoryToggle))
+	table.insert(buttonConnections, mapToggle.Activated:Connect(onMapToggle))
+	table.insert(buttonConnections, quests.Activated:Connect(onQuestToggle))
 	table.insert(buttonConnections, attack.Activated:Connect(onAttack))
 	table.insert(buttonConnections, auto.Activated:Connect(onAutoToggle))
 	table.insert(buttonConnections, clearButton.Activated:Connect(onClearTarget))
 
 	autoConnection = player:GetAttributeChangedSignal(CombatConfig.AutoAttackEnabledAttribute):Connect(updateAuto)
 	renderConnection = RunService.RenderStepped:Connect(updateCooldowns)
-	inputTypeConnection = UserInputService.LastInputTypeChanged:Connect(updateInventoryHint)
+	inputTypeConnection = UserInputService.LastInputTypeChanged:Connect(updateBindingHints)
 	screenGui = gui
 	updateAuto()
 	updateCooldowns()
-	updateInventoryHint()
+	updateBindingHints()
 end
 
 function ActionBar.stop(): ()
@@ -240,7 +318,9 @@ function ActionBar.stop(): ()
 	table.clear(skillButtons)
 	table.clear(skillResourceTypes)
 	if screenGui ~= nil then screenGui:Destroy() end
-	screenGui, autoButton, attackButton, inventoryButton = nil, nil, nil, nil
+	screenGui, autoButton, attackButton, inventoryButton, mapButton, questButton, quickSlotButton = nil, nil, nil, nil, nil, nil, nil
+	quickUseCallback = nil
+	quickStateCallback = nil
 end
 
 return ActionBar

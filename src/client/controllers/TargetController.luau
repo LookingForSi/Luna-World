@@ -23,7 +23,7 @@ local onTargetChanged: ((Model?) -> ())? = nil
 local selectedModel: Model? = nil
 local TARGET_ACTION = "LunaCycleTarget"
 local CLEAR_TARGET_ACTION = "LunaClearTarget"
-local DESKTOP_PICK_PADDING = 36
+local DESKTOP_PICK_PADDING = 52
 
 local function findEntityModel(instance: Instance?): Model?
 	local current = instance
@@ -127,7 +127,21 @@ local function getScreenBounds(model: Model): (Vector2?, Vector2?, number?)
 	local camera = workspace.CurrentCamera
 	if camera == nil then return nil, nil, nil end
 
-	local boxCFrame, boxSize = model:GetBoundingBox()
+	local visibleRoot = model:FindFirstChild("HumanoidRootPart")
+	local boxCFrame: CFrame
+	local boxSize: Vector3
+	if typeof(model:GetAttribute("MobId")) == "string"
+		and visibleRoot ~= nil
+		and visibleRoot:IsA("BasePart")
+	then
+		-- For placeholder mobs the HumanoidRootPart is the visible silhouette.
+		-- Ignore the larger invisible TargetHitbox so forgiveness stays centered.
+		boxCFrame = visibleRoot.CFrame
+		boxSize = visibleRoot.Size
+	else
+		-- Player characters and future multipart entities keep their full visual bounds.
+		boxCFrame, boxSize = model:GetBoundingBox()
+	end
 	local half = boxSize * 0.5
 	local minX, minY = math.huge, math.huge
 	local maxX, maxY = -math.huge, -math.huge
@@ -192,6 +206,9 @@ local function findForgivingScreenCandidate(screenPosition: Vector2): Model?
 end
 
 local function selectAtScreenPosition(screenPosition: Vector2, touchInput: boolean): ()
+	-- InputObject.Position / TouchTap already line up with Camera viewport
+	-- coordinates in the supported runtime. Subtracting GuiInset shifted the
+	-- entire pick ray above the rendered silhouette.
 	local exact = raycastEntity(screenPosition)
 	if exact ~= nil then
 		requestModel(exact)
@@ -199,7 +216,7 @@ local function selectAtScreenPosition(screenPosition: Vector2, touchInput: boole
 	end
 
 	if touchInput then
-		for _, offset in ClientCombatUiRules.getTouchProbeOffsets(24) do
+		for _, offset in ClientCombatUiRules.getTouchProbeOffsets(30) do
 			local model = raycastEntity(screenPosition + offset)
 			if model ~= nil then
 				requestModel(model)
@@ -252,10 +269,15 @@ function TargetController.start(targetChanged: (Model?) -> ()): ()
 	onTargetChanged = targetChanged
 
 	inputBeganConnection = UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
-		-- Touch is handled only by TouchTap so one tap cannot issue two requests.
-		if gameProcessed or input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+		if gameProcessed then return end
+		if input.UserInputType == Enum.UserInputType.MouseButton2 then
+			-- Desktop clear-target shortcut. Do not sink the input so Roblox camera
+			-- rotation can still use the right mouse button naturally.
+			TargetController.clearTarget()
 			return
 		end
+		-- Touch is handled only by TouchTap so one tap cannot issue two requests.
+		if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
 		selectAtScreenPosition(Vector2.new(input.Position.X, input.Position.Y), false)
 	end)
 

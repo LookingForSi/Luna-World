@@ -22,6 +22,9 @@ LAYOUT = "src/client/ui/HudLayout.luau"
 HUD = "src/client/ui/CombatHud.luau"
 ACTIONS = "src/client/ui/ActionBar.luau"
 LOG = "src/client/ui/CombatLog.luau"
+INVENTORY = "src/client/ui/InventoryUi.luau"
+ECONOMY = "src/client/ui/EconomyUi.luau"
+QUEST = "src/client/controllers/QuestController.luau"
 CONFIG = "src/shared/config/CombatConfig.luau"
 PROGRESSION_CONFIG = "src/shared/config/ProgressionConfig.luau"
 CLIENT_MAIN = "src/client/main.client.luau"
@@ -29,6 +32,11 @@ COMBAT = "src/server/services/CombatService.luau"
 
 require(LAYOUT, "HudLayout.CornerMargin = 24", "all corner panels must share one visible safe margin")
 require(LAYOUT, "function HudLayout.applyPanelStyle", "corner panels must share one visual panel style")
+require(LAYOUT, "function HudLayout.makeCloseButton", "modal surfaces must share one close-button style")
+require(INVENTORY, "HudLayout.makeCloseButton", "inventory must use the shared close button")
+require(ECONOMY, "HudLayout.makeCloseButton", "economy dialogs must use the shared close button")
+require(QUEST, "HudLayout.makeCloseButton", "quest/map dialogs must use the shared close button")
+require(ACTIONS, "attackCorner.CornerRadius = UDim.new(1, 0)", "primary attack action must be circular")
 
 require(HUD, "UDim2.new(1, -HudLayout.CornerMargin, 0, HudLayout.CornerMargin)", "player status must use the shared top-right anchor")
 require(HUD, "gui.IgnoreGuiInset = true", "top HUD must measure its margin from the physical viewport edge")

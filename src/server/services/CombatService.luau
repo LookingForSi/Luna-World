@@ -65,7 +65,16 @@ type PlayerCombatState = {
 	pendingBasicActionId: string?,
 }
 
+type PendingApproach = {
+	kind: "Attack" | "Skill",
+	targetId: string,
+	skillId: string?,
+	range: number,
+	lastMoveAt: number,
+}
+
 local targetsByPlayer: { [Player]: string } = {}
+local pendingApproachesByPlayer: { [Player]: PendingApproach } = {}
 local statesByPlayer: { [Player]: PlayerCombatState } = {}
 local cooldownsByPlayer: { [Player]: CooldownRules.CooldownDeadlines } = {}
 local characterDeathConnections: { [Player]: RBXScriptConnection } = {}
@@ -97,6 +106,8 @@ local SKILL_COOLDOWN_ATTRIBUTE_PREFIX = CombatConfig.SkillCooldownAttributePrefi
 
 local getLivingCharacterRoot: (Player) -> BasePart?
 local getLivingMobRoot: (Model) -> BasePart?
+local beginApproach: (Player, string, "Attack" | "Skill", string?, number) -> ()
+local clearApproach: (Player, boolean?) -> ()
 
 local function getArchetypeId(player: Player): string
 	local requested = player:GetAttribute(ARCHETYPE_ATTRIBUTE)
@@ -352,6 +363,12 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 			elseif resourceAfterCost == nil then "InsufficientResource"
 			else targetReason
 		reject(player, { skillId = definition.id, outcome = "Rejected", reasonCode = reasonCode })
+		if reasonCode == "OutOfRange" and definition.targetType == "Enemy" then
+			local selectedTargetId = targetsByPlayer[player]
+			if selectedTargetId ~= nil then
+				beginApproach(player, selectedTargetId, "Skill", definition.id, definition.range)
+			end
+		end
 		return
 	end
 	if not CombatEffectService.isImplemented(definition) then
@@ -555,6 +572,46 @@ getLivingMobRoot = function(mob: Model): BasePart?
 	return root
 end
 
+local function stopCharacterMovement(player: Player): ()
+	local character = player.Character
+	local humanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+	local root = if character ~= nil then character:FindFirstChild("HumanoidRootPart") else nil
+	if humanoid ~= nil and root ~= nil and root:IsA("BasePart") then
+		humanoid:MoveTo(root.Position)
+	end
+end
+
+clearApproach = function(player: Player, stopMovement: boolean?): ()
+	if pendingApproachesByPlayer[player] == nil then return end
+	pendingApproachesByPlayer[player] = nil
+	if stopMovement ~= false then stopCharacterMovement(player) end
+end
+
+beginApproach = function(
+	player: Player,
+	targetId: string,
+	kind: "Attack" | "Skill",
+	skillId: string?,
+	range: number
+): ()
+	if targetsByPlayer[player] ~= targetId then return end
+	local actorRoot = getLivingCharacterRoot(player)
+	local target = MobService.getByEntityId(targetId)
+	local targetRoot = if target ~= nil then getLivingMobRoot(target) else nil
+	local character = player.Character
+	local humanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+	if actorRoot == nil or targetRoot == nil or humanoid == nil then return end
+
+	pendingApproachesByPlayer[player] = {
+		kind = kind,
+		targetId = targetId,
+		skillId = skillId,
+		range = range,
+		lastMoveAt = workspace:GetServerTimeNow(),
+	}
+	humanoid:MoveTo(targetRoot.Position)
+end
+
 local function cancelPendingAction(player: Player, discardSkillResult: boolean?): ()
 	local state = statesByPlayer[player]
 	if state == nil then return end
@@ -599,6 +656,7 @@ local function cancelPendingAction(player: Player, discardSkillResult: boolean?)
 end
 
 local function clearTarget(player: Player): ()
+	clearApproach(player, true)
 	local connections = targetLifecycleConnections[player]
 	if connections ~= nil then
 		for _, connection in connections do connection:Disconnect() end
@@ -837,6 +895,10 @@ local function onAttackRequest(player: Player, ...: unknown): ()
 			then "OutOfRange"
 			else "InvalidTarget"
 		reject(player, { outcome = "Rejected", reasonCode = reasonCode })
+		if reasonCode == "OutOfRange" and targetId ~= nil then
+			local state = getState(player)
+			beginApproach(player, targetId, "Attack", nil, getBasicAttackDefinition(state).range)
+		end
 		return
 	end
 
@@ -853,6 +915,52 @@ local function onAttackRequest(player: Player, ...: unknown): ()
 		replicateState(player, state)
 	else
 		reject(player, { targetEntityId = targetId, outcome = "Rejected", reasonCode = "Cooldown" })
+	end
+end
+
+local function processApproaches(now: number): ()
+	for player, pending in pendingApproachesByPlayer do
+		if player.Parent ~= Players or targetsByPlayer[player] ~= pending.targetId then
+			clearApproach(player, true)
+			continue
+		end
+
+		local actorRoot = getLivingCharacterRoot(player)
+		local target = MobService.getByEntityId(pending.targetId)
+		local targetRoot = if target ~= nil then getLivingMobRoot(target) else nil
+		local character = player.Character
+		local humanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+		if actorRoot == nil or targetRoot == nil or humanoid == nil then
+			clearApproach(player, true)
+			continue
+		end
+
+		local distance = (targetRoot.Position - actorRoot.Position).Magnitude
+		if distance <= pending.range + CombatConfig.RangeTolerance then
+			local state = getState(player)
+			if state.actionState == "Recovery" and now >= state.readyAt then
+				state.actionState = "Ready"
+				replicateState(player, state)
+			end
+			if state.actionState ~= "Ready" then
+				continue
+			end
+
+			pendingApproachesByPlayer[player] = nil
+			stopCharacterMovement(player)
+			if pending.kind == "Attack" then
+				acceptAttack(player, pending.targetId)
+			else
+				local definition = if pending.skillId ~= nil then SkillDefinitions[pending.skillId] else nil
+				if definition ~= nil then acceptSkill(player, definition, now) end
+			end
+			continue
+		end
+
+		if now - pending.lastMoveAt >= CombatConfig.ApproachMoveRefreshSeconds then
+			pending.lastMoveAt = now
+			humanoid:MoveTo(targetRoot.Position)
+		end
 	end
 end
 
@@ -1046,6 +1154,20 @@ function CombatService.handlePlayerRespawn(player: Player, character: Model): ()
 	publish("Respawn", HttpService:GenerateGUID(false), player, { outcome = "Respawned" })
 end
 
+function CombatService.selectAttackerIfNoTarget(player: Player, mob: Model): boolean
+	if targetsByPlayer[player] ~= nil or player.Parent ~= Players or not PlayerDataService.isReady(player) then return false end
+	local entityId = mob:GetAttribute("EntityId")
+	if typeof(entityId) ~= "string" or entityId == "" then return false end
+	local playerRoot = getLivingCharacterRoot(player)
+	local mobRoot = getLivingMobRoot(mob)
+	if playerRoot == nil or mobRoot == nil then return false end
+	if not CombatRules.canSelectTarget(playerRoot.Position, mobRoot.Position, true, CombatConfig.TargetSelectionRange) then
+		return false
+	end
+	onTargetRequest(player, entityId)
+	return targetsByPlayer[player] == entityId
+end
+
 function CombatService.start(): ()
 	if started then return end
 	started = true
@@ -1072,6 +1194,7 @@ function CombatService.start(): ()
 	for _, player in Players:GetPlayers() do onPlayerAdded(player) end
 	table.insert(serviceConnections, RunService.Heartbeat:Connect(function(deltaTime)
 		local now = workspace:GetServerTimeNow()
+		processApproaches(now)
 		for player, state in statesByPlayer do
 			if state.autoAttackEnabled and now >= state.autoAttackNextAttemptAt then
 				local targetId = targetsByPlayer[player]
@@ -1152,6 +1275,7 @@ function CombatService.stop(): ()
 	end
 	CombatEffectService.stop()
 	table.clear(targetsByPlayer)
+	table.clear(pendingApproachesByPlayer)
 	table.clear(statesByPlayer)
 	table.clear(cooldownsByPlayer)
 	table.clear(characterDeathConnections)

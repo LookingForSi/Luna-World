@@ -30,6 +30,11 @@ local DEFAULT_MIGRATIONS: Registry = {
 			Equipment = old.Equipment or {},
 		}
 	end,
+	[1] = function(old: any): any
+		old.DataVersion = 2
+		old.Quests = {}
+		return old
+	end,
 }
 
 function MigrationRules.run(rawProfile: unknown, registry: Registry?): (PersistenceTypes.Profile?, string?)

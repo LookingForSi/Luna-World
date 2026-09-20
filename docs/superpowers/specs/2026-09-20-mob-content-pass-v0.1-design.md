@@ -5,7 +5,7 @@
 
 ## Цель
 
-Превратить принятую карту v0.1 из traversal/blockout-сцены в полноценную PvE-прогрессию уровней 1–10 поверх Milestone 2: бой, XP, loot, inventory, equipment и persistence должны проверяться на реальном населении мира.
+Превратить принятую карту v0.1 из traversal/blockout-сцены в полноценную PvE-прогрессию уровней 1–14 с резервом уровня 15 под Ruins of Selene поверх Milestone 2: бой, XP, loot, inventory, equipment и persistence должны проверяться на реальном населении мира.
 
 Маршрут прогрессии:
 
@@ -51,10 +51,10 @@ Ruins of Selene остаётся отдельным будущим dungeon-pass.
 - 1 Goblin Chieftain.
 
 Warrior сочетает melee и Sling Stone.
-Shaman использует Spirit Bolt и War Chant.
-Chieftain — локальный elite с Heavy Strike, Cleave и Battle Cry.
+Shaman использует Spirit Bolt, War Chant и Проклятие шамана; его базовая атака является магической дальней.
+Chieftain — локальный elite с Sling Stone, Heavy Strike, Cleave и Battle Cry, повышенным шансом и множителем критического удара.
 
-### Spider Hollow, lvl 4–6
+### Spider Hollow, lvl 4–7
 - 8 Venom Spider;
 - 2 Brood Spider.
 - Social assist отсутствует.
@@ -62,22 +62,22 @@ Chieftain — локальный elite с Heavy Strike, Cleave и Battle Cry.
 - Crippling Venom: временно снижает movement speed и attack speed.
 - Brood Spider имеет больше HP/damage и усиленные варианты яда.
 
-### Dark Woodland, lvl 6–8
+### Dark Woodland, lvl 8–10
 - Dire Wolf в малых стаях;
 - Forest Spider одиночками;
 - 1 Dire Wolf Alpha.
 
-### Old Cemetery, lvl 7–9
+### Old Cemetery, lvl 10–12
 - Skeleton;
 - Skeleton Archer;
 - Grave Guardian elite.
 - Небольшие encounter-groups, а не глобальная social aggro.
 
-### Fallen Shrine, lvl 8–9
+### Fallen Shrine, lvl 11–12
 - Fallen Acolyte — magic ranged;
 - Shrine Guardian — тяжёлый melee.
 
-### Ancient Approach, lvl 9–10
+### Ancient Approach, lvl 13–14
 - Ancient Sentinel;
 - Ancient Watcher;
 - Moonbound Warden — open-world elite перед Ruins of Selene.
@@ -106,27 +106,38 @@ Chieftain — локальный elite с Heavy Strike, Cleave и Battle Cry.
 
 ## Матрица характеристик и наград
 
-Все числа являются первой серверной настройкой и уточняются только после runtime-приёмки.
+Числа ниже соответствуют текущему server tuning после dev0.2 difficulty pass.
 
-| Тип | Уровень | Ранг | P.Def / M.Def | XP | Respawn | Loot |
-|---|---:|---|---:|---:|---:|---|
-| Young Wolf | 1 | ordinary | 1 / 1 | 15 | 18 с | `loot_young_wolf` |
-| Grey Wolf | 2 | ordinary | 2 / 2 | 25 | 22 с | `loot_grey_wolf` |
-| Wolf Pack Leader | 3 | elite | 4 / 3 | 55 | 40 с | `loot_wolf_pack_leader` |
-| Goblin Scout / Warrior / Shaman | 4 / 5 / 6 | ordinary | специализация по роли | 55 / 78 / 105 | 25–40 с | отдельные goblin tables |
-| Goblin Chieftain | 7 | elite | 11 / 7 | 210 | 75 с | `loot_goblin_chieftain` |
-| Venom / Brood Spider | 4 / 6 | ordinary | 4/11 и 6/15 | 50 / 110 | 25 / 45 с | spider tables |
-| Dire Wolf / Alpha | 6 / 8 | ordinary / elite | 6/4 и 10/7 | 95 / 190 | 30 / 60 с | wolf tables |
-| Forest Spider | 7 | ordinary | 5 / 10 | 120 | 32 с | `loot_forest_spider` |
-| Skeleton / Archer | 7 / 8 | ordinary | 10/3 и 6/3 | 125 / 145 | 30–34 с | undead tables |
-| Grave Guardian | 9 | elite | 14 / 8 | 240 | 70 с | `loot_grave_guardian` |
-| Fallen Acolyte / Shrine Guardian | 8 / 9 | ordinary | 5/11 и 13/8 | 150 / 200 | 34 / 45 с | shrine tables |
-| Ancient Sentinel / Watcher | 9 / 10 | ordinary | 15/9 и 8/13 | 220 / 230 | 42–45 с | ancient tables |
-| Moonbound Warden | 10 | elite | 18 / 14 | 420 | 90 с | `loot_moonbound_warden` |
+| Тип | Уровень | Ранг | HP | P.Def / M.Def | XP |
+|---|---:|---|---:|---:|---:|
+| Young Wolf | 1 | ordinary | 70 | 1 / 1 | 15 |
+| Grey Wolf | 2 | ordinary | 105 | 2 / 2 | 25 |
+| Wolf Pack Leader | 3 | elite | 180 | 4 / 3 | 55 |
+| Venom Spider | 4 | ordinary | 175 | 4 / 11 | 50 |
+| Goblin Scout | 4 | ordinary | 145 | 4 / 2 | 55 |
+| Goblin Warrior | 5 | ordinary | 225 | 7 / 3 | 78 |
+| Goblin Shaman | 6 | ordinary | 240 | 4 / 12 | 120 |
+| Brood Spider | 7 | ordinary | 380 | 7 / 16 | 130 |
+| Goblin Chieftain | 7 | elite | 600 | 14 / 9 | 260 |
+| Dire Wolf | 8 | ordinary | 285 | 8 / 5 | 125 |
+| Forest Spider | 9 | ordinary | 260 | 7 / 13 | 150 |
+| Dire Wolf Alpha | 10 | elite | 540 | 13 / 9 | 250 |
+| Skeleton | 10 | ordinary | 310 | 13 / 4 | 165 |
+| Skeleton Archer | 11 | ordinary | 245 | 8 / 4 | 190 |
+| Fallen Acolyte | 11 | ordinary | 280 | 7 / 14 | 195 |
+| Grave Guardian | 12 | elite | 680 | 18 / 11 | 320 |
+| Shrine Guardian | 12 | ordinary | 500 | 17 / 10 | 255 |
+| Ancient Sentinel | 13 | ordinary | 620 | 20 / 12 | 310 |
+| Ancient Watcher | 14 | ordinary | 410 | 10 / 18 | 340 |
+| Moonbound Warden | 14 | elite | 1200 | 25 / 20 | 550 |
+| Selene's Fallen Guardian | 15 | boss / future dungeon | TBD | TBD | TBD |
+
+Полная оперативная таблица base damage, crit и abilities поддерживается в `docs/MOB_BESTIARY.md`.
+
 
 ## Способности и эффекты
 
-- Physical ranged: Sling Stone и Skeleton Arrow; magic ranged: Spirit Bolt, acolyte/ancient bolts.
+- Physical ranged: Sling Stone и Skeleton Arrow; magic ranged: Spirit Bolt, Проклятие шамана и acolyte/ancient bolts.
 - Poison заменяет прежний poison того же игрока новой generation: длительность обновляется, два DoT не тикают параллельно.
 - Crippling Venom временно применяет минимальные movement/attack-speed multipliers; повторное применение обновляет generation и срок, но не перемножает штрафы.
 - War Chant усиливает живых союзников той же faction в локальном радиусе; повторное применение сохраняет наибольший multiplier и обновляет срок без бесконечного stacking.
@@ -152,7 +163,7 @@ Patrol задаётся `patrolRadius` и `patrolCycleSeconds` в `WorldLayout.S
 
 ## Loot и progression
 
-Каждый stable mob ID ссылается на существующую loot table. Таблицы повторно используют экипировку и consumables M2 и небольшой набор тематических материалов. Luna, шанс полезного предмета и качество таблицы растут с tier; elite loot интереснее, но rare gear не гарантируется на каждом respawn. XP монотонно соответствует уровню/опасности и поддерживает маршрут 1–10 без отдельного клиентского reward path.
+Каждый stable mob ID ссылается на существующую loot table. Таблицы повторно используют экипировку и consumables M2 и небольшой набор тематических материалов. Luna, шанс полезного предмета и качество таблицы растут с tier; elite loot интереснее, но rare gear не гарантируется на каждом respawn. XP монотонно соответствует уровню/опасности и поддерживает открытый маршрут 1–14; уровень 15 зарезервирован под финальный dungeon.
 
 ## Presentation и ограничения
 

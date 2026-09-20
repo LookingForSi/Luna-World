@@ -11,6 +11,7 @@ local MobService = require(script.Parent.MobService)
 local CombatService = require(script.Parent.CombatService)
 local CombatPresentationService = require(script.Parent.CombatPresentationService)
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
+local DamageRules = require(ReplicatedStorage.Shared.combat.DamageRules)
 
 local MobAbilityService = {}
 
@@ -20,6 +21,7 @@ local nextActionReadyAtByMob: { [Model]: number } = setmetatable({}, { __mode = 
 local abilityCursorByMob: { [Model]: number } = setmetatable({}, { __mode = "k" }) :: any
 local buffGenerationByMob: { [Model]: number } = setmetatable({}, { __mode = "k" }) :: any
 local poisonGenerationByPlayer: { [Player]: number } = setmetatable({}, { __mode = "k" }) :: any
+local criticalRandom = Random.new()
 local started = false
 
 local function actorEntityId(mob: Model, definition: CombatTypes.MobDefinition): string
@@ -68,7 +70,15 @@ local function resolveIncomingDamage(
 	local stats = CombatService.getPlayerCombatStats(target)
 	if stats == nil then return nil end
 	local defense = if damageType == "Physical" then stats.physicalDefense else 0
-	return math.max(1, math.floor(rawDamage - defense + 0.5))
+	if damageType == "Physical" then
+		-- Flat subtraction collapsed early mob hits to the 1-damage floor as soon
+		-- as starter defense matched their raw damage. Proportional mitigation
+		-- preserves the tanking value of defense without making low-level mobs
+		-- harmless.
+		local mitigated = rawDamage / (1 + defense * CombatConfig.PhysicalDefenseMitigationPerPoint)
+		return math.max(1, math.floor(mitigated + 0.5))
+	end
+	return math.max(1, math.floor(rawDamage + 0.5))
 end
 
 local function publishToTarget(
@@ -99,15 +109,30 @@ local function applyDamage(
 ): number?
 	local humanoid = livingPlayerHumanoid(target)
 	if humanoid == nil then return nil end
-	local damage = resolveIncomingDamage(target, rawDamage * outgoingMultiplier(mob), damageType)
+
+	local criticalChance = math.clamp(definition.criticalChance or 0, 0, 1)
+	local criticalMultiplier = math.max(
+		1,
+		definition.criticalDamageMultiplier or CombatConfig.CriticalDamageMultiplier
+	)
+	local rolled = DamageRules.resolve(
+		rawDamage * outgoingMultiplier(mob),
+		"DirectDamage",
+		criticalChance > 0,
+		criticalChance,
+		criticalMultiplier,
+		function() return criticalRandom:NextNumber() end
+	)
+	local damage = resolveIncomingDamage(target, rolled.amount, damageType)
 	if damage == nil then return nil end
+	CombatService.selectAttackerIfNoTarget(target, mob)
 	humanoid:TakeDamage(damage)
 	publishToTarget(target, "Result", actionId, actorEntityId(mob, definition), {
 		targetEntityId = targetEntityId(target),
 		presentationKey = presentationKey,
 		outcome = "Applied",
 		amount = damage,
-		isCritical = false,
+		isCritical = rolled.isCritical,
 		definitionId = definition.id,
 		skillId = abilityId,
 	})

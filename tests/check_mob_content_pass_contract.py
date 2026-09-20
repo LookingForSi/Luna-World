@@ -52,6 +52,7 @@ for ability_id in (
     "goblin_sling_stone",
     "goblin_spirit_bolt",
     "goblin_war_chant",
+    "goblin_shaman_hex",
 	"goblin_cleave",
     "spider_venom_spit",
     "spider_crippling_venom",
@@ -74,8 +75,15 @@ for marker in (
     "spawn_goblin_patrol_east",
     "spawn_goblin_patrol_north",
     "spawn_goblin_patrol_west",
+    "spawn_goblin_gate_pair_south",
+    "spawn_goblin_gate_pair_north",
     "spawn_goblin_shaman_camp",
+    "spawn_goblin_inner_pair_a_scout",
+    "spawn_goblin_inner_pair_a_warrior",
+    "spawn_goblin_inner_pair_b_scout",
+    "spawn_goblin_inner_pair_b_warrior",
     "spawn_goblin_chieftain_camp",
+    "spawn_goblin_chieftain_guard",
     "spawn_spider_hollow_swarm",
     "spawn_spider_hollow_brood",
     "spawn_dire_wolf_alpha",
@@ -148,6 +156,40 @@ for marker_id, count in (
     marker_body = LAYOUT.split(f'id = "{marker_id}"', 1)[1].split("}", 1)[0]
     if f"count = {count}" not in marker_body:
         raise AssertionError(f"{marker_id} must use the approved population count {count}")
+for marker_id, group_id in (
+    ("spawn_goblin_gate_pair_south", "goblin_gate_pair_south"),
+    ("spawn_goblin_gate_pair_north", "goblin_gate_pair_north"),
+):
+    marker_body = LAYOUT.split(f'id = "{marker_id}"', 1)[1].split("}", 1)[0]
+    if "count = 2" not in marker_body or f'socialGroupId = "{group_id}"' not in marker_body:
+        raise AssertionError(f"{marker_id} must remain a compact social pair near the camp approach")
+
+shaman_body = LAYOUT.split('id = "spawn_goblin_shaman_camp"', 1)[1].split("}", 1)[0]
+warrior_body = LAYOUT.split('id = "spawn_goblin_warrior_camp"', 1)[1].split("}", 1)[0]
+for body in (shaman_body, warrior_body):
+    if 'socialGroupId = "goblin_courtyard"' not in body:
+        raise AssertionError("shaman and his two warriors must remain one social interior group")
+if "count = 2" not in warrior_body:
+    raise AssertionError("shaman encounter must include two warriors")
+if "scaleXZ(250, 62, 1005)" not in shaman_body:
+    raise AssertionError("shaman must stay inside the goblin camp with his warrior pair")
+
+for pair_id, group_id in (
+    ("spawn_goblin_inner_pair_a_scout", "goblin_inner_pair_a"),
+    ("spawn_goblin_inner_pair_a_warrior", "goblin_inner_pair_a"),
+    ("spawn_goblin_inner_pair_b_scout", "goblin_inner_pair_b"),
+    ("spawn_goblin_inner_pair_b_warrior", "goblin_inner_pair_b"),
+):
+    body = LAYOUT.split(f'id = "{pair_id}"', 1)[1].split("}", 1)[0]
+    if f'socialGroupId = "{group_id}"' not in body:
+        raise AssertionError(f"{pair_id} must remain linked to its mixed interior pair")
+
+chief_body = LAYOUT.split('id = "spawn_goblin_chieftain_camp"', 1)[1].split("}", 1)[0]
+chief_guard_body = LAYOUT.split('id = "spawn_goblin_chieftain_guard"', 1)[1].split("}", 1)[0]
+for body in (chief_body, chief_guard_body):
+    if 'socialGroupId = "goblin_chief_group"' not in body:
+        raise AssertionError("chieftain and dedicated warrior must remain one social group")
+
 if 'socialGroupId = "goblin_patrol_' not in LAYOUT:
     raise AssertionError("Goblin patrols must use linked encounter groups")
 if 'socialGroupId' in LAYOUT.split('id = "spawn_spider_hollow_swarm"', 1)[1].split("\n", 1)[0]:
@@ -160,15 +202,28 @@ for token in (
     'model:SetAttribute("PhysicalDefense"',
     'model:SetAttribute("MagicDefense"',
     "removeMobPlaceholders",
+    '"TargetHitbox"',
+    "hitbox.CanQuery = true",
+    '"MobNameplate"',
+    "MOB_NAMEPLATE_MAX_DISTANCE = 100",
+    'string.format("LV %d · %s"',
+    "GLOBAL_MOB_MOVEMENT_MULTIPLIER = 1.2",
+    "WOLF_MOVEMENT_MULTIPLIER = 1.25",
+    'definition.faction == "wolf"',
+    "hitbox.CFrame = rootPart.CFrame",
 ):
     if token not in MOB_SERVICE:
         raise AssertionError(f"MobService population contract missing {token}")
 
 for token in (
-	'otherModel:GetAttribute("SocialGroupId") == typedSocialGroupId',
+    "otherRecord.socialGroupId == socialGroupId",
+    "requestSocialAssist(record, record.target)",
+    "math.max(",
     "definition.socialAssistRadius",
 	"MobAIRules.canRequestSocialAssist",
     "patrolDestination",
+    "isCampPerimeterPatrol",
+    "humanoid:MoveTo(destination)",
     "record.patrolRadius",
     "definition.basicAttackRange",
 ):
@@ -200,4 +255,57 @@ for token in (
 if "MobAbilityService.start()" not in MAIN or "MobAIService.start(MobAbilityService.requestAttack)" not in MAIN:
     raise AssertionError("server bootstrap must route mob attacks through MobAbilityService")
 
-print("Mob Content Pass v0.1 contract: PASS")
+# dev0.2 goblin tuning: wider local social response, stronger aggro and real perimeter roaming.
+for token in (
+    "detectionRadius = 52, aggroRadius = 46, reacquireRadius = 64, leashDistance = 120",
+    "socialAssistRadius = 72",
+    "detectionRadius = 60, aggroRadius = 54, reacquireRadius = 72, leashDistance = 125",
+    "socialAssistRadius = 78",
+):
+    if token not in MOBS:
+        raise AssertionError(f"dev0.2 goblin aggro/social tuning missing: {token}")
+
+for marker_id in ("spawn_goblin_patrol_south", "spawn_goblin_patrol_east", "spawn_goblin_patrol_north", "spawn_goblin_patrol_west"):
+    body = LAYOUT.split(f'id = "{marker_id}"', 1)[1].split("}", 1)[0]
+    if "patrolCycleSeconds = 6" not in body:
+        raise AssertionError(f"{marker_id} must actively traverse its perimeter patrol")
+
+for token in (
+    'displayName = "Гоблин-шаман", level = 6, maxHealth = 240',
+    'basicAttackRange = 34, basicAttackDamage = 22, basicAttackDamageType = "Magic"',
+    'criticalChance = 0.12, criticalDamageMultiplier = 1.60',
+    '"goblin_war_chant", "goblin_spirit_bolt", "goblin_shaman_hex"',
+    'displayName = "Гоблин-вожак", level = 7, maxHealth = 600',
+    'criticalChance = 0.20, criticalDamageMultiplier = 1.80',
+    '"goblin_battle_cry", "goblin_sling_stone", "goblin_heavy_strike", "goblin_cleave"',
+    'displayName = "Лунный страж", level = 14, maxHealth = 1200',
+):
+    if token not in MOBS:
+        raise AssertionError(f"dev0.2 difficulty tuning missing: {token}")
+
+for token in (
+    'DamageRules.resolve(',
+    'definition.criticalChance or 0',
+    'definition.criticalDamageMultiplier or CombatConfig.CriticalDamageMultiplier',
+    'isCritical = rolled.isCritical',
+):
+    if token not in MOB_ABILITY_SERVICE:
+        raise AssertionError(f"server-authoritative mob critical contract missing: {token}")
+
+
+for token in (
+    'displayName = "Молодой волк", level = 1, maxHealth = 70',
+    'basicAttackRange = 10, basicAttackDamage = 12, basicAttackDamageType = "Physical"',
+):
+    if token not in MOBS:
+        raise AssertionError(f"starter wolf danger tuning missing: {token}")
+
+for token in (
+    "PhysicalDefenseMitigationPerPoint",
+    "rawDamage / (1 + defense * CombatConfig.PhysicalDefenseMitigationPerPoint)",
+):
+    source = text("src/shared/config/CombatConfig.luau") if token == "PhysicalDefenseMitigationPerPoint" else MOB_ABILITY_SERVICE
+    if token not in source:
+        raise AssertionError(f"proportional player defense contract missing: {token}")
+
+print("Mob Content Pass v0.1 + dev0.2 tuning contract: PASS")

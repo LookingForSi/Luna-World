@@ -87,11 +87,11 @@ local definitions: { [string]: ItemTypes.ItemDefinition } = {
 	weapon_iron_blade = weapon("weapon_iron_blade", "Железный клинок", "Uncommon", 4, "knight", { physicalAttack = 6 }),
 	weapon_moonsteel_sword = weapon("weapon_moonsteel_sword", "Меч лунной стали", "Rare", 7, "knight", { physicalAttack = 9, criticalChance = 0.01 }),
 
-	weapon_ash_bow = weapon("weapon_ash_bow", "Ясеневый лук", "Common", 1, "ranger", { physicalAttack = 3 }),
+	weapon_ash_bow = weapon("weapon_ash_bow", "Учебный лук", "Common", 1, "ranger", { physicalAttack = 3 }),
 	weapon_hunter_bow = weapon("weapon_hunter_bow", "Охотничий лук", "Uncommon", 4, "ranger", { physicalAttack = 6, criticalChance = 0.005 }),
 	weapon_moonstring_bow = weapon("weapon_moonstring_bow", "Лук лунной тетивы", "Rare", 7, "ranger", { physicalAttack = 9, criticalChance = 0.015 }),
 
-	weapon_ash_staff = weapon("weapon_ash_staff", "Ясеневый посох", "Common", 1, "mystic", { magicAttack = 3 }),
+	weapon_ash_staff = weapon("weapon_ash_staff", "Учебный посох", "Common", 1, "mystic", { magicAttack = 3 }),
 	weapon_rune_staff = weapon("weapon_rune_staff", "Рунный посох", "Uncommon", 4, "mystic", { magicAttack = 6 }),
 	weapon_moonveil_staff = weapon("weapon_moonveil_staff", "Посох лунной вуали", "Rare", 7, "mystic", { magicAttack = 9, criticalChance = 0.01 }),
 

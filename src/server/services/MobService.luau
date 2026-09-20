@@ -126,6 +126,64 @@ MobService.MobDied = mobDiedEvent.Event
 MobService.MobSpawned = mobSpawnedEvent.Event
 MobService.HostileAction = hostileActionEvent.Event
 
+local MOB_NAMEPLATE_MAX_DISTANCE = 100
+local GLOBAL_MOB_MOVEMENT_MULTIPLIER = 1.2
+local WOLF_MOVEMENT_MULTIPLIER = 1.25
+
+local function addMobPresentation(
+	model: Model,
+	rootPart: BasePart,
+	definition: CombatTypes.MobDefinition,
+	profile: { size: Vector3, color: Color3 }
+): BillboardGui
+	local hitbox = Instance.new("Part")
+	hitbox.Name = "TargetHitbox"
+	hitbox.Size = Vector3.new(
+		math.max(7, profile.size.X + 4),
+		math.max(5, profile.size.Y + 3),
+		math.max(7, profile.size.Z + 3)
+	)
+	-- Keep the larger click proxy centered on the visible primitive. Moving the
+	-- proxy upward made the selectable area drift away from short silhouettes.
+	hitbox.CFrame = rootPart.CFrame
+	hitbox.Transparency = 1
+	hitbox.CanCollide = false
+	hitbox.CanTouch = false
+	hitbox.CanQuery = true
+	hitbox.Massless = true
+	hitbox.Parent = model
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Name = "TargetHitboxWeld"
+	weld.Part0 = rootPart
+	weld.Part1 = hitbox
+	weld.Parent = hitbox
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "MobNameplate"
+	billboard.Adornee = rootPart
+	billboard.AlwaysOnTop = true
+	billboard.MaxDistance = MOB_NAMEPLATE_MAX_DISTANCE
+	billboard.Size = UDim2.fromOffset(220, 30)
+	billboard.StudsOffset = Vector3.new(0, profile.size.Y * 0.65 + 2.2, 0)
+	billboard.Parent = rootPart
+
+	local text = Instance.new("TextLabel")
+	text.Name = "Name"
+	text.BackgroundTransparency = 1
+	text.Size = UDim2.fromScale(1, 1)
+	text.Font = Enum.Font.GothamBold
+	text.Text = string.format("LV %d · %s", definition.level, definition.displayName)
+	text.TextColor3 = Color3.fromRGB(240, 240, 236)
+	text.TextStrokeColor3 = Color3.fromRGB(18, 20, 24)
+	text.TextStrokeTransparency = 0.25
+	text.TextSize = 14
+	text.TextWrapped = false
+	text.Parent = billboard
+
+	return billboard
+end
+
 local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
 	local definition = MobDefinitions[spawn.definitionKey]
 	assert(definition ~= nil, "unknown mob definition: " .. spawn.definitionKey)
@@ -147,7 +205,9 @@ local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
 	model:SetAttribute("PatrolRadius", spawn.patrolRadius)
 	model:SetAttribute("PatrolCycleSeconds", spawn.patrolCycleSeconds)
 	model:SetAttribute(CombatConfig.MobHomePositionAttribute, spawnCFrame.Position)
-	model:SetAttribute(CombatConfig.MobMovementSpeedAttribute, definition.chaseSpeed)
+	local factionMovementMultiplier = if definition.faction == "wolf" then WOLF_MOVEMENT_MULTIPLIER else 1
+	local movementSpeed = definition.chaseSpeed * GLOBAL_MOB_MOVEMENT_MULTIPLIER * factionMovementMultiplier
+	model:SetAttribute(CombatConfig.MobMovementSpeedAttribute, movementSpeed)
 	model:SetAttribute(CombatConfig.MobOutgoingDamageMultiplierAttribute, 1)
 
 	local rootPart = Instance.new("Part")
@@ -159,11 +219,13 @@ local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
 	rootPart.CanCollide = true
 	rootPart.Parent = model
 
+	local nameplate = addMobPresentation(model, rootPart, definition, profile)
+
 	local humanoid = Instance.new("Humanoid")
 	humanoid.RequiresNeck = false
 	humanoid.MaxHealth = definition.maxHealth
 	humanoid.Health = definition.maxHealth
-	humanoid.WalkSpeed = definition.chaseSpeed
+	humanoid.WalkSpeed = movementSpeed
 	humanoid.Parent = model
 
 	model.PrimaryPart = rootPart
@@ -185,6 +247,7 @@ local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
 			return
 		end
 		deathHandled = true
+		nameplate.Enabled = false
 
 		if mobsByEntityId[entityId] == model then
 			mobsByEntityId[entityId] = nil

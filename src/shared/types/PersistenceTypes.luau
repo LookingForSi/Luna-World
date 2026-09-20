@@ -14,6 +14,11 @@ export type Equipment = {
 	Accessory: string?,
 }
 
+export type QuestRecord = {
+	State: "Active" | "ReadyToTurnIn" | "Completed",
+	Progress: { [string]: number },
+}
+
 export type Profile = {
 	DataVersion: number,
 	Level: number,
@@ -23,6 +28,7 @@ export type Profile = {
 	Items: { [string]: ProfileItemRecord },
 	Inventory: { string },
 	Equipment: Equipment,
+	Quests: { [string]: QuestRecord },
 }
 
 return table.freeze({})

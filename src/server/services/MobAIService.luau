@@ -30,6 +30,7 @@ type Record = {
 	patrolIndex: number,
 	spawnIndex: number,
 	socialGroupId: string?,
+	returnStartedAt: number?,
 	connections: { RBXScriptConnection },
 }
 type AttackRequest = (Model, Player, CombatTypes.MobDefinition) -> boolean
@@ -46,6 +47,7 @@ local DETOUR_CLEARANCE = 2.5
 local DETOUR_REACHED_DISTANCE = 2.5
 local DETOUR_LIFETIME_SECONDS = 3
 local DETOUR_GOAL_RESET_DISTANCE = 5
+local RETURN_TELEPORT_SECONDS = 150
 
 local function livingRoot(player: Player): BasePart?
 	if player.Parent ~= Players then return nil end
@@ -81,6 +83,11 @@ end
 local function setState(record: Record, state: State): ()
 	local previousState = record.state
 	record.state = state
+	if state == "Return" and previousState ~= "Return" then
+		record.returnStartedAt = workspace:GetServerTimeNow()
+	elseif state ~= "Return" then
+		record.returnStartedAt = nil
+	end
 	if state ~= "Chase" and state ~= "Return" then
 		record.navigationDetour = nil
 		record.navigationGoal = nil
@@ -177,15 +184,32 @@ local function navigationDestination(record: Record, root: BasePart, destination
 	return destination
 end
 
+local function isCampPerimeterPatrol(record: Record): boolean
+	return record.socialGroupId ~= nil and string.sub(record.socialGroupId, 1, 14) == "goblin_patrol_"
+end
+
 local function patrolDestination(record: Record, currentY: number): Vector3
+	local formationOffset = if record.socialGroupId ~= nil then (record.spawnIndex - 1) * 4 else 0
+
+	if isCampPerimeterPatrol(record) then
+		-- The four goblin patrol pairs pace tangentially along the four camp sides
+		-- instead of orbiting tiny circles around their own spawn markers.
+		local phaseValues = { -1, -0.33, 0.33, 1 }
+		local phase = phaseValues[((record.patrolIndex - 1) % #phaseValues) + 1]
+		local alongX = record.socialGroupId == "goblin_patrol_south"
+			or record.socialGroupId == "goblin_patrol_north"
+		local axis = if alongX then Vector3.new(1, 0, 0) else Vector3.new(0, 0, 1)
+		local formationAxis = if alongX then Vector3.new(0, 0, 1) else Vector3.new(1, 0, 0)
+		return Vector3.new(record.home.X, currentY, record.home.Z)
+			+ axis * record.patrolRadius * phase
+			+ formationAxis * formationOffset
+	end
+
 	local steps = 8
 	local angle = ((record.patrolIndex - 1) % steps) / steps * math.pi * 2
 	local distance = record.patrolRadius * (if record.patrolIndex % 2 == 0 then 0.65 else 1)
 	local radial = Vector3.new(math.cos(angle), 0, math.sin(angle))
 	local tangent = Vector3.new(-radial.Z, 0, radial.X)
-	-- Linked groups share the same patrol phase so guards actually move as a
-	-- patrol. SpawnIndex supplies a small formation offset to avoid stacking.
-	local formationOffset = if record.socialGroupId ~= nil then (record.spawnIndex - 1) * 4 else 0
 	return Vector3.new(record.home.X, currentY, record.home.Z)
 		+ radial * distance
 		+ tangent * formationOffset
@@ -217,6 +241,34 @@ local function moveToward(record: Record, destination: Vector3, capturedGenerati
 	humanoid:MoveTo(moveDestination)
 end
 
+local function requestSocialAssist(record: Record, attacker: Player): ()
+	if livingRoot(attacker) == nil then return end
+	local socialGroupId = record.socialGroupId
+	if not MobAIRules.canRequestSocialAssist(record.state, socialGroupId) then return end
+	local _, sourceRoot = mobParts(record.model)
+	if sourceRoot == nil then return end
+
+	for otherModel, otherRecord in records do
+		if otherModel ~= record.model
+			and otherRecord.socialGroupId == socialGroupId
+			and otherRecord.state ~= "Return"
+			and otherRecord.state ~= "Dead"
+		then
+			local otherHumanoid, otherRoot = mobParts(otherModel)
+			local assistRadius = math.max(
+				record.definition.socialAssistRadius,
+				otherRecord.definition.socialAssistRadius
+			)
+			if otherHumanoid ~= nil and otherHumanoid.Health > 0 and otherRoot ~= nil
+				and assistRadius > 0
+				and (otherRoot.Position - sourceRoot.Position).Magnitude <= assistRadius
+			then
+				otherRecord.hostileAttacker = attacker
+			end
+		end
+	end
+end
+
 local function decide(record: Record, now: number): ()
 	local capturedGeneration = record.generation
 	local humanoid, root = mobParts(record.model)
@@ -231,22 +283,36 @@ local function decide(record: Record, now: number): ()
 		targetRoot = if record.target ~= nil then livingRoot(record.target) else nil
 	end
 	local detected = if record.state == "Idle" and definition.aggressionMode == "Aggressive"
-		then nearestPlayer(root.Position, definition.detectionRadius)
+		then nearestPlayer(root.Position, definition.aggroRadius)
 		else nil
 	local hostile = record.hostileAttacker
 	record.hostileAttacker = nil
+	if hostile ~= nil and livingRoot(hostile) ~= nil then
+		record.target = hostile
+		targetRoot = livingRoot(hostile)
+	end
 	if record.state == "Idle" then
 		record.target = if hostile ~= nil and livingRoot(hostile) ~= nil then hostile else detected
 		targetRoot = if record.target ~= nil then livingRoot(record.target) else nil
+		if record.target ~= nil then
+			-- Proximity aggro is social too: a paired goblin should alert its local
+			-- group immediately, not only after the player lands the first hit.
+			requestSocialAssist(record, record.target)
+		end
 	end
 	local distanceFromHome = (root.Position - record.home).Magnitude
 	local targetDistance = if targetRoot ~= nil then (targetRoot.Position - root.Position).Magnitude else math.huge
+	-- Chase is bounded by separation from the target, not distance from the spawn.
+	-- A mob may be kited far from home while it can keep up, but once the player
+	-- opens a gap beyond the mob-specific leashDistance (including by teleport),
+	-- the mob drops the target and returns home.
+	local targetBeyondLeash = targetRoot ~= nil and targetDistance > definition.leashDistance
 	local nextState = MobAIRules.nextState(record.state, {
 		alive = true,
 		hasTarget = targetRoot ~= nil,
 		detectedTarget = detected ~= nil,
 		hostileAttacker = hostile ~= nil and record.target == hostile,
-		beyondLeash = distanceFromHome > definition.leashDistance,
+		beyondLeash = targetBeyondLeash,
 		inAttackRange = targetDistance <= definition.attackRange,
 		atHome = distanceFromHome <= CombatConfig.MobHomeArrivalDistance,
 	}, definition.aggressionMode)
@@ -265,7 +331,14 @@ local function decide(record: Record, now: number): ()
 			moveToward(record, targetRoot.Position, capturedGeneration, now)
 		end
 	elseif nextState == "Return" then
-		moveToward(record, record.home, capturedGeneration, now)
+		if record.returnStartedAt ~= nil and now - record.returnStartedAt >= RETURN_TELEPORT_SECONDS then
+			record.model:PivotTo(CFrame.new(record.home))
+			root.AssemblyLinearVelocity = Vector3.zero
+			root.AssemblyAngularVelocity = Vector3.zero
+			humanoid:MoveTo(record.home)
+		else
+			moveToward(record, record.home, capturedGeneration, now)
+		end
 	elseif nextState == "Idle" then
 		if MobAIRules.shouldRestoreHealth(previousState, nextState, definition.restoreHealthOnReturn) then
 			humanoid.Health = humanoid.MaxHealth
@@ -273,7 +346,15 @@ local function decide(record: Record, now: number): ()
 		if record.patrolRadius > 0 and now >= record.nextPatrolAt then
 			record.patrolIndex += 1
 			record.nextPatrolAt = now + record.patrolCycleSeconds
-			moveToward(record, patrolDestination(record, root.Position.Y), capturedGeneration, now)
+			local destination = patrolDestination(record, root.Position.Y)
+			if isCampPerimeterPatrol(record) then
+				-- Perimeter lanes are authored on open ground, so use the final
+				-- destination directly. This makes the pair visibly traverse the
+				-- side instead of moving only to PathfindingService's next waypoint.
+				humanoid:MoveTo(destination)
+			else
+				moveToward(record, destination, capturedGeneration, now)
+			end
 		elseif previousState ~= "Idle" or record.patrolRadius <= 0 then
 			humanoid:MoveTo(root.Position)
 		end
@@ -303,6 +384,7 @@ local function register(model: Model, definition: CombatTypes.MobDefinition, hom
 			else (if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 0),
 		spawnIndex = if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 1,
 		socialGroupId = if typeof(model:GetAttribute("SocialGroupId")) == "string" then model:GetAttribute("SocialGroupId") :: string else nil,
+		returnStartedAt = nil,
 		connections = {},
 	}
 	records[model] = record
@@ -327,27 +409,9 @@ function MobAIService.start(serverAttackRequest: AttackRequest): ()
 	table.insert(serviceConnections, MobService.HostileAction:Connect(function(model: Model, attacker: Player)
 		local record = records[model]
 		if record == nil or livingRoot(attacker) == nil then return end
-		local socialGroupId = model:GetAttribute("SocialGroupId")
-		local typedSocialGroupId = if typeof(socialGroupId) == "string" then socialGroupId else nil
-		if record.state ~= "Return" then record.hostileAttacker = attacker end
-		if not MobAIRules.canRequestSocialAssist(record.state, typedSocialGroupId) then return end
-		local _, sourceRoot = mobParts(model)
-		if sourceRoot == nil then return end
-		for otherModel, otherRecord in records do
-			if otherModel ~= model
-				and otherModel:GetAttribute("SocialGroupId") == typedSocialGroupId
-				and otherRecord.state ~= "Return"
-			then
-				local otherHumanoid, otherRoot = mobParts(otherModel)
-				local assistRadius = otherRecord.definition.socialAssistRadius
-				if otherHumanoid ~= nil and otherHumanoid.Health > 0 and otherRoot ~= nil
-					and assistRadius > 0
-					and (otherRoot.Position - sourceRoot.Position).Magnitude <= assistRadius
-				then
-					otherRecord.hostileAttacker = attacker
-				end
-			end
-		end
+		record.hostileAttacker = attacker
+		record.target = attacker
+		requestSocialAssist(record, attacker)
 	end))
 	for _, model in MobService.getAll() do
 		local definition = MobService.getDefinition(model)
