@@ -1,7 +1,7 @@
 --!strict
 
 local ProgressionConfig = {
-	LevelCap = 10,
+	LevelCap = 15,
 	LevelAttribute = "Level",
 	ExperienceAttribute = "LevelXP",
 
@@ -15,6 +15,11 @@ local ProgressionConfig = {
 		[7] = 760,
 		[8] = 940,
 		[9] = 1140,
+		[10] = 1360,
+		[11] = 1600,
+		[12] = 1860,
+		[13] = 2140,
+		[14] = 2440,
 	}),
 
 	ArchetypeBaseMaxHealth = table.freeze({
