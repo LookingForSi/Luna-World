@@ -6,6 +6,15 @@
       "$className": "ReplicatedStorage",
       "Shared": {
         "$path": "src/shared"
+      },
+      "Remotes": {
+        "$className": "Folder",
+        "QuestAcceptRequest": { "$className": "RemoteEvent" },
+        "QuestTurnInRequest": { "$className": "RemoteEvent" },
+        "QuestSnapshotRequest": { "$className": "RemoteEvent" },
+        "QuestSnapshot": { "$className": "RemoteEvent" },
+        "QuestActionResult": { "$className": "RemoteEvent" },
+        "DialogueOpen": { "$className": "RemoteEvent" }
       }
     },
     "ServerStorage": {

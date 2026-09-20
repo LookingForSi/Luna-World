@@ -19,6 +19,9 @@
 
 ### Added
 
+- Добавлена server-authoritative цепочка Q1–Q7: onboarding Страж ворот → Фермер, kill/talk/reach objectives, атомарные XP/Luna rewards и persistent quest progress.
+- Добавлены общий quest dialogue, tracker до трёх заданий, карта по кнопке/`M`, world waypoint с расстоянием и экранной стрелкой, а также authoritative `!` / `?` markers.
+- Persistent schema поднята до `DataVersion = 2` с последовательной migration v1→v2 и сохранением данных dev0.1.
 - Выброшенные предметы получают простую world-модель, nameplate/highlight и server-authoritative prompt «Подобрать».
 - При невозможности создать world-drop предмет компенсируется обратно в инвентарь, чтобы discard не приводил к тихой потере.
 

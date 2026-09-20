@@ -22,7 +22,13 @@
         "EconomyRequest": { "$className": "RemoteEvent" },
         "EconomySnapshot": { "$className": "RemoteEvent" },
         "EconomyOpen": { "$className": "RemoteEvent" },
-        "EconomyResult": { "$className": "RemoteEvent" }
+        "EconomyResult": { "$className": "RemoteEvent" },
+        "QuestAcceptRequest": { "$className": "RemoteEvent" },
+        "QuestTurnInRequest": { "$className": "RemoteEvent" },
+        "QuestSnapshotRequest": { "$className": "RemoteEvent" },
+        "QuestSnapshot": { "$className": "RemoteEvent" },
+        "QuestActionResult": { "$className": "RemoteEvent" },
+        "DialogueOpen": { "$className": "RemoteEvent" }
       },
       "TestRemotes": {
         "$className": "Folder",

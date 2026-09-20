@@ -81,7 +81,7 @@ Roadmap описывает порядок доказательства осно�
 
 Базовый контур progression/inventory/equipment/persistence интегрирован. DataVersion остаётся отдельным контрактом; перед финальным v0.1 требуется повторная multiplayer/save-load приёмка.
 
-## Milestone 3 — Luna Village & Quests — частично реализован
+## Milestone 3 — Luna Village & Quests — реализован, ожидает runtime-приёмку
 
 Добавить:
 
@@ -95,7 +95,7 @@ Roadmap описывает порядок доказательства осно�
 - onboarding;
 - respawn/safe zone flow.
 
-Текущее состояние dev0.1: Luna Village, merchant, blacksmith, No-Grade economy, return flow и LV6 onboarding реализованы; полноценная quest chain ещё не реализована.
+Текущее состояние dev0.2: реализованы Q1–Q7, persistent quest progress, общий quest dialogue, tracker, карта, waypoint и NPC markers. Multiplayer/visual acceptance в Roblox Studio остаётся обязательным перед merge.
 
 Результат milestone после завершения quests: проект впервые выглядит как маленькая игра, а не набор systems.
 
