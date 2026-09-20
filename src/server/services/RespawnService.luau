@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RespawnRules = require(ReplicatedStorage.Shared.combat.RespawnRules)
 local RespawnConfig = require(ReplicatedStorage.Shared.config.RespawnConfig)
+local CharacterConfig = require(ReplicatedStorage.Shared.config.CharacterConfig)
 local CombatService = require(script.Parent.CombatService)
 
 type PlayerRecord = {
@@ -119,6 +120,10 @@ local function bindCharacter(player: Player, character: Model): ()
 	local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 10)
 	local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart", 10)
 	if player.Character ~= character or humanoid == nil or not humanoid:IsA("Humanoid") then return end
+	local nickname = player:GetAttribute(CharacterConfig.NicknameAttribute)
+	if typeof(nickname) == "string" and nickname ~= "" then
+		humanoid.DisplayName = nickname
+	end
 	if root ~= nil and root:IsA("BasePart") and record.pending and record.anchor ~= nil and record.anchor.Parent ~= nil then
 		character:PivotTo(RespawnRules.spawnCFrame(record.anchor.CFrame, humanoid.HipHeight, root.Size.Y))
 	end
@@ -147,10 +152,11 @@ local function addPlayer(player: Player): ()
 	records[player] = record
 	setPending(player, false)
 	record.characterConnection = player.CharacterAdded:Connect(function(character) bindCharacter(player, character) end)
+	-- Character Lobby owns the first spawn. Before CharacterReady there must be
+	-- no compatibility LoadCharacter() here, otherwise the default knight can
+	-- appear before the selected profile identity is projected.
 	if player.Character ~= nil then
 		bindCharacter(player, player.Character)
-	else
-		player:LoadCharacter()
 	end
 end
 
