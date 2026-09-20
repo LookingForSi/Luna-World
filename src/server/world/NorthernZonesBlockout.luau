@@ -564,7 +564,7 @@ end
 
 local function createGoblinCemeteryLake(parent: Instance, positions: { [string]: Vector3 })
 	local lake = P.model(parent, "GoblinCemeteryLake")
-	lake:SetAttribute("Purpose", "TraversalBarrier")
+	lake:SetAttribute("Purpose", "SwimmableWater")
 	local terrain = Workspace.Terrain
 
 	local goblin = positions.poi_goblin_camp
@@ -582,7 +582,7 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 		{ offset = Vector3.new(10, 0, 145), size = Vector3.new(330, 32, 240), yaw = -3 },
 	}
 
-	for index, spec in ipairs(lobes) do
+	for _, spec in ipairs(lobes) do
 		local position = center + spec.offset
 		local rotation = CFrame.Angles(0, math.rad(spec.yaw), 0)
 		terrain:FillBlock(
@@ -600,23 +600,7 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 			Enum.Material.Water
 		)
 
-		P.part(
-			lake,
-			string.format("WaterRecovery%02d", index),
-			Vector3.new(spec.size.X - 10, 20, spec.size.Z - 10),
-			CFrame.new(position.X, waterSurfaceY - 4, position.Z) * rotation,
-			Enum.Material.SmoothPlastic,
-			Color3.new(1, 1, 1),
-			{
-				canCollide = false,
-				transparency = 1,
-				attributes = {
-					WaterRecovery = true,
-					WaterSurfaceY = waterSurfaceY,
-					HazardKind = "Lake",
-				},
-			}
-		)
+		-- Lake Terrain water is intentionally swimmable; no hidden teleport hazard volume.
 	end
 
 	shapeGoblinCemeteryLakeHillCliff(center, waterSurfaceY)
