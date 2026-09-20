@@ -334,8 +334,7 @@ function InventoryUi.start(actionCallbacks: any): ()
 	lunaLabel = makeLabel(panel, "Luna: 0", UDim2.fromOffset(250, 8), UDim2.fromOffset(170, 28), 13)
 	capacityLabel = makeLabel(panel, "0 / 40", UDim2.fromOffset(430, 8), UDim2.fromOffset(90, 28), 13)
 
-	local close = makeButton(panel, "Close", "×", UDim2.new(1, -46, 0, 8), UDim2.fromOffset(32, 28))
-	close.TextSize = 18
+	local close = HudLayout.makeCloseButton(panel, 12)
 	closeConnection = close.Activated:Connect(function() setPanelOpen(false) end)
 
 	local divider = Instance.new("Frame")
