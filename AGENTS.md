@@ -120,7 +120,7 @@ Examples currently out of scope:
 - castle sieges;
 - player trading;
 - auction house;
-- crafting;
+- crafting professions, collectible recipes, affixes or crafting tiers beyond the approved No-Grade blacksmith catalog;
 - enchantment systems;
 - mounts;
 - pets;
@@ -128,6 +128,8 @@ Examples currently out of scope:
 - battle pass;
 - monetization shop;
 - large raid systems.
+
+The narrow village economy approved for v0.1 (merchant buy/sell, materials, No-Grade blacksmith crafting without recipe items, consumables and return scroll) is explicitly in scope.
 
 When a requested change implies one of these systems, call it out instead of silently expanding the project.
 
