@@ -49,7 +49,7 @@ require(PROGRESSION, "profileReadyConnection", "ProgressionService must own its 
 require(PROGRESSION, "function ProgressionService.stop()", "ProgressionService must expose lifecycle cleanup")
 require(PROGRESSION, "profileReadyConnection:Disconnect()", "ProgressionService stop must disconnect profile-ready events")
 require(PLAYER_DATA, "function PlayerDataService.stop()", "PlayerDataService must expose lifecycle cleanup")
-require(PLAYER_DATA, "playerRemovingConnection:Disconnect()", "PlayerDataService stop must disconnect player lifecycle events")
+require(PLAYER_DATA, "connection:Disconnect()", "PlayerDataService stop must disconnect player lifecycle events")
 require(PLAYER_DATA, "releasePlayer(player)", "PlayerDataService shutdown must release active profile leases")
 require(LOOT, "function LootService.stop()", "LootService must expose lifecycle cleanup")
 require(LOOT, "mobDiedConnection:Disconnect()", "LootService stop must disconnect mob reward events")

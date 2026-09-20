@@ -13,6 +13,10 @@
 
 ### Added
 
+- Добавлен предыгровой Character Lobby dev0.3: до пяти независимых персонажей аккаунта, выбор класса и типа тела, глобальная атомарная резервация nickname, безопасное подтверждение удаления и responsive creation flow.
+- Persistent account schema поднята до `DataVersion = 3`; migration v2→v3 переносит весь прежний progression, Luna, inventory, equipment и quests в legacy-персонажа без потери данных.
+- Lifecycle разделён на `AccountReady` и `CharacterReady`; Roblox character и gameplay-клиент не запускаются до server-authoritative выбора принадлежащего аккаунту героя.
+
 - Реализованы четыре раздела кузнеца, переработка сырья и полные ранние No-Grade наборы Рыцаря, Следопыта и Мистика.
 - LV6 crafting balance привязан к реальному маршруту Q2–Q5: ранние переработки и рецепты откалиброваны так, чтобы weapon + первая class armor были достижимы без скрытого фарма уровня LV9–10.
 - Добавлены server-authoritative требования уровня, количество результата рецепта, стабильная сортировка и состояния доступности в интерфейсе.

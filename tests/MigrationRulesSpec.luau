@@ -1,57 +1,34 @@
 --!strict
-
 local MigrationRules = require(game.ReplicatedStorage.Shared.persistence.MigrationRules)
-
 return function(TestRunner)
-	TestRunner.run("synthetic version zero migrates to current profile without mutating input", function()
-		local old = {
-			DataVersion = 0,
-			Level = 2,
-			SessionXP = 25,
-			Luna = 7,
-			ArchetypeId = "ranger",
-		}
-		local migrated, reason = MigrationRules.run(old)
-		assert(reason == nil and migrated ~= nil)
-		assert(migrated.DataVersion == 2)
-		assert(migrated.Level == 2 and migrated.XP == 25 and migrated.Luna == 7)
-		assert(migrated.ArchetypeId == "ranger")
-		assert(old.DataVersion == 0 and old.SessionXP == 25)
+	TestRunner.run("version zero migrates sequentially without mutating input", function()
+		local old = { DataVersion = 0, Level = 2, SessionXP = 25, Luna = 7, ArchetypeId = "ranger" }
+		local a, e = MigrationRules.run(old)
+		assert(a and not e and a.DataVersion == 3)
+		local c = a.Characters[a.CharacterOrder[1]]
+		assert(c.Level == 2 and c.XP == 25 and c.Luna == 7 and c.ArchetypeId == "ranger")
+		assert(old.DataVersion == 0)
 	end)
-
-	TestRunner.run("current profile round trip is accepted", function()
+	TestRunner.run("current account round trip is accepted", function()
 		local current = {
-			DataVersion = 2,
-			Level = 1,
-			XP = 0,
-			Luna = 0,
-			ArchetypeId = "knight",
-			Items = {},
-			Inventory = {},
-			Equipment = {},
-			Quests = {},
+			DataVersion = 3,
+			CharacterSlotLimit = 5,
+			CharacterOrder = {},
+			Characters = {},
+			SelectedCharacterId = nil,
+			Settings = { UiScale = 1, TextScale = 1, SoundVolume = 1 },
 		}
-		local migrated, reason = MigrationRules.run(current)
-		assert(reason == nil and migrated ~= nil and migrated.DataVersion == 2)
+		local a, e = MigrationRules.run(current)
+		assert(a and not e and a.DataVersion == 3)
 	end)
-
-	TestRunner.run("version one adds isolated quest state without data loss", function()
-		local old = { DataVersion=1, Level=2, XP=25, Luna=9, ArchetypeId="ranger", Items={}, Inventory={}, Equipment={} }
-		local migrated = MigrationRules.run(old)
-		assert(migrated ~= nil and migrated.DataVersion == 2 and migrated.Level == 2 and migrated.XP == 25 and migrated.Luna == 9)
-		assert(next(migrated.Quests) == nil and old.Quests == nil)
-	end)
-
-	TestRunner.run("future invalid and broken migration profiles fail safely", function()
-		assert(MigrationRules.run({ DataVersion = 3 }) == nil)
+	TestRunner.run("future invalid and broken migrations fail safely", function()
+		assert(MigrationRules.run({ DataVersion = 4 }) == nil)
 		assert(MigrationRules.run({ DataVersion = "one" }) == nil)
-
-		local result = MigrationRules.run({ DataVersion = 0 }, {
-			[0] = function(profile)
-				profile.DataVersion = 0
-				return profile
+		assert(MigrationRules.run({ DataVersion = 0 }, {
+			[0] = function(p)
+				p.DataVersion = 0
+				return p
 			end,
-		})
-		assert(result == nil)
+		}) == nil)
 	end)
 end

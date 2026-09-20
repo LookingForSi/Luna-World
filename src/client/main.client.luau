@@ -16,6 +16,7 @@ local QuestController = require(clientRoot.controllers.QuestController)
 local EconomyUi = require(clientRoot.ui.EconomyUi)
 local CombatPresentationController = require(clientRoot.controllers.CombatPresentationController)
 local ResponsiveUiController = require(clientRoot.controllers.ResponsiveUiController)
+local CharacterLobbyController = require(clientRoot.controllers.CharacterLobbyController)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
@@ -27,74 +28,101 @@ local function disableStockHealthGui(): ()
 		local ok = pcall(function()
 			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 		end)
-		if ok then return end
+		if ok then
+			return
+		end
 		task.wait(0.1)
 	end
 end
 
 disableStockHealthGui()
 
-MovementController.start()
-CombatPresentationController.start()
-CombatHud.start()
-CombatLog.start()
-RespawnPrompt.start()
-StudioTestPanel.start()
-InventoryUi.start({
-	equip = InventoryController.requestEquip,
-	unequip = InventoryController.requestUnequip,
-	consume = InventoryController.requestConsume,
-	discard = InventoryController.requestDiscard,
-	assignQuickSlot = InventoryController.assignQuickSlot,
-})
-InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult)
-EconomyUi.start({
-	buy = EconomyController.buy,
-	sell = EconomyController.sell,
-	sellBatch = EconomyController.sellBatch,
-	craft = EconomyController.craft,
-})
-EconomyController.start(EconomyUi.open, EconomyUi.setSnapshot, EconomyUi.showResult)
-QuestController.start()
-ResponsiveUiController.start()
-TargetController.start(function(target: Model?)
-	CombatHud.setTarget(target)
-end)
-local function syncActionBar(): ()
-	local skillIds = ClientCombatUiRules.getSkills(Players.LocalPlayer:GetAttribute(CombatConfig.ArchetypeAttribute))
-	CombatInputController.start(skillIds)
-	ActionBar.start(
-		skillIds,
-		CombatInputController.requestAttack,
-		CombatInputController.requestAutoToggle,
-		CombatInputController.requestSkill,
-		TargetController.clearTarget,
-		InventoryUi.toggle,
-		QuestController.toggleMap,
-		QuestController.toggleJournal,
-		InventoryController.requestQuickUse,
-		InventoryController.getQuickSlotState
-	)
+local gameplayStarted = false
+local function startGameplay(): ()
+	if gameplayStarted then
+		return
+	end
+	gameplayStarted = true
+	CharacterLobbyController.stop()
+	MovementController.start()
+	CombatPresentationController.start()
+	CombatHud.start()
+	CombatLog.start()
+	RespawnPrompt.start()
+	StudioTestPanel.start()
+	InventoryUi.start({
+		equip = InventoryController.requestEquip,
+		unequip = InventoryController.requestUnequip,
+		consume = InventoryController.requestConsume,
+		discard = InventoryController.requestDiscard,
+		assignQuickSlot = InventoryController.assignQuickSlot,
+	})
+	InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult)
+	EconomyUi.start({
+		buy = EconomyController.buy,
+		sell = EconomyController.sell,
+		sellBatch = EconomyController.sellBatch,
+		craft = EconomyController.craft,
+	})
+	EconomyController.start(EconomyUi.open, EconomyUi.setSnapshot, EconomyUi.showResult)
+	QuestController.start()
+	ResponsiveUiController.start()
+	TargetController.start(function(target: Model?)
+		CombatHud.setTarget(target)
+	end)
+	local function syncActionBar(): ()
+		local skillIds =
+			ClientCombatUiRules.getSkills(Players.LocalPlayer:GetAttribute(CombatConfig.ArchetypeAttribute))
+		CombatInputController.start(skillIds)
+		ActionBar.start(
+			skillIds,
+			CombatInputController.requestAttack,
+			CombatInputController.requestAutoToggle,
+			CombatInputController.requestSkill,
+			TargetController.clearTarget,
+			InventoryUi.toggle,
+			QuestController.toggleMap,
+			QuestController.toggleJournal,
+			InventoryController.requestQuickUse,
+			InventoryController.getQuickSlotState
+		)
+	end
+
+	syncActionBar()
+	local archetypeConnection =
+		Players.LocalPlayer:GetAttributeChangedSignal(CombatConfig.ArchetypeAttribute):Connect(syncActionBar)
+
+	script.Destroying:Connect(function()
+		archetypeConnection:Disconnect()
+		InventoryController.stop()
+		EconomyController.stop()
+		QuestController.stop()
+		ResponsiveUiController.stop()
+		EconomyUi.stop()
+		InventoryUi.stop()
+		StudioTestPanel.stop()
+		MovementController.stop()
+		CombatPresentationController.stop()
+		CombatInputController.stop()
+		ActionBar.stop()
+		TargetController.stop()
+		RespawnPrompt.stop()
+		CombatLog.stop()
+		CombatHud.stop()
+	end)
 end
 
-syncActionBar()
-local archetypeConnection = Players.LocalPlayer:GetAttributeChangedSignal(CombatConfig.ArchetypeAttribute):Connect(syncActionBar)
-
+CharacterLobbyController.start()
+local localPlayer = Players.LocalPlayer
+if localPlayer:GetAttribute("CharacterReady") then
+	startGameplay()
+end
+local readyConnection = localPlayer:GetAttributeChangedSignal("CharacterReady"):Connect(function()
+	if localPlayer:GetAttribute("CharacterReady") then
+		startGameplay()
+	end
+end)
 script.Destroying:Connect(function()
-	archetypeConnection:Disconnect()
-	InventoryController.stop()
-	EconomyController.stop()
-	QuestController.stop()
-	ResponsiveUiController.stop()
-	EconomyUi.stop()
-	InventoryUi.stop()
-	StudioTestPanel.stop()
-	MovementController.stop()
-	CombatPresentationController.stop()
-	CombatInputController.stop()
-	ActionBar.stop()
-	TargetController.stop()
-	RespawnPrompt.stop()
-	CombatLog.stop()
-	CombatHud.stop()
+	readyConnection:Disconnect()
+	CharacterLobbyController.stop()
 end)

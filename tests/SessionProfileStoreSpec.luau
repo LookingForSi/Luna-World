@@ -9,16 +9,19 @@ return function(TestRunner)
 		local store = SessionProfileStore.new()
 		local first = store:claim(101, "session-a", 0)
 		assert(first.ok)
-		if not first.ok then return end
-		first.profile.Level = 2
-		first.profile.XP = 25
+		if not first.ok then
+			return
+		end
+		first.profile.Settings.UiScale = 1.1
 		assert(store:save(101, "session-a", first.profile, 1).ok)
 		assert(store:release(101, "session-a", first.profile, 2).ok)
 
 		local second = store:claim(101, "session-b", 3)
 		assert(second.ok)
-		if not second.ok then return end
-		assert(second.profile.Level == 2 and second.profile.XP == 25)
+		if not second.ok then
+			return
+		end
+		assert(second.profile.Settings.UiScale == 1.1)
 	end)
 
 	TestRunner.run("studio session store rejects concurrent ownership", function()

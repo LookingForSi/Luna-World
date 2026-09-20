@@ -314,3 +314,11 @@ Roblox platform services используются до тех пор, пока �
 ## 15. Quest vertical slice dev0.2
 
 `QuestDefinitions` и `QuestRules` задают Q1–Q7 и чистые переходы состояния. `QuestService` потребляет только authoritative `MobService.MobDied`, проверяет talk/proximity и ReachLocation на сервере и применяет reward вместе с `Completed` одной profile mutation. Клиент получает display snapshot для dialogue, tracker, карты, waypoint и NPC markers, но не может отправить objective progress или reward. Persistent schema использует `DataVersion = 2`; migration v1→v2 добавляет изолированную таблицу `Quests` без изменения данных dev0.1.
+
+## Account → Characters → Active Character (dev0.3)
+
+Persistent запись пользователя теперь является `AccountProfile` версии 3. Она содержит порядок и словарь не более чем из `CharacterConfig.CharacterSlotLimit` персонажей, account-настройки и последний выбранный идентификатор. Каждый `CharacterProfile` владеет собственными progression, Luna, inventory, equipment и quests. Migration `v2 → v3` сохраняет прежний профиль внутри legacy-персонажа; до задания nickname и типа тела такой персонаж не может войти в мир.
+
+Сессия имеет два явных рубежа. `AccountReady` разрешает только работу roster/lobby API. `CharacterReady` появляется после проверки принадлежности `CharacterId`, назначает активный профиль и только затем разрешает spawn и gameplay services. Совместимое событие `ProfileReady` означает именно `CharacterReady`.
+
+Character API принимает только узкие команды roster/check/create/select/delete, применяет rate limit и возвращает DTO без inventory, quest state и иных изменяемых authoritative структур. Nickname нормализуется pure-правилами, проходит Roblox TextService filtering и резервируется в отдельном индексе через атомарный `UpdateAsync`. При неудачном создании reservation откатывается; при удалении имя освобождается только после успешной записи account.

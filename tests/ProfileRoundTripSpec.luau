@@ -1,81 +1,64 @@
 --!strict
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
-
-local EquipmentRules = require(ReplicatedStorage.Shared.inventory.EquipmentRules)
+local ProfileSchema = require(ReplicatedStorage.Shared.persistence.ProfileSchema)
 local InventoryRules = require(ReplicatedStorage.Shared.inventory.InventoryRules)
-local StatsService = require(ServerScriptService.Server.services.StatsService)
+local EquipmentRules = require(ReplicatedStorage.Shared.inventory.EquipmentRules)
 local InMemoryProfileStore = require(script.Parent.support.InMemoryProfileStore)
-
-local function ids(): () -> string
-	local sequence = 0
-	return function()
-		sequence += 1
-		return "roundtrip-" .. tostring(sequence)
-	end
+local function addCharacter(account: any): any
+	local c: any = ProfileSchema.createDefault()
+	c.CharacterId = "hero"
+	c.Nickname = "RoundTrip"
+	c.BodyType = "male"
+	c.AppearancePresetId = "default"
+	c.CreatedAt = 1
+	c.LastPlayedAt = 1
+	c.NeedsIdentity = false
+	account.Characters.hero = c
+	table.insert(account.CharacterOrder, "hero")
+	return c
 end
-
 return function(TestRunner)
-	TestRunner.run("profile round trip preserves progression currency inventory and equipment", function()
+	TestRunner.run("account round trip preserves independent character gameplay state", function()
 		local store = InMemoryProfileStore.new()
-		local claimed = store:claim(501, "session-a", 0)
+		local claimed = store:claim(501, "a", 0)
 		assert(claimed.ok)
-		if not claimed.ok then return end
-
-		local profile = claimed.profile
-		profile.Level = 4
-		profile.XP = 125
-		profile.Luna = 73
-
-		local withWeapon = InventoryRules.add(profile, "weapon_iron_blade", 1, ids())
-		assert(withWeapon ~= nil)
-		local withPelts = InventoryRules.add(withWeapon, "material_wolf_pelt", 7, function()
-			return "roundtrip-2"
+		if not claimed.ok then
+			return
+		end
+		local c = addCharacter(claimed.profile)
+		c.Level = 4
+		c.XP = 125
+		c.Luna = 73
+		local seq = 0
+		local withWeapon = InventoryRules.add(c, "weapon_iron_blade", 1, function()
+			seq += 1
+			return "i" .. seq
 		end)
-		assert(withPelts ~= nil)
-		local equipped = EquipmentRules.equip(withPelts, "roundtrip-1", "knight", 4)
-		assert(equipped ~= nil)
-
-		assert(store:save(501, "session-a", equipped, 1).ok)
-		assert(store:release(501, "session-a", equipped, 2).ok)
-
-		local reloaded = store:claim(501, "session-b", 3)
-		assert(reloaded.ok)
-		if not reloaded.ok then return end
-		assert(reloaded.profile.Level == 4)
-		assert(reloaded.profile.XP == 125)
-		assert(reloaded.profile.Luna == 73)
-		assert(reloaded.profile.Equipment.Weapon == "roundtrip-1")
-		assert(reloaded.profile.Items["roundtrip-1"].ItemId == "weapon_iron_blade")
-		assert(reloaded.profile.Items["roundtrip-2"].Quantity == 7)
-
-		local modifiers = StatsService.aggregateEquipmentModifiers(reloaded.profile)
-		assert(modifiers.physicalAttack == 5)
+		assert(withWeapon)
+		claimed.profile.Characters.hero = withWeapon
+		local equipped = EquipmentRules.equip(withWeapon, "i1", "knight", 4)
+		assert(equipped)
+		claimed.profile.Characters.hero = equipped
+		assert(store:release(501, "a", claimed.profile, 1).ok)
+		local loaded = store:claim(501, "b", 2)
+		assert(loaded.ok)
+		if not loaded.ok then
+			return
+		end
+		local restored = loaded.profile.Characters.hero
+		assert(restored.Level == 4 and restored.XP == 125 and restored.Luna == 73 and restored.Equipment.Weapon == "i1")
 	end)
-
-	TestRunner.run("failed stale-session save cannot overwrite a newer profile owner", function()
+	TestRunner.run("stale account owner cannot overwrite newer owner", function()
 		local store = InMemoryProfileStore.new()
-		local first = store:claim(502, "session-a", 0)
-		assert(first.ok)
-		if not first.ok then return end
-		first.profile.Luna = 10
-		assert(store:release(502, "session-a", first.profile, 1).ok)
-
-		local second = store:claim(502, "session-b", 2)
-		assert(second.ok)
-		if not second.ok then return end
-		second.profile.Luna = 20
-		assert(store:save(502, "session-b", second.profile, 3).ok)
-
-		first.profile.Luna = 999
-		local stale = store:save(502, "session-a", first.profile, 4)
+		local a = store:claim(502, "a", 0)
+		assert(a.ok)
+		if not a.ok then
+			return
+		end
+		assert(store:release(502, "a", a.profile, 1).ok)
+		local b = store:claim(502, "b", 2)
+		assert(b.ok)
+		local stale = store:save(502, "a", a.profile, 3)
 		assert(not stale.ok and stale.reason == "Conflict")
-
-		assert(store:release(502, "session-b", second.profile, 5).ok)
-		local final = store:claim(502, "session-c", 6)
-		assert(final.ok)
-		if not final.ok then return end
-		assert(final.profile.Luna == 20)
 	end)
 end

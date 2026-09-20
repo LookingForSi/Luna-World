@@ -1,6 +1,7 @@
 --!strict
 
-local ProfileSchema = require(script.Parent.ProfileSchema)
+local AccountSchema = require(script.Parent.AccountSchema)
+local CharacterConfig = require(script.Parent.Parent.config.CharacterConfig)
 local PersistenceTypes = require(script.Parent.Parent.types.PersistenceTypes)
 
 local MigrationRules = {}
@@ -9,7 +10,9 @@ export type Migration = (any) -> any
 export type Registry = { [number]: Migration }
 
 local function deepClone(value: any): any
-	if typeof(value) ~= "table" then return value end
+	if typeof(value) ~= "table" then
+		return value
+	end
 	local cloned = {}
 	for key, child in value do
 		cloned[deepClone(key)] = deepClone(child)
@@ -35,9 +38,30 @@ local DEFAULT_MIGRATIONS: Registry = {
 		old.Quests = {}
 		return old
 	end,
+	[2] = function(old: any): any
+		local characterId = "legacy-" .. tostring(old.LegacyCharacterId or "primary")
+		old.DataVersion = 2
+		local character = deepClone(old)
+		character.CharacterId = characterId
+		character.Nickname = nil
+		character.BodyType = nil
+		character.AppearancePresetId = nil
+		character.CreatedAt = 0
+		character.LastPlayedAt = 0
+		character.LastZoneId = nil
+		character.NeedsIdentity = true
+		return {
+			DataVersion = 3,
+			CharacterSlotLimit = CharacterConfig.CharacterSlotLimit,
+			CharacterOrder = { characterId },
+			Characters = { [characterId] = character },
+			SelectedCharacterId = nil,
+			Settings = { UiScale = 1, TextScale = 1, SoundVolume = 1 },
+		}
+	end,
 }
 
-function MigrationRules.run(rawProfile: unknown, registry: Registry?): (PersistenceTypes.Profile?, string?)
+function MigrationRules.run(rawProfile: unknown, registry: Registry?): (PersistenceTypes.AccountProfile?, string?)
 	if typeof(rawProfile) ~= "table" then
 		return nil, "profile must be a table"
 	end
@@ -46,12 +70,12 @@ function MigrationRules.run(rawProfile: unknown, registry: Registry?): (Persiste
 	if typeof(version) ~= "number" or version ~= version or version % 1 ~= 0 or version < 0 then
 		return nil, "profile DataVersion is invalid"
 	end
-	if version > ProfileSchema.DataVersion then
+	if version > AccountSchema.DataVersion then
 		return nil, "profile DataVersion is newer than this server"
 	end
 
 	local migrations = registry or DEFAULT_MIGRATIONS
-	while version < ProfileSchema.DataVersion do
+	while version < AccountSchema.DataVersion do
 		local migrate = migrations[version]
 		if migrate == nil then
 			return nil, string.format("missing migration from DataVersion %d", version)
@@ -68,11 +92,11 @@ function MigrationRules.run(rawProfile: unknown, registry: Registry?): (Persiste
 		version = nextVersion
 	end
 
-	local valid, reason = ProfileSchema.validateCurrent(working)
+	local valid, reason = AccountSchema.validateCurrent(working)
 	if not valid then
 		return nil, reason or "migrated profile is invalid"
 	end
-	return working :: PersistenceTypes.Profile, nil
+	return working :: PersistenceTypes.AccountProfile, nil
 end
 
 return table.freeze(MigrationRules)

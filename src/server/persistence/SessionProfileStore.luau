@@ -2,17 +2,20 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local ProfileSchema = require(ReplicatedStorage.Shared.persistence.ProfileSchema)
+local AccountSchema = require(ReplicatedStorage.Shared.persistence.AccountSchema)
 local PersistenceTypes = require(ReplicatedStorage.Shared.types.PersistenceTypes)
 local ProfileStoreContract = require(script.Parent.ProfileStoreContract)
 
 local SessionProfileStore = {}
 SessionProfileStore.__index = SessionProfileStore
 
-export type Store = typeof(setmetatable({} :: {
-	records: { [number]: PersistenceTypes.Profile },
-	claims: { [number]: string },
-}, SessionProfileStore))
+export type Store = typeof(setmetatable(
+	{} :: {
+		records: { [number]: PersistenceTypes.AccountProfile },
+		claims: { [number]: string },
+	},
+	SessionProfileStore
+))
 
 function SessionProfileStore.new(): Store
 	return setmetatable({
@@ -21,11 +24,7 @@ function SessionProfileStore.new(): Store
 	}, SessionProfileStore)
 end
 
-function SessionProfileStore:claim(
-	userId: number,
-	sessionToken: string,
-	_now: number
-): ProfileStoreContract.ClaimResult
+function SessionProfileStore:claim(userId: number, sessionToken: string, _now: number): ProfileStoreContract.ClaimResult
 	local owner = self.claims[userId]
 	if owner ~= nil and owner ~= sessionToken then
 		return { ok = false, reason = "Busy" }
@@ -33,35 +32,39 @@ function SessionProfileStore:claim(
 	self.claims[userId] = sessionToken
 	local profile = self.records[userId]
 	if profile == nil then
-		profile = ProfileSchema.createDefault()
-		self.records[userId] = ProfileSchema.clone(profile)
+		profile = AccountSchema.createDefault()
+		self.records[userId] = AccountSchema.clone(profile)
 	end
-	return { ok = true, profile = ProfileSchema.clone(profile) }
+	return { ok = true, profile = AccountSchema.clone(profile) }
 end
 
 function SessionProfileStore:save(
 	userId: number,
 	sessionToken: string,
-	profile: PersistenceTypes.Profile,
+	profile: PersistenceTypes.AccountProfile,
 	_now: number
 ): ProfileStoreContract.MutationResult
 	if self.claims[userId] ~= sessionToken then
 		return { ok = false, reason = "Conflict" }
 	end
-	local valid = ProfileSchema.validateCurrent(profile)
-	if not valid then return { ok = false, reason = "InvalidProfile" } end
-	self.records[userId] = ProfileSchema.clone(profile)
+	local valid = AccountSchema.validateCurrent(profile)
+	if not valid then
+		return { ok = false, reason = "InvalidProfile" }
+	end
+	self.records[userId] = AccountSchema.clone(profile)
 	return { ok = true }
 end
 
 function SessionProfileStore:release(
 	userId: number,
 	sessionToken: string,
-	profile: PersistenceTypes.Profile,
+	profile: PersistenceTypes.AccountProfile,
 	now: number
 ): ProfileStoreContract.MutationResult
 	local result = self:save(userId, sessionToken, profile, now)
-	if not result.ok then return result end
+	if not result.ok then
+		return result
+	end
 	self.claims[userId] = nil
 	return { ok = true }
 end
