@@ -6,9 +6,20 @@
 
 ## [Unreleased]
 
+### dev0.2 — Playtest UX / chase / inventory pass
+
+- Платный телепорт теперь требует отдельного подтверждения с названием локации и стоимостью в Luna; обратные маршруты явно показывают Luna Village.
+- Горячие клавиши перенесены с конфликтующих Roblox-кнопок: инвентарь — `T`, журнал заданий — `Y`; карта остаётся на `M`, AUTO — на `G`.
+- Последний слот панели действий зарезервирован под быстрый предмет `0`: лечебное/ресурсное зелье можно назначить из инвентаря кнопкой «НА [0]», а количество отображается прямо в слоте.
+- Инвентарь получил фильтры «Зелья / Вещи / Ресурсы»; utility-consumables вроде свитка возврата относятся к «Вещам».
+- Вероятность выпадения всех crafting-материалов уменьшена вдвое без изменения Luna, consumables и редкого gear-drop.
+- Вовлечённый в бой моб больше не разворачивается домой по короткому leash: пока цель жива и остаётся видимой, он продолжает chase. Жёсткий возврат включается только после потери LOS дальше 750 studs от home; застрявший на возврате моб через 150 секунд переносится в home.
+- Свежий урон снова выводит возвращающегося моба в Aggro. Гоблинам расширены aggro/reacquire радиусы.
+- Частокол Luna Village и Goblin Camp уплотнён до шага 4 studs и получил непрерывный невидимый collision-барьер. У лагеря сохранён один дорожный западный вход; низкий декоративный забор не возвращался.
+
 ### dev0.2 — Targeting / approach combat UX
 
-- Removed the temporary Goblin Camp palisade from the generated world blockout.
+- Goblin Camp targeting/approach work now coexists with a collision-sealed palisade and the authored road-side entrance.
 - Manual basic attacks and enemy skills now keep the authoritative OutOfRange rejection feedback, then automatically approach the selected mob and execute the requested action once in range.
 - Clearing the target cancels the approach immediately; desktop right mouse now issues the same semantic target-clear command while preserving normal camera input.
 - When an untargeted player is hit by a mob, the server automatically selects that attacker as the player's current target.
@@ -36,7 +47,7 @@
 ### dev0.2 — Gameplay polish pass
 
 - Expanded all Q1–Q7 quest descriptions and moved the young-wolf objective waypoint from the farmer to the wolf staging meadow.
-- Rebalanced the combat action block after adding the quest journal button; inventory `I` and quest journal `O` now bypass camera CoreScript processing when no text box is focused.
+- Rebalanced the combat action block after adding the quest journal button; current desktop bindings use `T` for inventory and `Y` for the quest journal.
 - Mob target selection now aligns its forgiving screen-space pick area and physical hitbox with the visible silhouette.
 - All mobs receive a 1.2× movement-speed multiplier for this tuning pass.
 - Goblins have wider aggro/reacquire/social-assist radii; proximity aggro now alerts nearby members of the same social group.
@@ -47,7 +58,7 @@
 
 - Quest NPC dialog now opens a generic `Квест` topic before the dedicated quest offer window.
 - Quest offer uses padded layout with centered title, description and accept/decline controls.
-- Quest journal is collapsed by default, available from the action block and bound to `O`.
+- Quest journal is collapsed by default, available from the action block and bound to `Y`.
 - Individual quests can be marked active/inactive; only active quests drive waypoint/map guidance.
 - Waypoint cards are compact, show approximate meters (10 studs = 1 m) and hide inside 80 studs.
 - NPC quest markers now attach directly to visible actors; active TalkToNpc objectives expose `?`.
@@ -64,7 +75,7 @@
 ### Changed
 
 - Время жизни выброшенных world-drop предметов увеличено до 600 секунд.
-- Подсказка инвентаря показывает актуальный binding для текущего устройства; клавиша `I` обрабатывается отдельным keyboard input path.
+- Подсказка инвентаря показывает актуальный binding для текущего устройства; desktop-инвентарь открывается по `T`.
 - Все текущие сервисные NPC начинают взаимодействие одинаковым prompt `Поговорить`; торговец открывает темы `Купить` / `Продать`, кузнец — `Ковать`.
 - Обе обычные волчьи стаи приведены к составу 7 волков + 1 вожак; вторая стая перенесена ближе к подходу к лагерю гоблинов.
 - Вой вожака теперь не только усиливает волков, но и призывает в бой сородичей в радиусе около 50 studs.
