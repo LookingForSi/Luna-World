@@ -48,6 +48,7 @@ for mob_id in (
         raise AssertionError(f"missing v0.1 mob definition {mob_id}")
 
 for ability_id in (
+    "wolf_pack_howl",
     "goblin_sling_stone",
     "goblin_spirit_bolt",
     "goblin_war_chant",
@@ -68,6 +69,7 @@ for marker in (
     "spawn_young_wolf_farm_forward",
     "spawn_wolf_pack_leader",
     "spawn_wolf_pack_moonfall",
+    "spawn_wolf_pack_moonfall_leader",
     "spawn_goblin_patrol_south",
     "spawn_goblin_patrol_east",
     "spawn_goblin_patrol_north",
@@ -95,10 +97,36 @@ for token in ("scaleXZ(-235, 8, 535)", "count = 4", "patrolRadius = scaleDistanc
     if token not in young_wolf_forward_body:
         raise AssertionError(f"forward starter wolves must extend roaming toward Spider Hollow: {token}")
 
+stone_south = LAYOUT.split('id = "spawn_wolf_pack_south"', 1)[1].split("}", 1)[0]
+stone_east = LAYOUT.split('id = "spawn_wolf_pack_east"', 1)[1].split("}", 1)[0]
+stone_north = LAYOUT.split('id = "spawn_wolf_pack_north"', 1)[1].split("}", 1)[0]
+stone_leader = LAYOUT.split('id = "spawn_wolf_pack_leader"', 1)[1].split("}", 1)[0]
+for body, count in ((stone_south, 2), (stone_east, 2), (stone_north, 3)):
+    if f"count = {count}" not in body or 'socialGroupId = "wolf_pack_stone_circle"' not in body:
+        raise AssertionError("Stone Circle pack must contain seven linked ordinary wolves")
+if 'socialGroupId = "wolf_pack_stone_circle"' not in stone_leader:
+    raise AssertionError("Stone Circle leader must belong to the same eight-member pack")
+
 moonfall_wolf_body = LAYOUT.split('id = "spawn_wolf_pack_moonfall"', 1)[1].split("}", 1)[0]
-for token in ("count = 4", 'socialGroupId = "wolf_pack_moonfall"', "patrolRadius = scaleDistance(46)", "patrolCycleSeconds = 6"):
+for token in (
+    "scaleXZ(55, 16, 820)",
+    "count = 7",
+    'zoneId = "zone_moonfall_road"',
+    'socialGroupId = "wolf_pack_moonfall"',
+    "patrolRadius = scaleDistance(48)",
+    "patrolCycleSeconds = 6",
+):
     if token not in moonfall_wolf_body:
-        raise AssertionError(f"second Moonfall wolf pack must keep the approved roaming contract: {token}")
+        raise AssertionError(f"second Moonfall wolf pack must guard the goblin approach: {token}")
+
+moonfall_leader_body = LAYOUT.split('id = "spawn_wolf_pack_moonfall_leader"', 1)[1].split("}", 1)[0]
+for token in ('mobId = "mob_wolf_pack_leader"', 'socialGroupId = "wolf_pack_moonfall"', 'zoneId = "zone_moonfall_road"'):
+    if token not in moonfall_leader_body:
+        raise AssertionError(f"second Moonfall pack leader contract missing: {token}")
+
+for token in ('id = "wolf_pack_howl"', "radius = 50", "callsAllies = true"):
+    if token not in ABILITIES:
+        raise AssertionError(f"wolf leader howl must call nearby pack members: {token}")
 
 for token in (
     "detectionRadius = 52, aggroRadius = 45, reacquireRadius = 60, leashDistance = 112",
@@ -154,6 +182,8 @@ for token in (
     "MobActionGenerationAttribute",
     "healthBelowFraction",
     "basicAttackRange",
+    "ability.callsAllies",
+    "MobService.registerHostileAction",
 ):
     if token not in MOB_ABILITY_SERVICE:
         raise AssertionError(f"MobAbilityService authority contract missing {token}")
