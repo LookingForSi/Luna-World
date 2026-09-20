@@ -95,7 +95,11 @@ function ActionBar.start(skillIds: { string }, onAttack: () -> (), onAutoToggle:
 	frame.Name = "PrimaryActions"
 	frame.AnchorPoint = Vector2.new(1, 1)
 	frame.Position = UDim2.new(1, -HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)
-	frame.Size = UDim2.fromOffset(HudLayout.ActionBarSize.X, HudLayout.ActionBarSize.Y)
+	frame.Size = UDim2.new(1, -HudLayout.CornerMargin * 2, 0, HudLayout.ActionBarSize.Y)
+	local sizeConstraint = Instance.new("UISizeConstraint")
+	sizeConstraint.MaxSize = Vector2.new(HudLayout.ActionBarSize.X, HudLayout.ActionBarSize.Y)
+	sizeConstraint.MinSize = Vector2.new(300, HudLayout.ActionBarSize.Y)
+	sizeConstraint.Parent = frame
 	HudLayout.applyPanelStyle(frame)
 	frame.Parent = gui
 

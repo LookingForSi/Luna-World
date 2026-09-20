@@ -302,3 +302,9 @@ v0.1 проектируется для небольшого server population и
 - generic ECS/framework только ради архитектурной красоты.
 
 Roblox platform services используются до тех пор, пока реальное ограничение не требует внешней системы.
+
+## 14. Деревенская экономика v0.1
+
+`CraftingDefinitions`, `MerchantDefinitions` и `ItemDefinitions` являются единственным shared источником рецептов, stock, grade и reference retail. `EconomyRules` выполняет чистые clone-based buy/sell/craft переходы, а `EconomyService` применяет готовый результат одной validated mutation профиля. Клиент никогда не передаёт цену, fee, состав рецепта или output.
+
+`EconomyNetworkService` владеет schema/rate/profile/distance validation для `EconomyRequest`; `EconomyWorldService` владеет только lifecycle village prompts. `InventoryService` обрабатывает data-driven return effect через тот же tagged settlement anchor, что и respawn. Новых persistent полей нет, поэтому `DataVersion = 1` сохраняется.
