@@ -60,7 +60,7 @@ def main() -> None:
     assert "baseplate.CanCollide = false" in bootstrap
 
     builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
-    assert 'TerrainRevision", "terrain-v08"' in builder
+    assert 'TerrainRevision", "terrain-v09"' in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
     assert "WorldDressingBlockout" in builder
@@ -132,26 +132,13 @@ def main() -> None:
         "Enum.Material.Mud",
         "GoblinCemeteryLake",
         "LAKE_SURFACE_DROP = 8",
-        "LAKE_WATER_DEPTH = 30",
-        "LAKE_BASIN_CLEAR_DEPTH = 42",
-        "LAKE_SHORE_WATER_OVERLAP = 8",
-        "LAKE_BED_OVERLAP = 6",
-        "LAKE_BOUNDARY_MARGIN = 28",
-        "LAKE_SLAB_STEP = 56",
-        "LAKE_SLAB_OVERLAP = 28",
-        'DeepBasinExcavated", true',
-        'LakeBedFilled", true',
-        '"ShorelineWaterOverlap", LAKE_SHORE_WATER_OVERLAP',
-        "prepareGoblinCampBoundaryShelf",
-        "slopeRows",
-        "slopeRadius = 105",
-        "fillFlatLakeSlab",
-        'ExtendsToWorldEdge", false',
-        'ContainedWithinWorldBounds", true',
-        'OpenWaterBoundary", false',
-        'FlatWaterSurface", true',
-        'ContinuousWaterBody", true',
-        'OrganicShoreline", true',
+        "LAKE_WATER_DEPTH = 12",
+        "LAKE_AIR_CLEARANCE_HEIGHT = 28",
+        "shapeGoblinCemeteryLakeHillCliff",
+        '"Purpose", "TraversalBarrier"',
+        '"WaterRecovery%02d"',
+        'HazardKind = "Lake"',
+        'HillBankCliff", true',
         "DarkWoodlandThreshold",
         "OldCemetery",
         "FallenShrine",
@@ -160,15 +147,13 @@ def main() -> None:
     ):
         assert token in north
     assert "BillboardGui" not in north
-    assert 'Purpose", "SwimmableWater"' in north
-    assert "WaterRecovery" not in north
-    assert "shapeGoblinCemeteryLakeHillCliff" not in north
     assert "Enum.Material.Water" in north
     assert "Enum.Material.Glass" not in north
-    assert "carveLakeDisc" not in north
+    assert "prepareGoblinCampBoundaryShelf" not in north
+    assert "fillFlatLakeSlab" not in north
     assert "fillContinuousLakePath" not in north
-    assert "bounds.maxX + 80" not in north
-    assert "LAKE_SHORE_CLEAR_MARGIN" not in north
+    assert "LakeBedFilled" not in north
+    assert "ContainedWithinWorldBounds" not in north
     assert "Enum.Material.Mud" in north
     assert "postSpacing = 4.0" in north
     assert "PalisadeCollision = true" in north
