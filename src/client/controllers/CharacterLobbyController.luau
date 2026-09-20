@@ -226,136 +226,206 @@ local function render()
 		styleButton(add, false)
 		add.TextColor3 = palette.accentBright
 		add.Activated:Connect(function()
-			local modalSize = ResponsiveLayout.modalSize(metrics, Vector2.new(460, 420))
+			local shade = createModalShade(root)
+			local modalSize = ResponsiveLayout.modalSize(metrics, Vector2.new(590, 540))
 			local modal = new("ScrollingFrame", root, {
 				Name = "CreationModal",
 				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.52),
+				Position = UDim2.fromScale(0.5, 0.5),
 				Size = UDim2.fromOffset(modalSize.X, modalSize.Y),
-				CanvasSize = UDim2.fromOffset(0, 420),
+				CanvasSize = UDim2.fromOffset(0, 520),
 				ScrollBarThickness = if smallTouch then 5 else 0,
 				BackgroundColor3 = palette.panel,
 				BorderSizePixel = 0,
 				ZIndex = 5,
 			})
+			stylePanel(modal, 14)
+
 			new("TextLabel", modal, {
 				BackgroundTransparency = 1,
-				Size = UDim2.new(1, 0, 0, 50),
+				Position = UDim2.fromOffset(32, 18),
+				Size = UDim2.new(1, -64, 0, 36),
 				Text = "СОЗДАНИЕ ГЕРОЯ",
-				TextColor3 = palette.accentBright,
-				TextSize = 22,
+				TextColor3 = palette.moon,
+				TextSize = 24,
 				Font = Enum.Font.GothamBold,
+				TextXAlignment = Enum.TextXAlignment.Left,
 				ZIndex = 6,
 			})
 			local close = new("TextButton", modal, {
 				Name = "Close",
 				AnchorPoint = Vector2.new(1, 0),
-				Position = UDim2.new(1, -8, 0, 8),
+				Position = UDim2.new(1, -12, 0, 12),
 				Size = UDim2.fromOffset(44, 44),
-				BackgroundColor3 = palette.bg,
-				TextColor3 = palette.text,
 				Text = "×",
 				TextSize = 24,
 				ZIndex = 7,
 			})
-			close.Activated:Connect(function() modal:Destroy() end)
+			styleButton(close, false)
+			local function dismiss(): ()
+				shade:Destroy()
+				modal:Destroy()
+			end
+			close.Activated:Connect(dismiss)
+			shade.Activated:Connect(dismiss)
+
+			sectionLabel(modal, "ИМЯ ПЕРСОНАЖА", 72)
 			local name = new("TextBox", modal, {
 				Name = "Nickname",
-				Position = UDim2.fromOffset(30, 65),
-				Size = UDim2.new(1, -60, 0, 48),
-				PlaceholderText = "Имя (3–16 латинских символов)",
+				Position = UDim2.fromOffset(32, 98),
+				Size = UDim2.new(1, -64, 0, 48),
+				BackgroundColor3 = palette.bgDeep,
+				TextColor3 = palette.text,
+				PlaceholderColor3 = palette.muted,
+				PlaceholderText = if RunService:IsStudio()
+					then "Studio: любое непустое имя"
+					else "3–16 латинских символов",
 				Text = "",
 				TextSize = 17,
+				ClearTextOnFocus = false,
 				ZIndex = 6,
 			})
+			rounded(name, 8)
+			outlined(name)
+
+			sectionLabel(modal, "КЛАСС", 160)
 			local class = "knight"
-			local body = "male"
+			local classButtons: { [string]: TextButton } = {}
+			local classNames = { knight = "РЫЦАРЬ", ranger = "СЛЕДОПЫТ", mystic = "МИСТИК" }
+			local classHints = { knight = "Ближний бой", ranger = "Дальний бой", mystic = "Магия" }
+			local function refreshClassButtons(): ()
+				for key, button in classButtons do
+					local chosen = key == class
+					button.BackgroundColor3 = if chosen then palette.accent else palette.panelSoft
+					button.TextColor3 = palette.text
+					button.Text = (if chosen then "✓ " else "") .. classNames[key] .. "\n" .. classHints[key]
+					local stroke = button:FindFirstChildOfClass("UIStroke")
+					if stroke then stroke.Color = if chosen then palette.accentBright else palette.line end
+				end
+			end
 			for i, v in { "knight", "ranger", "mystic" } do
-				local b = new("TextButton", modal, {
-					Position = UDim2.new((i - 1) / 3, 10, 0, 135),
-					Size = UDim2.new(1 / 3, -20, 0, 55),
-					Text = if v == "knight" then "РЫЦАРЬ" else if v == "ranger" then "СЛЕДОПЫТ" else "МИСТИК",
+				local button = new("TextButton", modal, {
+					Name = "Class_" .. v,
+					Position = UDim2.new((i - 1) / 3, 32 + (i - 1) * 4, 0, 188),
+					Size = UDim2.new(1 / 3, -26, 0, 68),
+					TextSize = 13,
+					TextWrapped = true,
+					ZIndex = 6,
+				})
+				styleButton(button, v == class)
+				classButtons[v] = button
+				button.Activated:Connect(function()
+					class = v
+					refreshClassButtons()
+				end)
+			end
+			refreshClassButtons()
+
+			sectionLabel(modal, "ПОЛ", 272)
+			local body = "male"
+			local bodyButtons: { [string]: TextButton } = {}
+			local function refreshBodyButtons(): ()
+				for key, button in bodyButtons do
+					local chosen = key == body
+					button.BackgroundColor3 = if chosen then palette.accent else palette.panelSoft
+					button.TextColor3 = palette.text
+					button.Text = (if chosen then "✓ " else "") .. (if key == "male" then "МУЖСКОЙ" else "ЖЕНСКИЙ")
+					local stroke = button:FindFirstChildOfClass("UIStroke")
+					if stroke then stroke.Color = if chosen then palette.accentBright else palette.line end
+				end
+			end
+			for i, v in { "male", "female" } do
+				local button = new("TextButton", modal, {
+					Name = "Body_" .. v,
+					Position = UDim2.new((i - 1) / 2, 32 + (i - 1) * 4, 0, 300),
+					Size = UDim2.new(0.5, -36, 0, 48),
 					TextSize = 14,
 					ZIndex = 6,
 				})
-				b.Activated:Connect(function()
-					class = v
-				end)
-			end
-			for i, v in { "male", "female" } do
-				local b = new("TextButton", modal, {
-					Position = UDim2.new((i - 1) / 2, 15, 0, 210),
-					Size = UDim2.new(0.5, -30, 0, 50),
-					Text = if v == "male" then "Мужской" else "Женский",
-					TextSize = 16,
-					ZIndex = 6,
-				})
-				b.Activated:Connect(function()
+				styleButton(button, v == body)
+				bodyButtons[v] = button
+				button.Activated:Connect(function()
 					body = v
+					refreshBodyButtons()
 				end)
 			end
+			refreshBodyButtons()
+
+			sectionLabel(modal, "БЫСТРЫЙ ВЫБОР ИМЕНИ", 364)
 			local mine = new("TextButton", modal, {
-				Position = UDim2.new(0, 30, 0, 280),
-				Size = UDim2.new(0.34, -24, 0, 44),
+				Position = UDim2.new(0, 32, 0, 392),
+				Size = UDim2.new(0.34, -24, 0, 42),
 				Text = "Мой Roblox ник",
-				TextSize = 13,
+				TextSize = 12,
+				ZIndex = 6,
+			})
+			styleButton(mine, false)
+			local random = new("TextButton", modal, {
+				Position = UDim2.new(0.34, 8, 0, 392),
+				Size = UDim2.new(0.33, -16, 0, 42),
+				Text = "✦ Случайное",
+				TextSize = 12,
+				ZIndex = 6,
+			})
+			styleButton(random, false)
+			local check = new("TextButton", modal, {
+				Position = UDim2.new(0.67, 8, 0, 392),
+				Size = UDim2.new(0.33, -40, 0, 42),
+				Text = "Проверить",
+				TextSize = 12,
+				ZIndex = 6,
+			})
+			styleButton(check, false)
+
+			local nameStatus = new("TextLabel", modal, {
+				Name = "NicknameStatus",
+				BackgroundTransparency = 1,
+				Position = UDim2.fromOffset(32, 440),
+				Size = UDim2.new(1, -64, 0, 22),
+				Text = if RunService:IsStudio() then "Studio: строгая проверка имени отключена" else "",
+				TextColor3 = palette.muted,
+				TextSize = 12,
+				TextXAlignment = Enum.TextXAlignment.Left,
 				ZIndex = 6,
 			})
 			mine.Activated:Connect(function()
 				name.Text = Players.LocalPlayer.Name
 				send("CheckNickname", { nickname = name.Text })
+				nameStatus.Text = "Проверяем имя…"
 			end)
-			local random = new("TextButton", modal, {
-				Position = UDim2.new(0.34, 8, 0, 280),
-				Size = UDim2.new(0.33, -16, 0, 44),
-				Text = "🎲 Случайное",
-				TextSize = 13,
-				ZIndex = 6,
-			})
 			random.Activated:Connect(function()
-				local a = { "Astra", "Luna", "Mira", "Selene", "Vela" }
-				local z = { "dor", "wyn", "ris", "fox", "riel" }
+				local a = { "Astra", "Luna", "Mira", "Selene", "Vela", "Nyx", "Orion" }
+				local z = { "dor", "wyn", "ris", "fox", "riel", "moon", "star" }
 				name.Text = a[math.random(#a)] .. z[math.random(#z)]
 				send("CheckNickname", { nickname = name.Text })
-				status.Text = "Проверяем имя…"
+				nameStatus.Text = "Проверяем имя…"
 			end)
-			local check = new("TextButton", modal, {
-				Position = UDim2.new(0.67, 8, 0, 280),
-				Size = UDim2.new(0.33, -38, 0, 44),
-				Text = "Проверить",
-				TextSize = 13,
-				ZIndex = 6,
-			})
-			local nameStatus = new("TextLabel", modal, {
-				Name = "NicknameStatus",
-				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(30, 326),
-				Size = UDim2.new(1, -60, 0, 22),
-				Text = "",
-				TextColor3 = palette.muted,
-				TextSize = 13,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				ZIndex = 6,
-			})
 			check.Activated:Connect(function()
 				send("CheckNickname", { nickname = name.Text })
 				nameStatus.Text = "Проверяем имя…"
 			end)
+
 			local create = new("TextButton", modal, {
-				Position = UDim2.fromOffset(30, 355),
-				Size = UDim2.new(1, -60, 0, 50),
-				BackgroundColor3 = palette.accentBright,
-				TextColor3 = palette.bg,
-				Text = "СОЗДАТЬ",
+				Name = "CreateCharacter",
+				Position = UDim2.fromOffset(32, 474),
+				Size = UDim2.new(1, -64, 0, 48),
+				BackgroundColor3 = palette.accent,
+				TextColor3 = palette.text,
+				Text = "СОЗДАТЬ ПЕРСОНАЖА",
 				Font = Enum.Font.GothamBold,
-				TextSize = 17,
+				TextSize = 15,
 				ZIndex = 6,
 			})
+			rounded(create, 8)
+			outlined(create, palette.accentBright, 0)
 			create.Activated:Connect(function()
-				send(
-					"Create",
-					{ nickname = name.Text, archetypeId = class, bodyType = body, appearancePresetId = "default" }
-				)
+				nameStatus.Text = "Создаём персонажа…"
+				send("Create", {
+					nickname = name.Text,
+					archetypeId = class,
+					bodyType = body,
+					appearancePresetId = "default",
+				})
 			end)
 		end)
 	end
