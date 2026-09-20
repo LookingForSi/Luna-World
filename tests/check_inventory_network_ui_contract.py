@@ -70,6 +70,8 @@ for token in ("PickupPrompt", '"Подобрать"', "InventoryService.grantIte
 
 if "blocker.BackgroundTransparency = 1" not in UI:
     raise AssertionError("inventory modal blocker must capture input without blacking out the screen")
+if "gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling" not in UI:
+    raise AssertionError("inventory panel subtree must stay above the fullscreen input blocker")
 if "panel.BackgroundTransparency = 0.03" not in UI:
     raise AssertionError("inventory panel must remain readable over the world")
 
