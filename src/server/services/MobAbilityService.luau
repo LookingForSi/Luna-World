@@ -130,6 +130,7 @@ end
 
 local function applyAllyDamageBuff(
 	mob: Model,
+	target: Player,
 	definition: CombatTypes.MobDefinition,
 	ability: CombatTypes.MobAbilityDefinition
 ): ()
@@ -148,6 +149,12 @@ local function applyAllyDamageBuff(
 			and (candidateRoot.Position - sourceRoot.Position).Magnitude <= radius
 		then
 			setMobDamageBuff(candidate, multiplier, duration)
+			if ability.callsAllies == true then
+				local entityId = candidate:GetAttribute("EntityId")
+				if typeof(entityId) == "string" and entityId ~= "" then
+					MobService.registerHostileAction(entityId, target)
+				end
+			end
 		end
 	end
 end
@@ -307,7 +314,7 @@ local function beginAction(
 				CombatService.applyMobDebuff(target, movement, attackSpeed, ability.durationSeconds or 0)
 			end
 		elseif ability.kind == "AllyDamageBuff" then
-			applyAllyDamageBuff(mob, definition, ability)
+			applyAllyDamageBuff(mob, target, definition, ability)
 			publishToTarget(target, "Result", actionId, actorEntityId(mob, definition), {
 				targetEntityId = targetEntityId(target), skillId = ability.id, presentationKey = ability.presentationKey,
 				outcome = "Applied", definitionId = definition.id,
