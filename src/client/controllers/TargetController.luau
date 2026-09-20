@@ -89,11 +89,6 @@ local function syncConfirmedTarget(): ()
 	showConfirmedTarget(findEntityModelById(entityId))
 end
 
-local function toViewportPosition(screenPosition: Vector2): Vector2
-	local topLeftInset, _bottomRightInset = GuiService:GetGuiInset()
-	return screenPosition - topLeftInset
-end
-
 local function raycastEntity(screenPosition: Vector2): Model?
 	local camera = workspace.CurrentCamera
 	if camera == nil then return nil end
@@ -211,8 +206,10 @@ local function findForgivingScreenCandidate(screenPosition: Vector2): Model?
 end
 
 local function selectAtScreenPosition(screenPosition: Vector2, touchInput: boolean): ()
-	local viewportPosition = toViewportPosition(screenPosition)
-	local exact = raycastEntity(viewportPosition)
+	-- InputObject.Position / TouchTap already line up with Camera viewport
+	-- coordinates in the supported runtime. Subtracting GuiInset shifted the
+	-- entire pick ray above the rendered silhouette.
+	local exact = raycastEntity(screenPosition)
 	if exact ~= nil then
 		requestModel(exact)
 		return
@@ -220,7 +217,7 @@ local function selectAtScreenPosition(screenPosition: Vector2, touchInput: boole
 
 	if touchInput then
 		for _, offset in ClientCombatUiRules.getTouchProbeOffsets(30) do
-			local model = raycastEntity(viewportPosition + offset)
+			local model = raycastEntity(screenPosition + offset)
 			if model ~= nil then
 				requestModel(model)
 				return
@@ -228,7 +225,7 @@ local function selectAtScreenPosition(screenPosition: Vector2, touchInput: boole
 		end
 	end
 
-	local forgiving = findForgivingScreenCandidate(viewportPosition)
+	local forgiving = findForgivingScreenCandidate(screenPosition)
 	if forgiving ~= nil then requestModel(forgiving) end
 end
 
