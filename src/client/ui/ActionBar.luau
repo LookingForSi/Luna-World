@@ -27,9 +27,10 @@ local function makeButton(parent: Instance, name: string, text: string, size: UD
 	button.Name = name
 	button.Size = size
 	button.BackgroundColor3 = Color3.fromRGB(42, 45, 56)
+	button.BorderSizePixel = 0
 	button.TextColor3 = Color3.fromRGB(240, 240, 244)
 	button.Font = Enum.Font.GothamBold
-	button.TextSize = 15
+	button.TextSize = 14
 	button.TextWrapped = true
 	button.Text = text
 	button.Parent = parent
@@ -59,46 +60,114 @@ local function updateCooldowns(): ()
 		local remaining = if typeof(readyAt) == "number" then math.max(0, readyAt - now) else 0
 		attackButton.Text = if remaining > 0 then string.format("АТАКА\n%.1f", remaining) else "АТАКА"
 	end
+
+	local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
+	local level = if typeof(rawLevel) == "number" then rawLevel else 1
 	for skillId, button in skillButtons do
 		local definition = SkillDefinitions[skillId]
-		if definition ~= nil then
-			local readyAt = player:GetAttribute(CombatConfig.SkillCooldownAttributePrefix .. skillId)
-			local remaining = if typeof(readyAt) == "number" then math.max(0, readyAt - now) else 0
-			local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
-			local level = if typeof(rawLevel) == "number" then rawLevel else 1
-			local unlocked = ProgressionRules.isSkillUnlocked(definition.unlockLevel, level)
-			button.Text = if not unlocked
-				then string.format("%s\nLV %d", definition.displayName, definition.unlockLevel)
-				elseif remaining > 0 then string.format("%s\n%.1f", definition.displayName, remaining)
-				else definition.displayName
-			button.BackgroundColor3 = if not unlocked or remaining > 0 then Color3.fromRGB(33, 35, 43) else Color3.fromRGB(42, 45, 56)
-			local currentResource = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
-			local resourceType = player:GetAttribute(CombatConfig.ResourceTypeAttribute)
-			local hasResource = typeof(currentResource) == "number"
-				and resourceType == skillResourceTypes[skillId]
-				and currentResource >= definition.resourceCost
-			button.Active = unlocked and hasResource
-			button.TextTransparency = if unlocked and hasResource then 0 else 0.45
+		if definition == nil then continue end
+		local unlocked = ProgressionRules.isSkillUnlocked(definition.unlockLevel, level)
+		if not unlocked then
+			-- Keep the ten-slot bar stable, but reveal skill names only when the
+			-- character actually unlocks them.
+			button.Text = ""
+			button.Active = false
+			button.TextTransparency = 1
+			button.BackgroundColor3 = Color3.fromRGB(29, 31, 39)
+			continue
+		end
+
+		local readyAt = player:GetAttribute(CombatConfig.SkillCooldownAttributePrefix .. skillId)
+		local remaining = if typeof(readyAt) == "number" then math.max(0, readyAt - now) else 0
+		button.Text = if remaining > 0
+			then string.format("%s\n%.1f", definition.displayName, remaining)
+			else definition.displayName
+
+		local currentResource = player:GetAttribute(CombatConfig.ResourceCurrentAttribute)
+		local resourceType = player:GetAttribute(CombatConfig.ResourceTypeAttribute)
+		local hasResource = typeof(currentResource) == "number"
+			and resourceType == skillResourceTypes[skillId]
+			and currentResource >= definition.resourceCost
+		button.Active = remaining <= 0 and hasResource
+		button.TextTransparency = if button.Active then 0 else 0.45
+		button.BackgroundColor3 = if button.Active then Color3.fromRGB(42, 45, 56) else Color3.fromRGB(33, 35, 43)
+	end
+end
+
+local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (string) -> ()): ()
+	local width = if UserInputService.TouchEnabled then 350 else HudLayout.SkillBarSize.X
+	local skillFrame = Instance.new("Frame")
+	skillFrame.Name = "SkillBar"
+	skillFrame.AnchorPoint = Vector2.new(1, 1)
+	skillFrame.Position = UDim2.new(
+		1,
+		-(HudLayout.ActionBarSize.X + HudLayout.CornerMargin + 12),
+		1,
+		-HudLayout.CornerMargin
+	)
+	skillFrame.Size = UDim2.fromOffset(width, HudLayout.SkillBarSize.Y)
+	HudLayout.applyPanelStyle(skillFrame)
+	skillFrame.Parent = gui
+
+	local content = Instance.new("Frame")
+	content.Name = "SkillSlots"
+	content.Position = UDim2.fromOffset(5, 5)
+	content.Size = UDim2.new(1, -10, 1, -10)
+	content.BackgroundTransparency = 1
+	content.Parent = skillFrame
+
+	for index = 1, 10 do
+		local skillId = skillIds[index]
+		local button = makeButton(
+			content,
+			"SkillSlot" .. tostring(index),
+			"",
+			UDim2.new(0.1, -4, 1, 0)
+		)
+		button.Position = UDim2.new((index - 1) * 0.1, 2, 0, 0)
+		button.TextSize = if UserInputService.TouchEnabled then 8 else 10
+
+		if skillId ~= nil then
+			local definition = SkillDefinitions[skillId]
+			if definition ~= nil then
+				skillButtons[skillId] = button
+				skillResourceTypes[skillId] = definition.resourceType
+				table.insert(buttonConnections, button.Activated:Connect(function()
+					onSkill(skillId)
+				end))
+			end
+		else
+			button.Active = false
+			button.BackgroundColor3 = Color3.fromRGB(29, 31, 39)
 		end
 	end
 end
 
-function ActionBar.start(skillIds: { string }, onAttack: () -> (), onAutoToggle: () -> (), onSkill: (string) -> (), onClearTarget: () -> ()): ()
+function ActionBar.start(
+	skillIds: { string },
+	onAttack: () -> (),
+	onAutoToggle: () -> (),
+	onSkill: (string) -> (),
+	onClearTarget: () -> (),
+	onInventoryToggle: () -> ()
+): ()
 	ActionBar.stop()
+
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CombatActionBar"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = false
 	gui.Parent = player:WaitForChild("PlayerGui")
 
+	local actionHeight = if UserInputService.TouchEnabled then HudLayout.ActionBarSize.Y + 12 else HudLayout.ActionBarSize.Y
 	local frame = Instance.new("Frame")
 	frame.Name = "PrimaryActions"
 	frame.AnchorPoint = Vector2.new(1, 1)
 	frame.Position = UDim2.new(1, -HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)
-	frame.Size = UDim2.new(1, -HudLayout.CornerMargin * 2, 0, HudLayout.ActionBarSize.Y)
+	frame.Size = UDim2.fromOffset(HudLayout.ActionBarSize.X, actionHeight)
 	local sizeConstraint = Instance.new("UISizeConstraint")
-	sizeConstraint.MaxSize = Vector2.new(HudLayout.ActionBarSize.X, HudLayout.ActionBarSize.Y)
-	sizeConstraint.MinSize = Vector2.new(300, HudLayout.ActionBarSize.Y)
+	sizeConstraint.MaxSize = Vector2.new(HudLayout.ActionBarSize.X, actionHeight)
+	sizeConstraint.MinSize = Vector2.new(300, actionHeight)
 	sizeConstraint.Parent = frame
 	HudLayout.applyPanelStyle(frame)
 	frame.Parent = gui
@@ -110,30 +179,28 @@ function ActionBar.start(skillIds: { string }, onAttack: () -> (), onAutoToggle:
 	content.BackgroundTransparency = 1
 	content.Parent = frame
 
-	for index, skillId in skillIds do
-		local definition = SkillDefinitions[skillId]
-		if definition ~= nil then
-			local skillButton = makeButton(content, "Skill" .. tostring(index), definition.displayName, UDim2.new(0.32, -4, 0, 54))
-			skillButton.Position = UDim2.new((index - 1) * 0.34, 0, 0, 0)
-			skillButtons[skillId] = skillButton
-			skillResourceTypes[skillId] = definition.resourceType
-			table.insert(buttonConnections, skillButton.Activated:Connect(function() onSkill(skillId) end))
-		end
-	end
+	local inventoryButton = makeButton(content, "Inventory", "ИНВЕНТАРЬ [I]", UDim2.new(0.66, -2, 0, 36))
+	inventoryButton.Position = UDim2.new(0.34, 0, 0, 0)
 
-	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.2, -4, 0, 70))
-	clearButton.Position = UDim2.new(0, 0, 0, 62)
-	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.25, -4, 0, 70))
+	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.32, -2, 0, 44))
 	local auto = autoButton :: TextButton
-	auto.Position = UDim2.new(0.21, 0, 0, 62)
-	local attackSize = UDim2.new(0.52, -4, 0, if UserInputService.TouchEnabled then 80 else 70)
-	attackButton = makeButton(content, "Attack", "АТАКА", attackSize)
+	auto.Position = UDim2.new(0, 0, 0, 42)
+
+	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.32, -2, 0, 48))
+	clearButton.Position = UDim2.new(0, 0, 0, 90)
+
+	attackButton = makeButton(content, "Attack", "АТАКА", UDim2.new(0.66, -2, 0, if UserInputService.TouchEnabled then 102 else 96))
 	local attack = attackButton :: TextButton
-	attack.Position = UDim2.new(0.48, 0, 0, if UserInputService.TouchEnabled then 58 else 62)
-	attack.TextSize = 18
+	attack.Position = UDim2.new(0.34, 0, 0, 42)
+	attack.TextSize = 19
+
+	buildSkillBar(gui, skillIds, onSkill)
+
+	table.insert(buttonConnections, inventoryButton.Activated:Connect(onInventoryToggle))
 	table.insert(buttonConnections, attack.Activated:Connect(onAttack))
 	table.insert(buttonConnections, auto.Activated:Connect(onAutoToggle))
 	table.insert(buttonConnections, clearButton.Activated:Connect(onClearTarget))
+
 	autoConnection = player:GetAttributeChangedSignal(CombatConfig.AutoAttackEnabledAttribute):Connect(updateAuto)
 	renderConnection = RunService.RenderStepped:Connect(updateCooldowns)
 	screenGui = gui
