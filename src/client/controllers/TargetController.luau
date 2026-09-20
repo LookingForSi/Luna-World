@@ -25,6 +25,27 @@ local TARGET_ACTION = "LunaCycleTarget"
 local CLEAR_TARGET_ACTION = "LunaClearTarget"
 local DESKTOP_PICK_PADDING = 52
 
+local function localGuiBlocksPointer(screenPosition: Vector2): boolean
+	local playerGui = localPlayer:FindFirstChildOfClass("PlayerGui")
+	if playerGui == nil then return false end
+
+	local ok, objects = pcall(function()
+		return playerGui:GetGuiObjectsAtPosition(screenPosition.X, screenPosition.Y)
+	end)
+	if not ok then return false end
+
+	for _, object in objects do
+		if not object.Visible then continue end
+		if object:IsA("GuiButton") or object:IsA("TextBox") then
+			return true
+		end
+		if object.Active then
+			return true
+		end
+	end
+	return false
+end
+
 local function findEntityModel(instance: Instance?): Model?
 	local current = instance
 	while current ~= nil and current ~= workspace do
@@ -269,7 +290,11 @@ function TargetController.start(targetChanged: (Model?) -> ()): ()
 	onTargetChanged = targetChanged
 
 	inputBeganConnection = UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
-		if gameProcessed then return end
+		local screenPosition = Vector2.new(input.Position.X, input.Position.Y)
+		-- CoreGui / Roblox can mark a world click as processed even when none of
+		-- Luna's interactive UI is under the pointer. Only suppress targeting
+		-- when our own visible interactive GUI actually owns that screen point.
+		if gameProcessed and localGuiBlocksPointer(screenPosition) then return end
 		if input.UserInputType == Enum.UserInputType.MouseButton2 then
 			-- Desktop clear-target shortcut. Do not sink the input so Roblox camera
 			-- rotation can still use the right mouse button naturally.
@@ -278,17 +303,14 @@ function TargetController.start(targetChanged: (Model?) -> ()): ()
 		end
 		-- Touch is handled only by TouchTap so one tap cannot issue two requests.
 		if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-		selectAtScreenPosition(Vector2.new(input.Position.X, input.Position.Y), false)
+		selectAtScreenPosition(screenPosition, false)
 	end)
 
 	touchTapConnection = UserInputService.TouchTap:Connect(function(touchPositions: { Vector2 }, gameProcessed: boolean)
-		if gameProcessed then
-			return
-		end
 		local position = touchPositions[1]
-		if position ~= nil then
-			selectAtScreenPosition(position, true)
-		end
+		if position == nil then return end
+		if gameProcessed and localGuiBlocksPointer(position) then return end
+		selectAtScreenPosition(position, true)
 	end)
 	ContextActionService:BindAction(TARGET_ACTION, function(_, state, inputObject)
 		if ClientCombatUiRules.shouldIgnoreForGuiNavigation(inputObject.UserInputType.Name, GuiService.SelectedObject ~= nil) then
