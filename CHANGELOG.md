@@ -8,6 +8,8 @@
 
 ### Playtest RC — consolidated build
 
+- Коррекция отката озера: предыдущий rollback к ранней 12-stud версии отменён. Озеро восстановлено ТОЧНО к owner-accepted состоянию PR #29 после `world: deepen lake basin and remove terrain overhang` (4ec5d6f) и его контрактов до начала `world: open lake to boundary...`: глубина 30, basin 40, margin 34, swimmable Terrain.Water, recessed hill-bank cliff; без world-edge extension и без prepareGoblinCampBoundaryShelf. GoblinShelfEdge также восстановлен как в этом состоянии.
+
 - Озеро и lake-facing terrain откатаны к последнему принятому состоянию до серии экспериментов с расширением воды: восстановлены три исходных water-lobe, прежняя глубина 12, вертикальный hill-bank cliff/«стена» и старый shoreline; полностью удалены prepareGoblinCampBoundaryShelf, flat-slab/organic lake, искусственное дно Mud и все последующие расширения воды к границе карты. Остальные изменения dev0.3 сохранены.
 
 - Чаша озера доведена до физически цельной геометрии: убрана воздушная канавка между водой и берегом, вода заходит под берег на небольшой overlap, а под всем водяным объёмом восстановлено непрерывное Mud-дно без воздушного кармана.
