@@ -36,7 +36,10 @@ for forbidden in ("weapon_moonsteel_sword", "weapon_moonstring_bow", "weapon_moo
 
 require(rules, "MerchantDefinitions.BuybackRatio", "buyback must use authoritative shared ratio")
 require(rules, "InventoryRules.discard", "sell/craft must use canonical inventory removal")
+require(rules, "function EconomyRules.sellBatch", "atomic batch-sale rule is missing")
 require(network, "EconomyRequestRules.validate", "economy remote must validate schema")
+require(network, "EconomyRequestRules.validateSellBatch", "batch sale must validate a bounded client payload")
+require(network, "EconomyService.sellBatch", "batch sale must execute through the authoritative economy service")
 require(network, "RequestMinIntervalSeconds", "economy remote must rate limit")
 require(network, "nearby(player, poiId)", "economy remote must validate NPC distance")
 require(network, "interactionPosition", "economy distance must follow the visible service NPC")
@@ -52,7 +55,7 @@ require(world, "BillboardGui", "economy NPCs must expose readable nameplates")
 require(world, "Highlight", "economy NPCs must be visually discoverable")
 require(inventory, "ReturnToSettlement", "return scroll effect must be data driven")
 require(inventory, "CollectionService:GetTagged(RespawnConfig.AnchorTag)", "return scroll must reuse respawn anchor")
-for token in ('"DialogueMerchant"', '"DialogueBlacksmith"', '"Купить"', '"Продать"', '"Ковать"'):
+for token in ('"DialogueMerchant"', '"DialogueBlacksmith"', '"Купить"', '"Продать"', '"Ковать"', '"SellWorkspace"', '"SellInventory"', '"SellCart"', '"Quantity"', '"Итого к получению"', '"ПРОДАТЬ ВЫБРАННОЕ"', "callbacks.sellBatch"):
     require(client, token, f"dialogue topic flow missing {token}")
 require(client, "level < 6", "level-six session onboarding is missing")
 require(main, "EconomyNetworkService.start()", "economy networking is not bootstrapped")
