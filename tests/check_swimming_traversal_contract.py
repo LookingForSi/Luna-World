@@ -44,13 +44,15 @@ if "shapeGoblinCemeteryLakeHillCliff" in north:
 
 for token in (
     "LAKE_WATER_DEPTH = 30",
-    "LAKE_BASIN_CLEAR_DEPTH = 40",
-    "LAKE_CLEAR_MARGIN = 34",
+    "LAKE_BASIN_CLEAR_DEPTH = 42",
+    "LAKE_SHORE_CLEAR_MARGIN = 18",
     'DeepBasinExcavated", true',
     "prepareGoblinCampBoundaryShelf",
-    "excavateAndFillLakeWater",
+    "carveLakeDisc",
+    "fillContinuousLakePath",
     'ExtendsToWorldEdge", true',
-    'CampShorelineZ',
+    'ContinuousWaterBody", true',
+    'OrganicShoreline", true',
 ):
     if token not in north:
         raise AssertionError(f"deep lake / overhang contract missing: {token}")
