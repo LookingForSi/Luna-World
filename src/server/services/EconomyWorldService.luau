@@ -91,7 +91,7 @@ local function createPoint(
 	prompt.RequiresLineOfSight = false
 	prompt.HoldDuration = 0
 	prompt.KeyboardKeyCode = Enum.KeyCode.E
-	prompt.GamepadKeyCode = Enum.KeyCode.ButtonX
+	prompt.GamepadKeyCode = Enum.KeyCode.ButtonA
 	prompt.Parent = target
 	table.insert(ownedInstances, prompt)
 	table.insert(connections, prompt.Triggered:Connect(function(player) EconomyNetworkService.openFor(player, mode) end))
