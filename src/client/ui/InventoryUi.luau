@@ -60,14 +60,22 @@ local FILTER_LABELS = {
 
 local function matchesFilter(definition: any): boolean
 	if activeFilter == "All" then return true end
-	if activeFilter == "Consumables" then return definition ~= nil and definition.category == "Consumable" end
-	if activeFilter == "Materials" then return definition ~= nil and definition.category == "Material" end
+	if definition == nil then return false end
+	if activeFilter == "Consumables" then
+		local effect = definition.consumableEffect
+		return definition.category == "Consumable"
+			and effect ~= nil
+			and (effect.kind == "HealHP" or effect.kind == "RestoreResource")
+	end
+	if activeFilter == "Materials" then return definition.category == "Material" end
 	if activeFilter == "Equipment" then
-		return definition ~= nil and (
-			definition.category == "Weapon"
+		-- "Вещи" contains wearable/weapon gear plus utility consumables such as
+		-- return scrolls; actual HP/resource potions stay under "Зелья".
+		return definition.category == "Weapon"
 			or definition.category == "Armor"
 			or definition.category == "Accessory"
-		)
+			or (definition.category == "Consumable" and definition.consumableEffect ~= nil
+				and definition.consumableEffect.kind == "ReturnToSettlement")
 	end
 	return true
 end
@@ -397,17 +405,18 @@ function InventoryUi.start(actionCallbacks: any): ()
 
 	local filterOrder = { "All", "Consumables", "Equipment", "Materials" }
 	for index, filterId in filterOrder do
+		local selectedFilter = filterId
 		local button = makeButton(
 			panel,
-			"Filter" .. filterId,
-			FILTER_LABELS[filterId],
+			"Filter" .. selectedFilter,
+			FILTER_LABELS[selectedFilter],
 			UDim2.fromOffset(16 + (index - 1) * 94, 78),
 			UDim2.fromOffset(89, 28)
 		)
 		button.TextSize = 10
-		filterButtons[filterId] = button
+		filterButtons[selectedFilter] = button
 		table.insert(actionConnections, button.Activated:Connect(function()
-			activeFilter = filterId
+			activeFilter = selectedFilter
 			rebuild()
 		end))
 	end
