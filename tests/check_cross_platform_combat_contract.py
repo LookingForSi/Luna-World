@@ -38,6 +38,7 @@ require(TARGET, "findForgivingScreenCandidate(screenPosition)", "forgiving selec
 require(TARGET, "Enum.KeyCode.ButtonR3", "gamepad must provide a target command")
 require(TARGET, "requestNearestVisibleTarget", "target cycling must remain a client candidate request")
 require(TARGET, 'targetRequest:FireServer("")', "all devices need a semantic target-clear command")
+require(TARGET, "Enum.UserInputType.MouseButton2", "desktop right mouse must clear the target")
 require(TARGET, "canonicalPlayerTargetId", "friendly players must use canonical target ids")
 require(TARGET, "TargetController.stop()", "target restart must clean old connections and actions")
 require(TARGET, "shouldIgnoreForGuiNavigation", "gamepad target callbacks must respect GUI navigation")
@@ -68,5 +69,18 @@ if "facePlayerTowardModel(player, initialTarget)" not in server:
     raise AssertionError("basic attack acceptance must rotate the actor toward its target")
 if "facePlayerTowardModel(player, target.model)" not in server:
     raise AssertionError("facing-required skills must rotate the actor toward their accepted target")
+
+for token in (
+    "pendingApproachesByPlayer",
+    "beginApproach(player, targetId, \"Attack\"",
+    "beginApproach(player, selectedTargetId, \"Skill\"",
+    "humanoid:MoveTo(targetRoot.Position)",
+    "processApproaches(now)",
+    "clearApproach(player, true)",
+    "CombatConfig.ApproachMoveRefreshSeconds",
+    "function CombatService.selectAttackerIfNoTarget",
+):
+    if token not in server:
+        raise AssertionError(f"approach/retaliation combat contract missing: {token}")
 
 print("Cross-platform combat client contract: PASS")
