@@ -1176,6 +1176,19 @@ function CombatService._setArchetypeForStudio(player: Player, archetypeId: strin
 	return true
 end
 
+function CombatService._setMovementMultiplierForStudio(player: Player, multiplier: number): boolean
+	assert(RunService:IsStudio(), "Studio movement multiplier is unavailable outside Studio")
+	if player.Parent ~= Players or (multiplier ~= 1 and multiplier ~= 5) then return false end
+	if multiplier == 1 then
+		player:SetAttribute(CombatConfig.StudioMovementMultiplierAttribute, nil)
+	else
+		player:SetAttribute(CombatConfig.StudioMovementMultiplierAttribute, multiplier)
+	end
+	local state = statesByPlayer[player]
+	if state ~= nil then CombatEffectService.recomputePlayerModifiers(player, state.stats) end
+	return true
+end
+
 function CombatService.restorePlayerResource(player: Player, amount: number): number
 	if amount ~= amount or amount <= 0 or amount == math.huge then return 0 end
 	if player.Parent ~= Players or not PlayerDataService.isReady(player) or getLivingCharacterRoot(player) == nil then return 0 end
