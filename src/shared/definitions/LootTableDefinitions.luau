@@ -45,11 +45,11 @@ local definitions: { [string]: LootTypes.LootTableDefinition } = {
 		entry("armor_guard_gloves", 0.04), entry("weapon_hunter_bow", 0.03),
 	} }),
 	loot_goblin_scout = loot({ id = "loot_goblin_scout", lunaMin = 4, lunaMax = 8, entries = {
-		resourceEntry("material_goblin_token", 0.55), resourceEntry("material_iron_scrap", 0.70), entry("consumable_minor_healing_draught", 0.07),
+		resourceEntry("material_goblin_token", 0.55), resourceEntry("material_iron_scrap", 0.75), entry("consumable_minor_healing_draught", 0.07),
 		entry("armor_guard_boots", 0.015),
 	} }),
 	loot_goblin_warrior = loot({ id = "loot_goblin_warrior", lunaMin = 6, lunaMax = 11, entries = {
-		resourceEntry("material_goblin_token", 0.75, 1, 2), resourceEntry("material_iron_scrap", 0.80, 1, 2), entry("consumable_minor_healing_draught", 0.10),
+		resourceEntry("material_goblin_token", 0.75, 1, 2), resourceEntry("material_iron_scrap", 0.85, 1, 2), entry("consumable_minor_healing_draught", 0.10),
 		entry("armor_guard_head", 0.015), entry("weapon_iron_blade", 0.015),
 	} }),
 	loot_goblin_shaman = loot({ id = "loot_goblin_shaman", lunaMin = 8, lunaMax = 14, entries = {
@@ -61,7 +61,7 @@ local definitions: { [string]: LootTypes.LootTableDefinition } = {
 		entry("weapon_iron_blade", 0.015), entry("weapon_hunter_bow", 0.015), entry("weapon_rune_staff", 0.015),
 	} }),
 	loot_spider = loot({ id = "loot_spider", lunaMin = 4, lunaMax = 7, entries = {
-		resourceEntry("material_spider_silk", 0.7, 1, 2), resourceEntry("material_venom_sac", 0.20),
+		resourceEntry("material_spider_silk", 0.75, 1, 2), resourceEntry("material_venom_sac", 0.20),
 		entry("consumable_minor_resource_draught", 0.08), entry("accessory_moon_charm", 0.015),
 	} }),
 	loot_brood_spider = loot({ id = "loot_brood_spider", lunaMin = 9, lunaMax = 15, entries = {
