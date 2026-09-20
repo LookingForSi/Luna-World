@@ -22,6 +22,9 @@ local equipButton: TextButton? = nil
 local unequipButton: TextButton? = nil
 local useButton: TextButton? = nil
 local discardButton: TextButton? = nil
+local quickSlotButton: TextButton? = nil
+local filterButtons: { [string]: TextButton } = {}
+local activeFilter = "All"
 local closeConnection: RBXScriptConnection? = nil
 local actionConnections: { RBXScriptConnection } = {}
 local currentSnapshot: any = nil
@@ -47,6 +50,35 @@ local STAT_LABELS = {
 	criticalChance = "Крит",
 	attackSpeedMultiplier = "Скорость атаки",
 }
+
+local FILTER_LABELS = {
+	All = "ВСЕ",
+	Consumables = "ЗЕЛЬЯ",
+	Equipment = "ВЕЩИ",
+	Materials = "РЕСУРСЫ",
+}
+
+local function matchesFilter(definition: any): boolean
+	if activeFilter == "All" then return true end
+	if activeFilter == "Consumables" then return definition ~= nil and definition.category == "Consumable" end
+	if activeFilter == "Materials" then return definition ~= nil and definition.category == "Material" end
+	if activeFilter == "Equipment" then
+		return definition ~= nil and (
+			definition.category == "Weapon"
+			or definition.category == "Armor"
+			or definition.category == "Accessory"
+		)
+	end
+	return true
+end
+
+local function updateFilterButtons(): ()
+	for filterId, button in filterButtons do
+		button.BackgroundColor3 = if filterId == activeFilter
+			then Color3.fromRGB(78, 94, 54)
+			else Color3.fromRGB(42, 45, 56)
+	end
+end
 
 local function makeLabel(parent: Instance, text: string, position: UDim2, size: UDim2, textSize: number?): TextLabel
 	local label = Instance.new("TextLabel")
@@ -114,12 +146,14 @@ local function updateDetails(): ()
 	local unequip = unequipButton
 	local use = useButton
 	local discard = discardButton
-	if details == nil or equip == nil or unequip == nil or use == nil or discard == nil then return end
+	local quick = quickSlotButton
+	if details == nil or equip == nil or unequip == nil or use == nil or discard == nil or quick == nil then return end
 
 	equip.Visible = false
 	unequip.Visible = false
 	use.Visible = false
 	discard.Visible = false
+	quick.Visible = false
 
 	if entry == nil or typeof(entry.itemId) ~= "string" then
 		details.Text = "Выберите предмет."
@@ -157,6 +191,7 @@ local function updateDetails(): ()
 	else
 		equip.Visible = definition.equipmentSlot ~= nil
 		use.Visible = definition.category == "Consumable"
+		quick.Visible = definition.category == "Consumable"
 		discard.Visible = true
 	end
 end
@@ -177,9 +212,19 @@ local function rebuildInventory(): ()
 	local entries = if currentSnapshot ~= nil and typeof(currentSnapshot.inventory) == "table"
 		then currentSnapshot.inventory
 		else {}
+	local visibleEntries = {}
+	for _, entry in entries do
+		if typeof(entry) == "table" and typeof(entry.itemId) == "string" then
+			local definition = ItemDefinitions[entry.itemId]
+			if matchesFilter(definition) then table.insert(visibleEntries, entry) end
+		end
+	end
 
-	for slotIndex = 1, InventoryConfig.Capacity do
-		local entry = entries[slotIndex]
+	local visibleSlots = if activeFilter == "All"
+		then InventoryConfig.Capacity
+		else math.max(5, #visibleEntries)
+	for slotIndex = 1, visibleSlots do
+		local entry = if activeFilter == "All" then entries[slotIndex] else visibleEntries[slotIndex]
 		local text = ""
 		if typeof(entry) == "table" and typeof(entry.itemId) == "string" then
 			local definition = ItemDefinitions[entry.itemId]
@@ -261,6 +306,7 @@ end
 
 local function rebuild(): ()
 	updateHeader()
+	updateFilterButtons()
 	rebuildInventory()
 	rebuildEquipment()
 	local entry = selectedEntry()
@@ -349,10 +395,27 @@ function InventoryUi.start(actionCallbacks: any): ()
 	local equippedTitle = makeLabel(panel, "Экипировка", UDim2.fromOffset(410, 52), UDim2.fromOffset(290, 24), 13)
 	equippedTitle.Font = Enum.Font.GothamBold
 
+	local filterOrder = { "All", "Consumables", "Equipment", "Materials" }
+	for index, filterId in filterOrder do
+		local button = makeButton(
+			panel,
+			"Filter" .. filterId,
+			FILTER_LABELS[filterId],
+			UDim2.fromOffset(16 + (index - 1) * 94, 78),
+			UDim2.fromOffset(89, 28)
+		)
+		button.TextSize = 10
+		filterButtons[filterId] = button
+		table.insert(actionConnections, button.Activated:Connect(function()
+			activeFilter = filterId
+			rebuild()
+		end))
+	end
+
 	local list = Instance.new("ScrollingFrame")
 	list.Name = "InventoryList"
-	list.Position = UDim2.fromOffset(16, 80)
-	list.Size = UDim2.fromOffset(376, 388)
+	list.Position = UDim2.fromOffset(16, 112)
+	list.Size = UDim2.fromOffset(376, 356)
 	list.BackgroundColor3 = Color3.fromRGB(29, 31, 39)
 	list.BackgroundTransparency = 0.15
 	list.BorderSizePixel = 0
@@ -388,10 +451,11 @@ function InventoryUi.start(actionCallbacks: any): ()
 
 	statusLabel = makeLabel(panel, "", UDim2.fromOffset(410, 406), UDim2.fromOffset(294, 20), 11)
 
-	equipButton = makeButton(panel, "Equip", "НАДЕТЬ", UDim2.fromOffset(410, 438), UDim2.fromOffset(92, 32))
-	unequipButton = makeButton(panel, "Unequip", "СНЯТЬ", UDim2.fromOffset(410, 438), UDim2.fromOffset(92, 32))
-	useButton = makeButton(panel, "Use", "ИСП.", UDim2.fromOffset(508, 438), UDim2.fromOffset(92, 32))
-	discardButton = makeButton(panel, "Discard", "ВЫБРОСИТЬ", UDim2.fromOffset(606, 438), UDim2.fromOffset(98, 32))
+	equipButton = makeButton(panel, "Equip", "НАДЕТЬ", UDim2.fromOffset(410, 438), UDim2.fromOffset(68, 32))
+	unequipButton = makeButton(panel, "Unequip", "СНЯТЬ", UDim2.fromOffset(410, 438), UDim2.fromOffset(68, 32))
+	useButton = makeButton(panel, "Use", "ИСП.", UDim2.fromOffset(482, 438), UDim2.fromOffset(68, 32))
+	quickSlotButton = makeButton(panel, "QuickSlot", "НА [0]", UDim2.fromOffset(554, 438), UDim2.fromOffset(68, 32))
+	discardButton = makeButton(panel, "Discard", "ВЫБР.", UDim2.fromOffset(626, 438), UDim2.fromOffset(78, 32))
 
 	table.insert(actionConnections, equipButton.Activated:Connect(function()
 		if callbacks ~= nil and selectedKind == "Inventory" and selectedIdentifier ~= nil then
@@ -406,6 +470,19 @@ function InventoryUi.start(actionCallbacks: any): ()
 	table.insert(actionConnections, useButton.Activated:Connect(function()
 		if callbacks ~= nil and selectedKind == "Inventory" and selectedIdentifier ~= nil then
 			callbacks.consume(selectedIdentifier)
+		end
+	end))
+	table.insert(actionConnections, quickSlotButton.Activated:Connect(function()
+		if callbacks == nil or selectedKind ~= "Inventory" or selectedIdentifier == nil then return end
+		local entry = findInventoryEntry(selectedIdentifier)
+		if entry == nil or typeof(entry.itemId) ~= "string" then return end
+		local definition = ItemDefinitions[entry.itemId]
+		if definition == nil or definition.category ~= "Consumable" then return end
+		if callbacks.assignQuickSlot ~= nil and callbacks.assignQuickSlot(entry.itemId) then
+			if statusLabel ~= nil then
+				statusLabel.Text = "Предмет назначен на быстрый слот [0]."
+				statusLabel.TextColor3 = Color3.fromRGB(168, 206, 155)
+			end
 		end
 	end))
 	table.insert(actionConnections, discardButton.Activated:Connect(function()
@@ -435,6 +512,9 @@ function InventoryUi.stop(): ()
 	unequipButton = nil
 	useButton = nil
 	discardButton = nil
+	quickSlotButton = nil
+	table.clear(filterButtons)
+	activeFilter = "All"
 	currentSnapshot = nil
 	selectedKind = nil
 	selectedIdentifier = nil
