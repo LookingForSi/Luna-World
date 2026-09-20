@@ -66,6 +66,31 @@ return function(TestRunner)
 		local equippedProfile = ProfileSchema.createDefault(); equippedProfile.Items.x = { ItemId = "weapon_iron_blade", Quantity = 1 }; equippedProfile.Equipment.Weapon = "x"
 		local denied, reason = EconomyRules.sell(equippedProfile, "x", 1); assert(denied == nil and reason == "EquippedItem")
 	end)
+	TestRunner.run("merchant batch sale is atomic and totals selected quantities", function()
+		local profile = ProfileSchema.createDefault()
+		profile = assert(InventoryRules.add(profile, "material_wolf_pelt", 5, generator("pelt")))
+		profile = assert(InventoryRules.add(profile, "material_iron_scrap", 3, generator("iron")))
+		local peltId = profile.Inventory[1]
+		local ironId = profile.Inventory[2]
+		local peltPrice = assert(EconomyRules.buybackPrice("material_wolf_pelt"))
+		local ironPrice = assert(EconomyRules.buybackPrice("material_iron_scrap"))
+		local sold, reason, total = EconomyRules.sellBatch(profile, {
+			{ instanceId = peltId, quantity = 2 },
+			{ instanceId = ironId, quantity = 3 },
+		})
+		assert(reason == nil and sold ~= nil)
+		assert(total == peltPrice * 2 + ironPrice * 3)
+		assert(sold.Luna == total)
+		assert(sold.Items[peltId].Quantity == 3)
+		assert(sold.Items[ironId] == nil)
+
+		local rejected = EconomyRules.sellBatch(profile, {
+			{ instanceId = peltId, quantity = 2 },
+			{ instanceId = "missing", quantity = 1 },
+		})
+		assert(rejected == nil)
+		assert(profile.Items[peltId].Quantity == 5, "failed batch must not mutate the source profile")
+	end)
 	TestRunner.run("starter grant is archetype-specific and idempotent", function()
 		for _, archetype in { "knight", "ranger", "mystic" } do
 			local profile = ProfileSchema.createDefault(); profile.ArchetypeId = archetype
@@ -75,10 +100,26 @@ return function(TestRunner)
 		end
 		local inventoryOnly = ProfileSchema.createDefault(); inventoryOnly = assert(InventoryRules.add(inventoryOnly, "weapon_training_sword", 1, generator("legacy")))
 		local equipped = assert(StarterGearRules.grantAndEquip(inventoryOnly, generator("unused"))); assert(equipped.Equipment.Weapon ~= nil and #equipped.Inventory == 0)
+
+		local switched = assert(StarterGearRules.switchArchetype(equipped, "ranger", generator("switch")))
+		assert(switched.ArchetypeId == "ranger")
+		assert(switched.Equipment.Weapon ~= nil)
+		assert(switched.Items[switched.Equipment.Weapon].ItemId == "weapon_ash_bow")
+		assert(ItemDefinitions.weapon_ash_bow.displayName == "Учебный лук")
+		assert(ItemDefinitions.weapon_ash_staff.displayName == "Учебный посох")
 	end)
 	TestRunner.run("hostile economy quantities and shapes are rejected", function()
 		for _, value in { -1, 0, 0/0, math.huge, 1.5 } do assert(EconomyRequestRules.validate(3, "Buy", "material_iron_scrap", value) == nil) end
 		assert(EconomyRequestRules.validate(3, "Unknown", "x", 1) == nil); assert(EconomyRequestRules.validate(3, "Craft", "x", 2) == nil)
+		assert(EconomyRequestRules.validateSellBatch(2, "SellBatch", {
+			{ instanceId = "a", quantity = 2 },
+			{ instanceId = "b", quantity = 1 },
+		}) ~= nil)
+		assert(EconomyRequestRules.validateSellBatch(2, "SellBatch", {
+			{ instanceId = "a", quantity = 1 },
+			{ instanceId = "a", quantity = 1 },
+		}) == nil)
+		assert(EconomyRequestRules.validateSellBatch(2, "SellBatch", {}) == nil)
 	end)
 	TestRunner.run("natural route has the intended full-set expected value", function()
 		local value = EconomyBalance.expectedRouteValue(EconomyBalance.NaturalRoute); local cost = EconomyBalance.fullSetCraftCost("knight")
