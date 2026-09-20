@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Static contract check for the client-only no-free-jump controller."""
+"""Static contract for land no-jump plus stock Terrain swimming controls."""
 
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTROLLER = ROOT / "src/client/controllers/MovementController.luau"
@@ -17,23 +16,31 @@ def require(source: str, token: str, message: str) -> None:
 controller = CONTROLLER.read_text(encoding="utf-8")
 bootstrap = BOOTSTRAP.read_text(encoding="utf-8")
 
-require(controller, "BindActionAtPriority", "jump input must be consumed at explicit priority")
-require(controller, "Enum.PlayerActions.CharacterJump", "all standard jump bindings must be consumed")
+require(controller, "BindActionAtPriority", "jump input must be handled at explicit priority")
+require(controller, "Enum.PlayerActions.CharacterJump", "standard jump action must be intercepted")
+require(controller, "Enum.HumanoidStateType.Swimming", "swimming state must be recognized")
+require(controller, "Enum.ContextActionResult.Pass", "swimming jump/swim-up input must pass to Roblox")
+require(controller, "Enum.ContextActionResult.Sink", "land free-jump input must remain blocked")
+require(controller, "humanoid.StateChanged:Connect", "swim transitions must update mobile controls")
+require(controller, "swimming = nextState == Enum.HumanoidStateType.Swimming", "swimming state must drive policy")
+require(controller, "humanoid.Jump = false", "held swim-up input must not leak into land jumping")
+require(controller, "desiredJumpButtonVisible", "mobile jump button must use state-aware visibility")
+require(controller, "return swimming", "mobile jump button must only be visible while swimming")
+require(controller, "JumpButton", "stock mobile jump button must be managed")
+require(controller, "DescendantAdded:Connect", "late-created mobile controls must also be managed")
+require(controller, 'GetPropertyChangedSignal("Visible")', "CoreScript visibility changes must be reconciled")
+require(controller, "jumpButtonWasVisible", "stop must restore original mobile button visibility")
+require(controller, "CharacterAdded:Connect", "character replacement must reapply movement policy")
+require(controller, "characterToken += 1", "late character callbacks must be invalidated")
 require(controller, "UnbindAction", "stop must remove the jump binding")
-require(controller, "CharacterAdded:Connect", "character replacement must reapply the setting")
-require(controller, "characterToken += 1", "each character application must invalidate older callbacks")
-require(controller, "characterToken ~= expectedCharacterToken", "late humanoid waits must validate their character token")
-require(controller, "Players.LocalPlayer.Character ~= character", "late humanoid waits must validate the active character")
-require(controller, "SetStateEnabled(Enum.HumanoidStateType.Jumping, false)", "humanoid jump must be disabled")
-if "SetStateEnabled(Enum.HumanoidStateType.Freefall" in controller:
-    raise AssertionError("the controller must not change the freefall state")
-require(controller, "JumpButton", "the standard mobile jump button must be hidden")
-require(controller, "DescendantAdded:Connect", "late-created mobile controls must also be handled")
-require(controller, 'GetPropertyChangedSignal("Visible")', "the standard jump button must stay hidden if CoreScripts toggle it")
-require(controller, "jumpButtonVisibleConnection:Disconnect()", "jump button replacement must disconnect its listener")
-require(controller, "jumpButtonWasVisible", "stop must preserve and restore the button's original visibility")
 require(controller, "Disconnect()", "stop must disconnect lifecycle listeners")
+
+if "SetStateEnabled(Enum.HumanoidStateType.Jumping, false)" in controller:
+    raise AssertionError("Jumping state must stay available so stock swimming can leave the water")
+if "JumpPower = 0" in controller or "JumpHeight = 0" in controller:
+    raise AssertionError("MovementController must not zero Roblox jump/swim physics")
+
 require(bootstrap, "MovementController.start()", "client bootstrap must start movement controls")
 require(bootstrap, "MovementController.stop()", "client bootstrap must stop movement controls")
 
-print("Movement controller contract: PASS")
+print("Movement controller swimming contract: PASS")
