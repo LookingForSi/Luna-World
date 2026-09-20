@@ -40,6 +40,15 @@ end
 function EconomyService.sell(player: Player, instanceId: string, quantity: number): (boolean, string?)
 	return transform(player, function(profile) return EconomyRules.sell(profile, instanceId, quantity) end)
 end
+function EconomyService.sellBatch(player: Player, selections: { any }): (boolean, string?, number?)
+	local earned = 0
+	local ok, reason = transform(player, function(profile)
+		local nextProfile, ruleReason, total = EconomyRules.sellBatch(profile, selections)
+		earned = total or 0
+		return nextProfile, ruleReason
+	end)
+	return ok, reason, if ok then earned else nil
+end
 function EconomyService.craft(player: Player, craftId: string): (boolean, string?)
 	return transform(player, function(profile) return EconomyRules.craft(profile, craftId, guid) end)
 end
