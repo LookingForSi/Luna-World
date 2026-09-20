@@ -10,6 +10,8 @@ local selected: string?
 local roster: any
 local stopObserve: (() -> ())?
 local layoutMetrics: ResponsiveLayout.Metrics?
+local lastLayoutMode: ResponsiveLayout.Mode?
+local lastViewport: Vector2?
 local result = ReplicatedStorage.Remotes.CharacterResult
 local request = ReplicatedStorage.Remotes.CharacterRequest
 local palette = {
@@ -48,6 +50,7 @@ local function render()
 	local metrics = layoutMetrics or ResponsiveLayout.metrics(workspace.CurrentCamera)
 	local portrait = metrics.mode == "MobilePortrait"
 	local smallTouch = ResponsiveLayout.isSmallTouch(metrics)
+	local edge = if smallTouch then 10 else 28
 	local root = screen:FindFirstChild("LobbyRoot") :: Frame
 	if not root then
 		return
@@ -56,7 +59,8 @@ local function render()
 	new("TextLabel", root, {
 		Name = "Title",
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 52),
+		Position = UDim2.fromOffset(edge, edge),
+		Size = UDim2.new(1, -edge * 2, 0, 56),
 		Text = "LUNA WORLD",
 		TextColor3 = palette.gold,
 		Font = Enum.Font.GothamBold,
@@ -65,8 +69,8 @@ local function render()
 	local status = new("TextLabel", root, {
 		Name = "Status",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(0, 54),
-		Size = UDim2.new(1, 0, 0, 30),
+		Position = UDim2.fromOffset(edge, edge + 58),
+		Size = UDim2.new(1, -edge * 2, 0, 30),
 		Text = if roster then "Выберите героя" else "Загрузка аккаунта…",
 		TextColor3 = palette.text,
 		Font = Enum.Font.Gotham,
@@ -79,8 +83,12 @@ local function render()
 		Name = "CharacterRoster",
 		BackgroundColor3 = palette.panel,
 		BorderSizePixel = 0,
-		Position = if portrait then UDim2.new(0, 0, 0, 88) else UDim2.new(0, 0, 0, 92),
-		Size = if portrait then UDim2.new(1, 0, 0, 188) else UDim2.new(0.38, -8, 1, -132),
+		Position = if portrait
+			then UDim2.fromOffset(edge, edge + 96)
+			else UDim2.fromOffset(edge, edge + 96),
+		Size = if portrait
+			then UDim2.new(1, -edge * 2, 0, math.min(210, metrics.contentSize.Y * 0.32))
+			else UDim2.new(0.34, -edge, 1, -(edge * 2 + 126)),
 		CanvasSize = UDim2.fromOffset(0, 0),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollBarThickness = 5,
@@ -110,6 +118,8 @@ local function render()
 	if #roster.characters < roster.slotLimit then
 		local add = new("TextButton", cards, {
 			Name = "CreateSlot",
+			Active = true,
+			AutoButtonColor = true,
 			Size = UDim2.new(1, -8, 0, 56),
 			BackgroundColor3 = palette.panel,
 			TextColor3 = palette.gold,
@@ -252,8 +262,12 @@ local function render()
 	end
 	local preview = new("Frame", root, {
 		Name = "CharacterPreview",
-		Position = if portrait then UDim2.new(0, 0, 0, 286) else UDim2.new(0.4, 8, 0, 92),
-		Size = if portrait then UDim2.new(1, 0, 1, -320) else UDim2.new(0.6, -8, 1, -132),
+		Position = if portrait
+			then UDim2.fromOffset(edge, edge + 96 + math.min(210, metrics.contentSize.Y * 0.32) + 10)
+			else UDim2.new(0.34, edge, 0, edge + 96),
+		Size = if portrait
+			then UDim2.new(1, -edge * 2, 1, -(edge * 2 + 136 + math.min(210, metrics.contentSize.Y * 0.32)))
+			else UDim2.new(0.66, -(edge * 2), 1, -(edge * 2 + 126)),
 		BackgroundColor3 = palette.panel,
 		BorderSizePixel = 0,
 	})
@@ -379,8 +393,8 @@ local function render()
 	end
 	new("TextLabel", root, {
 		BackgroundTransparency = 1,
-		Position = UDim2.new(0, 0, 1, -30),
-		Size = UDim2.new(1, 0, 0, 24),
+		Position = UDim2.new(0, edge, 1, -(edge + 24)),
+		Size = UDim2.new(1, -edge * 2, 0, 24),
 		Text = roster.buildLabel .. "  •  ⚙ Настройки: UI / текст / звук",
 		TextColor3 = palette.muted,
 		TextSize = 13,
@@ -393,16 +407,33 @@ function CharacterLobbyController.start(): ()
 	screen = new(
 		"ScreenGui",
 		Players.LocalPlayer.PlayerGui,
-		{ Name = "CharacterLobby", ResetOnSpawn = false, IgnoreGuiInset = false, DisplayOrder = 100 }
+		{ Name = "CharacterLobby", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 100 }
 	)
-	local root = new("Frame", screen, { Name = "LobbyRoot", BackgroundColor3 = palette.bg, BorderSizePixel = 0 })
+	local root = new("Frame", screen, {
+		Name = "LobbyRoot",
+		BackgroundColor3 = palette.bg,
+		BorderSizePixel = 0,
+		Position = UDim2.fromScale(0, 0),
+		Size = UDim2.fromScale(1, 1),
+	})
 	stopObserve = ResponsiveLayout.observe(function(m)
+		local previousMode = lastLayoutMode
+		local previousViewport = lastViewport
 		layoutMetrics = m
-		local size = ResponsiveLayout.modalSize(m, Vector2.new(1120, 720))
-		root.Size = UDim2.fromOffset(size.X, size.Y)
-		root.Position = UDim2.fromScale(0.5, 0.5)
-		root.AnchorPoint = Vector2.new(0.5, 0.5)
-		if roster ~= nil then render() end
+		lastLayoutMode = m.mode
+		lastViewport = m.viewport
+
+		-- LastInputTypeChanged also fires on the first mouse/touch press. Rebuilding
+		-- the whole lobby there destroys the pressed button before Activated fires.
+		-- Only rebuild when viewport/layout geometry truly changed.
+		local geometryChanged = previousMode == nil
+			or previousMode ~= m.mode
+			or previousViewport == nil
+			or math.abs(previousViewport.X - m.viewport.X) > 1
+			or math.abs(previousViewport.Y - m.viewport.Y) > 1
+		if roster ~= nil and geometryChanged then
+			render()
+		end
 	end)
 	result.OnClientEvent:Connect(function(p)
 		if typeof(p) ~= "table" then
@@ -457,5 +488,8 @@ function CharacterLobbyController.stop(): ()
 		screen:Destroy()
 		screen = nil
 	end
+	layoutMetrics = nil
+	lastLayoutMode = nil
+	lastViewport = nil
 end
 return CharacterLobbyController
