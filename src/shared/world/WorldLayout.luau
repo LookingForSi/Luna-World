@@ -244,15 +244,15 @@ local WorldLayout: WorldLayoutDefinition = {
 		{ id = "spawn_young_wolf_farm", mobId = "mob_young_wolf", position = scaleXZ(-280, 8, 430), radius = scaleDistance(44), zoneId = "zone_luna_meadows", count = 4, patrolRadius = scaleDistance(70), patrolCycleSeconds = 5 },
 		{ id = "spawn_young_wolf_farm_forward", mobId = "mob_young_wolf", position = scaleXZ(-235, 8, 535), radius = scaleDistance(42), zoneId = "zone_luna_meadows", count = 4, patrolRadius = scaleDistance(62), patrolCycleSeconds = 5 },
 
-		-- Stone Circle: three small linked wolf pairs plus a leader.
-		{ id = "spawn_wolf_pack_south", mobId = "mob_grey_wolf", position = scaleXZ(105, 7, 555), radius = scaleDistance(32), zoneId = "zone_luna_meadows", count = 2, socialGroupId = "wolf_pack_south", patrolRadius = scaleDistance(36), patrolCycleSeconds = 6 },
-		{ id = "spawn_wolf_pack_east", mobId = "mob_grey_wolf", position = scaleXZ(155, 7, 590), radius = scaleDistance(32), zoneId = "zone_luna_meadows", count = 2, socialGroupId = "wolf_pack_east", patrolRadius = scaleDistance(36), patrolCycleSeconds = 6 },
-		{ id = "spawn_wolf_pack_north", mobId = "mob_grey_wolf", position = scaleXZ(115, 7, 625), radius = scaleDistance(28), zoneId = "zone_luna_meadows", count = 2, socialGroupId = "wolf_pack_north", patrolRadius = scaleDistance(34), patrolCycleSeconds = 6 },
-		{ id = "spawn_wolf_pack_leader", mobId = "mob_wolf_pack_leader", position = scaleXZ(140, 8, 610), radius = scaleDistance(18), zoneId = "zone_luna_meadows", socialGroupId = "wolf_pack_north", patrolRadius = scaleDistance(24), patrolCycleSeconds = 7 },
+		-- Stone Circle: a full eight-member pack (seven wolves + one leader).
+		{ id = "spawn_wolf_pack_south", mobId = "mob_grey_wolf", position = scaleXZ(105, 7, 555), radius = scaleDistance(32), zoneId = "zone_luna_meadows", count = 2, socialGroupId = "wolf_pack_stone_circle", patrolRadius = scaleDistance(36), patrolCycleSeconds = 6 },
+		{ id = "spawn_wolf_pack_east", mobId = "mob_grey_wolf", position = scaleXZ(155, 7, 590), radius = scaleDistance(32), zoneId = "zone_luna_meadows", count = 2, socialGroupId = "wolf_pack_stone_circle", patrolRadius = scaleDistance(36), patrolCycleSeconds = 6 },
+		{ id = "spawn_wolf_pack_north", mobId = "mob_grey_wolf", position = scaleXZ(115, 7, 625), radius = scaleDistance(30), zoneId = "zone_luna_meadows", count = 3, socialGroupId = "wolf_pack_stone_circle", patrolRadius = scaleDistance(36), patrolCycleSeconds = 6 },
+		{ id = "spawn_wolf_pack_leader", mobId = "mob_wolf_pack_leader", position = scaleXZ(140, 8, 610), radius = scaleDistance(18), zoneId = "zone_luna_meadows", socialGroupId = "wolf_pack_stone_circle", patrolRadius = scaleDistance(24), patrolCycleSeconds = 7 },
 
-		-- Second roaming pack fills the gap toward Moonfall Road without linking
-		-- socially to the Stone Circle wolves or the goblin warning patrol.
-		{ id = "spawn_wolf_pack_moonfall", mobId = "mob_grey_wolf", position = scaleXZ(65, 10, 735), radius = scaleDistance(50), zoneId = "zone_luna_meadows", count = 4, socialGroupId = "wolf_pack_moonfall", patrolRadius = scaleDistance(46), patrolCycleSeconds = 6 },
+		-- Second full pack guards the transition toward the goblin territory.
+		{ id = "spawn_wolf_pack_moonfall", mobId = "mob_grey_wolf", position = scaleXZ(55, 16, 820), radius = scaleDistance(54), zoneId = "zone_moonfall_road", count = 7, socialGroupId = "wolf_pack_moonfall", patrolRadius = scaleDistance(48), patrolCycleSeconds = 6 },
+		{ id = "spawn_wolf_pack_moonfall_leader", mobId = "mob_wolf_pack_leader", position = scaleXZ(90, 18, 835), radius = scaleDistance(18), zoneId = "zone_moonfall_road", socialGroupId = "wolf_pack_moonfall", patrolRadius = scaleDistance(26), patrolCycleSeconds = 7 },
 
 		-- Moonfall Road warning patrol.
 		{ id = "spawn_goblin_scout_road", mobId = "mob_goblin_scout", position = scaleXZ(70, 22, 900), radius = scaleDistance(34), zoneId = "zone_moonfall_road", count = 2, socialGroupId = "goblin_road_patrol", patrolRadius = scaleDistance(48), patrolCycleSeconds = 10 },
