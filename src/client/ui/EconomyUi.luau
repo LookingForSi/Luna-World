@@ -254,11 +254,24 @@ local function rebuildSell(): ()
 		add.AutoButtonColor = price ~= nil
 		add.BackgroundTransparency = if price ~= nil then 0 else 0.55
 		if price ~= nil then
-			table.insert(rowConnections, add.Activated:Connect(function()
+			local function normalizedQuantity(): number
 				local requested = tonumber(quantity.Text) or 1
-				local normalized = math.clamp(math.floor(requested), 1, entry.quantity)
+				return math.clamp(math.floor(requested), 1, entry.quantity)
+			end
+			local function putInCart(): ()
+				local normalized = normalizedQuantity()
+				quantity.Text = tostring(normalized)
 				sellCart[entry.instanceId] = normalized
 				rebuild()
+			end
+			table.insert(rowConnections, add.Activated:Connect(putInCart))
+			table.insert(rowConnections, quantity.FocusLost:Connect(function(enterPressed: boolean)
+				local normalized = normalizedQuantity()
+				quantity.Text = tostring(normalized)
+				if sellCart[entry.instanceId] ~= nil or enterPressed then
+					sellCart[entry.instanceId] = normalized
+					rebuild()
+				end
 			end))
 		end
 	end
@@ -482,7 +495,7 @@ function EconomyUi.start(actionCallbacks: any): ()
 	status = label(root, "", UDim2.new(0, 16, 1, -38), UDim2.new(1, -32, 0, 24), 12)
 	toast = label(
 		screen,
-		"У тебя уже есть материалы — кузнец в Luna Village может изготовить No-Grade экипировку. Торговец покупает loot и продаёт материалы и расходники.",
+		"У тебя уже есть материалы — кузнец в Luna Village может обработать сырьё и изготовить No-Grade экипировку. Торговец покупает добычу и продаёт расходники.",
 		UDim2.new(0.5, -300, 0, 80),
 		UDim2.fromOffset(600, 70),
 		14
