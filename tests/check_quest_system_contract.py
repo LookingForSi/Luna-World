@@ -43,6 +43,7 @@ require(client,'billboard.Parent = adornee','NPC quest markers must attach direc
 require(client,'WAYPOINT_HIDE_DISTANCE = 80','waypoint must disappear near the objective')
 require(client,'STUDS_PER_METER = 10','waypoint distance must be displayed in approximate meters')
 require(client,'Enum.KeyCode.O','quest journal keyboard binding is missing')
+require(client,'UserInputService:GetFocusedTextBox()','quest journal hotkey must bypass CoreScript processing without typing into text boxes')
 require(client,'activeQuestIds','quest navigation must support per-quest active state')
 require(client,'"Принять"','quest offer must expose accept')
 require(client,'"Отказаться"','quest offer must expose decline')
