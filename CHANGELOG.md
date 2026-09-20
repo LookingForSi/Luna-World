@@ -8,6 +8,8 @@
 
 ### Playtest RC — consolidated build
 
+- Исправлен QuestMarker snapshot race после Character Lobby: QuestService при старте догоняет уже CharacterReady игроков, а клиент повторяет первый QuestSnapshotRequest до получения валидного snapshot; `!/?` над NPC больше не зависят от порядка запуска сервисов.
+
 - Собрана единая playtest-сборка: Crafting World Pass, responsive mobile UI, Character Lobby, reordered LV1–14 mob route, Spider Hollow polish, swimming, lake/world-edge polish и full restore при level-up.
 - Character Lobby дополнительно защищён для playtest: Roblox auto-spawn отключается до world bootstrap, Studio nickname index работает без включённого API Services, creation modal адаптирован под phone portrait и показывает результат проверки nickname внутри окна.
 - Character Lobby теперь занимает весь viewport устройства; исправлен input-race, при котором `LastInputTypeChanged` мог перерисовать lobby между нажатием и `Activated` и визуально делать кнопку «Создать персонажа» нерабочей.
