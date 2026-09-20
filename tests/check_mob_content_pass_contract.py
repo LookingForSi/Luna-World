@@ -65,6 +65,7 @@ for ability_id in (
 
 for marker in (
     "spawn_young_wolf_farm",
+    "spawn_young_wolf_farm_forward",
     "spawn_wolf_pack_leader",
     "spawn_wolf_pack_moonfall",
     "spawn_goblin_patrol_south",
@@ -84,10 +85,15 @@ for marker in (
     if f'id = "{marker}"' not in LAYOUT:
         raise AssertionError(f"missing populated world marker {marker}")
 
-young_wolf_body = LAYOUT.split('id = "spawn_young_wolf_farm"', 1)[1].split("}", 1)[0]
-for token in ("count = 8", "patrolRadius = scaleDistance(44)", "patrolCycleSeconds = 6"):
-    if token not in young_wolf_body:
-        raise AssertionError(f"starter wolf staging must keep the approved roaming pack contract: {token}")
+young_wolf_farm_body = LAYOUT.split('id = "spawn_young_wolf_farm"', 1)[1].split("}", 1)[0]
+for token in ("scaleXZ(-280, 8, 430)", "count = 4", "patrolRadius = scaleDistance(70)", "patrolCycleSeconds = 5"):
+    if token not in young_wolf_farm_body:
+        raise AssertionError(f"starter wolves must stay in the farm-to-spider meadow pocket: {token}")
+
+young_wolf_forward_body = LAYOUT.split('id = "spawn_young_wolf_farm_forward"', 1)[1].split("}", 1)[0]
+for token in ("scaleXZ(-235, 8, 535)", "count = 4", "patrolRadius = scaleDistance(62)", "patrolCycleSeconds = 5"):
+    if token not in young_wolf_forward_body:
+        raise AssertionError(f"forward starter wolves must extend roaming toward Spider Hollow: {token}")
 
 moonfall_wolf_body = LAYOUT.split('id = "spawn_wolf_pack_moonfall"', 1)[1].split("}", 1)[0]
 for token in ("count = 4", 'socialGroupId = "wolf_pack_moonfall"', "patrolRadius = scaleDistance(46)", "patrolCycleSeconds = 6"):
