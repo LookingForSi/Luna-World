@@ -6,6 +6,17 @@
 
 ## [Unreleased]
 
+### dev0.2 — Difficulty / progression / Spider Hollow pass
+
+- Player progression cap restored to LV15; the current open world now spans LV1–14 and reserves LV15 for Ruins of Selene / Selene's Fallen Guardian.
+- Late-game mobs were spread across the new level grid and received corresponding HP/defense/damage/XP increases.
+- Goblin Chieftain now uses Sling Stone in addition to Battle Cry / Heavy Strike / Cleave and has 20% crit chance with ×1.80 critical damage.
+- Goblin Shaman is now a true ranged magic support threat: ranged magic basic attack, stronger Spirit Bolt / War Chant, new Shaman Hex, and 12% ×1.60 crit.
+- Added server-authoritative mob critical-hit support and a canonical `docs/MOB_BESTIARY.md` balance/ability reference.
+- Resource regeneration was halved and updated more smoothly; player HP regeneration is now game-owned at 2/3 of Roblox's stock rate instead of relying on the default Health script.
+- Spider Hollow was rebuilt as a depressed mud basin with raised terrain rims and a northern shoulder toward Fallen Shrine; hanging glass sheets were replaced by line-based spider webs.
+- Removed the arbitrary western fence across the Spider Hollow approach and replaced it with deadwood/rock dressing.
+
 ### dev0.2 — Gameplay polish pass
 
 - Expanded all Q1–Q7 quest descriptions and moved the young-wolf objective waypoint from the farmer to the wolf staging meadow.
