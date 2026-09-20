@@ -29,6 +29,7 @@ require(TARGET, "getTouchProbeOffsets", "touch target selection must use bounded
 require(TARGET, "screenRectDistance", "desktop target selection must use silhouette-aware screen-space forgiveness")
 require(TARGET, "GetBoundingBox", "desktop target selection must preserve a fallback bounding box")
 require(TARGET, 'model:FindFirstChild("HumanoidRootPart")', "desktop forgiveness must align to the visible mob silhouette")
+require(TARGET, 'model:GetAttribute("MobId")', "mob-only silhouette alignment must not shrink player targeting")
 require(TARGET, "boxCFrame = visibleRoot.CFrame", "screen-space pick bounds must not be dragged by the invisible hitbox")
 require(TARGET, "DESKTOP_PICK_PADDING", "desktop target selection must define a bounded pick margin")
 require(TARGET, "DESKTOP_PICK_PADDING = 52", "desktop target selection must use the expanded pick margin")
