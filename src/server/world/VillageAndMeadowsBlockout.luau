@@ -426,8 +426,6 @@ local function createRiver(parent: Instance, positions: { [string]: Vector3 })
 	local WATER_SURFACE_Y = 4
 	local WATER_DEPTH = 5
 	local WATER_WIDTH = 124
-	local RECOVERY_WIDTH = 94
-	local RECOVERY_TOP_Y = 7
 
 	terrain.WaterColor = COLORS.water
 	terrain.WaterTransparency = 0.28
@@ -440,9 +438,7 @@ local function createRiver(parent: Instance, positions: { [string]: Vector3 })
 	end
 
 	local previous = Vector3.new(-1240, WATER_SURFACE_Y, riverZ(-1240))
-	local index = 0
 	for x = -1160, 1240, 80 do
-		index += 1
 		local current = Vector3.new(x, WATER_SURFACE_Y, riverZ(x))
 		local offset = current - previous
 		local midpoint = previous + offset / 2
@@ -457,27 +453,7 @@ local function createRiver(parent: Instance, positions: { [string]: Vector3 })
 			Enum.Material.Water
 		)
 
-		-- Invisible recovery volume. A player who falls into the river is returned to the
-		-- most recent grounded safe position rather than being trapped below the banks.
-		local recoveryCenterY = RECOVERY_TOP_Y - 12
-		P.segment(
-			river,
-			string.format("WaterRecovery%02d", index),
-			Vector3.new(previous.X, recoveryCenterY, previous.Z),
-			Vector3.new(current.X, recoveryCenterY, current.Z),
-			RECOVERY_WIDTH,
-			24,
-			Enum.Material.SmoothPlastic,
-			Color3.new(1, 1, 1),
-			{
-				canCollide = false,
-				transparency = 1,
-				attributes = {
-					WaterRecovery = true,
-					WaterSurfaceY = WATER_SURFACE_Y,
-				},
-			}
-		)
+		-- Terrain water is intentionally swimmable; traversal recovery only handles real world-bound failures.
 		previous = current
 	end
 
