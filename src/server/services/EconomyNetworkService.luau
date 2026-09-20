@@ -22,10 +22,21 @@ local function poiPosition(id: string): Vector3?
 	for _, poi in WorldLayout.PointsOfInterest do if poi.id == id then return poi.position end end
 	return nil
 end
+local function interactionPosition(poiId: string): Vector3?
+	local npcName = if poiId == EconomyConfig.BlacksmithPoiId then "BlacksmithNpc" else "MerchantNpc"
+	local world = workspace:FindFirstChild("LunaWorldPlayableBlockout")
+	local npc = if world ~= nil then world:FindFirstChild(npcName, true) else nil
+	if npc ~= nil and npc:IsA("Model") then
+		local body = npc:FindFirstChild("Body") or npc:FindFirstChild("Head")
+		if body ~= nil and body:IsA("BasePart") then return body.Position end
+	end
+	return poiPosition(poiId)
+end
+
 local function nearby(player: Player, poiId: string): boolean
 	local root = if player.Character ~= nil then player.Character:FindFirstChild("HumanoidRootPart") else nil
 	local humanoid = if player.Character ~= nil then player.Character:FindFirstChildOfClass("Humanoid") else nil
-	local position = poiPosition(poiId)
+	local position = interactionPosition(poiId)
 	return root ~= nil and root:IsA("BasePart") and humanoid ~= nil and humanoid.Health > 0 and position ~= nil and (root.Position - position).Magnitude <= EconomyConfig.InteractionDistance
 end
 local function push(player: Player): ()
