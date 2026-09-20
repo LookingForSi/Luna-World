@@ -22,7 +22,6 @@ local equipButton: TextButton? = nil
 local unequipButton: TextButton? = nil
 local useButton: TextButton? = nil
 local discardButton: TextButton? = nil
-local toggleButton: TextButton? = nil
 local closeConnection: RBXScriptConnection? = nil
 local actionConnections: { RBXScriptConnection } = {}
 local currentSnapshot: any = nil
@@ -172,28 +171,50 @@ local function rebuildInventory(): ()
 	local list = inventoryList
 	if list == nil then return end
 	for _, child in list:GetChildren() do
-		if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then child:Destroy() end
+		if not child:IsA("UIGridLayout") and not child:IsA("UIPadding") then child:Destroy() end
 	end
 
-	if currentSnapshot == nil or typeof(currentSnapshot.inventory) ~= "table" then return end
-	for index, entry in currentSnapshot.inventory do
-		if typeof(entry) ~= "table" or typeof(entry.instanceId) ~= "string" or typeof(entry.itemId) ~= "string" then continue end
-		local definition = ItemDefinitions[entry.itemId]
-		local displayName = if definition ~= nil then definition.displayName else entry.itemId
-		local quantity = if typeof(entry.quantity) == "number" and entry.quantity > 1 then " ×" .. tostring(entry.quantity) else ""
+	local entries = if currentSnapshot ~= nil and typeof(currentSnapshot.inventory) == "table"
+		then currentSnapshot.inventory
+		else {}
+
+	for slotIndex = 1, InventoryConfig.Capacity do
+		local entry = entries[slotIndex]
+		local text = ""
+		if typeof(entry) == "table" and typeof(entry.itemId) == "string" then
+			local definition = ItemDefinitions[entry.itemId]
+			local displayName = if definition ~= nil then definition.displayName else entry.itemId
+			local quantity = if typeof(entry.quantity) == "number" and entry.quantity > 1
+				then "\n×" .. tostring(entry.quantity)
+				else ""
+			text = displayName .. quantity
+		end
+
 		local button = makeButton(
 			list,
-			"Item" .. tostring(index),
-			displayName .. quantity,
+			"Slot" .. tostring(slotIndex),
+			text,
 			UDim2.fromOffset(0, 0),
-			UDim2.new(1, -8, 0, 34)
+			UDim2.fromOffset(66, 66)
 		)
-		button.LayoutOrder = index
-		button.TextXAlignment = Enum.TextXAlignment.Left
-		button.TextSize = 12
-		button.Activated:Connect(function()
-			select("Inventory", entry.instanceId)
-		end)
+		button.LayoutOrder = slotIndex
+		button.TextWrapped = true
+		button.TextSize = 10
+		button.BackgroundColor3 = if text == "" then Color3.fromRGB(31, 33, 41) else Color3.fromRGB(42, 45, 56)
+
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = Color3.fromRGB(76, 81, 95)
+		stroke.Transparency = if text == "" then 0.35 else 0.15
+		stroke.Thickness = 1
+		stroke.Parent = button
+
+		if typeof(entry) == "table" and typeof(entry.instanceId) == "string" then
+			button.Activated:Connect(function()
+				select("Inventory", entry.instanceId)
+			end)
+		else
+			button.Active = false
+		end
 	end
 end
 
@@ -281,9 +302,6 @@ end
 
 local function setPanelOpen(open: boolean): ()
 	if root ~= nil then root.Visible = open end
-	if toggleButton ~= nil then
-		toggleButton.Text = if open then "ЗАКРЫТЬ [I]" else "ИНВЕНТАРЬ [I]"
-	end
 end
 
 function InventoryUi.toggle(): ()
@@ -310,20 +328,6 @@ function InventoryUi.start(actionCallbacks: any): ()
 	panel.Visible = false
 	panel.Parent = gui
 	root = panel
-
-	toggleButton = makeButton(
-		gui,
-		"InventoryToggleButton",
-		"ИНВЕНТАРЬ [I]",
-		UDim2.new(1, -194, 0, 220),
-		UDim2.fromOffset(170, 38)
-	)
-	local inventoryToggle = toggleButton :: TextButton
-	inventoryToggle.AnchorPoint = Vector2.new(0, 0)
-	inventoryToggle.TextSize = 13
-	table.insert(actionConnections, inventoryToggle.Activated:Connect(function()
-		InventoryUi.toggle()
-	end))
 
 	makeLabel(panel, "ИНВЕНТАРЬ", UDim2.fromOffset(16, 8), UDim2.fromOffset(220, 28), 17)
 	lunaLabel = makeLabel(panel, "Luna: 0", UDim2.fromOffset(250, 8), UDim2.fromOffset(170, 28), 13)
@@ -361,8 +365,11 @@ function InventoryUi.start(actionCallbacks: any): ()
 	padding.PaddingTop = UDim.new(0, 6)
 	padding.PaddingBottom = UDim.new(0, 6)
 	padding.Parent = list
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 4)
+	local layout = Instance.new("UIGridLayout")
+	layout.CellSize = UDim2.fromOffset(66, 66)
+	layout.CellPadding = UDim2.fromOffset(6, 6)
+	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.FillDirectionMaxCells = 5
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = list
 	inventoryList = list
@@ -428,7 +435,6 @@ function InventoryUi.stop(): ()
 	unequipButton = nil
 	useButton = nil
 	discardButton = nil
-	toggleButton = nil
 	currentSnapshot = nil
 	selectedKind = nil
 	selectedIdentifier = nil
