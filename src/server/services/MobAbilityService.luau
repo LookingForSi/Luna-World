@@ -125,6 +125,7 @@ local function applyDamage(
 	)
 	local damage = resolveIncomingDamage(target, rolled.amount, damageType)
 	if damage == nil then return nil end
+	CombatService.selectAttackerIfNoTarget(target, mob)
 	humanoid:TakeDamage(damage)
 	publishToTarget(target, "Result", actionId, actorEntityId(mob, definition), {
 		targetEntityId = targetEntityId(target),
