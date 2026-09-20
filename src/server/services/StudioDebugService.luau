@@ -12,9 +12,11 @@ local StudioDebugService = {}
 local archetypeRemote: RemoteEvent? = nil
 local levelRemote: RemoteEvent? = nil
 local testItemsRemote: RemoteEvent? = nil
+local speedRemote: RemoteEvent? = nil
 local archetypeConnection: RBXScriptConnection? = nil
 local levelConnection: RBXScriptConnection? = nil
 local testItemsConnection: RBXScriptConnection? = nil
+local speedConnection: RBXScriptConnection? = nil
 local started = false
 
 local function createRemote(name: string): RemoteEvent
@@ -38,6 +40,7 @@ function StudioDebugService.start(): ()
 	archetypeRemote = createRemote("StudioSetArchetype")
 	levelRemote = createRemote("StudioSetLevel")
 	testItemsRemote = createRemote("StudioGrantTestItems")
+	speedRemote = createRemote("StudioToggleSpeed")
 	archetypeConnection = (archetypeRemote :: RemoteEvent).OnServerEvent:Connect(function(player: Player, archetypeId: unknown, ...)
 		if select("#", ...) ~= 0 or typeof(archetypeId) ~= "string" then return end
 		CombatService._setArchetypeForStudio(player, archetypeId)
@@ -59,6 +62,11 @@ function StudioDebugService.start(): ()
 			InventoryService.grantItem(player, grant[1] :: string, grant[2] :: number)
 		end
 	end)
+	speedConnection = (speedRemote :: RemoteEvent).OnServerEvent:Connect(function(player: Player, ...)
+		if select("#", ...) ~= 0 then return end
+		local current = player:GetAttribute("StudioMovementMultiplier")
+		CombatService._setMovementMultiplierForStudio(player, if current == 5 then 1 else 5)
+	end)
 end
 
 function StudioDebugService.stop(): ()
@@ -67,9 +75,11 @@ function StudioDebugService.stop(): ()
 	if archetypeConnection ~= nil then archetypeConnection:Disconnect(); archetypeConnection = nil end
 	if levelConnection ~= nil then levelConnection:Disconnect(); levelConnection = nil end
 	if testItemsConnection ~= nil then testItemsConnection:Disconnect(); testItemsConnection = nil end
+	if speedConnection ~= nil then speedConnection:Disconnect(); speedConnection = nil end
 	if archetypeRemote ~= nil then archetypeRemote:Destroy(); archetypeRemote = nil end
 	if levelRemote ~= nil then levelRemote:Destroy(); levelRemote = nil end
 	if testItemsRemote ~= nil then testItemsRemote:Destroy(); testItemsRemote = nil end
+	if speedRemote ~= nil then speedRemote:Destroy(); speedRemote = nil end
 end
 
 return StudioDebugService
