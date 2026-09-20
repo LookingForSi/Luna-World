@@ -10,6 +10,7 @@
 
 - River and Goblin/Cemetery lake Terrain water are now valid traversal: entering `Swimming` no longer teleports the player back to the last safe point.
 - Owner lake review follow-up: the lake is excavated into a 30-stud-deep swimming basin before filling, removing shallow grass immediately under the surface; the old grassy overhang is cut farther inland and rebuilt as a recessed rock bank.
+- Second owner lake review: the artificial outer rock wall and `GoblinShelfEdge` were removed completely. The lake now continues to the invisible world boundary and south to the Goblin Camp shoreline; the camp-side boundary shelf is flattened and filled to the camp elevation instead of dropping into a trench.
 - Hidden `WaterRecovery` hazard volumes were removed from both water bodies; traversal recovery is now reserved for genuine out-of-world / world-bounds failures.
 - Luna still disables free jumping on land, but while the Humanoid is in Roblox `Swimming` state the stock jump/swim-up action is passed through. On touch, the stock jump button is shown only while swimming.
 - Legacy jump suppression was removed from `ZonePresentation.client.luau`; movement policy now lives only in `MovementController`.
