@@ -81,7 +81,6 @@ def main() -> None:
         "BridgeApproachSouth",
         "BridgeBankApronSouth",
         "BridgeBankApronNorth",
-        "WaterRecovery%02d",
         "StoneCircle",
         "LunaVillageSpawn",
         "Vector3.new(-34, 0, -8)",
@@ -94,17 +93,21 @@ def main() -> None:
         assert token in south
     assert "BillboardGui" not in south
     assert "EarlySpiderPocket" not in south
+    assert "WaterRecovery" not in south
+    assert "Enum.Material.Water" in south
     assert "spawn_spider_meadow_pocket" not in south
 
 
     recovery = read(ROOT / "src/server/world/TraversalRecovery.luau")
+    assert "WaterRecovery" not in recovery
+    assert "fellIntoRiver" not in recovery
+    assert "or swimming" not in recovery
     for token in (
-        "WaterRecovery",
         "lastSafe",
         "FALL_RECOVERY_Y",
         "FloorMaterial",
         "character:PivotTo",
-        "HumanoidStateType.Swimming",
+        "Terrain water is valid traversal",
     ):
         assert token in recovery
 
@@ -124,7 +127,6 @@ def main() -> None:
         "createSpiderWeb",
         "Enum.Material.Mud",
         "GoblinCemeteryLake",
-        'HazardKind = "Lake"',
         "LAKE_SURFACE_DROP = 8",
         "shapeGoblinCemeteryLakeHillCliff",
         'HillBankCliff", true',
@@ -136,6 +138,9 @@ def main() -> None:
     ):
         assert token in north
     assert "BillboardGui" not in north
+    assert 'Purpose", "SwimmableWater"' in north
+    assert "WaterRecovery" not in north
+    assert "Enum.Material.Water" in north
     assert "Enum.Material.Glass" not in north
     assert "postSpacing = 4.0" in north
     assert "PalisadeCollision = true" in north
@@ -200,9 +205,9 @@ def main() -> None:
     presentation = read(ROOT / "src/client/world-preview/ZonePresentation.client.luau")
     assert "ZoneToast" in presentation
     assert "task.delay(2.5" in presentation
-    assert "JumpPower = 0" in presentation
-    assert "JumpHeight = 0" in presentation
-    assert "JumpButton" in presentation
+    assert "JumpPower = 0" not in presentation
+    assert "JumpHeight = 0" not in presentation
+    assert "LunaWorldPreviewDisableJump" not in presentation
     assert "BillboardGui" not in presentation
 
     layout = read(ROOT / "src/shared/world/WorldLayout.luau")
