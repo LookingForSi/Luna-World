@@ -195,7 +195,6 @@ local function render()
 			mine.Activated:Connect(function()
 				name.Text = Players.LocalPlayer.Name
 				send("CheckNickname", { nickname = name.Text })
-				status.Text = "Проверяем имя…"
 			end)
 			local random = new("TextButton", modal, {
 				Position = UDim2.new(0.34, 8, 0, 280),
@@ -218,12 +217,23 @@ local function render()
 				TextSize = 13,
 				ZIndex = 6,
 			})
+			local nameStatus = new("TextLabel", modal, {
+				Name = "NicknameStatus",
+				BackgroundTransparency = 1,
+				Position = UDim2.fromOffset(30, 326),
+				Size = UDim2.new(1, -60, 0, 22),
+				Text = "",
+				TextColor3 = palette.muted,
+				TextSize = 13,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				ZIndex = 6,
+			})
 			check.Activated:Connect(function()
 				send("CheckNickname", { nickname = name.Text })
-				status.Text = "Проверяем имя…"
+				nameStatus.Text = "Проверяем имя…"
 			end)
 			local create = new("TextButton", modal, {
-				Position = UDim2.fromOffset(30, 345),
+				Position = UDim2.fromOffset(30, 355),
 				Size = UDim2.new(1, -60, 0, 50),
 				BackgroundColor3 = palette.gold,
 				TextColor3 = palette.bg,
@@ -400,9 +410,13 @@ function CharacterLobbyController.start(): ()
 		end
 		pending[p.requestId] = nil
 		if p.action == "CheckNickname" then
-			local s = screen and screen:FindFirstChild("LobbyRoot") and screen.LobbyRoot:FindFirstChild("Status")
-			if s then
+			local rootNow = screen and screen:FindFirstChild("LobbyRoot")
+			local modal = rootNow and rootNow:FindFirstChild("CreationModal")
+			local modalStatus = modal and modal:FindFirstChild("NicknameStatus")
+			local s = modalStatus or (rootNow and rootNow:FindFirstChild("Status"))
+			if s and s:IsA("TextLabel") then
 				s.Text = if p.ok then "Имя свободно" else "Имя недоступно: " .. tostring(p.reason)
+				s.TextColor3 = if p.ok then palette.gold else palette.danger
 			end
 			return
 		end
@@ -413,9 +427,13 @@ function CharacterLobbyController.start(): ()
 			end
 			render()
 		elseif not p.ok then
-			local s = screen and screen:FindFirstChild("LobbyRoot") and screen.LobbyRoot:FindFirstChild("Status")
-			if s then
+			local rootNow = screen and screen:FindFirstChild("LobbyRoot")
+			local modal = rootNow and rootNow:FindFirstChild("CreationModal")
+			local modalStatus = modal and modal:FindFirstChild("NicknameStatus")
+			local s = modalStatus or (rootNow and rootNow:FindFirstChild("Status"))
+			if s and s:IsA("TextLabel") then
 				s.Text = "Ошибка: " .. tostring(p.reason) .. " — повторите попытку"
+				s.TextColor3 = palette.danger
 			end
 		end
 	end)
