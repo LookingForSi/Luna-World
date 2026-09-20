@@ -33,45 +33,35 @@ if "Enum.Material.Water" not in south:
 if "Enum.Material.Water" not in north:
     raise AssertionError("lake must use real Terrain water")
 
-for source_name, source in (("river", south), ("lake", north), ("recovery", recovery)):
+for source_name, source in (("river", south), ("recovery", recovery)):
     if "WaterRecovery" in source:
         raise AssertionError(f"{source_name} still contains a hidden water teleport hazard")
 
-if 'Purpose", "SwimmableWater"' not in north:
-    raise AssertionError("lake must be explicitly marked as swimmable")
-if "shapeGoblinCemeteryLakeHillCliff" in north:
-    raise AssertionError("lake must not have an artificial rock wall toward the world edge")
-
+# Lake terrain is intentionally rolled back to the last accepted pre-experiment
+# geometry. Stock Swimming remains enabled globally by MovementController.
 for token in (
-    "LAKE_WATER_DEPTH = 30",
-    "LAKE_BASIN_CLEAR_DEPTH = 42",
-    "LAKE_SHORE_WATER_OVERLAP = 8",
-    "LAKE_BED_OVERLAP = 6",
-    "LAKE_BOUNDARY_MARGIN = 28",
-    "LAKE_SLAB_STEP = 56",
-    "LAKE_SLAB_OVERLAP = 28",
-    'DeepBasinExcavated", true',
-    'LakeBedFilled", true',
-    '"ShorelineWaterOverlap", LAKE_SHORE_WATER_OVERLAP',
-    "prepareGoblinCampBoundaryShelf",
-    "fillFlatLakeSlab",
-    'ExtendsToWorldEdge", false',
-    'ContainedWithinWorldBounds", true',
-    'FlatWaterSurface", true',
-    'ContinuousWaterBody", true',
-    'OrganicShoreline", true',
+    'Purpose", "TraversalBarrier"',
+    "LAKE_SURFACE_DROP = 8",
+    "LAKE_WATER_DEPTH = 12",
+    "LAKE_AIR_CLEARANCE_HEIGHT = 28",
+    "shapeGoblinCemeteryLakeHillCliff",
+    '"WaterRecovery%02d"',
+    'HazardKind = "Lake"',
+    'HillBankCliff", true',
 ):
     if token not in north:
-        raise AssertionError(f"deep lake / overhang contract missing: {token}")
+        raise AssertionError(f"pre-experiment lake rollback contract missing: {token}")
 
 for lake_forbidden in (
-    "carveLakeDisc",
+    "prepareGoblinCampBoundaryShelf",
+    "fillFlatLakeSlab",
     "fillContinuousLakePath",
-    "bounds.maxX + 80",
-    "LAKE_SHORE_CLEAR_MARGIN",
+    "carveLakeDisc",
+    "LakeBedFilled",
+    "ContainedWithinWorldBounds",
 ):
     if lake_forbidden in north:
-        raise AssertionError(f"lake still uses sliced/out-of-bounds generation: {lake_forbidden}")
+        raise AssertionError(f"experimental lake terrain still present after rollback: {lake_forbidden}")
 
 for forbidden in (
     "fellIntoRiver",
