@@ -1,6 +1,5 @@
 --!strict
 
-local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
@@ -104,43 +103,6 @@ local function showZone(zoneId: string)
 		TweenService:Create(title, TweenInfo.new(0.45), { TextTransparency = 1 }):Play()
 		TweenService:Create(subtitle, TweenInfo.new(0.45), { TextTransparency = 1 }):Play()
 	end)
-end
-
-local function hideTouchJumpButton()
-	local touchGui = playerGui:FindFirstChild("TouchGui")
-	if touchGui == nil then
-		return
-	end
-	local jumpButton = touchGui:FindFirstChild("JumpButton", true)
-	if jumpButton ~= nil and jumpButton:IsA("GuiObject") then
-		jumpButton.Visible = false
-	end
-end
-
-local function disableJump(character: Model)
-	local humanoid = character:WaitForChild("Humanoid")
-	if humanoid:IsA("Humanoid") then
-		humanoid.JumpPower = 0
-		humanoid.JumpHeight = 0
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-	end
-	task.defer(hideTouchJumpButton)
-end
-
-ContextActionService:BindActionAtPriority(
-	"LunaWorldPreviewDisableJump",
-	function()
-		return Enum.ContextActionResult.Sink
-	end,
-	false,
-	3000,
-	Enum.KeyCode.Space,
-	Enum.KeyCode.ButtonA
-)
-
-player.CharacterAdded:Connect(disableJump)
-if player.Character ~= nil then
-	task.spawn(disableJump, player.Character)
 end
 
 task.spawn(function()
