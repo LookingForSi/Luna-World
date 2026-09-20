@@ -15,9 +15,12 @@ EconomyBalance.NaturalRoute = table.freeze({
 	loot_moonbound_warden = 1,
 })
 EconomyBalance.LevelSixRoute = table.freeze({
-	loot_young_wolf = 12, loot_grey_wolf = 12, loot_wolf_pack_leader = 2,
-	loot_spider = 14, loot_brood_spider = 3,
-	loot_goblin_scout = 24, loot_goblin_warrior = 14, loot_goblin_shaman = 14,
+	-- Q2-Q5 objective kills plus one Goblin Shaman as the natural final XP push
+	-- from late LV5 into LV6. This route totals 963 mob XP; with the 360 XP from
+	-- those quests it reaches LV6 without silently modeling LV9-LV10 farming.
+	loot_young_wolf = 4, loot_grey_wolf = 4, loot_wolf_pack_leader = 1,
+	loot_goblin_scout = 4, loot_goblin_warrior = 1, loot_goblin_shaman = 1,
+	loot_spider = 4, loot_brood_spider = 1,
 })
 
 function EconomyBalance.expectedRouteValue(route: { [string]: number }): number
