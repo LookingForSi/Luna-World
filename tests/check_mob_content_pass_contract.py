@@ -77,6 +77,10 @@ for marker in (
     "spawn_goblin_gate_pair_south",
     "spawn_goblin_gate_pair_north",
     "spawn_goblin_shaman_camp",
+    "spawn_goblin_inner_pair_a_scout",
+    "spawn_goblin_inner_pair_a_warrior",
+    "spawn_goblin_inner_pair_b_scout",
+    "spawn_goblin_inner_pair_b_warrior",
     "spawn_goblin_chieftain_camp",
     "spawn_goblin_chieftain_guard",
     "spawn_spider_hollow_swarm",
@@ -166,6 +170,18 @@ for body in (shaman_body, warrior_body):
         raise AssertionError("shaman and his two warriors must remain one social interior group")
 if "count = 2" not in warrior_body:
     raise AssertionError("shaman encounter must include two warriors")
+if "scaleXZ(250, 62, 1005)" not in shaman_body:
+    raise AssertionError("shaman must stay inside the goblin camp with his warrior pair")
+
+for pair_id, group_id in (
+    ("spawn_goblin_inner_pair_a_scout", "goblin_inner_pair_a"),
+    ("spawn_goblin_inner_pair_a_warrior", "goblin_inner_pair_a"),
+    ("spawn_goblin_inner_pair_b_scout", "goblin_inner_pair_b"),
+    ("spawn_goblin_inner_pair_b_warrior", "goblin_inner_pair_b"),
+):
+    body = LAYOUT.split(f'id = "{pair_id}"', 1)[1].split("}", 1)[0]
+    if f'socialGroupId = "{group_id}"' not in body:
+        raise AssertionError(f"{pair_id} must remain linked to its mixed interior pair")
 
 chief_body = LAYOUT.split('id = "spawn_goblin_chieftain_camp"', 1)[1].split("}", 1)[0]
 chief_guard_body = LAYOUT.split('id = "spawn_goblin_chieftain_guard"', 1)[1].split("}", 1)[0]
@@ -190,6 +206,8 @@ for token in (
     '"MobNameplate"',
     "MOB_NAMEPLATE_MAX_DISTANCE = 100",
     'string.format("LV %d · %s"',
+    "GLOBAL_MOB_MOVEMENT_MULTIPLIER = 1.2",
+    "hitboxVerticalOffset",
 ):
     if token not in MOB_SERVICE:
         raise AssertionError(f"MobService population contract missing {token}")
@@ -200,6 +218,8 @@ for token in (
 	"MobAIRules.canRequestSocialAssist",
     "patrolDestination",
     "record.patrolRadius",
+    "record.patrolTarget",
+    "flatDistance(root.Position, record.patrolTarget) <= 7",
     "definition.basicAttackRange",
 ):
     if token not in MOB_AI:
@@ -231,3 +251,18 @@ if "MobAbilityService.start()" not in MAIN or "MobAIService.start(MobAbilityServ
     raise AssertionError("server bootstrap must route mob attacks through MobAbilityService")
 
 print("Mob Content Pass v0.1 contract: PASS")
+
+# dev0.2 goblin tuning: wider local social response, stronger aggro and real perimeter roaming.
+for token in (
+    "detectionRadius = 52, aggroRadius = 46, reacquireRadius = 64, leashDistance = 120",
+    "socialAssistRadius = 72",
+    "detectionRadius = 60, aggroRadius = 54, reacquireRadius = 72, leashDistance = 125",
+    "socialAssistRadius = 78",
+):
+    if token not in MOBS:
+        raise AssertionError(f"dev0.2 goblin aggro/social tuning missing: {token}")
+
+for marker_id in ("spawn_goblin_patrol_south", "spawn_goblin_patrol_east", "spawn_goblin_patrol_north", "spawn_goblin_patrol_west"):
+    body = LAYOUT.split(f'id = "{marker_id}"', 1)[1].split("}", 1)[0]
+    if "patrolCycleSeconds = 2" not in body:
+        raise AssertionError(f"{marker_id} must actively traverse its perimeter patrol")
