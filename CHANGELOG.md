@@ -6,6 +6,16 @@
 
 ## [Unreleased]
 
+### dev0.2 — Quest UI polish
+
+- Quest NPC dialog now opens a generic `Квест` topic before the dedicated quest offer window.
+- Quest offer uses padded layout with centered title, description and accept/decline controls.
+- Quest journal is collapsed by default, available from the action block and bound to `O`.
+- Individual quests can be marked active/inactive; only active quests drive waypoint/map guidance.
+- Waypoint cards are compact, show approximate meters (10 studs = 1 m) and hide inside 80 studs.
+- NPC quest markers now attach directly to visible actors; active TalkToNpc objectives expose `?`.
+- World map zones are rendered as soft borderless ellipses with larger zone names and fewer duplicate POI labels.
+
 ### dev0.2 — Mob presentation / Goblin Camp staging
 
 - Все authoritative mobs получили nameplate `LV + имя` с дистанцией видимости около 100 studs.
