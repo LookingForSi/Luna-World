@@ -15,7 +15,7 @@ project = json.loads(read("default.project.json"))
 assert "DataVersion = 3" in account
 for field in ("CharacterOrder", "Characters", "SelectedCharacterId", "CharacterSlotLimit"):
     assert field in account and field in migration
-for action in ('action == "Create"', 'action == "Select"', 'action == "Delete"', 'action == "CheckNickname"', 'action == "CompleteIdentity"'):
+for action in ('action == "Create"', 'action == "Select"', 'action == "Delete"', 'action == "CheckNickname"', 'action == "CompleteIdentity"', 'action == "UpdateSettings"'):
     assert action in service
 nickname_store = read("src/server/persistence/NicknameStore.luau")
 assert "UpdateAsync" in nickname_store
@@ -30,6 +30,12 @@ assert "geometryChanged" in lobby and "previousViewport" in lobby
 assert "LastInputTypeChanged" in read("src/client/ui/ResponsiveLayout.luau")
 assert "MobilePortrait" in lobby and "CreationModal" in lobby and 'Name = "Close"' in lobby
 assert "Мой Roblox ник" in lobby and "Имя свободно" in lobby
+assert "Class_" in lobby and "Body_" in lobby and "refreshClassButtons" in lobby and "refreshBodyButtons" in lobby
+assert "SettingsButton" in lobby and "SettingsModal" in lobby and 'send("UpdateSettings"' in lobby
+assert "Studio: любое непустое имя" in lobby and "Имя доступно в Studio" in lobby
+assert "palette.accent" in lobby and "palette.moon" in lobby and "palette.gold" not in lobby
+assert "looseStudioNicknames" in service and "PersistenceConfig.UseDataStoreInStudio" in service
+assert 'CharacterRules.validateCreation(p, looseStudioNicknames())' in service
 assert "CharacterRequest" in project["tree"]["ReplicatedStorage"]["Remotes"]
 server_bootstrap = read("src/server/main.server.luau")
 assert server_bootstrap.index("Players.CharacterAutoLoads = false") < server_bootstrap.index('WaitForChild("LunaWorldPlayableBlockout"')
