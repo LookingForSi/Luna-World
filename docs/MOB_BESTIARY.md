@@ -7,7 +7,7 @@ Authoritative source остаётся в `src/shared/definitions/MobDefinitions.
 
 | Зона / роль | Моб | LV | Rank | HP | P.Def | M.Def | Base attack | Crit | Abilities |
 |---|---|---:|---|---:|---:|---:|---|---|---|
-| Farm / Meadows | Молодой волк | 1 | Ordinary | 70 | 1 | 1 | 8 Physical | — | — |
+| Farm / Meadows | Молодой волк | 1 | Ordinary | 70 | 1 | 1 | 12 Physical | — | — |
 | Stone Circle | Волк | 2 | Ordinary | 105 | 2 | 2 | 20 Physical | — | — |
 | Stone Circle | Вожак стаи | 3 | Elite | 180 | 4 | 3 | 27 Physical | — | Вой стаи |
 | Goblin / Road | Гоблин-разведчик | 4 | Ordinary | 145 | 4 | 2 | 24 Physical | — | — |
@@ -60,6 +60,8 @@ Authoritative source остаётся в `src/shared/definitions/MobDefinitions.
 ## Ролевые правила
 
 - Молодые волки — стартовые, пассивные, без social assist.
+- Все wolf-family mobs получают дополнительный ×1.25 movement multiplier поверх общего world multiplier ×1.2.
+- Physical defense игрока использует пропорциональное снижение урона, чтобы ранние атаки не схлопывались до 1 damage.
 - Обычные волки и goblins используют локальные social groups, а не глобальную faction aggro.
 - Goblin Shaman — ranged support/caster: не должен сваливаться в бессмысленный melee после cooldown.
 - Goblin Chieftain — локальный elite: должен быть опасен и на подходе за счёт пращи, а в melee — за счёт crit / Heavy Strike / Cleave.
