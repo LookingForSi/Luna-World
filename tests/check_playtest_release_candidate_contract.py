@@ -38,22 +38,23 @@ assert 'aggressionMode = "Passive"' in mobs
 
 for token in (
     "fillCurvedRidge",
-    "fillFlatLakeSlab",
-    'ContinuousWaterBody", true',
-    'ContainedWithinWorldBounds", true',
-    'FlatWaterSurface", true',
-    'OrganicShoreline", true',
-    'LakeBedFilled", true',
-    "LAKE_SHORE_WATER_OVERLAP = 8",
-    "LAKE_BED_OVERLAP = 6",
-    "slopeRows",
+    "shapeGoblinCemeteryLakeHillCliff",
+    'Purpose", "TraversalBarrier"',
+    "LAKE_WATER_DEPTH = 12",
+    '"WaterRecovery%02d"',
+    'HillBankCliff", true',
 ):
     assert token in world
 
-assert "fillContinuousLakePath" not in world
-assert "carveLakeDisc" not in world
-assert "bounds.maxX + 80" not in world
-assert "LAKE_SHORE_CLEAR_MARGIN" not in world
+for forbidden in (
+    "prepareGoblinCampBoundaryShelf",
+    "fillFlatLakeSlab",
+    "fillContinuousLakePath",
+    "carveLakeDisc",
+    "LakeBedFilled",
+    "ContainedWithinWorldBounds",
+):
+    assert forbidden not in world
 
 assert "Enum.HumanoidStateType.Swimming" in movement
 assert "Enum.ContextActionResult.Pass" in movement
