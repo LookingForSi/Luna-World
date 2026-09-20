@@ -62,7 +62,8 @@ local function syncActionBar(): ()
 		CombatInputController.requestSkill,
 		TargetController.clearTarget,
 		InventoryUi.toggle,
-		QuestController.toggleMap
+		QuestController.toggleMap,
+		QuestController.toggleJournal
 	)
 end
 
