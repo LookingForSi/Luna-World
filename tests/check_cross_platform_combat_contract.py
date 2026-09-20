@@ -49,7 +49,7 @@ require(BAR, "SkillCooldownAttributePrefix", "skill cooldown display must use se
 require(BAR, "BasicAttackReadyAtAttribute", "Attack cooldown display must use server attributes")
 require(BAR, 'for index = 1, 10 do', "skill bar must expose ten stable slots")
 require(BAR, '"SkillBar"', "skills must live in a separate skill bar")
-require(BAR, '"ИНВЕНТАРЬ [I]"', "primary actions must expose inventory")
+require(BAR, '"ИНВЕНТАРЬ [T]"', "primary actions must expose inventory")
 require(BAR, 'button.Text = ""', "locked skills must stay visually hidden until unlock")
 require(HUD, "CombatPresentationRules.isSupported", "rejection feedback must validate server presentation")
 require(HUD, "getRejectionText", "known server rejection reasons must be rendered")
