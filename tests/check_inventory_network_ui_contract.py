@@ -16,6 +16,8 @@ NETWORK = read("src/server/services/InventoryNetworkService.luau")
 SERVICE = read("src/server/services/InventoryService.luau")
 CONTROLLER = read("src/client/controllers/InventoryController.luau")
 UI = read("src/client/ui/InventoryUi.luau")
+BAR = read("src/client/ui/ActionBar.luau")
+WORLD_DROP = read("src/server/services/WorldDropService.luau")
 MAIN = read("src/server/main.server.luau")
 CLIENT = read("src/client/main.client.luau")
 
@@ -36,6 +38,7 @@ for token in (
     "InventoryService.unequip",
     "InventoryService.consume",
     "InventoryService.discard",
+    "WorldDropService.spawnForPlayer",
 ):
     if token not in NETWORK:
         raise AssertionError(f"inventory network boundary missing {token}")
@@ -53,9 +56,17 @@ for token in ("Enum.KeyCode.I", "Enum.KeyCode.ButtonSelect", "requestSnapshot"):
     if token not in CONTROLLER:
         raise AssertionError(f"inventory controller missing {token}")
 
-for token in ('"InventoryPanel"', '"InventoryToggleButton"', '"ИНВЕНТАРЬ [I]"', '"InventoryList"', '"EquipmentList"', '"Equip"', '"Unequip"', '"Use"', '"Discard"'):
+for token in ('"InventoryPanel"', '"InventoryList"', '"EquipmentList"', '"Equip"', '"Unequip"', '"Use"', '"Discard"', "UIGridLayout", "AutomaticCanvasSize"):
     if token not in UI:
         raise AssertionError(f"inventory UI missing {token}")
+
+for token in ('"Inventory"', '"ИНВЕНТАРЬ [I]"'):
+    if token not in BAR:
+        raise AssertionError(f"primary action block missing inventory access: {token}")
+
+for token in ("PickupPrompt", '"Подобрать"', "InventoryService.grantItem", "DropNameplate", "DropHighlight"):
+    if token not in WORLD_DROP:
+        raise AssertionError(f"world drop presentation/pickup missing {token}")
 
 if "InventoryUi.start" not in CLIENT or "InventoryController.start" not in CLIENT:
     raise AssertionError("client bootstrap must start inventory UI/controller")
