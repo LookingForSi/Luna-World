@@ -155,12 +155,15 @@ function QuestService.openNpc(player: Player, npcId: string): ()
 			local destinationNpcId = TravelRules.destinationNpcId(definition, npcId)
 			local destination = if destinationNpcId ~= nil then NpcDefinitions[destinationNpcId] else nil
 			if destination ~= nil then
+				local destinationName = if destinationNpcId == definition.villageNpcId
+					then "Luna Village"
+					else definition.displayName
 				table.insert(topics, {
 					kind="Travel",
 					travelId=travelId,
 					text="Телепорт",
 					destinationNpcId=destinationNpcId,
-					destinationName=destination.displayName,
+					destinationName=destinationName,
 					routeName=definition.displayName,
 					costLuna=TravelRules.costLuna(definition),
 				})
