@@ -39,13 +39,18 @@ for source_name, source in (("river", south), ("lake", north), ("recovery", reco
 
 if 'Purpose", "SwimmableWater"' not in north:
     raise AssertionError("lake must be explicitly marked as swimmable")
+if "shapeGoblinCemeteryLakeHillCliff" in north:
+    raise AssertionError("lake must not have an artificial rock wall toward the world edge")
 
 for token in (
     "LAKE_WATER_DEPTH = 30",
     "LAKE_BASIN_CLEAR_DEPTH = 40",
     "LAKE_CLEAR_MARGIN = 34",
     'DeepBasinExcavated", true',
-    "clearBottomY = waterSurfaceY + 1",
+    "prepareGoblinCampBoundaryShelf",
+    "excavateAndFillLakeWater",
+    'ExtendsToWorldEdge", true',
+    'CampShorelineZ',
 ):
     if token not in north:
         raise AssertionError(f"deep lake / overhang contract missing: {token}")
