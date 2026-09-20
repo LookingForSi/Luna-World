@@ -275,8 +275,10 @@ local function createVillage(parent: Instance, positions: { [string]: Vector3 })
 	P.groundedPart(village, "VillageShrine", shrine, Vector3.new(22, 12, 18), Enum.Material.Limestone, Color3.fromRGB(136, 136, 128))
 
 	createSimpleNpc(village, "VillageNpc01", square + Vector3.new(16, 0, -12))
-	createSimpleNpc(village, "MerchantNpc", merchant + Vector3.new(-8, 0, 6), "Merchant")
-	createSimpleNpc(village, "BlacksmithNpc", positions.poi_blacksmith + Vector3.new(-8, 0, 8), "Blacksmith")
+	-- Keep service NPCs clearly outside the current placeholder buildings until
+	-- doors/interiors receive a dedicated village art pass.
+	createSimpleNpc(village, "MerchantNpc", merchant + Vector3.new(0, 0, 18), "Merchant")
+	createSimpleNpc(village, "BlacksmithNpc", positions.poi_blacksmith + Vector3.new(0, 0, 26), "Blacksmith")
 end
 
 local function createFenceLine(parent: Instance, name: string, fromPosition: Vector3, toPosition: Vector3)
