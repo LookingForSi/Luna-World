@@ -251,11 +251,26 @@ local function rebuildSell(): ()
 		add.AutoButtonColor = price ~= nil
 		add.BackgroundTransparency = if price ~= nil then 0 else 0.55
 		if price ~= nil then
-			table.insert(rowConnections, add.Activated:Connect(function()
+			local function normalizedQuantity(): number
 				local requested = tonumber(quantity.Text) or 1
-				local normalized = math.clamp(math.floor(requested), 1, entry.quantity)
+				return math.clamp(math.floor(requested), 1, entry.quantity)
+			end
+			local function putInCart(): ()
+				local normalized = normalizedQuantity()
+				quantity.Text = tostring(normalized)
 				sellCart[entry.instanceId] = normalized
 				rebuild()
+			end
+			table.insert(rowConnections, add.Activated:Connect(putInCart))
+			table.insert(rowConnections, quantity.FocusLost:Connect(function(enterPressed: boolean)
+				local normalized = normalizedQuantity()
+				quantity.Text = tostring(normalized)
+				-- Editing an item that is already in the right pane updates its subtotal.
+				-- Pressing Enter is also a keyboard shortcut for moving it into the cart.
+				if sellCart[entry.instanceId] ~= nil or enterPressed then
+					sellCart[entry.instanceId] = normalized
+					rebuild()
+				end
 			end))
 		end
 	end
