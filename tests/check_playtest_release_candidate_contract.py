@@ -43,6 +43,9 @@ for token in (
     'ContainedWithinWorldBounds", true',
     'FlatWaterSurface", true',
     'OrganicShoreline", true',
+    'LakeBedFilled", true',
+    "LAKE_SHORE_WATER_OVERLAP = 8",
+    "LAKE_BED_OVERLAP = 6",
     "slopeRows",
 ):
     assert token in world
@@ -50,6 +53,7 @@ for token in (
 assert "fillContinuousLakePath" not in world
 assert "carveLakeDisc" not in world
 assert "bounds.maxX + 80" not in world
+assert "LAKE_SHORE_CLEAR_MARGIN" not in world
 
 assert "Enum.HumanoidStateType.Swimming" in movement
 assert "Enum.ContextActionResult.Pass" in movement
