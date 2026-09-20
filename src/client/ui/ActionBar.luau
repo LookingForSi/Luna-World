@@ -235,14 +235,15 @@ function ActionBar.start(
 	local inventory = inventoryButton :: TextButton
 	inventory.Position = UDim2.new(0.69, 0, 0, 0)
 
-	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.32, -2, 0, 44))
+	local lowerRowHeight = if UserInputService.TouchEnabled then 104 else 92
+	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.31, -2, 0, lowerRowHeight))
 	local auto = autoButton :: TextButton
 	auto.Position = UDim2.new(0, 0, 0, 42)
 
-	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.32, -2, 0, 44))
-	clearButton.Position = UDim2.new(0, 0, 0, 90)
+	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.31, -2, 0, lowerRowHeight))
+	clearButton.Position = UDim2.new(0.345, 0, 0, 42)
 
-	local attackDiameter = if UserInputService.TouchEnabled then 104 else 92
+	local attackDiameter = lowerRowHeight
 	attackButton = makeButton(content, "Attack", "АТАКА", UDim2.fromOffset(attackDiameter, attackDiameter))
 	local attack = attackButton :: TextButton
 	attack.AnchorPoint = Vector2.new(1, 0)
