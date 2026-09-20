@@ -438,9 +438,7 @@ local function createRiver(parent: Instance, positions: { [string]: Vector3 })
 	end
 
 	local previous = Vector3.new(-1240, WATER_SURFACE_Y, riverZ(-1240))
-	local index = 0
 	for x = -1160, 1240, 80 do
-		index += 1
 		local current = Vector3.new(x, WATER_SURFACE_Y, riverZ(x))
 		local offset = current - previous
 		local midpoint = previous + offset / 2
