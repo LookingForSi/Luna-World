@@ -128,6 +128,7 @@ MobService.HostileAction = hostileActionEvent.Event
 
 local MOB_NAMEPLATE_MAX_DISTANCE = 100
 local GLOBAL_MOB_MOVEMENT_MULTIPLIER = 1.2
+local WOLF_MOVEMENT_MULTIPLIER = 1.25
 
 local function addMobPresentation(
 	model: Model,
@@ -204,7 +205,8 @@ local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
 	model:SetAttribute("PatrolRadius", spawn.patrolRadius)
 	model:SetAttribute("PatrolCycleSeconds", spawn.patrolCycleSeconds)
 	model:SetAttribute(CombatConfig.MobHomePositionAttribute, spawnCFrame.Position)
-	local movementSpeed = definition.chaseSpeed * GLOBAL_MOB_MOVEMENT_MULTIPLIER
+	local factionMovementMultiplier = if definition.faction == "wolf" then WOLF_MOVEMENT_MULTIPLIER else 1
+	local movementSpeed = definition.chaseSpeed * GLOBAL_MOB_MOVEMENT_MULTIPLIER * factionMovementMultiplier
 	model:SetAttribute(CombatConfig.MobMovementSpeedAttribute, movementSpeed)
 	model:SetAttribute(CombatConfig.MobOutgoingDamageMultiplierAttribute, 1)
 
