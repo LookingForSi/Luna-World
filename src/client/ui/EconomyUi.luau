@@ -269,9 +269,7 @@ function EconomyUi.start(actionCallbacks: any): ()
 	title = label(root, "ДИАЛОГ", UDim2.fromOffset(16, 10), UDim2.fromOffset(350, 28), 17)
 	balance = label(root, "Luna: 0", UDim2.fromOffset(400, 10), UDim2.fromOffset(160, 28), 13)
 
-	local close = button(root, "×")
-	close.Position = UDim2.new(1, -48, 0, 8)
-	close.Size = UDim2.fromOffset(32, 30)
+	local close = HudLayout.makeCloseButton(root, 12)
 	table.insert(connections, close.Activated:Connect(function()
 		root.Visible = false
 	end))
