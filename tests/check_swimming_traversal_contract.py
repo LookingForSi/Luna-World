@@ -45,11 +45,14 @@ if "shapeGoblinCemeteryLakeHillCliff" in north:
 for token in (
     "LAKE_WATER_DEPTH = 30",
     "LAKE_BASIN_CLEAR_DEPTH = 42",
-    "LAKE_SHORE_CLEAR_MARGIN = 22",
+    "LAKE_SHORE_WATER_OVERLAP = 8",
+    "LAKE_BED_OVERLAP = 6",
     "LAKE_BOUNDARY_MARGIN = 28",
     "LAKE_SLAB_STEP = 56",
     "LAKE_SLAB_OVERLAP = 28",
     'DeepBasinExcavated", true',
+    'LakeBedFilled", true',
+    '"ShorelineWaterOverlap", LAKE_SHORE_WATER_OVERLAP',
     "prepareGoblinCampBoundaryShelf",
     "fillFlatLakeSlab",
     'ExtendsToWorldEdge", false',
@@ -65,6 +68,7 @@ for lake_forbidden in (
     "carveLakeDisc",
     "fillContinuousLakePath",
     "bounds.maxX + 80",
+    "LAKE_SHORE_CLEAR_MARGIN",
 ):
     if lake_forbidden in north:
         raise AssertionError(f"lake still uses sliced/out-of-bounds generation: {lake_forbidden}")
