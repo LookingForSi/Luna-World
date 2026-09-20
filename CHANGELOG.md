@@ -8,6 +8,8 @@
 
 ### Playtest RC — consolidated build
 
+- Чаша озера доведена до физически цельной геометрии: убрана воздушная канавка между водой и берегом, вода заходит под берег на небольшой overlap, а под всем водяным объёмом восстановлено непрерывное Mud-дно без воздушного кармана.
+
 - Исправлен QuestMarker snapshot race после Character Lobby: QuestService при старте догоняет уже CharacterReady игроков, а клиент повторяет первый QuestSnapshotRequest до получения валидного snapshot; `!/?` над NPC больше не зависят от порядка запуска сервисов.
 
 - Собрана единая playtest-сборка: Crafting World Pass, responsive mobile UI, Character Lobby, reordered LV1–14 mob route, Spider Hollow polish, swimming, lake/world-edge polish и full restore при level-up.
