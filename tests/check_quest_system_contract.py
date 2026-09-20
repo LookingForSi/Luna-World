@@ -13,7 +13,7 @@ client=read('src/client/controllers/QuestController.luau')
 action=read('src/client/ui/ActionBar.luau')
 for project in ('default.project.json','test.project.json'):
     value=read(project)
-    for remote in ('QuestAcceptRequest','QuestTurnInRequest','QuestSnapshotRequest','QuestSnapshot','QuestActionResult','DialogueOpen'):
+    for remote in ('QuestAcceptRequest','QuestTurnInRequest','QuestSnapshotRequest','QuestSnapshot','QuestActionResult','DialogueOpen','TravelRequest','TravelResult'):
         require(value, f'"{remote}"', f'{project} lacks {remote}')
 require(quest,'MobService.MobDied:Connect','kill credit must consume authoritative MobDied')
 require(quest,'humanoid.Health>0','location credit must require a living character')
@@ -48,6 +48,8 @@ require(client,'activeQuestIds','quest navigation must support per-quest active 
 require(client,'"Принять"','quest offer must expose accept')
 require(client,'"Отказаться"','quest offer must expose decline')
 require(client,'makeButton(content, "Квест")','NPC dialogue must open quests through a Quest topic')
+require(client,'topic.kind ~= "Travel"','NPC dialogue must render unlocked travel topics')
+require(client,'travelRequest:FireServer','travel topic must request server-authoritative travel')
 require(action,'КАРТА [M]','action block map button is missing')
 require(action,'ЗАДАНИЯ [O]','action block quest journal button is missing')
 require(action,'mapBindingText','map hint must adapt to the active input device')
