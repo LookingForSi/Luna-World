@@ -132,7 +132,10 @@ def main() -> None:
         "LAKE_BASIN_CLEAR_DEPTH = 40",
         "LAKE_CLEAR_MARGIN = 34",
         'DeepBasinExcavated", true',
-        "shapeGoblinCemeteryLakeHillCliff",
+        "prepareGoblinCampBoundaryShelf",
+        "excavateAndFillLakeWater",
+        'ExtendsToWorldEdge", true',
+        'CampShorelineZ',
         'HillBankCliff", true',
         "DarkWoodlandThreshold",
         "OldCemetery",
@@ -144,6 +147,8 @@ def main() -> None:
     assert "BillboardGui" not in north
     assert 'Purpose", "SwimmableWater"' in north
     assert "WaterRecovery" not in north
+    assert "shapeGoblinCemeteryLakeHillCliff" not in north
+    assert "GoblinShelfEdge" not in composition
     assert "clearBottomY = waterSurfaceY + 1" in north
     assert "Vector3.new(118, clearHeight, spec.zSize)" in north
     assert "Enum.Material.Water" in north
@@ -187,7 +192,6 @@ def main() -> None:
         "MoonfallWestScreen",
         "GoblinCemeteryEastForest",
         "GoblinCemeteryRoadsideForest",
-        "GoblinShelfEdge",
         "SpiderBasinRearDeadwood",
         "DarkWoodlandWestMass",
         "CemeteryRearDeadwood",
