@@ -135,13 +135,16 @@ local function getScreenBounds(model: Model): (Vector2?, Vector2?, number?)
 	local visibleRoot = model:FindFirstChild("HumanoidRootPart")
 	local boxCFrame: CFrame
 	local boxSize: Vector3
-	if visibleRoot ~= nil and visibleRoot:IsA("BasePart") then
-		-- Screen-space forgiveness follows the visible silhouette. The invisible
-		-- TargetHitbox is for exact raycasts and must not drag the forgiving area
-		-- below short models such as wolves.
+	if typeof(model:GetAttribute("MobId")) == "string"
+		and visibleRoot ~= nil
+		and visibleRoot:IsA("BasePart")
+	then
+		-- For placeholder mobs the HumanoidRootPart is the visible silhouette.
+		-- Ignore the larger invisible TargetHitbox so forgiveness stays centered.
 		boxCFrame = visibleRoot.CFrame
 		boxSize = visibleRoot.Size
 	else
+		-- Player characters and future multipart entities keep their full visual bounds.
 		boxCFrame, boxSize = model:GetBoundingBox()
 	end
 	local half = boxSize * 0.5
