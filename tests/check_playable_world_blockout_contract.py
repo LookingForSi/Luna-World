@@ -87,6 +87,9 @@ def main() -> None:
         "Vector3.new(-34, 0, -8)",
         'FenceCollision = true',
         'string.format("Collision_%02d", index)',
+        "postSpacing = 4.0",
+        "PalisadeCollision = true",
+        'string.format("PalisadeCollision_%03d", index)',
     ):
         assert token in south
     assert "BillboardGui" not in south
