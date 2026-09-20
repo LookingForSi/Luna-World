@@ -47,7 +47,6 @@ local DETOUR_CLEARANCE = 2.5
 local DETOUR_REACHED_DISTANCE = 2.5
 local DETOUR_LIFETIME_SECONDS = 3
 local DETOUR_GOAL_RESET_DISTANCE = 5
-local BLIND_RETURN_DISTANCE = 750
 local RETURN_TELEPORT_SECONDS = 150
 
 local function livingRoot(player: Player): BasePart?
@@ -116,21 +115,6 @@ end
 local function flatDistance(a: Vector3, b: Vector3): number
 	local delta = Vector3.new(a.X - b.X, 0, a.Z - b.Z)
 	return delta.Magnitude
-end
-
-local function hasLineOfSight(record: Record, root: BasePart, target: Player): boolean
-	local targetRoot = livingRoot(target)
-	local character = target.Character
-	if targetRoot == nil or character == nil then return false end
-	local delta = targetRoot.Position - root.Position
-	if delta.Magnitude <= 0.01 then return true end
-
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = { record.model }
-	params.IgnoreWater = true
-	local result = workspace:Raycast(root.Position, delta, params)
-	return result == nil or result.Instance:IsDescendantOf(character)
 end
 
 local function obstacleHalfExtentAlong(part: BasePart, axis: Vector3): number
@@ -318,14 +302,17 @@ local function decide(record: Record, now: number): ()
 	end
 	local distanceFromHome = (root.Position - record.home).Magnitude
 	local targetDistance = if targetRoot ~= nil then (targetRoot.Position - root.Position).Magnitude else math.huge
-	local targetVisible = record.target ~= nil and targetRoot ~= nil and hasLineOfSight(record, root, record.target)
-	local blindHardReturn = targetRoot ~= nil and not targetVisible and distanceFromHome > BLIND_RETURN_DISTANCE
+	-- Chase is bounded by separation from the target, not distance from the spawn.
+	-- A mob may be kited far from home while it can keep up, but once the player
+	-- opens a gap beyond the mob-specific leashDistance (including by teleport),
+	-- the mob drops the target and returns home.
+	local targetBeyondLeash = targetRoot ~= nil and targetDistance > definition.leashDistance
 	local nextState = MobAIRules.nextState(record.state, {
 		alive = true,
 		hasTarget = targetRoot ~= nil,
 		detectedTarget = detected ~= nil,
 		hostileAttacker = hostile ~= nil and record.target == hostile,
-		beyondLeash = blindHardReturn,
+		beyondLeash = targetBeyondLeash,
 		inAttackRange = targetDistance <= definition.attackRange,
 		atHome = distanceFromHome <= CombatConfig.MobHomeArrivalDistance,
 	}, definition.aggressionMode)
