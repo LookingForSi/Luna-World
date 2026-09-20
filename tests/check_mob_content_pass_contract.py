@@ -52,6 +52,7 @@ for ability_id in (
     "goblin_sling_stone",
     "goblin_spirit_bolt",
     "goblin_war_chant",
+    "goblin_shaman_hex",
 	"goblin_cleave",
     "spider_venom_spit",
     "spider_crippling_venom",
@@ -266,5 +267,27 @@ for marker_id in ("spawn_goblin_patrol_south", "spawn_goblin_patrol_east", "spaw
     body = LAYOUT.split(f'id = "{marker_id}"', 1)[1].split("}", 1)[0]
     if "patrolCycleSeconds = 6" not in body:
         raise AssertionError(f"{marker_id} must actively traverse its perimeter patrol")
+
+for token in (
+    'displayName = "Гоблин-шаман", level = 6, maxHealth = 240',
+    'basicAttackRange = 34, basicAttackDamage = 22, basicAttackDamageType = "Magic"',
+    'criticalChance = 0.12, criticalDamageMultiplier = 1.60',
+    '"goblin_war_chant", "goblin_spirit_bolt", "goblin_shaman_hex"',
+    'displayName = "Гоблин-вожак", level = 7, maxHealth = 600',
+    'criticalChance = 0.20, criticalDamageMultiplier = 1.80',
+    '"goblin_battle_cry", "goblin_sling_stone", "goblin_heavy_strike", "goblin_cleave"',
+    'displayName = "Лунный страж", level = 14, maxHealth = 1200',
+):
+    if token not in MOBS:
+        raise AssertionError(f"dev0.2 difficulty tuning missing: {token}")
+
+for token in (
+    'DamageRules.resolve(',
+    'definition.criticalChance or 0',
+    'definition.criticalDamageMultiplier or CombatConfig.CriticalDamageMultiplier',
+    'isCritical = rolled.isCritical',
+):
+    if token not in MOB_ABILITY_SERVICE:
+        raise AssertionError(f"server-authoritative mob critical contract missing: {token}")
 
 print("Mob Content Pass v0.1 + dev0.2 tuning contract: PASS")
