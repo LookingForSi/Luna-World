@@ -132,7 +132,18 @@ local function getScreenBounds(model: Model): (Vector2?, Vector2?, number?)
 	local camera = workspace.CurrentCamera
 	if camera == nil then return nil, nil, nil end
 
-	local boxCFrame, boxSize = model:GetBoundingBox()
+	local visibleRoot = model:FindFirstChild("HumanoidRootPart")
+	local boxCFrame: CFrame
+	local boxSize: Vector3
+	if visibleRoot ~= nil and visibleRoot:IsA("BasePart") then
+		-- Screen-space forgiveness follows the visible silhouette. The invisible
+		-- TargetHitbox is for exact raycasts and must not drag the forgiving area
+		-- below short models such as wolves.
+		boxCFrame = visibleRoot.CFrame
+		boxSize = visibleRoot.Size
+	else
+		boxCFrame, boxSize = model:GetBoundingBox()
+	end
 	local half = boxSize * 0.5
 	local minX, minY = math.huge, math.huge
 	local maxX, maxY = -math.huge, -math.huge
