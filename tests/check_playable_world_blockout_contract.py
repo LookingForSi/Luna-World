@@ -85,6 +85,8 @@ def main() -> None:
         "StoneCircle",
         "LunaVillageSpawn",
         "Vector3.new(-34, 0, -8)",
+        'FenceCollision = true',
+        'string.format("Collision_%02d", index)',
     ):
         assert token in south
     assert "BillboardGui" not in south
@@ -176,6 +178,10 @@ def main() -> None:
     assert "createCliffWall" not in composition
     assert composition.count("Grounding.treeSurfaceAt(position)") >= 2
     assert '"DarkWoodlandWestMass"' in composition and "\n\t\t15,\n\t\t45\n" in composition
+
+    assert "solidCollision: boolean?" in dressing
+    assert "FarmRoadFenceA" in dressing and "FarmRoadFenceB" in dressing
+    assert dressing.count("FenceCollision = true") >= 1
 
     presentation = read(ROOT / "src/client/world-preview/ZonePresentation.client.luau")
     assert "ZoneToast" in presentation
