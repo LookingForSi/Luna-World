@@ -68,6 +68,11 @@ for token in ("PickupPrompt", '"Подобрать"', "InventoryService.grantIte
     if token not in WORLD_DROP:
         raise AssertionError(f"world drop presentation/pickup missing {token}")
 
+if "blocker.BackgroundTransparency = 1" not in UI:
+    raise AssertionError("inventory modal blocker must capture input without blacking out the screen")
+if "panel.BackgroundTransparency = 0.03" not in UI:
+    raise AssertionError("inventory panel must remain readable over the world")
+
 if "InventoryUi.start" not in CLIENT or "InventoryController.start" not in CLIENT:
     raise AssertionError("client bootstrap must start inventory UI/controller")
 
