@@ -463,12 +463,14 @@ function EconomyUi.start(actionCallbacks: any): ()
 	screen.ResetOnSpawn = false
 	screen.IgnoreGuiInset = true
 	screen.DisplayOrder = 9
+	screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screen.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 	local blocker = Instance.new("TextButton")
 	blocker.Name = "ModalBlocker"
 	blocker.Size = UDim2.fromScale(1, 1)
 	blocker.BackgroundColor3 = Color3.new(0, 0, 0)
-	blocker.BackgroundTransparency = 0.45
+	-- Input shield only. Do not visually darken the world or the modal contents.
+	blocker.BackgroundTransparency = 1
 	blocker.Text = ""
 	blocker.Active = true
 	blocker.Modal = true
@@ -482,6 +484,7 @@ function EconomyUi.start(actionCallbacks: any): ()
 	root.Position = UDim2.fromScale(0.5, 0.5)
 	root.Size = UDim2.fromOffset(680, 500)
 	HudLayout.applyPanelStyle(root)
+	root.BackgroundTransparency = 0.03
 	root.Visible = false
 	root.Name = "EconomyPanel"
 	root.ZIndex = 2
