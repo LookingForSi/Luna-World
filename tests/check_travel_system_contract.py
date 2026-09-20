@@ -43,6 +43,9 @@ for token in (
 for token in (
     'kind="Travel"',
     'costLuna=TravelRules.costLuna(definition)',
+    'destinationName=destinationName',
+    'then "Luna Village"',
+    'else definition.displayName',
 ):
     if token not in quest: raise AssertionError(f"quest dialogue travel topic missing: {token}")
 for token in (
