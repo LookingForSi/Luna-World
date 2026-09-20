@@ -440,6 +440,7 @@ local function render()
 		BackgroundColor3 = palette.panel,
 		BorderSizePixel = 0,
 	})
+	stylePanel(preview, 12)
 	local chosen = nil
 	for _, c in roster.characters do
 		if c.characterId == selected then
@@ -476,7 +477,12 @@ local function render()
 		TextSize = 18,
 		Font = Enum.Font.GothamBold,
 		Active = chosen ~= nil,
+		AutoButtonColor = false,
 	})
+	rounded(play, 9)
+	outlined(play, if chosen then palette.accentBright else palette.line, if chosen then 0 else 0.3)
+	play.BackgroundColor3 = if chosen then palette.accent else palette.panelSoft
+	play.TextColor3 = if chosen then palette.text else palette.muted
 	play.Activated:Connect(function()
 		if chosen and chosen.needsIdentity then
 			local name = new(
@@ -544,6 +550,8 @@ local function render()
 			Text = "Удалить персонажа",
 			TextSize = 14,
 		})
+		rounded(del, 8)
+		outlined(del, palette.danger, 0.15)
 		del.Activated:Connect(function()
 			local confirm = new("TextBox", preview, {
 				Name = "DeleteConfirmation",
@@ -561,13 +569,160 @@ local function render()
 		end)
 	end
 	new("TextLabel", root, {
+		Name = "BuildLabel",
 		BackgroundTransparency = 1,
-		Position = UDim2.new(0, edge, 1, -(edge + 24)),
-		Size = UDim2.new(1, -edge * 2, 0, 24),
-		Text = roster.buildLabel .. "  •  ⚙ Настройки: UI / текст / звук",
+		Position = UDim2.new(0, edge, 1, -(edge + 28)),
+		Size = UDim2.new(0.5, -edge, 0, 24),
+		Text = roster.buildLabel,
 		TextColor3 = palette.muted,
-		TextSize = 13,
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
 	})
+
+	local settingsButton = new("TextButton", root, {
+		Name = "SettingsButton",
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -edge, 1, -edge),
+		Size = UDim2.fromOffset(if smallTouch then 150 else 190, 42),
+		Text = "⚙  НАСТРОЙКИ",
+		TextSize = 13,
+		ZIndex = 2,
+	})
+	styleButton(settingsButton, false)
+	settingsButton.Activated:Connect(function()
+		local shade = createModalShade(root)
+		local modalSize = ResponsiveLayout.modalSize(metrics, Vector2.new(520, 390))
+		local modal = new("Frame", root, {
+			Name = "SettingsModal",
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromOffset(modalSize.X, modalSize.Y),
+			BackgroundColor3 = palette.panel,
+			BorderSizePixel = 0,
+			ZIndex = 5,
+		})
+		stylePanel(modal, 14)
+		new("TextLabel", modal, {
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(28, 20),
+			Size = UDim2.new(1, -80, 0, 34),
+			Text = "НАСТРОЙКИ",
+			TextColor3 = palette.moon,
+			TextSize = 22,
+			Font = Enum.Font.GothamBold,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			ZIndex = 6,
+		})
+		local close = new("TextButton", modal, {
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -12, 0, 12),
+			Size = UDim2.fromOffset(44, 44),
+			Text = "×",
+			TextSize = 24,
+			ZIndex = 7,
+		})
+		styleButton(close, false)
+		local function dismiss(): ()
+			shade:Destroy()
+			modal:Destroy()
+		end
+		close.Activated:Connect(dismiss)
+		shade.Activated:Connect(dismiss)
+
+		local current = roster.settings or { UiScale = 1, TextScale = 1, SoundVolume = 1 }
+		local uiScale = current.UiScale or 1
+		local textScale = current.TextScale or 1
+		local soundVolume = current.SoundVolume or 1
+
+		local function settingRow(labelText: string, y: number, getValue: () -> number, change: (number) -> (), step: number, minValue: number, maxValue: number, asPercent: boolean)
+			new("TextLabel", modal, {
+				BackgroundTransparency = 1,
+				Position = UDim2.fromOffset(28, y),
+				Size = UDim2.new(0.48, -28, 0, 44),
+				Text = labelText,
+				TextColor3 = palette.text,
+				TextSize = 15,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				ZIndex = 6,
+			})
+			local minus = new("TextButton", modal, {
+				Position = UDim2.new(0.50, 0, 0, y),
+				Size = UDim2.fromOffset(44, 44),
+				Text = "−",
+				TextSize = 20,
+				ZIndex = 6,
+			})
+			styleButton(minus, false)
+			local value = new("TextLabel", modal, {
+				BackgroundColor3 = palette.bgDeep,
+				Position = UDim2.new(0.50, 52, 0, y),
+				Size = UDim2.new(0.30, -60, 0, 44),
+				TextColor3 = palette.moon,
+				TextSize = 15,
+				Font = Enum.Font.GothamSemibold,
+				ZIndex = 6,
+			})
+			rounded(value, 8)
+			outlined(value)
+			local plus = new("TextButton", modal, {
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, -28, 0, y),
+				Size = UDim2.fromOffset(44, 44),
+				Text = "+",
+				TextSize = 20,
+				ZIndex = 6,
+			})
+			styleButton(plus, false)
+			local function refresh(): ()
+				local v = getValue()
+				value.Text = if asPercent then string.format("%d%%", math.floor(v * 100 + 0.5)) else tostring(v)
+			end
+			minus.Activated:Connect(function()
+				change(math.clamp(getValue() - step, minValue, maxValue))
+				refresh()
+			end)
+			plus.Activated:Connect(function()
+				change(math.clamp(getValue() + step, minValue, maxValue))
+				refresh()
+			end)
+			refresh()
+		end
+
+		settingRow("Масштаб интерфейса", 82, function() return uiScale end, function(v) uiScale = v end, 0.1, 0.8, 1.2, true)
+		settingRow("Размер текста", 142, function() return textScale end, function(v) textScale = v end, 0.1, 0.85, 1.25, true)
+		settingRow("Громкость", 202, function() return soundVolume end, function(v) soundVolume = v end, 0.25, 0, 1, true)
+
+		new("TextLabel", modal, {
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(28, 258),
+			Size = UDim2.new(1, -56, 0, 38),
+			Text = "Настройки сохраняются на аккаунте и будут использоваться игровым UI.",
+			TextColor3 = palette.muted,
+			TextSize = 12,
+			TextWrapped = true,
+			ZIndex = 6,
+		})
+		local save = new("TextButton", modal, {
+			Position = UDim2.new(0, 28, 1, -70),
+			Size = UDim2.new(1, -56, 0, 46),
+			BackgroundColor3 = palette.accent,
+			TextColor3 = palette.text,
+			Text = "СОХРАНИТЬ",
+			TextSize = 14,
+			Font = Enum.Font.GothamBold,
+			ZIndex = 6,
+		})
+		rounded(save, 8)
+		outlined(save, palette.accentBright, 0)
+		save.Activated:Connect(function()
+			save.Text = "СОХРАНЯЕМ…"
+			send("UpdateSettings", {
+				uiScale = uiScale,
+				textScale = textScale,
+				soundVolume = soundVolume,
+			})
+		end)
+	end)
 end
 function CharacterLobbyController.start(): ()
 	if screen then
@@ -615,7 +770,7 @@ function CharacterLobbyController.start(): ()
 			local modalStatus = modal and modal:FindFirstChild("NicknameStatus")
 			local s = modalStatus or (rootNow and rootNow:FindFirstChild("Status"))
 			if s and s:IsA("TextLabel") then
-				s.Text = if p.ok then "Имя свободно" else "Имя недоступно: " .. tostring(p.reason)
+				s.Text = if p.ok then (if RunService:IsStudio() then "Имя доступно в Studio" else "Имя свободно") else friendlyReason(p.reason)
 				s.TextColor3 = if p.ok then palette.accentBright else palette.danger
 			end
 			return
@@ -632,7 +787,7 @@ function CharacterLobbyController.start(): ()
 			local modalStatus = modal and modal:FindFirstChild("NicknameStatus")
 			local s = modalStatus or (rootNow and rootNow:FindFirstChild("Status"))
 			if s and s:IsA("TextLabel") then
-				s.Text = "Ошибка: " .. tostring(p.reason) .. " — повторите попытку"
+				s.Text = friendlyReason(p.reason)
 				s.TextColor3 = palette.danger
 			end
 		end
