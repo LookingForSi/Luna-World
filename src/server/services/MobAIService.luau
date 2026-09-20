@@ -30,6 +30,7 @@ type Record = {
 	patrolIndex: number,
 	spawnIndex: number,
 	socialGroupId: string?,
+	returnStartedAt: number?,
 	connections: { RBXScriptConnection },
 }
 type AttackRequest = (Model, Player, CombatTypes.MobDefinition) -> boolean
@@ -46,6 +47,8 @@ local DETOUR_CLEARANCE = 2.5
 local DETOUR_REACHED_DISTANCE = 2.5
 local DETOUR_LIFETIME_SECONDS = 3
 local DETOUR_GOAL_RESET_DISTANCE = 5
+local BLIND_RETURN_DISTANCE = 750
+local RETURN_TELEPORT_SECONDS = 150
 
 local function livingRoot(player: Player): BasePart?
 	if player.Parent ~= Players then return nil end
@@ -81,6 +84,11 @@ end
 local function setState(record: Record, state: State): ()
 	local previousState = record.state
 	record.state = state
+	if state == "Return" and previousState ~= "Return" then
+		record.returnStartedAt = workspace:GetServerTimeNow()
+	elseif state ~= "Return" then
+		record.returnStartedAt = nil
+	end
 	if state ~= "Chase" and state ~= "Return" then
 		record.navigationDetour = nil
 		record.navigationGoal = nil
@@ -108,6 +116,21 @@ end
 local function flatDistance(a: Vector3, b: Vector3): number
 	local delta = Vector3.new(a.X - b.X, 0, a.Z - b.Z)
 	return delta.Magnitude
+end
+
+local function hasLineOfSight(record: Record, root: BasePart, target: Player): boolean
+	local targetRoot = livingRoot(target)
+	local character = target.Character
+	if targetRoot == nil or character == nil then return false end
+	local delta = targetRoot.Position - root.Position
+	if delta.Magnitude <= 0.01 then return true end
+
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { record.model }
+	params.IgnoreWater = true
+	local result = workspace:Raycast(root.Position, delta, params)
+	return result == nil or result.Instance:IsDescendantOf(character)
 end
 
 local function obstacleHalfExtentAlong(part: BasePart, axis: Vector3): number
@@ -276,10 +299,14 @@ local function decide(record: Record, now: number): ()
 		targetRoot = if record.target ~= nil then livingRoot(record.target) else nil
 	end
 	local detected = if record.state == "Idle" and definition.aggressionMode == "Aggressive"
-		then nearestPlayer(root.Position, definition.detectionRadius)
+		then nearestPlayer(root.Position, definition.aggroRadius)
 		else nil
 	local hostile = record.hostileAttacker
 	record.hostileAttacker = nil
+	if hostile ~= nil and livingRoot(hostile) ~= nil then
+		record.target = hostile
+		targetRoot = livingRoot(hostile)
+	end
 	if record.state == "Idle" then
 		record.target = if hostile ~= nil and livingRoot(hostile) ~= nil then hostile else detected
 		targetRoot = if record.target ~= nil then livingRoot(record.target) else nil
@@ -291,12 +318,14 @@ local function decide(record: Record, now: number): ()
 	end
 	local distanceFromHome = (root.Position - record.home).Magnitude
 	local targetDistance = if targetRoot ~= nil then (targetRoot.Position - root.Position).Magnitude else math.huge
+	local targetVisible = record.target ~= nil and targetRoot ~= nil and hasLineOfSight(record, root, record.target)
+	local blindHardReturn = targetRoot ~= nil and not targetVisible and distanceFromHome > BLIND_RETURN_DISTANCE
 	local nextState = MobAIRules.nextState(record.state, {
 		alive = true,
 		hasTarget = targetRoot ~= nil,
 		detectedTarget = detected ~= nil,
 		hostileAttacker = hostile ~= nil and record.target == hostile,
-		beyondLeash = distanceFromHome > definition.leashDistance,
+		beyondLeash = blindHardReturn,
 		inAttackRange = targetDistance <= definition.attackRange,
 		atHome = distanceFromHome <= CombatConfig.MobHomeArrivalDistance,
 	}, definition.aggressionMode)
@@ -315,7 +344,14 @@ local function decide(record: Record, now: number): ()
 			moveToward(record, targetRoot.Position, capturedGeneration, now)
 		end
 	elseif nextState == "Return" then
-		moveToward(record, record.home, capturedGeneration, now)
+		if record.returnStartedAt ~= nil and now - record.returnStartedAt >= RETURN_TELEPORT_SECONDS then
+			record.model:PivotTo(CFrame.new(record.home))
+			root.AssemblyLinearVelocity = Vector3.zero
+			root.AssemblyAngularVelocity = Vector3.zero
+			humanoid:MoveTo(record.home)
+		else
+			moveToward(record, record.home, capturedGeneration, now)
+		end
 	elseif nextState == "Idle" then
 		if MobAIRules.shouldRestoreHealth(previousState, nextState, definition.restoreHealthOnReturn) then
 			humanoid.Health = humanoid.MaxHealth
@@ -361,6 +397,7 @@ local function register(model: Model, definition: CombatTypes.MobDefinition, hom
 			else (if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 0),
 		spawnIndex = if typeof(model:GetAttribute("SpawnIndex")) == "number" then model:GetAttribute("SpawnIndex") :: number else 1,
 		socialGroupId = if typeof(model:GetAttribute("SocialGroupId")) == "string" then model:GetAttribute("SocialGroupId") :: string else nil,
+		returnStartedAt = nil,
 		connections = {},
 	}
 	records[model] = record
@@ -385,7 +422,8 @@ function MobAIService.start(serverAttackRequest: AttackRequest): ()
 	table.insert(serviceConnections, MobService.HostileAction:Connect(function(model: Model, attacker: Player)
 		local record = records[model]
 		if record == nil or livingRoot(attacker) == nil then return end
-		if record.state ~= "Return" then record.hostileAttacker = attacker end
+		record.hostileAttacker = attacker
+		record.target = attacker
 		requestSocialAssist(record, attacker)
 	end))
 	for _, model in MobService.getAll() do
