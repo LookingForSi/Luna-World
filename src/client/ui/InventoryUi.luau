@@ -374,6 +374,10 @@ function InventoryUi.start(actionCallbacks: any): ()
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 8
+	-- The full-screen input blocker is a sibling of InventoryPanel. In Sibling
+	-- mode the panel's whole subtree stays above that blocker instead of child
+	-- labels/buttons (default ZIndex=1) falling behind it.
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = player:WaitForChild("PlayerGui")
 	local blocker = Instance.new("TextButton")
 	blocker.Name = "ModalBlocker"
