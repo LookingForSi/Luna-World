@@ -561,7 +561,7 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 		{ offset = Vector3.new(10, 0, 145), size = Vector3.new(330, 32, 240), yaw = -3 },
 	}
 
-	for index, spec in ipairs(lobes) do
+	for _, spec in ipairs(lobes) do
 		local position = center + spec.offset
 		local rotation = CFrame.Angles(0, math.rad(spec.yaw), 0)
 		terrain:FillBlock(
