@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+"""High-level static contract for the consolidated playtest release candidate."""
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+read = lambda p: (ROOT / p).read_text(encoding="utf-8")
+
+account = read("src/shared/persistence/AccountSchema.luau")
+lobby = read("src/client/controllers/CharacterLobbyController.luau")
+responsive = read("src/client/ui/ResponsiveLayout.luau")
+craft = read("src/shared/definitions/CraftingDefinitions.luau")
+mobs = read("src/shared/definitions/MobDefinitions.luau")
+world = read("src/server/world/NorthernZonesBlockout.luau")
+movement = read("src/client/controllers/MovementController.luau")
+progression = read("src/server/services/ProgressionService.luau")
+combat = read("src/server/services/CombatService.luau")
+server = read("src/server/main.server.luau")
+
+assert "DataVersion = 3" in account
+assert "CharacterOrder" in account and "Characters" in account
+assert "ResponsiveLayout.observe" in lobby and "MobilePortrait" in lobby
+assert "MobileLandscape" in responsive and "MinimumTouchTarget = 44" in responsive
+
+for discipline in ('"Knight"', '"Ranger"', '"Mystic"', '"Material"'):
+    assert discipline in craft
+
+assert 'displayName = "Ядовитый паук", level = 6' in mobs
+assert 'displayName = "Паук-матка", level = 8' in mobs
+assert 'aggressionMode = "Passive"' in mobs
+
+for token in (
+    "fillCurvedRidge",
+    "fillContinuousLakePath",
+    'ContinuousWaterBody", true',
+    'OrganicShoreline", true',
+    "slopeRows",
+):
+    assert token in world
+
+assert "Enum.HumanoidStateType.Swimming" in movement
+assert "Enum.ContextActionResult.Pass" in movement
+assert "levelsGained > 0" in progression
+assert "restorePlayerVitalsAfterLevelUp" in progression
+assert "humanoid.Health = humanoid.MaxHealth" in combat
+assert "restoreCombatPoints(player)" in combat
+
+assert server.index("Players.CharacterAutoLoads = false") < server.index('WaitForChild("LunaWorldPlayableBlockout"')
+
+print("Consolidated playtest release candidate contract: PASS")
