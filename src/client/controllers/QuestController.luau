@@ -501,6 +501,7 @@ function QuestController.start(): ()
 	rootGui.ResetOnSpawn = false
 	rootGui.IgnoreGuiInset = false
 	rootGui.DisplayOrder = 8
+	rootGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	rootGui.Parent = player:WaitForChild("PlayerGui")
 	gui = rootGui
 
