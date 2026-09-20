@@ -301,7 +301,10 @@ local function activeTargetForQuest(quest: any): (Vector3?, string?)
 			return existing:GetPivot().Position, quest.displayName
 		end
 		local base = poi(definition.poiId)
-		return if base ~= nil then base + (definition.positionOffset or Vector3.zero) else nil, quest.displayName
+		if base ~= nil then
+			return base + (definition.positionOffset or Vector3.zero), quest.displayName
+		end
+		return nil, quest.displayName
 	end
 
 	for _, objective in quest.objectives do
