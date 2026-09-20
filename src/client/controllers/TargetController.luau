@@ -269,10 +269,15 @@ function TargetController.start(targetChanged: (Model?) -> ()): ()
 	onTargetChanged = targetChanged
 
 	inputBeganConnection = UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
-		-- Touch is handled only by TouchTap so one tap cannot issue two requests.
-		if gameProcessed or input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+		if gameProcessed then return end
+		if input.UserInputType == Enum.UserInputType.MouseButton2 then
+			-- Desktop clear-target shortcut. Do not sink the input so Roblox camera
+			-- rotation can still use the right mouse button naturally.
+			TargetController.clearTarget()
 			return
 		end
+		-- Touch is handled only by TouchTap so one tap cannot issue two requests.
+		if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
 		selectAtScreenPosition(Vector2.new(input.Position.X, input.Position.Y), false)
 	end)
 
