@@ -31,11 +31,25 @@ assert "LastInputTypeChanged" in read("src/client/ui/ResponsiveLayout.luau")
 assert "MobilePortrait" in lobby and "CreationModal" in lobby and 'Name = "Close"' in lobby
 assert "Мой Roblox ник" in lobby and "Имя свободно" in lobby
 assert "Class_" in lobby and "Body_" in lobby and "refreshClassButtons" in lobby and "refreshBodyButtons" in lobby
-assert "SettingsButton" in lobby and "SettingsModal" in lobby and 'send("UpdateSettings"' in lobby
+assert "SettingsButton" not in lobby and "SettingsModal" not in lobby
 assert "Studio: любое непустое имя" in lobby and "Имя доступно в Studio" in lobby
 assert "palette.accent" in lobby and "palette.moon" in lobby and "palette.gold" not in lobby
 assert "looseStudioNicknames" in service and "PersistenceConfig.UseDataStoreInStudio" in service
 assert 'CharacterRules.validateCreation(p, looseStudioNicknames())' in service
+combat_config = read("src/shared/config/CombatConfig.luau")
+character_config = read("src/shared/config/CharacterConfig.luau")
+respawn = read("src/server/services/RespawnService.luau")
+combat = read("src/server/services/CombatService.luau")
+hud = read("src/client/ui/CombatHud.luau")
+assert 'NicknameAttribute = "CharacterNickname"' in character_config
+assert "player:SetAttribute(CombatConfig.ArchetypeAttribute, character.ArchetypeId)" in data
+assert "player:SetAttribute(CharacterConfig.NicknameAttribute, character.Nickname or player.DisplayName)" in data
+assert data.index("player:SetAttribute(CombatConfig.ArchetypeAttribute, character.ArchetypeId)") < data.index('setState(player, s, "CharacterReady")')
+assert "humanoid.DisplayName = nickname" in respawn
+assert "Character Lobby owns the first spawn" in respawn
+assert "Never manufacture the default knight before Character Lobby selection" in combat
+assert "initializeReadyPlayer" in combat
+assert "CharacterConfig.NicknameAttribute" in hud and "updatePlayerName" in hud
 assert "CharacterRequest" in project["tree"]["ReplicatedStorage"]["Remotes"]
 server_bootstrap = read("src/server/main.server.luau")
 assert server_bootstrap.index("Players.CharacterAutoLoads = false") < server_bootstrap.index('WaitForChild("LunaWorldPlayableBlockout"')
