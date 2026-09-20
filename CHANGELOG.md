@@ -20,6 +20,7 @@
 - При фактическом level-up CP, HP и class resource полностью восстанавливаются до новых максимумов; обычный XP без повышения уровня refill не даёт.
 - Исправлен Character Lobby → runtime bridge: выбранный archetype и nickname переносятся до первого spawn, CombatService больше не создаёт ранний default-knight state, RespawnService не спавнит персонажа до CharacterReady; nickname показывается в HUD и над персонажем.
 - Инвентарь больше не затемняет весь экран: modal blocker оставлен только как невидимый input shield, а панель инвентаря сделана практически непрозрачной для чтения.
+- То же правило применено ко всем gameplay-модалкам: торговец/кузнец, NPC dialogue, quest offer и travel confirm больше не используют fullscreen dark veil; EconomyUi переведён на sibling Z-order, чтобы текст и кнопки не попадали под собственный blocker.
 
 
 ### Changed
