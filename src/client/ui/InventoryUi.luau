@@ -294,6 +294,7 @@ function InventoryUi.showResult(result: any): ()
 			NotConsumable = "Этот предмет нельзя использовать.",
 			EmptySlot = "Слот пуст.",
 			InvalidSlot = "Некорректный слот.",
+			DropUnavailable = "Не удалось положить предмет на землю.",
 		}
 		statusLabel.Text = reasons[result.reason] or "Действие отклонено."
 		statusLabel.TextColor3 = Color3.fromRGB(222, 145, 145)
