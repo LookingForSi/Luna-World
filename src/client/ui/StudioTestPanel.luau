@@ -13,7 +13,9 @@ local player = Players.LocalPlayer
 local screenGui: ScreenGui? = nil
 local archetypeAttributeConnection: RBXScriptConnection? = nil
 local levelAttributeConnection: RBXScriptConnection? = nil
+local speedAttributeConnection: RBXScriptConnection? = nil
 local levelValueLabel: TextLabel? = nil
+local speedButton: TextButton? = nil
 local buttonConnections: { RBXScriptConnection } = {}
 local buttons: { [string]: TextButton } = {}
 
@@ -43,6 +45,13 @@ local function updateLevel(): ()
 	end
 end
 
+local function updateSpeed(): ()
+	if speedButton == nil then return end
+	local active = player:GetAttribute(CombatConfig.StudioMovementMultiplierAttribute) == 5
+	speedButton.Text = if active then "SPEED x5 · ON" else "SPEED x5"
+	speedButton.BackgroundColor3 = if active then Color3.fromRGB(92, 105, 58) else Color3.fromRGB(42, 45, 56)
+end
+
 function StudioTestPanel.start(): ()
 	StudioTestPanel.stop()
 	if not RunService:IsStudio() then return end
@@ -50,12 +59,15 @@ function StudioTestPanel.start(): ()
 	local candidate = remotes:WaitForChild("StudioSetArchetype", 5)
 	local levelCandidate = remotes:WaitForChild("StudioSetLevel", 5)
 	local testItemsCandidate = remotes:WaitForChild("StudioGrantTestItems", 5)
+	local speedCandidate = remotes:WaitForChild("StudioToggleSpeed", 5)
 	if candidate == nil or not candidate:IsA("RemoteEvent") then return end
 	if levelCandidate == nil or not levelCandidate:IsA("RemoteEvent") then return end
 	if testItemsCandidate == nil or not testItemsCandidate:IsA("RemoteEvent") then return end
+	if speedCandidate == nil or not speedCandidate:IsA("RemoteEvent") then return end
 	local remote = candidate :: RemoteEvent
 	local levelRemote = levelCandidate :: RemoteEvent
 	local testItemsRemote = testItemsCandidate :: RemoteEvent
+	local speedRemote = speedCandidate :: RemoteEvent
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "StudioTestPanel"
@@ -138,21 +150,31 @@ function StudioTestPanel.start(): ()
 		testItemsRemote:FireServer()
 	end))
 
+	speedButton = makeLevelButton("SpeedX5", "SPEED x5", 156, 136)
+	speedButton.Position = UDim2.fromOffset(156, 104)
+	table.insert(buttonConnections, speedButton.Activated:Connect(function()
+		speedRemote:FireServer()
+	end))
+
 	archetypeAttributeConnection = player:GetAttributeChangedSignal(CombatConfig.ArchetypeAttribute):Connect(updateSelection)
 	levelAttributeConnection = player:GetAttributeChangedSignal(ProgressionConfig.LevelAttribute):Connect(updateLevel)
+	speedAttributeConnection = player:GetAttributeChangedSignal(CombatConfig.StudioMovementMultiplierAttribute):Connect(updateSpeed)
 	screenGui = gui
 	updateSelection()
 	updateLevel()
+	updateSpeed()
 end
 
 function StudioTestPanel.stop(): ()
 	if archetypeAttributeConnection ~= nil then archetypeAttributeConnection:Disconnect(); archetypeAttributeConnection = nil end
 	if levelAttributeConnection ~= nil then levelAttributeConnection:Disconnect(); levelAttributeConnection = nil end
+	if speedAttributeConnection ~= nil then speedAttributeConnection:Disconnect(); speedAttributeConnection = nil end
 	for _, connection in buttonConnections do connection:Disconnect() end
 	table.clear(buttonConnections)
 	table.clear(buttons)
 	if screenGui ~= nil then screenGui:Destroy(); screenGui = nil end
 	levelValueLabel = nil
+	speedButton = nil
 end
 
 return StudioTestPanel
