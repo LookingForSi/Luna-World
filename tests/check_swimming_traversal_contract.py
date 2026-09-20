@@ -45,17 +45,29 @@ if "shapeGoblinCemeteryLakeHillCliff" in north:
 for token in (
     "LAKE_WATER_DEPTH = 30",
     "LAKE_BASIN_CLEAR_DEPTH = 42",
-    "LAKE_SHORE_CLEAR_MARGIN = 18",
+    "LAKE_SHORE_CLEAR_MARGIN = 22",
+    "LAKE_BOUNDARY_MARGIN = 28",
+    "LAKE_SLAB_STEP = 56",
+    "LAKE_SLAB_OVERLAP = 28",
     'DeepBasinExcavated", true',
     "prepareGoblinCampBoundaryShelf",
-    "carveLakeDisc",
-    "fillContinuousLakePath",
-    'ExtendsToWorldEdge", true',
+    "fillFlatLakeSlab",
+    'ExtendsToWorldEdge", false',
+    'ContainedWithinWorldBounds", true',
+    'FlatWaterSurface", true',
     'ContinuousWaterBody", true',
     'OrganicShoreline", true',
 ):
     if token not in north:
         raise AssertionError(f"deep lake / overhang contract missing: {token}")
+
+for lake_forbidden in (
+    "carveLakeDisc",
+    "fillContinuousLakePath",
+    "bounds.maxX + 80",
+):
+    if lake_forbidden in north:
+        raise AssertionError(f"lake still uses sliced/out-of-bounds generation: {lake_forbidden}")
 
 for forbidden in (
     "fellIntoRiver",
