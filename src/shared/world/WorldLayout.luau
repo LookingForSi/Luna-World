@@ -217,6 +217,7 @@ local WorldLayout: WorldLayoutDefinition = {
 		{ id = "poi_elder_house", position = scaleXZ(55, 64, -185) },
 		{ id = "poi_shrine", position = scaleXZ(-55, 64, -195) },
 		{ id = "poi_moonfall_farm", position = scaleXZ(-180, 8, 365) },
+		{ id = "poi_young_wolf_staging", position = scaleXZ(-255, 8, 485) },
 		{ id = "poi_meadow_bridge", position = scaleXZ(-35, 7, 300) },
 		{ id = "poi_stone_circle", position = scaleXZ(135, 6, 545) },
 		{ id = "exit_moonfall_road", position = scaleXZ(0, 6, 790) },
