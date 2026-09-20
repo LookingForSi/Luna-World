@@ -591,6 +591,7 @@ local function openDialogue(value: any): ()
 	clearChildren(dialogue)
 	dialogue.Visible = true
 	if questOffer ~= nil then questOffer.Visible = false end
+	if travelConfirm ~= nil then travelConfirm.Visible = false end
 
 	local close = HudLayout.makeCloseButton(dialogue, 12)
 	table.insert(connections, close.Activated:Connect(function()
