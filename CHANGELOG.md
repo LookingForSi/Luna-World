@@ -12,12 +12,14 @@
 - Character Lobby дополнительно защищён для playtest: Roblox auto-spawn отключается до world bootstrap, Studio nickname index работает без включённого API Services, creation modal адаптирован под phone portrait и показывает результат проверки nickname внутри окна.
 - Character Lobby теперь занимает весь viewport устройства; исправлен input-race, при котором `LastInputTypeChanged` мог перерисовать lobby между нажатием и `Activated` и визуально делать кнопку «Создать персонажа» нерабочей.
 - Creation UX переработан: выбранные класс и пол теперь визуально фиксируются, Studio принимает любое непустое имя без TextService/боевого nickname-policy, а live nickname-pattern исправлен для обычных имён вроде `Astrafox` и `LookingFor`.
-- Нижний декоративный текст «Настройки» заменён рабочим modal с account settings; весь lobby переведён с горчичной палитры на холодную лунную сине-фиолетовую тему Luna World.
+- Lobby переведён с горчичной палитры на холодную лунную сине-фиолетовую тему Luna World; незавершённые настройки UI/text/sound временно скрыты до отдельного прохода.
 - Добавлена кнопка «Мой Roblox ник» и сохранена генерация случайного fantasy nickname.
 - Spider Hollow использует непрерывные изогнутые terrain-ridges вместо отдельных куч.
 - Озеро перестроено как единый глубокий swimmable water body: непрерывная плотная цепочка перекрывающихся Terrain.Water-сечений, единая вырезанная чаша, organic shoreline и продолжение воды к внешней границе мира.
 - Поднятая boundary-facing площадка Goblin Camp сохраняет высоту, но внутренний край переходит в длинный пологий terrain-склон вместо резкого обрыва.
 - При фактическом level-up CP, HP и class resource полностью восстанавливаются до новых максимумов; обычный XP без повышения уровня refill не даёт.
+- Исправлен Character Lobby → runtime bridge: выбранный archetype и nickname переносятся до первого spawn, CombatService больше не создаёт ранний default-knight state, RespawnService не спавнит персонажа до CharacterReady; nickname показывается в HUD и над персонажем.
+- Инвентарь больше не затемняет весь экран: modal blocker оставлен только как невидимый input shield, а панель инвентаря сделана практически непрозрачной для чтения.
 
 
 ### Changed
