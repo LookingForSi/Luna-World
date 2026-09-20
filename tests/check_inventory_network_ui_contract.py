@@ -53,7 +53,7 @@ for token in ("Enum.KeyCode.I", "Enum.KeyCode.ButtonSelect", "requestSnapshot"):
     if token not in CONTROLLER:
         raise AssertionError(f"inventory controller missing {token}")
 
-for token in ('"InventoryPanel"', '"InventoryList"', '"EquipmentList"', '"Equip"', '"Unequip"', '"Use"', '"Discard"'):
+for token in ('"InventoryPanel"', '"InventoryToggleButton"', '"ИНВЕНТАРЬ [I]"', '"InventoryList"', '"EquipmentList"', '"Equip"', '"Unequip"', '"Use"', '"Discard"'):
     if token not in UI:
         raise AssertionError(f"inventory UI missing {token}")
 
