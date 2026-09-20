@@ -112,6 +112,9 @@ def main() -> None:
     for token in (
         "MoonfallRoad",
         "GoblinCamp",
+        "createCampPalisadeLine",
+        "gateHalfWidth = 32",
+        '"CampPalisade%02d"',
         '"Foundation"',
         "SpiderHollow",
         "prepareSpiderHollowTerrain",
@@ -134,9 +137,9 @@ def main() -> None:
         assert token in north
     assert "BillboardGui" not in north
     assert "Enum.Material.Glass" not in north
-    assert "createPalisadeLine" not in north
-    assert "fenceSegments" not in north
-    assert '"Palisade%02d"' not in north
+    assert "postSpacing = 4.0" in north
+    assert "PalisadeCollision = true" in north
+    assert "fenceSegments" in north
     assert "Grounding.treeSurfaceAt(position)" in north
     assert "for index = 1, 11 do" in north
 
