@@ -9,6 +9,7 @@ local pending = {}
 local selected: string?
 local roster: any
 local stopObserve: (() -> ())?
+local layoutMetrics: ResponsiveLayout.Metrics?
 local result = ReplicatedStorage.Remotes.CharacterResult
 local request = ReplicatedStorage.Remotes.CharacterRequest
 local palette = {
@@ -44,6 +45,9 @@ local function render()
 	if not screen then
 		return
 	end
+	local metrics = layoutMetrics or ResponsiveLayout.metrics(workspace.CurrentCamera)
+	local portrait = metrics.mode == "MobilePortrait"
+	local smallTouch = ResponsiveLayout.isSmallTouch(metrics)
 	local root = screen:FindFirstChild("LobbyRoot") :: Frame
 	if not root then
 		return
@@ -75,8 +79,8 @@ local function render()
 		Name = "CharacterRoster",
 		BackgroundColor3 = palette.panel,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0, 0, 0, 92),
-		Size = UDim2.new(0.38, -8, 1, -132),
+		Position = if portrait then UDim2.new(0, 0, 0, 88) else UDim2.new(0, 0, 0, 92),
+		Size = if portrait then UDim2.new(1, 0, 0, 188) else UDim2.new(0.38, -8, 1, -132),
 		CanvasSize = UDim2.fromOffset(0, 0),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollBarThickness = 5,
@@ -113,11 +117,14 @@ local function render()
 			TextSize = 16,
 		})
 		add.Activated:Connect(function()
-			local modal = new("Frame", root, {
+			local modalSize = ResponsiveLayout.modalSize(metrics, Vector2.new(460, 420))
+			local modal = new("ScrollingFrame", root, {
 				Name = "CreationModal",
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.fromScale(0.5, 0.52),
-				Size = UDim2.fromOffset(460, 420),
+				Size = UDim2.fromOffset(modalSize.X, modalSize.Y),
+				CanvasSize = UDim2.fromOffset(0, 420),
+				ScrollBarThickness = if smallTouch then 5 else 0,
 				BackgroundColor3 = palette.panel,
 				BorderSizePixel = 0,
 				ZIndex = 5,
@@ -131,6 +138,18 @@ local function render()
 				Font = Enum.Font.GothamBold,
 				ZIndex = 6,
 			})
+			local close = new("TextButton", modal, {
+				Name = "Close",
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, -8, 0, 8),
+				Size = UDim2.fromOffset(44, 44),
+				BackgroundColor3 = palette.bg,
+				TextColor3 = palette.text,
+				Text = "×",
+				TextSize = 24,
+				ZIndex = 7,
+			})
+			close.Activated:Connect(function() modal:Destroy() end)
 			local name = new("TextBox", modal, {
 				Name = "Nickname",
 				Position = UDim2.fromOffset(30, 65),
@@ -146,7 +165,7 @@ local function render()
 				local b = new("TextButton", modal, {
 					Position = UDim2.new((i - 1) / 3, 10, 0, 135),
 					Size = UDim2.new(1 / 3, -20, 0, 55),
-					Text = string.upper(v),
+					Text = if v == "knight" then "РЫЦАРЬ" else if v == "ranger" then "СЛЕДОПЫТ" else "МИСТИК",
 					TextSize = 14,
 					ZIndex = 6,
 				})
@@ -166,11 +185,23 @@ local function render()
 					body = v
 				end)
 			end
+			local mine = new("TextButton", modal, {
+				Position = UDim2.new(0, 30, 0, 280),
+				Size = UDim2.new(0.34, -24, 0, 44),
+				Text = "Мой Roblox ник",
+				TextSize = 13,
+				ZIndex = 6,
+			})
+			mine.Activated:Connect(function()
+				name.Text = Players.LocalPlayer.Name
+				send("CheckNickname", { nickname = name.Text })
+				status.Text = "Проверяем имя…"
+			end)
 			local random = new("TextButton", modal, {
-				Position = UDim2.fromOffset(30, 280),
-				Size = UDim2.new(0.45, -35, 0, 44),
-				Text = "🎲 Случайное имя",
-				TextSize = 15,
+				Position = UDim2.new(0.34, 8, 0, 280),
+				Size = UDim2.new(0.33, -16, 0, 44),
+				Text = "🎲 Случайное",
+				TextSize = 13,
 				ZIndex = 6,
 			})
 			random.Activated:Connect(function()
@@ -178,12 +209,13 @@ local function render()
 				local z = { "dor", "wyn", "ris", "fox", "riel" }
 				name.Text = a[math.random(#a)] .. z[math.random(#z)]
 				send("CheckNickname", { nickname = name.Text })
+				status.Text = "Проверяем имя…"
 			end)
 			local check = new("TextButton", modal, {
-				Position = UDim2.new(0.5, 5, 0, 280),
-				Size = UDim2.new(0.5, -35, 0, 44),
+				Position = UDim2.new(0.67, 8, 0, 280),
+				Size = UDim2.new(0.33, -38, 0, 44),
 				Text = "Проверить",
-				TextSize = 15,
+				TextSize = 13,
 				ZIndex = 6,
 			})
 			check.Activated:Connect(function()
@@ -210,8 +242,8 @@ local function render()
 	end
 	local preview = new("Frame", root, {
 		Name = "CharacterPreview",
-		Position = UDim2.new(0.4, 8, 0, 92),
-		Size = UDim2.new(0.6, -8, 1, -132),
+		Position = if portrait then UDim2.new(0, 0, 0, 286) else UDim2.new(0.4, 8, 0, 92),
+		Size = if portrait then UDim2.new(1, 0, 1, -320) else UDim2.new(0.6, -8, 1, -132),
 		BackgroundColor3 = palette.panel,
 		BorderSizePixel = 0,
 	})
@@ -355,16 +387,25 @@ function CharacterLobbyController.start(): ()
 	)
 	local root = new("Frame", screen, { Name = "LobbyRoot", BackgroundColor3 = palette.bg, BorderSizePixel = 0 })
 	stopObserve = ResponsiveLayout.observe(function(m)
+		layoutMetrics = m
 		local size = ResponsiveLayout.modalSize(m, Vector2.new(1120, 720))
 		root.Size = UDim2.fromOffset(size.X, size.Y)
 		root.Position = UDim2.fromScale(0.5, 0.5)
 		root.AnchorPoint = Vector2.new(0.5, 0.5)
+		if roster ~= nil then render() end
 	end)
 	result.OnClientEvent:Connect(function(p)
 		if typeof(p) ~= "table" then
 			return
 		end
 		pending[p.requestId] = nil
+		if p.action == "CheckNickname" then
+			local s = screen and screen:FindFirstChild("LobbyRoot") and screen.LobbyRoot:FindFirstChild("Status")
+			if s then
+				s.Text = if p.ok then "Имя свободно" else "Имя недоступно: " .. tostring(p.reason)
+			end
+			return
+		end
 		if p.ok and p.data then
 			roster = p.data
 			if not selected and roster.characters[1] then
