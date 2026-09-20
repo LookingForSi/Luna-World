@@ -313,10 +313,23 @@ local function createFenceLine(parent: Instance, name: string, fromPosition: Vec
 				0.65,
 				0.65,
 				Enum.Material.Wood,
-				COLORS.timber,
-				{ canCollide = false }
+				COLORS.timber
 			)
 		end
+
+		-- The visible rails are intentionally thin. A transparent full-height barrier
+		-- gives the fence reliable character collision without making the blockout chunky.
+		P.segment(
+			fence,
+			string.format("Collision_%02d", index),
+			a + Vector3.new(0, 2.7, 0),
+			b + Vector3.new(0, 2.7, 0),
+			1.1,
+			5.4,
+			Enum.Material.SmoothPlastic,
+			Color3.new(1, 1, 1),
+			{ transparency = 1, attributes = { FenceCollision = true } }
+		)
 	end
 end
 
