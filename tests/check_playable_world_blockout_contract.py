@@ -134,15 +134,19 @@ def main() -> None:
         "LAKE_SURFACE_DROP = 8",
         "LAKE_WATER_DEPTH = 30",
         "LAKE_BASIN_CLEAR_DEPTH = 42",
-        "LAKE_SHORE_CLEAR_MARGIN = 18",
+        "LAKE_SHORE_CLEAR_MARGIN = 22",
+        "LAKE_BOUNDARY_MARGIN = 28",
+        "LAKE_SLAB_STEP = 56",
+        "LAKE_SLAB_OVERLAP = 28",
         'DeepBasinExcavated", true',
         "prepareGoblinCampBoundaryShelf",
         "slopeRows",
         "slopeRadius = 105",
-        "carveLakeDisc",
-        "fillContinuousLakePath",
-        'ExtendsToWorldEdge", true',
-        'OpenWaterBoundary", true',
+        "fillFlatLakeSlab",
+        'ExtendsToWorldEdge", false',
+        'ContainedWithinWorldBounds", true',
+        'OpenWaterBoundary", false',
+        'FlatWaterSurface", true',
         'ContinuousWaterBody", true',
         'OrganicShoreline", true',
         "DarkWoodlandThreshold",
@@ -158,6 +162,9 @@ def main() -> None:
     assert "shapeGoblinCemeteryLakeHillCliff" not in north
     assert "Enum.Material.Water" in north
     assert "Enum.Material.Glass" not in north
+    assert "carveLakeDisc" not in north
+    assert "fillContinuousLakePath" not in north
+    assert "bounds.maxX + 80" not in north
     assert "postSpacing = 4.0" in north
     assert "PalisadeCollision = true" in north
     assert "fenceSegments" in north
