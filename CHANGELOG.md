@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### dev0.2 — Swimming traversal
+
+- River and Goblin/Cemetery lake Terrain water are now valid traversal: entering `Swimming` no longer teleports the player back to the last safe point.
+- Hidden `WaterRecovery` hazard volumes were removed from both water bodies; traversal recovery is now reserved for genuine out-of-world / world-bounds failures.
+- Luna still disables free jumping on land, but while the Humanoid is in Roblox `Swimming` state the stock jump/swim-up action is passed through. On touch, the stock jump button is shown only while swimming.
+- Legacy jump suppression was removed from `ZonePresentation.client.luau`; movement policy now lives only in `MovementController`.
+
 ### dev0.2 — Economy usability / crafting planning
 
 - Стартовое Newbie-оружие приведено к классовой схеме: Рыцарь — «Учебный меч», Следопыт — «Учебный лук», Мистик — «Учебный посох»; Studio-переключение класса теперь атомарно обновляет persistent archetype и экипирует соответствующее стартовое оружие.
