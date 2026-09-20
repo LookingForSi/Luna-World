@@ -39,9 +39,12 @@ assert 'aggressionMode = "Passive"' in mobs
 for token in (
     "fillCurvedRidge",
     "shapeGoblinCemeteryLakeHillCliff",
-    'Purpose", "TraversalBarrier"',
-    "LAKE_WATER_DEPTH = 12",
-    '"WaterRecovery%02d"',
+    'Purpose", "SwimmableWater"',
+    "LAKE_WATER_DEPTH = 30",
+    "LAKE_BASIN_CLEAR_DEPTH = 40",
+    "LAKE_CLEAR_MARGIN = 34",
+    'DeepBasinExcavated", true',
+    "clearBottomY = waterSurfaceY + 1",
     'HillBankCliff", true',
 ):
     assert token in world
@@ -53,6 +56,8 @@ for forbidden in (
     "carveLakeDisc",
     "LakeBedFilled",
     "ContainedWithinWorldBounds",
+    "ExtendsToWorldEdge",
+    "WaterRecovery",
 ):
     assert forbidden not in world
 
