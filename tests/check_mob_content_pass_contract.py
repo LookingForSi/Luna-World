@@ -66,6 +66,7 @@ for ability_id in (
 for marker in (
     "spawn_young_wolf_farm",
     "spawn_wolf_pack_leader",
+    "spawn_wolf_pack_moonfall",
     "spawn_goblin_patrol_south",
     "spawn_goblin_patrol_east",
     "spawn_goblin_patrol_north",
@@ -87,6 +88,19 @@ young_wolf_body = LAYOUT.split('id = "spawn_young_wolf_farm"', 1)[1].split("}", 
 for token in ("count = 8", "patrolRadius = scaleDistance(44)", "patrolCycleSeconds = 6"):
     if token not in young_wolf_body:
         raise AssertionError(f"starter wolf staging must keep the approved roaming pack contract: {token}")
+
+moonfall_wolf_body = LAYOUT.split('id = "spawn_wolf_pack_moonfall"', 1)[1].split("}", 1)[0]
+for token in ("count = 4", 'socialGroupId = "wolf_pack_moonfall"', "patrolRadius = scaleDistance(46)", "patrolCycleSeconds = 6"):
+    if token not in moonfall_wolf_body:
+        raise AssertionError(f"second Moonfall wolf pack must keep the approved roaming contract: {token}")
+
+for token in (
+    "detectionRadius = 52, aggroRadius = 45, reacquireRadius = 60, leashDistance = 112",
+    "chaseSpeed = 15, decisionIntervalSeconds = 0.36",
+    "detectionRadius = 60, aggroRadius = 51, reacquireRadius = 69, leashDistance = 135",
+):
+    if token not in MOBS:
+        raise AssertionError(f"wolf mobility/aggro tuning is missing: {token}")
 
 if 'id = "spawn_spider_hollow_swarm"' not in LAYOUT or 'count = 8' not in LAYOUT:
     raise AssertionError("Spider Hollow must expose the eight-spider ordinary population")
