@@ -94,6 +94,39 @@ function EconomyRules.sell(profile: PersistenceTypes.Profile, instanceId: string
 	return nextProfile, nil
 end
 
+function EconomyRules.sellBatch(
+	profile: PersistenceTypes.Profile,
+	selections: { any }
+): (PersistenceTypes.Profile?, FailureReason?, number?)
+	if #selections < 1 or #selections > 40 then return nil, "InvalidQuantity", nil end
+	local nextProfile = ProfileSchema.clone(profile)
+	local total = 0
+	local seen: { [string]: boolean } = {}
+
+	for _, selection in selections do
+		local instanceId = selection.instanceId
+		local quantity = selection.quantity
+		if typeof(instanceId) ~= "string" or seen[instanceId] or not EconomyRules.positiveInteger(quantity) then
+			return nil, "InvalidQuantity", nil
+		end
+		seen[instanceId] = true
+
+		local record = nextProfile.Items[instanceId]
+		if record == nil then return nil, "NotOwned", nil end
+		local price = EconomyRules.buybackPrice(record.ItemId)
+		if price == nil then return nil, "NotForSale", nil end
+		if quantity > record.Quantity then return nil, "InvalidQuantity", nil end
+
+		local after, reason = InventoryRules.discard(nextProfile, instanceId, quantity)
+		if after == nil then return nil, reason :: FailureReason, nil end
+		nextProfile = after
+		total += price * quantity
+	end
+
+	nextProfile.Luna += total
+	return nextProfile, nil, total
+end
+
 function EconomyRules.craft(profile: PersistenceTypes.Profile, recipeId: string, generateId: () -> string): (PersistenceTypes.Profile?, FailureReason?)
 	local recipe = CraftingDefinitions[recipeId]
 	if recipe == nil then return nil, "InvalidCraft" end
