@@ -246,6 +246,34 @@ function CombatService.refreshPlayerStats(player: Player): boolean
 	return true
 end
 
+
+function CombatService.restorePlayerVitalsAfterLevelUp(player: Player): boolean
+	if player.Parent ~= Players or not PlayerDataService.isReady(player) then return false end
+
+	-- Rebuild the authoritative snapshot first so the refill uses the new
+	-- level's maxima (including equipment modifiers).
+	local state = statesByPlayer[player]
+	if state == nil then
+		state = getState(player)
+	else
+		CombatService.refreshPlayerStats(player)
+		state = statesByPlayer[player]
+	end
+	if state == nil then return false end
+
+	state.stats.resource = ResourceRules.restore(state.stats.resource, state.stats.resource.maximum)
+	state.regenerationElapsed = 0
+	replicateResource(player, state)
+	restoreCombatPoints(player)
+
+	local character = player.Character
+	local humanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+	if humanoid ~= nil and humanoid.Health > 0 then
+		humanoid.Health = humanoid.MaxHealth
+	end
+	return true
+end
+
 local function getPlayerByCanonicalTargetId(targetId: string): Player?
 	for _, candidate in Players:GetPlayers() do
 		if targetId == "player:" .. tostring(candidate.UserId) then return candidate end
