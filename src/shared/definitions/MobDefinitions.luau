@@ -74,7 +74,7 @@ local definitions: { [string]: CombatTypes.MobDefinition } = {
 		detectionRadius = 42, aggroRadius = 36, reacquireRadius = 50, leashDistance = 100,
 		attackRange = 16, basicAttackRange = 12, basicAttackDamage = 38, basicAttackDamageType = "Physical",
 		attackWindupSeconds = 0.35, attackIntervalSeconds = 1.65, chaseSpeed = 12, decisionIntervalSeconds = 0.4,
-		restoreHealthOnReturn = true, socialAssistRadius = 34, abilityIds = ids({ "goblin_battle_cry", "goblin_heavy_strike" }),
+		restoreHealthOnReturn = true, socialAssistRadius = 34, abilityIds = ids({ "goblin_battle_cry", "goblin_heavy_strike", "goblin_cleave" }),
 	}),
 	spider = mob({
 		id = "mob_spider", displayName = "Ядовитый паук", level = 4, maxHealth = 175,

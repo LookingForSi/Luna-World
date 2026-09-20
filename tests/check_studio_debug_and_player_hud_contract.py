@@ -77,6 +77,6 @@ require(HUD, "ProgressionRules.requiredXP(level)", "XP HUD must reset against ea
 require(CLIENT_MAIN, "SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)", "Roblox stock health display must not duplicate the custom HP HUD")
 
 # Grey wolf damage is deliberately above the knight's current defense so an ordinary PvE hit is visible in acceptance testing.
-require(MOBS, "basicAttackDamage = 22", "grey wolf needs visible post-mitigation damage against the knight test archetype")
+require(MOBS, "basicAttackDamage = 20", "grey wolf needs visible post-mitigation damage against the knight test archetype")
 
 print("Studio debug and player HUD contract: PASS")

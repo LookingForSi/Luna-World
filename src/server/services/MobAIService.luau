@@ -327,14 +327,15 @@ function MobAIService.start(serverAttackRequest: AttackRequest): ()
 	table.insert(serviceConnections, MobService.HostileAction:Connect(function(model: Model, attacker: Player)
 		local record = records[model]
 		if record == nil or livingRoot(attacker) == nil then return end
-		if record.state ~= "Return" then record.hostileAttacker = attacker end
 		local socialGroupId = model:GetAttribute("SocialGroupId")
-		if typeof(socialGroupId) ~= "string" or socialGroupId == "" then return end
+		local typedSocialGroupId = if typeof(socialGroupId) == "string" then socialGroupId else nil
+		if record.state ~= "Return" then record.hostileAttacker = attacker end
+		if not MobAIRules.canRequestSocialAssist(record.state, typedSocialGroupId) then return end
 		local _, sourceRoot = mobParts(model)
 		if sourceRoot == nil then return end
 		for otherModel, otherRecord in records do
 			if otherModel ~= model
-				and otherModel:GetAttribute("SocialGroupId") == socialGroupId
+				and otherModel:GetAttribute("SocialGroupId") == typedSocialGroupId
 				and otherRecord.state ~= "Return"
 			then
 				local otherHumanoid, otherRoot = mobParts(otherModel)

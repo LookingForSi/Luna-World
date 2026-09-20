@@ -32,6 +32,11 @@ local definitions: { [string]: CombatTypes.MobAbilityDefinition } = {
 		damageType = "Physical", range = 12, damage = 34, windupSeconds = 0.65, cooldownSeconds = 6,
 		presentationKey = "mob_heavy_strike",
 	}),
+	goblin_cleave = ability({
+		id = "goblin_cleave", displayName = "Рассекающий удар", kind = "AreaDamage",
+		damageType = "Physical", range = 13, damage = 27, windupSeconds = 0.8, cooldownSeconds = 9,
+		presentationKey = "mob_goblin_cleave", radius = 12,
+	}),
 	goblin_battle_cry = ability({
 		id = "goblin_battle_cry", displayName = "Боевой клич", kind = "SelfDamageBuff",
 		damageType = "Physical", range = 16, damage = 0, windupSeconds = 0.7, cooldownSeconds = 24,

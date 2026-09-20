@@ -271,6 +271,8 @@ return function(TestRunner)
 		assert(MobAbilityDefinitions.spider_venom_spit.kind == "DamageOverTime")
 		assert(MobAbilityDefinitions.spider_crippling_venom.kind == "Crippling")
 		assert(MobAbilityDefinitions.goblin_war_chant.kind == "AllyDamageBuff")
+		assert(MobAbilityDefinitions.goblin_cleave.kind == "AreaDamage")
+		assert(MobAbilityDefinitions.goblin_cleave.radius ~= nil and MobAbilityDefinitions.goblin_cleave.radius > 0)
 		assert(MobAbilityDefinitions.warden_enrage.healthBelowFraction == 0.50)
 	end)
 

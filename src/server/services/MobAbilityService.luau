@@ -19,7 +19,7 @@ local basicReadyAtByMob: { [Model]: number } = setmetatable({}, { __mode = "k" }
 local nextActionReadyAtByMob: { [Model]: number } = setmetatable({}, { __mode = "k" }) :: any
 local abilityCursorByMob: { [Model]: number } = setmetatable({}, { __mode = "k" }) :: any
 local buffGenerationByMob: { [Model]: number } = setmetatable({}, { __mode = "k" }) :: any
-local poisonGenerationByPlayer: { [Player]: number } = {}
+local poisonGenerationByPlayer: { [Player]: number } = setmetatable({}, { __mode = "k" }) :: any
 local started = false
 
 local function actorEntityId(mob: Model, definition: CombatTypes.MobDefinition): string
@@ -185,6 +185,9 @@ local function applyPoison(
 				skillId = ability.id,
 				effectPhase = "Started",
 			})
+			if tick == tickCount and poisonGenerationByPlayer[target] == generation then
+				poisonGenerationByPlayer[target] = nil
+			end
 		end)
 	end
 end

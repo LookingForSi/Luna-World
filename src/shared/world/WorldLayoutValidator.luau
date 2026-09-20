@@ -246,6 +246,10 @@ function WorldLayoutValidator.validate(layout: any): (boolean, { string })
 			if patrolRadius ~= nil and (type(patrolRadius) ~= "number" or patrolRadius < 0) then
 				table.insert(errors, string.format("spawn marker '%s' patrolRadius must be nonnegative", tostring(spawnMarker.id or index)))
 			end
+			local patrolCycleSeconds = spawnMarker.patrolCycleSeconds
+			if patrolCycleSeconds ~= nil and (type(patrolCycleSeconds) ~= "number" or patrolCycleSeconds <= 0) then
+				table.insert(errors, string.format("spawn marker '%s' patrolCycleSeconds must be positive", tostring(spawnMarker.id or index)))
+			end
 
 			local zoneId = spawnMarker.zoneId
 			if type(zoneId) ~= "string" or zonesById[zoneId] == nil then

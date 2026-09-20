@@ -44,6 +44,10 @@ function MobAIRules.shouldRestoreHealth(previousState: State, nextState: State, 
 	return configured and previousState == "Return" and nextState == "Idle"
 end
 
+function MobAIRules.canRequestSocialAssist(state: State, socialGroupId: string?): boolean
+	return state ~= "Return" and state ~= "Dead" and socialGroupId ~= nil and socialGroupId ~= ""
+end
+
 function MobAIRules.nextState(state: State, context: Context, aggressionMode: CombatTypes.AggressionMode): State
 	if not context.alive then return "Dead" end
 	if state == "Dead" then return "Dead" end

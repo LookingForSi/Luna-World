@@ -267,17 +267,17 @@ local WorldLayout: WorldLayoutDefinition = {
 		-- Dark Woodland.
 		{ id = "spawn_dire_wolf_west", mobId = "mob_dire_wolf", position = scaleXZ(-150, 42, 1360), radius = scaleDistance(45), zoneId = "zone_dark_woodland", count = 3, socialGroupId = "dire_pack_west", patrolRadius = scaleDistance(32), patrolCycleSeconds = 8 },
 		{ id = "spawn_dire_wolf_east", mobId = "mob_dire_wolf", position = scaleXZ(145, 44, 1390), radius = scaleDistance(45), zoneId = "zone_dark_woodland", count = 3, socialGroupId = "dire_pack_east", patrolRadius = scaleDistance(32), patrolCycleSeconds = 8 },
-		{ id = "spawn_forest_spider_dark", mobId = "mob_forest_spider", position = scaleXZ(-30, 38, 1490), radius = scaleDistance(74), zoneId = "zone_dark_woodland", count = 3, patrolRadius = scaleDistance(14), patrolCycleSeconds = 12 },
+		{ id = "spawn_forest_spider_dark", mobId = "mob_forest_spider", position = scaleXZ(-30, 38, 1490), radius = scaleDistance(74), zoneId = "zone_dark_woodland", count = 4, patrolRadius = scaleDistance(14), patrolCycleSeconds = 12 },
 		{ id = "spawn_dire_wolf_alpha", mobId = "mob_dire_wolf_alpha", position = scaleXZ(100, 48, 1510), radius = scaleDistance(20), zoneId = "zone_dark_woodland", socialGroupId = "dire_pack_east" },
 
 		-- Old Cemetery.
 		{ id = "spawn_skeleton_cemetery_a", mobId = "mob_skeleton", position = scaleXZ(240, 100, 1385), radius = scaleDistance(38), zoneId = "zone_old_cemetery", count = 3, socialGroupId = "cemetery_group_a", patrolRadius = scaleDistance(18), patrolCycleSeconds = 12 },
-		{ id = "spawn_skeleton_cemetery_b", mobId = "mob_skeleton", position = scaleXZ(315, 102, 1435), radius = scaleDistance(34), zoneId = "zone_old_cemetery", count = 2, socialGroupId = "cemetery_group_b", patrolRadius = scaleDistance(18), patrolCycleSeconds = 12 },
+		{ id = "spawn_skeleton_cemetery_b", mobId = "mob_skeleton", position = scaleXZ(315, 102, 1435), radius = scaleDistance(34), zoneId = "zone_old_cemetery", count = 3, socialGroupId = "cemetery_group_b", patrolRadius = scaleDistance(18), patrolCycleSeconds = 12 },
 		{ id = "spawn_skeleton_archer_cemetery", mobId = "mob_skeleton_archer", position = scaleXZ(285, 105, 1470), radius = scaleDistance(44), zoneId = "zone_old_cemetery", count = 3, socialGroupId = "cemetery_group_b" },
 		{ id = "spawn_grave_guardian", mobId = "mob_grave_guardian", position = scaleXZ(335, 107, 1485), radius = scaleDistance(14), zoneId = "zone_old_cemetery", socialGroupId = "cemetery_guardian" },
 
 		-- Fallen Shrine.
-		{ id = "spawn_fallen_acolytes", mobId = "mob_fallen_acolyte", position = scaleXZ(-285, 108, 1420), radius = scaleDistance(55), zoneId = "zone_fallen_shrine", count = 4, socialGroupId = "shrine_casters", patrolRadius = scaleDistance(14), patrolCycleSeconds = 12 },
+		{ id = "spawn_fallen_acolytes", mobId = "mob_fallen_acolyte", position = scaleXZ(-285, 108, 1420), radius = scaleDistance(55), zoneId = "zone_fallen_shrine", count = 5, socialGroupId = "shrine_casters", patrolRadius = scaleDistance(14), patrolCycleSeconds = 12 },
 		{ id = "spawn_shrine_guardians", mobId = "mob_shrine_guardian", position = scaleXZ(-245, 110, 1470), radius = scaleDistance(42), zoneId = "zone_fallen_shrine", count = 3, socialGroupId = "shrine_guardians" },
 
 		-- Ancient Approach: sparse but heavy.

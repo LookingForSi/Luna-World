@@ -51,6 +51,7 @@ for ability_id in (
     "goblin_sling_stone",
     "goblin_spirit_bolt",
     "goblin_war_chant",
+	"goblin_cleave",
     "spider_venom_spit",
     "spider_crippling_venom",
     "dire_wolf_pounce",
@@ -86,6 +87,14 @@ if 'id = "spawn_spider_hollow_swarm"' not in LAYOUT or 'count = 8' not in LAYOUT
     raise AssertionError("Spider Hollow must expose the eight-spider ordinary population")
 if 'id = "spawn_spider_hollow_brood"' not in LAYOUT or 'count = 2' not in LAYOUT:
     raise AssertionError("Spider Hollow must expose two brood spiders")
+for marker_id, count in (
+    ("spawn_forest_spider_dark", 4),
+    ("spawn_skeleton_cemetery_b", 3),
+    ("spawn_fallen_acolytes", 5),
+):
+    marker_body = LAYOUT.split(f'id = "{marker_id}"', 1)[1].split("}", 1)[0]
+    if f"count = {count}" not in marker_body:
+        raise AssertionError(f"{marker_id} must use the approved population count {count}")
 if 'socialGroupId = "goblin_patrol_' not in LAYOUT:
     raise AssertionError("Goblin patrols must use linked encounter groups")
 if 'socialGroupId' in LAYOUT.split('id = "spawn_spider_hollow_swarm"', 1)[1].split("\n", 1)[0]:
@@ -103,8 +112,9 @@ for token in (
         raise AssertionError(f"MobService population contract missing {token}")
 
 for token in (
-    'otherModel:GetAttribute("SocialGroupId") == socialGroupId',
+	'otherModel:GetAttribute("SocialGroupId") == typedSocialGroupId',
     "definition.socialAssistRadius",
+	"MobAIRules.canRequestSocialAssist",
     "patrolDestination",
     "record.patrolRadius",
     "definition.basicAttackRange",
