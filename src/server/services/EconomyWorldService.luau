@@ -90,6 +90,8 @@ local function createPoint(
 	prompt.MaxActivationDistance = 14
 	prompt.RequiresLineOfSight = false
 	prompt.HoldDuration = 0
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
+	prompt.GamepadKeyCode = Enum.KeyCode.ButtonX
 	prompt.Parent = target
 	table.insert(ownedInstances, prompt)
 	table.insert(connections, prompt.Triggered:Connect(function(player) EconomyNetworkService.openFor(player, mode) end))
@@ -97,8 +99,8 @@ end
 function EconomyWorldService.start(): ()
 	if folder ~= nil then return end
 	local created = Instance.new("Folder"); created.Name = "VillageEconomyInteractions"; created.Parent = workspace
-	createPoint(created, "MerchantInteraction", point("poi_merchant"), "Торговать", "Merchant", "MerchantNpc")
-	createPoint(created, "BlacksmithInteraction", point("poi_blacksmith"), "Ковать", "Craft", "BlacksmithNpc")
+	createPoint(created, "MerchantInteraction", point("poi_merchant"), "Поговорить", "Merchant", "MerchantNpc")
+	createPoint(created, "BlacksmithInteraction", point("poi_blacksmith"), "Поговорить", "Craft", "BlacksmithNpc")
 	folder = created
 end
 function EconomyWorldService.stop(): ()
