@@ -31,6 +31,7 @@ local travelConfirm: Frame? = nil
 local journal: Frame? = nil
 local journalList: ScrollingFrame? = nil
 local mapFrame: Frame? = nil
+local modalBlocker: TextButton? = nil
 local mapCanvas: Frame? = nil
 local playerDot: TextLabel? = nil
 
@@ -480,9 +481,20 @@ local function showQuestOffer(value: any, topic: any): ()
 	title.Font = Enum.Font.GothamBold
 	title.ZIndex = 22
 
-	local description = makeText(questOffer, topic.description or "", 14)
-	description.Position = UDim2.fromOffset(0, 60)
-	description.Size = UDim2.new(1, 0, 1, -160)
+	local descriptionScroll = Instance.new("ScrollingFrame")
+	descriptionScroll.Name = "DescriptionScroll"
+	descriptionScroll.Position = UDim2.fromOffset(0, 60)
+	descriptionScroll.Size = UDim2.new(1, 0, 1, -160)
+	descriptionScroll.BackgroundTransparency = 1
+	descriptionScroll.BorderSizePixel = 0
+	descriptionScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	descriptionScroll.CanvasSize = UDim2.fromOffset(0, 0)
+	descriptionScroll.ScrollBarThickness = 5
+	descriptionScroll.ZIndex = 22
+	descriptionScroll.Parent = questOffer
+	local description = makeText(descriptionScroll, topic.description or "", 14)
+	description.Size = UDim2.new(1, -10, 0, 0)
+	description.AutomaticSize = Enum.AutomaticSize.Y
 	description.TextYAlignment = Enum.TextYAlignment.Top
 	description.ZIndex = 22
 
@@ -844,6 +856,18 @@ function QuestController.start(): ()
 	rootGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	rootGui.Parent = player:WaitForChild("PlayerGui")
 	gui = rootGui
+	local blocker = Instance.new("TextButton")
+	blocker.Name = "ModalBlocker"
+	blocker.Size = UDim2.fromScale(1, 1)
+	blocker.BackgroundColor3 = Color3.new(0, 0, 0)
+	blocker.BackgroundTransparency = 0.45
+	blocker.Text = ""
+	blocker.Active = true
+	blocker.Modal = true
+	blocker.Visible = false
+	blocker.ZIndex = 1
+	blocker.Parent = rootGui
+	modalBlocker = blocker
 
 	local dialogueFrame = Instance.new("Frame")
 	dialogueFrame.Name = "DialogueShell"
@@ -880,6 +904,18 @@ function QuestController.start(): ()
 
 	journal = buildJournalFrame(rootGui)
 	mapFrame = buildMap(rootGui)
+	local function syncModalBlocker(): ()
+		if modalBlocker == nil then return end
+		modalBlocker.Visible = (dialogue ~= nil and dialogue.Visible)
+			or (questOffer ~= nil and questOffer.Visible)
+			or (travelConfirm ~= nil and travelConfirm.Visible)
+			or (journal ~= nil and journal.Visible)
+			or (mapFrame ~= nil and mapFrame.Visible)
+	end
+	for _, modal in { dialogueFrame, offerFrame, travelFrame, journal :: Frame, mapFrame :: Frame } do
+		table.insert(connections, modal:GetPropertyChangedSignal("Visible"):Connect(syncModalBlocker))
+	end
+	syncModalBlocker()
 
 	table.insert(connections, snapshotEvent.OnClientEvent:Connect(setSnapshot))
 	table.insert(connections, dialogueEvent.OnClientEvent:Connect(openDialogue))
@@ -948,6 +984,7 @@ function QuestController.stop(): ()
 	journal = nil
 	journalList = nil
 	mapFrame = nil
+	modalBlocker = nil
 	mapCanvas = nil
 	playerDot = nil
 end

@@ -13,6 +13,7 @@ local EconomyUi = {}
 
 local gui: ScreenGui? = nil
 local panel: Frame? = nil
+local modalBlocker: TextButton? = nil
 local list: ScrollingFrame? = nil
 local title: TextLabel? = nil
 local balance: TextLabel? = nil
@@ -309,9 +310,11 @@ local function rebuildSell(): ()
 		UDim2.new(0.51, -8, 0, 34),
 		13
 	)
+	totalLabel.Name = "SellTotal"
 	totalLabel.Font = Enum.Font.GothamBold
 
 	local confirm = button(workspace, if total > 0 then string.format("ПРОДАТЬ ВЫБРАННОЕ · +%d Luna", total) else "ПРОДАТЬ ВЫБРАННОЕ")
+	confirm.Name = "SellConfirm"
 	confirm.Position = UDim2.new(0.51, 0, 1, -42)
 	confirm.Size = UDim2.new(0.49, 0, 0, 36)
 	confirm.TextSize = 11
@@ -414,6 +417,7 @@ end
 function EconomyUi.open(nextMode: string): ()
 	setMode(nextMode)
 	if panel ~= nil then panel.Visible = true end
+	if modalBlocker ~= nil then modalBlocker.Visible = true end
 	rebuild()
 end
 
@@ -460,6 +464,18 @@ function EconomyUi.start(actionCallbacks: any): ()
 	screen.IgnoreGuiInset = true
 	screen.DisplayOrder = 9
 	screen.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+	local blocker = Instance.new("TextButton")
+	blocker.Name = "ModalBlocker"
+	blocker.Size = UDim2.fromScale(1, 1)
+	blocker.BackgroundColor3 = Color3.new(0, 0, 0)
+	blocker.BackgroundTransparency = 0.45
+	blocker.Text = ""
+	blocker.Active = true
+	blocker.Modal = true
+	blocker.Visible = false
+	blocker.ZIndex = 1
+	blocker.Parent = screen
+	modalBlocker = blocker
 
 	local root = Instance.new("Frame")
 	root.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -467,6 +483,8 @@ function EconomyUi.start(actionCallbacks: any): ()
 	root.Size = UDim2.fromOffset(680, 500)
 	HudLayout.applyPanelStyle(root)
 	root.Visible = false
+	root.Name = "EconomyPanel"
+	root.ZIndex = 2
 	root.Parent = screen
 
 	title = label(root, "ДИАЛОГ", UDim2.fromOffset(16, 10), UDim2.fromOffset(350, 28), 17)
@@ -475,6 +493,7 @@ function EconomyUi.start(actionCallbacks: any): ()
 	local close = HudLayout.makeCloseButton(root, 12)
 	table.insert(connections, close.Activated:Connect(function()
 		root.Visible = false
+		if modalBlocker ~= nil then modalBlocker.Visible = false end
 	end))
 
 	local scrolling = Instance.new("ScrollingFrame")
@@ -518,6 +537,7 @@ function EconomyUi.stop(): ()
 	clearList()
 	if gui ~= nil then gui:Destroy(); gui = nil end
 	panel = nil
+	modalBlocker = nil
 	list = nil
 	title = nil
 	balance = nil

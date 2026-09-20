@@ -12,6 +12,7 @@ local InventoryUi = {}
 local player = Players.LocalPlayer
 local screenGui: ScreenGui? = nil
 local root: Frame? = nil
+local modalBlocker: TextButton? = nil
 local inventoryList: ScrollingFrame? = nil
 local equipmentList: Frame? = nil
 local detailsLabel: TextLabel? = nil
@@ -357,6 +358,7 @@ end
 
 local function setPanelOpen(open: boolean): ()
 	if root ~= nil then root.Visible = open end
+	if modalBlocker ~= nil then modalBlocker.Visible = open end
 end
 
 function InventoryUi.toggle(): ()
@@ -373,6 +375,18 @@ function InventoryUi.start(actionCallbacks: any): ()
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 8
 	gui.Parent = player:WaitForChild("PlayerGui")
+	local blocker = Instance.new("TextButton")
+	blocker.Name = "ModalBlocker"
+	blocker.Size = UDim2.fromScale(1, 1)
+	blocker.BackgroundColor3 = Color3.new(0, 0, 0)
+	blocker.BackgroundTransparency = 0.45
+	blocker.Text = ""
+	blocker.Active = true
+	blocker.Modal = true
+	blocker.Visible = false
+	blocker.ZIndex = 1
+	blocker.Parent = gui
+	modalBlocker = blocker
 
 	local panel = Instance.new("Frame")
 	panel.Name = "InventoryPanel"
@@ -381,6 +395,7 @@ function InventoryUi.start(actionCallbacks: any): ()
 	panel.Size = UDim2.fromOffset(720, 500)
 	HudLayout.applyPanelStyle(panel)
 	panel.Visible = false
+	panel.ZIndex = 2
 	panel.Parent = gui
 	root = panel
 
@@ -455,10 +470,12 @@ function InventoryUi.start(actionCallbacks: any): ()
 	equipmentList = equipment
 
 	detailsLabel = makeLabel(panel, "Выберите предмет.", UDim2.fromOffset(410, 314), UDim2.fromOffset(294, 92), 12)
+	detailsLabel.Name = "Details"
 	detailsLabel.TextWrapped = true
 	detailsLabel.TextYAlignment = Enum.TextYAlignment.Top
 
 	statusLabel = makeLabel(panel, "", UDim2.fromOffset(410, 406), UDim2.fromOffset(294, 20), 11)
+	statusLabel.Name = "Status"
 
 	equipButton = makeButton(panel, "Equip", "НАДЕТЬ", UDim2.fromOffset(410, 438), UDim2.fromOffset(68, 32))
 	unequipButton = makeButton(panel, "Unequip", "СНЯТЬ", UDim2.fromOffset(410, 438), UDim2.fromOffset(68, 32))
@@ -511,6 +528,7 @@ function InventoryUi.stop(): ()
 	table.clear(actionConnections)
 	if screenGui ~= nil then screenGui:Destroy(); screenGui = nil end
 	root = nil
+	modalBlocker = nil
 	inventoryList = nil
 	equipmentList = nil
 	detailsLabel = nil
