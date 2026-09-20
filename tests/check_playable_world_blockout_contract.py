@@ -136,7 +136,7 @@ def main() -> None:
         "excavateAndFillLakeWater",
         'ExtendsToWorldEdge", true',
         'CampShorelineZ',
-        'HillBankCliff", true',
+        'OpenWaterBoundary", true',
         "DarkWoodlandThreshold",
         "OldCemetery",
         "FallenShrine",
@@ -148,9 +148,6 @@ def main() -> None:
     assert 'Purpose", "SwimmableWater"' in north
     assert "WaterRecovery" not in north
     assert "shapeGoblinCemeteryLakeHillCliff" not in north
-    assert "GoblinShelfEdge" not in composition
-    assert "clearBottomY = waterSurfaceY + 1" in north
-    assert "Vector3.new(118, clearHeight, spec.zSize)" in north
     assert "Enum.Material.Water" in north
     assert "Enum.Material.Glass" not in north
     assert "postSpacing = 4.0" in north
@@ -179,6 +176,7 @@ def main() -> None:
     assert "Grounding.treeSurfaceAt(position)" in dressing
 
     composition = read(ROOT / "src/server/world/WorldCompositionBlockout.luau")
+    assert "GoblinShelfEdge" not in composition
     for token in (
         "MacroComposition",
         "VillageHillComposition",
