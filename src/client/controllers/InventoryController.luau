@@ -2,7 +2,6 @@
 
 local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 
 local InventoryController = {}
 
@@ -74,14 +73,10 @@ function InventoryController.start(
 	ContextActionService:BindAction(
 		TOGGLE_ACTION,
 		toggleAction,
-		UserInputService.TouchEnabled,
+		false,
 		Enum.KeyCode.I,
 		Enum.KeyCode.ButtonSelect
 	)
-	if UserInputService.TouchEnabled then
-		ContextActionService:SetTitle(TOGGLE_ACTION, "ИНВ")
-		ContextActionService:SetPosition(TOGGLE_ACTION, UDim2.new(1, -92, 0.5, -36))
-	end
 
 	task.defer(InventoryController.requestSnapshot)
 end
