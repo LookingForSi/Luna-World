@@ -83,6 +83,11 @@ for marker in (
     if f'id = "{marker}"' not in LAYOUT:
         raise AssertionError(f"missing populated world marker {marker}")
 
+young_wolf_body = LAYOUT.split('id = "spawn_young_wolf_farm"', 1)[1].split("}", 1)[0]
+for token in ("count = 8", "patrolRadius = scaleDistance(44)", "patrolCycleSeconds = 6"):
+    if token not in young_wolf_body:
+        raise AssertionError(f"starter wolf staging must keep the approved roaming pack contract: {token}")
+
 if 'id = "spawn_spider_hollow_swarm"' not in LAYOUT or 'count = 8' not in LAYOUT:
     raise AssertionError("Spider Hollow must expose the eight-spider ordinary population")
 if 'id = "spawn_spider_hollow_brood"' not in LAYOUT or 'count = 2' not in LAYOUT:
