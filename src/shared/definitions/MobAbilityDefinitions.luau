@@ -10,7 +10,7 @@ local definitions: { [string]: CombatTypes.MobAbilityDefinition } = {
 	wolf_pack_howl = ability({
 		id = "wolf_pack_howl", displayName = "Вой стаи", kind = "AllyDamageBuff",
 		damageType = "Physical", range = 28, damage = 0, windupSeconds = 0.6, cooldownSeconds = 18,
-		presentationKey = "mob_wolf_howl", durationSeconds = 8, damageMultiplier = 1.15, radius = 34,
+		presentationKey = "mob_wolf_howl", durationSeconds = 8, damageMultiplier = 1.15, radius = 50, callsAllies = true,
 	}),
 	goblin_sling_stone = ability({
 		id = "goblin_sling_stone", displayName = "Камень из пращи", kind = "DirectDamage",
