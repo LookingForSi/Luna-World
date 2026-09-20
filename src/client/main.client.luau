@@ -53,7 +53,14 @@ end)
 local function syncActionBar(): ()
 	local skillIds = ClientCombatUiRules.getSkills(Players.LocalPlayer:GetAttribute(CombatConfig.ArchetypeAttribute))
 	CombatInputController.start(skillIds)
-	ActionBar.start(skillIds, CombatInputController.requestAttack, CombatInputController.requestAutoToggle, CombatInputController.requestSkill, TargetController.clearTarget)
+	ActionBar.start(
+		skillIds,
+		CombatInputController.requestAttack,
+		CombatInputController.requestAutoToggle,
+		CombatInputController.requestSkill,
+		TargetController.clearTarget,
+		InventoryUi.toggle
+	)
 end
 
 syncActionBar()
