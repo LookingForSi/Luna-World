@@ -119,8 +119,10 @@ def main() -> None:
         "SpiderHollow",
         "prepareSpiderHollowTerrain",
         "BasinFloorFilled",
-        "SpiderBasinRimWest",
-        "SpiderBasinRimNorth",
+        "SpiderBasinSoftShoulders",
+        "terrain:FillCylinder",
+        "floorHalfLength = 170",
+        "floorRadius = 135",
         "createSpiderWeb",
         "Enum.Material.Mud",
         "GoblinCemeteryLake",
@@ -142,6 +144,16 @@ def main() -> None:
     assert "fenceSegments" in north
     assert "Grounding.treeSurfaceAt(position)" in north
     assert "for index = 1, 11 do" in north
+
+    for removed_square_rim in (
+        "SpiderBasinRimWest",
+        "SpiderBasinRimSouth",
+        "SpiderBasinRimNorth",
+        "SpiderBasinRimEastSouth",
+        "SpiderBasinRimEastNorth",
+    ):
+        assert removed_square_rim not in north
+
 
     dressing = read(ROOT / "src/server/world/WorldDressingBlockout.luau")
     for token in (
