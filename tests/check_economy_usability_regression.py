@@ -41,6 +41,14 @@ for token in (
     if token not in ui:
         raise AssertionError(f"merchant sale UX contract missing: {token}")
 
+for token in (
+    "screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling",
+    "blocker.BackgroundTransparency = 1",
+    "root.BackgroundTransparency = 0.03",
+):
+    if token not in ui:
+        raise AssertionError(f"economy modal readability contract missing: {token}")
+
 if "function EconomyRules.sellBatch" not in rules:
     raise AssertionError("atomic sellBatch rule is missing")
 
