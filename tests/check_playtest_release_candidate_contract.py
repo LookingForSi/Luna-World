@@ -36,12 +36,18 @@ assert 'aggressionMode = "Passive"' in mobs
 
 for token in (
     "fillCurvedRidge",
-    "fillContinuousLakePath",
+    "fillFlatLakeSlab",
     'ContinuousWaterBody", true',
+    'ContainedWithinWorldBounds", true',
+    'FlatWaterSurface", true',
     'OrganicShoreline", true',
     "slopeRows",
 ):
     assert token in world
+
+assert "fillContinuousLakePath" not in world
+assert "carveLakeDisc" not in world
+assert "bounds.maxX + 80" not in world
 
 assert "Enum.HumanoidStateType.Swimming" in movement
 assert "Enum.ContextActionResult.Pass" in movement
