@@ -356,30 +356,60 @@ local function prepareSpiderHollowTerrain(positions: { [string]: Vector3 })
 		)
 	end
 
-	-- Broad spherical caps form a walkable, gradual shoulder around the oval.
-	-- Their centers sit deep below the combat floor, so only shallow upper caps
-	-- emerge above it; this avoids the old box-like cliff walls. The east side
-	-- remains the lowest/openest where Moonfall Road enters the Hollow.
-	local SpiderBasinSoftShoulders = {
-		{ offset = Vector3.new(-285, 0, 0), radius = 220, rise = 30, material = Enum.Material.Ground },
-		{ offset = Vector3.new(-175, 0, -190), radius = 195, rise = 27, material = Enum.Material.Ground },
-		{ offset = Vector3.new(0, 0, -205), radius = 190, rise = 24, material = Enum.Material.Ground },
-		{ offset = Vector3.new(165, 0, -175), radius = 180, rise = 19, material = Enum.Material.Ground },
-		{ offset = Vector3.new(-175, 0, 195), radius = 205, rise = 31, material = Enum.Material.Ground },
-		{ offset = Vector3.new(0, 0, 210), radius = 200, rise = 29, material = Enum.Material.Ground },
-		{ offset = Vector3.new(160, 0, 180), radius = 182, rise = 21, material = Enum.Material.Ground },
-	}
-	for _, shoulder in ipairs(SpiderBasinSoftShoulders) do
+	-- Shape each long side as one continuous curved hill rather than a row of
+	-- visually separate mounds. Dense overlapping caps follow a gentle arc; the
+	-- spacing is deliberately much smaller than the radius so the silhouette
+	-- reads as one ridge from inside the Hollow and from the road.
+	local function fillCurvedRidge(points: { Vector3 }, radius: number, rise: number): ()
+		for index = 1, #points - 1 do
+			local a = points[index]
+			local b = points[index + 1]
+			local horizontal = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
+			local steps = math.max(1, math.ceil(horizontal.Magnitude / 42))
+			for step = 0, steps - 1 do
+				local alpha = step / steps
+				local point = a:Lerp(b, alpha)
+				terrain:FillBall(
+					Vector3.new(point.X, floorTopY + rise - radius, point.Z),
+					radius,
+					Enum.Material.Ground
+				)
+			end
+		end
+		local last = points[#points]
 		terrain:FillBall(
-			Vector3.new(
-				center.X + shoulder.offset.X,
-				floorTopY + shoulder.rise - shoulder.radius,
-				center.Z + shoulder.offset.Z
-			),
-			shoulder.radius,
-			shoulder.material
+			Vector3.new(last.X, floorTopY + rise - radius, last.Z),
+			radius,
+			Enum.Material.Ground
 		)
 	end
+
+	local northRidge = {
+		center + Vector3.new(-250, 0, 175),
+		center + Vector3.new(-165, 0, 205),
+		center + Vector3.new(-55, 0, 218),
+		center + Vector3.new(60, 0, 212),
+		center + Vector3.new(155, 0, 182),
+	}
+	local southRidge = {
+		center + Vector3.new(-250, 0, -170),
+		center + Vector3.new(-165, 0, -202),
+		center + Vector3.new(-55, 0, -216),
+		center + Vector3.new(60, 0, -207),
+		center + Vector3.new(155, 0, -176),
+	}
+	fillCurvedRidge(northRidge, 205, 27)
+	fillCurvedRidge(southRidge, 200, 25)
+
+	-- One broad western connector closes the back of the oval while keeping the
+	-- eastern road entrance low and readable.
+	fillCurvedRidge({
+		center + Vector3.new(-235, 0, -155),
+		center + Vector3.new(-292, 0, -78),
+		center + Vector3.new(-310, 0, 0),
+		center + Vector3.new(-292, 0, 82),
+		center + Vector3.new(-235, 0, 160),
+	}, 210, 29)
 
 	-- Blend the northern shoulder into the Fallen Shrine mass with overlapping
 	-- smooth terrain instead of a hard ridge. This preserves the geological link
