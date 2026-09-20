@@ -553,50 +553,61 @@ local function createMoonfallLandmarks(parent: Instance, positions: { [string]: 
 	P.groundedPart(props, "CrossroadsPost", crossroads + Vector3.new(12, 0, -8), Vector3.new(3, 13, 3), Enum.Material.Wood, COLORS.darkTimber)
 end
 
-local function shapeGoblinCemeteryLakeHillCliff(center: Vector3, waterSurfaceY: number)
+local function prepareGoblinCampBoundaryShelf(positions: { [string]: Vector3 })
 	local terrain = Workspace.Terrain
-	local cliffSegments = {
-		{ xOffset = 292, zOffset = -55, zSize = 190 },
-		{ xOffset = 310, zOffset = 105, zSize = 210 },
-		{ xOffset = 280, zOffset = 270, zSize = 175 },
-	}
+	local center = positions.poi_goblin_camp
+	local bounds = WorldLayout.WorldBounds
+	local campGround = Grounding.surfaceAt(center)
+	local shelfTopY = campGround.Y
 
-	for _, spec in ipairs(cliffSegments) do
-		local hillSample = Grounding.surfaceAt(
-			center + Vector3.new(spec.xOffset + 95, 0, spec.zOffset)
-		)
-		local cliffTopY = math.max(hillSample.Y + 5, waterSurfaceY + 30)
-		local clearBottomY = waterSurfaceY + 1
-		local clearHeight = cliffTopY - clearBottomY + 14
+	-- Continue the raised camp shelf all the way to the outer map boundary on the
+	-- lake-facing side. This removes the artificial trench/dip immediately beyond
+	-- the palisade and makes the camp plateau read as one continuous land mass.
+	local shelfStartX = center.X + 145
+	local shelfEndX = bounds.maxX - 12
+	local shelfCenterX = (shelfStartX + shelfEndX) / 2
+	local shelfWidth = shelfEndX - shelfStartX
+	local shelfMinZ = center.Z - 250
+	local shelfMaxZ = center.Z + 165
+	local shelfDepth = shelfMaxZ - shelfMinZ
 
-		-- Remove the old grassy shelf above the water with a broad cut. The cut
-		-- starts just above the waterline so it cannot carve a dry notch through
-		-- the lake itself, but it reaches far enough inland to eliminate the
-		-- suspended terrain lip seen from the opposite shore.
-		terrain:FillBlock(
-			CFrame.new(
-				center.X + spec.xOffset - 38,
-				clearBottomY + clearHeight / 2,
-				center.Z + spec.zOffset
-			),
-			Vector3.new(118, clearHeight, spec.zSize),
-			Enum.Material.Air
-		)
+	-- Remove stray high terrain first, then fill any low pockets to the camp level.
+	terrain:FillBlock(
+		CFrame.new(shelfCenterX, shelfTopY + 28, (shelfMinZ + shelfMaxZ) / 2),
+		Vector3.new(shelfWidth, 56, shelfDepth),
+		Enum.Material.Air
+	)
+	terrain:FillBlock(
+		CFrame.new(shelfCenterX, shelfTopY - 45, (shelfMinZ + shelfMaxZ) / 2),
+		Vector3.new(shelfWidth, 90, shelfDepth),
+		Enum.Material.Grass
+	)
+end
 
-		-- Rebuild a narrow rock face farther back from the water. This leaves a
-		-- clean shoreline instead of grass projecting over empty space.
-		local rockBottomY = waterSurfaceY - 10
-		local rockHeight = cliffTopY - rockBottomY
-		terrain:FillBlock(
-			CFrame.new(
-				center.X + spec.xOffset + 26,
-				rockBottomY + rockHeight / 2,
-				center.Z + spec.zOffset
-			),
-			Vector3.new(28, rockHeight, spec.zSize),
-			Enum.Material.Rock
-		)
-	end
+local function excavateAndFillLakeWater(
+	terrain: Terrain,
+	position: Vector3,
+	sizeXZ: Vector2,
+	yaw: number,
+	waterSurfaceY: number,
+	waterDepth: number,
+	clearDepth: number,
+	airClearance: number,
+	clearMargin: number
+)
+	local rotation = CFrame.Angles(0, math.rad(yaw), 0)
+	local totalClearHeight = clearDepth + airClearance
+	local clearCenterY = waterSurfaceY + (airClearance - clearDepth) / 2
+	terrain:FillBlock(
+		CFrame.new(position.X, clearCenterY, position.Z) * rotation,
+		Vector3.new(sizeXZ.X + clearMargin * 2, totalClearHeight, sizeXZ.Y + clearMargin * 2),
+		Enum.Material.Air
+	)
+	terrain:FillBlock(
+		CFrame.new(position.X, waterSurfaceY - waterDepth / 2, position.Z) * rotation,
+		Vector3.new(sizeXZ.X, waterDepth, sizeXZ.Y),
+		Enum.Material.Water
+	)
 end
 
 local function createGoblinCemeteryLake(parent: Instance, positions: { [string]: Vector3 })
@@ -622,38 +633,47 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 	}
 
 	for _, spec in ipairs(lobes) do
-		local position = center + spec.offset
-		local rotation = CFrame.Angles(0, math.rad(spec.yaw), 0)
-
-		-- Excavate one continuous deep basin before filling it. The previous pass
-		-- only cleared air above the water and then painted 12 studs of water over
-		-- the old terrain, which left grass immediately under the transparent
-		-- surface in shallow sections.
-		local totalClearHeight = LAKE_BASIN_CLEAR_DEPTH + LAKE_AIR_CLEARANCE_HEIGHT
-		local clearCenterY = waterSurfaceY + (LAKE_AIR_CLEARANCE_HEIGHT - LAKE_BASIN_CLEAR_DEPTH) / 2
-		terrain:FillBlock(
-			CFrame.new(position.X, clearCenterY, position.Z) * rotation,
-			Vector3.new(
-				spec.size.X + LAKE_CLEAR_MARGIN * 2,
-				totalClearHeight,
-				spec.size.Z + LAKE_CLEAR_MARGIN * 2
-			),
-			Enum.Material.Air
+		excavateAndFillLakeWater(
+			terrain,
+			center + spec.offset,
+			Vector2.new(spec.size.X, spec.size.Z),
+			spec.yaw,
+			waterSurfaceY,
+			LAKE_WATER_DEPTH,
+			LAKE_BASIN_CLEAR_DEPTH,
+			LAKE_AIR_CLEARANCE_HEIGHT,
+			LAKE_CLEAR_MARGIN
 		)
-		terrain:FillBlock(
-			CFrame.new(position.X, waterSurfaceY - LAKE_WATER_DEPTH / 2, position.Z) * rotation,
-			Vector3.new(spec.size.X, LAKE_WATER_DEPTH, spec.size.Z),
-			Enum.Material.Water
-		)
-
-		-- Lake Terrain water is intentionally swimmable; no hidden teleport hazard volume.
 	end
 
-	shapeGoblinCemeteryLakeHillCliff(center, waterSurfaceY)
+	-- The lake is the outer water boundary of this side of the world, not a closed
+	-- local bowl. Extend it eastward to the invisible world edge and southward
+	-- until it reaches the northern edge of the Goblin Camp shelf.
+	local bounds = WorldLayout.WorldBounds
+	local edgeX = bounds.maxX - 10
+	local waterStartX = center.X + 115
+	local edgeWidth = edgeX - waterStartX
+	local campWaterSouthZ = goblin.Z + 175
+	local edgeWaterNorthZ = center.Z + 320
+	local edgeWaterDepth = edgeWaterNorthZ - campWaterSouthZ
+	excavateAndFillLakeWater(
+		terrain,
+		Vector3.new((waterStartX + edgeX) / 2, waterSurfaceY, (campWaterSouthZ + edgeWaterNorthZ) / 2),
+		Vector2.new(edgeWidth, edgeWaterDepth),
+		0,
+		waterSurfaceY,
+		LAKE_WATER_DEPTH,
+		LAKE_BASIN_CLEAR_DEPTH,
+		LAKE_AIR_CLEARANCE_HEIGHT,
+		16
+	)
+	lake:SetAttribute("ExtendsToWorldEdge", true)
+	lake:SetAttribute("CampShorelineZ", campWaterSouthZ)
+
 	lake:SetAttribute("WaterSurfaceDrop", LAKE_SURFACE_DROP)
 	lake:SetAttribute("WaterDepth", LAKE_WATER_DEPTH)
 	lake:SetAttribute("DeepBasinExcavated", true)
-	lake:SetAttribute("HillBankCliff", true)
+	lake:SetAttribute("OpenWaterBoundary", true)
 end
 
 local function createDarkWoodland(parent: Instance, positions: { [string]: Vector3 })
@@ -793,6 +813,7 @@ end
 function NorthernZonesBlockout.build(parent: Instance)
 	local positions = poiPositions()
 	prepareSpiderHollowTerrain(positions)
+	prepareGoblinCampBoundaryShelf(positions)
 	local north = P.model(parent, "NorthWorld")
 
 	createGroundedRoad(north, "MoonfallRoad", WorldLayout.MoonfallRoadRoute, 22)
