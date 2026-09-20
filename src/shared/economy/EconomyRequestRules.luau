@@ -11,11 +11,19 @@ function EconomyRequestRules.validateSellBatch(
 ): { any }?
 	if argumentCount ~= 2 or action ~= "SellBatch" or typeof(selections) ~= "table" then return nil end
 	local rows: any = selections
-	if #rows < 1 or #rows > 40 then return nil end
+	local rowCount = #rows
+	if rowCount < 1 or rowCount > 40 then return nil end
+	local keyCount = 0
+	for key in rows do
+		keyCount += 1
+		if typeof(key) ~= "number" or key % 1 ~= 0 or key < 1 or key > rowCount then return nil end
+	end
+	if keyCount ~= rowCount then return nil end
 
 	local normalized = {}
 	local seen: { [string]: boolean } = {}
-	for _, row in rows do
+	for index = 1, rowCount do
+		local row = rows[index]
 		if typeof(row) ~= "table" then return nil end
 		local instanceId = row.instanceId
 		local quantity = row.quantity
