@@ -60,7 +60,7 @@ def main() -> None:
     assert "baseplate.CanCollide = false" in bootstrap
 
     builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
-    assert 'TerrainRevision", "terrain-v09"' in builder
+    assert 'TerrainRevision", "terrain-v10"' in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
     assert "WorldDressingBlockout" in builder
@@ -132,13 +132,16 @@ def main() -> None:
         "Enum.Material.Mud",
         "GoblinCemeteryLake",
         "LAKE_SURFACE_DROP = 8",
-        "LAKE_WATER_DEPTH = 12",
-        "LAKE_AIR_CLEARANCE_HEIGHT = 28",
+        "LAKE_WATER_DEPTH = 30",
+        "LAKE_BASIN_CLEAR_DEPTH = 40",
+        "LAKE_AIR_CLEARANCE_HEIGHT = 46",
+        "LAKE_CLEAR_MARGIN = 34",
         "shapeGoblinCemeteryLakeHillCliff",
-        '"Purpose", "TraversalBarrier"',
-        '"WaterRecovery%02d"',
-        'HazardKind = "Lake"',
+        '"Purpose", "SwimmableWater"',
+        'DeepBasinExcavated", true',
         'HillBankCliff", true',
+        "clearBottomY = waterSurfaceY + 1",
+        "Vector3.new(118, clearHeight, spec.zSize)",
         "DarkWoodlandThreshold",
         "OldCemetery",
         "FallenShrine",
@@ -147,6 +150,7 @@ def main() -> None:
     ):
         assert token in north
     assert "BillboardGui" not in north
+    assert "WaterRecovery" not in north
     assert "Enum.Material.Water" in north
     assert "Enum.Material.Glass" not in north
     assert "prepareGoblinCampBoundaryShelf" not in north
@@ -191,7 +195,7 @@ def main() -> None:
     assert "Grounding.treeSurfaceAt(position)" in dressing
 
     composition = read(ROOT / "src/server/world/WorldCompositionBlockout.luau")
-    assert "GoblinShelfEdge" not in composition
+    assert "GoblinShelfEdge" in composition
     for token in (
         "MacroComposition",
         "VillageHillComposition",
