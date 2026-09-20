@@ -58,9 +58,20 @@ local function inventoryBindingText(): string
 	return "ИНВЕНТАРЬ [I]"
 end
 
-local function updateInventoryHint(): ()
+local function mapBindingText(): string
+	local inputType = UserInputService:GetLastInputType()
+	if inputType == Enum.UserInputType.Touch or string.find(inputType.Name, "Gamepad") ~= nil then
+		return "КАРТА"
+	end
+	return "КАРТА [M]"
+end
+
+local function updateBindingHints(): ()
 	if inventoryButton ~= nil then
 		inventoryButton.Text = inventoryBindingText()
+	end
+	if mapButton ~= nil then
+		mapButton.Text = mapBindingText()
 	end
 end
 
@@ -200,7 +211,7 @@ function ActionBar.start(
 	content.BackgroundTransparency = 1
 	content.Parent = frame
 
-	mapButton = makeButton(content, "Map", if UserInputService.TouchEnabled then "КАРТА" else "КАРТА [M]", UDim2.new(0.32, -2, 0, 36))
+	mapButton = makeButton(content, "Map", mapBindingText(), UDim2.new(0.32, -2, 0, 36))
 	local mapToggle = mapButton :: TextButton
 	inventoryButton = makeButton(content, "Inventory", inventoryBindingText(), UDim2.new(0.66, -2, 0, 36))
 	local inventory = inventoryButton :: TextButton
@@ -228,11 +239,11 @@ function ActionBar.start(
 
 	autoConnection = player:GetAttributeChangedSignal(CombatConfig.AutoAttackEnabledAttribute):Connect(updateAuto)
 	renderConnection = RunService.RenderStepped:Connect(updateCooldowns)
-	inputTypeConnection = UserInputService.LastInputTypeChanged:Connect(updateInventoryHint)
+	inputTypeConnection = UserInputService.LastInputTypeChanged:Connect(updateBindingHints)
 	screenGui = gui
 	updateAuto()
 	updateCooldowns()
-	updateInventoryHint()
+	updateBindingHints()
 end
 
 function ActionBar.stop(): ()
