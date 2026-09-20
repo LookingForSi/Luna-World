@@ -342,13 +342,12 @@ local function buildMoonfallAndEncounters(parent: Instance, positions: { [string
 	local dressing = P.model(parent, "MoonfallEncounterDressing")
 
 	local crossroads = positions.poi_moonfall_crossroads
-	createFenceLine(
-		dressing,
-		"MoonfallBrokenFenceWest",
-		crossroads + Vector3.new(-170, 0, -130),
-		crossroads + Vector3.new(-260, 0, 70),
-		38
-	)
+	-- The western branch leads directly into Spider Hollow. A farm-style fence
+	-- across this route looked arbitrary, so the approach is now marked by debris
+	-- and deadwood rather than a traversal-looking barrier.
+	createStump(dressing, "SpiderApproachStumpA", crossroads + Vector3.new(-185, 0, -105), 7)
+	createStump(dressing, "SpiderApproachStumpB", crossroads + Vector3.new(-225, 0, 55), 9)
+	createRockCluster(dressing, "SpiderApproachRocks", crossroads + Vector3.new(-235, 0, -25), 0.85)
 	createFenceLine(
 		dressing,
 		"MoonfallBrokenFenceEast",
