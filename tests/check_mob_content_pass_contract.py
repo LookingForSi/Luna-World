@@ -296,9 +296,24 @@ for token in (
 for token in (
     'displayName = "Молодой волк", level = 1, maxHealth = 70',
     'basicAttackRange = 10, basicAttackDamage = 12, basicAttackDamageType = "Physical"',
+    'displayName = "Ядовитый паук", level = 6, maxHealth = 245',
+    'displayName = "Паук-матка", level = 8, maxHealth = 430',
+    'displayName = "Лютый волк", level = 9, maxHealth = 320',
+    'displayName = "Лесной паук", level = 10, maxHealth = 330',
+    'displayName = "Альфа лютых волков", level = 11, maxHealth = 620',
+    'displayName = "Скелет", level = 11, maxHealth = 350',
+    'displayName = "Скелет-лучник", level = 12, maxHealth = 285',
+    'displayName = "Павший служитель", level = 12, maxHealth = 320',
+    'displayName = "Могильный страж", level = 13, maxHealth = 760',
+    'displayName = "Страж святилища", level = 13, maxHealth = 560',
 ):
     if token not in MOBS:
-        raise AssertionError(f"starter wolf danger tuning missing: {token}")
+        raise AssertionError(f"reordered mob difficulty tuning missing: {token}")
+
+for visual_profile in ("Spider", "SpiderLarge", "SpiderForest"):
+    marker = f'aggressionMode = "Passive", rank = "Ordinary", attackKind = "Ranged", faction = "spider", visualProfile = "{visual_profile}"'
+    if marker not in MOBS:
+        raise AssertionError(f"spider must stay passive and non-social: {visual_profile}")
 
 for token in (
     "PhysicalDefenseMitigationPerPoint",
