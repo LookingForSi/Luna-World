@@ -50,6 +50,7 @@
 - Resource regeneration was halved and updated more smoothly; player HP regeneration is now game-owned at 2/3 of Roblox's stock rate instead of relying on the default Health script.
 - Spider Hollow was rebuilt as a depressed mud basin with raised terrain rims and a northern shoulder toward Fallen Shrine; hanging glass sheets were replaced by line-based spider webs.
 - Spider Hollow terrain footprint was refined into an elongated oval/capsule along the road while keeping the accepted combat-floor height; the old rectangular rim blocks were replaced with broad overlapping terrain shoulders for a gentler transition into the surrounding landscape.
+- Owner visual review follow-up: the remaining separated terrain mounds around Spider Hollow were merged into continuous curved north/south ridges plus one western connector, keeping the eastern road entrance open.
 - Removed the arbitrary western fence across the Spider Hollow approach and replaced it with deadwood/rock dressing.
 
 ### dev0.2 — Gameplay polish pass
