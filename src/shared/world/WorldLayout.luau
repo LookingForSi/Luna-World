@@ -239,7 +239,10 @@ local WorldLayout: WorldLayoutDefinition = {
 
 	SpawnMarkers = {
 		-- Farm / Meadows: intentionally non-social starter wolves.
-		{ id = "spawn_young_wolf_farm", mobId = "mob_young_wolf", position = scaleXZ(-145, 8, 320), radius = scaleDistance(55), zoneId = "zone_luna_meadows", count = 8, patrolRadius = scaleDistance(44), patrolCycleSeconds = 6 },
+		-- They occupy the meadow between Moonfall Farm and Spider Hollow, biased
+		-- toward the farm, and roam across a broad staging area rather than the riverbank.
+		{ id = "spawn_young_wolf_farm", mobId = "mob_young_wolf", position = scaleXZ(-280, 8, 430), radius = scaleDistance(44), zoneId = "zone_luna_meadows", count = 4, patrolRadius = scaleDistance(70), patrolCycleSeconds = 5 },
+		{ id = "spawn_young_wolf_farm_forward", mobId = "mob_young_wolf", position = scaleXZ(-235, 8, 535), radius = scaleDistance(42), zoneId = "zone_luna_meadows", count = 4, patrolRadius = scaleDistance(62), patrolCycleSeconds = 5 },
 
 		-- Stone Circle: three small linked wolf pairs plus a leader.
 		{ id = "spawn_wolf_pack_south", mobId = "mob_grey_wolf", position = scaleXZ(105, 7, 555), radius = scaleDistance(32), zoneId = "zone_luna_meadows", count = 2, socialGroupId = "wolf_pack_south", patrolRadius = scaleDistance(36), patrolCycleSeconds = 6 },
