@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### dev0.2 — Early combat + quest travel
+
+- Young Wolf base damage increased from 8 to 12; player physical defense now mitigates proportionally instead of subtracting flat damage, preventing starter mobs from collapsing to the 1-damage floor.
+- Wolf-family movement receives an additional ×1.25 multiplier on top of the global ×1.2 mob movement pass.
+- Added quest-unlocked, server-authoritative paid travel: Luna Village ↔ Farm after «Волки у фермы» and Luna Village ↔ Moonfall Scout after «Стая у каменного круга».
+- Travel prices are derived from four average direct-Luna kills in the destination tier (currently 8 Luna to Farm and 14 Luna to Moonfall).
+- NPC dialogue now exposes unlocked travel destinations and reports insufficient-Luna / locked / unavailable failures.
+
 ### dev0.2 — Difficulty / progression / Spider Hollow pass
 
 - Player progression cap restored to LV15; the current open world now spans LV1–14 and reserves LV15 for Ruins of Selene / Selene's Fallen Guardian.
