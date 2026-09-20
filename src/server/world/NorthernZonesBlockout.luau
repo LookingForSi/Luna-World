@@ -622,7 +622,7 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 	lake:SetAttribute("WaterSurfaceDrop", LAKE_SURFACE_DROP)
 	lake:SetAttribute("WaterDepth", LAKE_WATER_DEPTH)
 	lake:SetAttribute("DeepBasinExcavated", true)
-	lake:SetAttribute("HillBankCliff", true)
+	lake:SetAttribute("OpenWaterBoundary", true)
 end
 
 local function createDarkWoodland(parent: Instance, positions: { [string]: Vector3 })
