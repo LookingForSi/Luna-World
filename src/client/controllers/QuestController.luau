@@ -27,6 +27,7 @@ local STUDS_PER_METER = 10
 local gui: ScreenGui? = nil
 local dialogue: Frame? = nil
 local questOffer: Frame? = nil
+local travelConfirm: Frame? = nil
 local journal: Frame? = nil
 local journalList: ScrollingFrame? = nil
 local mapFrame: Frame? = nil
@@ -524,6 +525,67 @@ local function showQuestOffer(value: any, topic: any): ()
 	end))
 end
 
+local function showTravelConfirm(value: any, topic: any): ()
+	if travelConfirm == nil then return end
+	clearChildren(travelConfirm)
+	travelConfirm.Visible = true
+	if dialogue ~= nil then dialogue.Visible = false end
+
+	local close = HudLayout.makeCloseButton(travelConfirm, 18)
+	table.insert(connections, close.Activated:Connect(function()
+		if travelConfirm ~= nil then travelConfirm.Visible = false end
+		if dialogue ~= nil then dialogue.Visible = true end
+	end))
+
+	local padding = Instance.new("UIPadding")
+	padding.PaddingTop = UDim.new(0, 34)
+	padding.PaddingBottom = UDim.new(0, 24)
+	padding.PaddingLeft = UDim.new(0, 28)
+	padding.PaddingRight = UDim.new(0, 28)
+	padding.Parent = travelConfirm
+
+	local destinationName = topic.destinationName or "неизвестную локацию"
+	local cost = topic.costLuna or 0
+	local title = makeText(travelConfirm, "ПОДТВЕРЖДЕНИЕ ТЕЛЕПОРТА", 18)
+	title.Position = UDim2.fromOffset(0, 2)
+	title.Size = UDim2.new(1, 0, 0, 32)
+	title.TextXAlignment = Enum.TextXAlignment.Center
+	title.Font = Enum.Font.GothamBold
+	title.ZIndex = 22
+
+	local message = makeText(
+		travelConfirm,
+		string.format("Вы действительно желаете переместиться в %s за %d Luna?", destinationName, cost),
+		15
+	)
+	message.Position = UDim2.fromOffset(0, 56)
+	message.Size = UDim2.new(1, 0, 0, 84)
+	message.TextXAlignment = Enum.TextXAlignment.Center
+	message.TextYAlignment = Enum.TextYAlignment.Center
+	message.ZIndex = 22
+
+	local confirm = makeButton(travelConfirm, "Переместиться")
+	confirm.Position = UDim2.new(0, 0, 1, -48)
+	confirm.Size = UDim2.new(0.48, 0, 0, 40)
+	confirm.ZIndex = 22
+
+	local cancel = makeButton(travelConfirm, "Отмена")
+	cancel.AnchorPoint = Vector2.new(1, 0)
+	cancel.Position = UDim2.new(1, 0, 1, -48)
+	cancel.Size = UDim2.new(0.48, 0, 0, 40)
+	cancel.ZIndex = 22
+
+	table.insert(connections, confirm.Activated:Connect(function()
+		if travelConfirm ~= nil then travelConfirm.Visible = false end
+		if dialogue ~= nil then dialogue.Visible = true end
+		travelRequest:FireServer(topic.travelId, value.npcId)
+	end))
+	table.insert(connections, cancel.Activated:Connect(function()
+		if travelConfirm ~= nil then travelConfirm.Visible = false end
+		if dialogue ~= nil then dialogue.Visible = true end
+	end))
+end
+
 local function openDialogue(value: any): ()
 	if dialogue == nil then return end
 	clearChildren(dialogue)
@@ -580,7 +642,7 @@ local function openDialogue(value: any): ()
 		)
 		travelButton.Size = UDim2.new(1, 0, 0, 46)
 		table.insert(connections, travelButton.Activated:Connect(function()
-			travelRequest:FireServer(topic.travelId, value.npcId)
+			showTravelConfirm(value, topic)
 		end))
 	end
 end
@@ -804,6 +866,17 @@ function QuestController.start(): ()
 	offerFrame.Parent = rootGui
 	questOffer = offerFrame
 
+	local travelFrame = Instance.new("Frame")
+	travelFrame.Name = "TravelConfirm"
+	travelFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	travelFrame.Position = UDim2.fromScale(0.5, 0.48)
+	travelFrame.Size = UDim2.fromOffset(520, 250)
+	HudLayout.applyPanelStyle(travelFrame)
+	travelFrame.Visible = false
+	travelFrame.ZIndex = 24
+	travelFrame.Parent = rootGui
+	travelConfirm = travelFrame
+
 	journal = buildJournalFrame(rootGui)
 	mapFrame = buildMap(rootGui)
 
@@ -813,6 +886,7 @@ function QuestController.start(): ()
 		if typeof(result) ~= "table" then return end
 		if result.ok == true then
 			if dialogue ~= nil then dialogue.Visible = false end
+			if travelConfirm ~= nil then travelConfirm.Visible = false end
 			return
 		end
 		if dialogue == nil or not dialogue.Visible then return end
@@ -870,6 +944,7 @@ function QuestController.stop(): ()
 	gui = nil
 	dialogue = nil
 	questOffer = nil
+	travelConfirm = nil
 	journal = nil
 	journalList = nil
 	mapFrame = nil
