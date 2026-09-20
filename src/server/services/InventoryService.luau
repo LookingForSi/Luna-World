@@ -1,11 +1,13 @@
 --!strict
 
 local HttpService = game:GetService("HttpService")
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ArchetypeDefinitions = require(ReplicatedStorage.Shared.definitions.ArchetypeDefinitions)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local InventoryConfig = require(ReplicatedStorage.Shared.config.InventoryConfig)
+local RespawnConfig = require(ReplicatedStorage.Shared.config.RespawnConfig)
 local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local EquipmentRules = require(ReplicatedStorage.Shared.inventory.EquipmentRules)
 local InventoryRules = require(ReplicatedStorage.Shared.inventory.InventoryRules)
@@ -154,6 +156,15 @@ function InventoryService.consume(player: Player, instanceId: string): (boolean,
 			return false, "NoEffect"
 		end
 	end
+	local returnAnchor: BasePart? = nil
+	if effect.kind == "ReturnToSettlement" then
+		for _, candidate in CollectionService:GetTagged(RespawnConfig.AnchorTag) do
+			if candidate:IsA("BasePart") and candidate:GetAttribute(RespawnConfig.SettlementIdAttribute) == RespawnConfig.LunaVillageSettlementId then
+				returnAnchor = candidate; break
+			end
+		end
+		if returnAnchor == nil then return false, "ReturnUnavailable" end
+	end
 
 	local nextProfile, discardReason = InventoryRules.discard(profile, instanceId, 1)
 	if nextProfile == nil then return false, discardReason end
@@ -171,6 +182,17 @@ function InventoryService.consume(player: Player, instanceId: string): (boolean,
 		restored = humanoid.Health - before
 	elseif effect.kind == "RestoreResource" then
 		restored = CombatService.restorePlayerResource(player, effect.amount)
+	elseif effect.kind == "ReturnToSettlement" then
+		if character == nil or character.Parent == nil or humanoid.Health <= 0 or returnAnchor == nil or returnAnchor.Parent == nil then
+			InventoryService.grantItem(player, record.ItemId, 1)
+			return false, "Dead"
+		end
+		local teleported = pcall(function() character:PivotTo(returnAnchor.CFrame + Vector3.new(0, 4, 0)) end)
+		if not teleported then
+			InventoryService.grantItem(player, record.ItemId, 1)
+			return false, "ReturnUnavailable"
+		end
+		restored = 1
 	end
 
 	if restored <= 0 then

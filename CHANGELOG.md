@@ -23,6 +23,7 @@
 - Добавлен отдельный CP как подготовленный PvP-only слой, не расходуемый PvE-уроном.
 - Добавлены desktop/gamepad/mobile combat contracts и Studio-only переключатель архетипов для тестирования.
 - Усилена RemoteEvent validation и lifecycle cleanup серверных сервисов.
+- Добавлена server-authoritative деревенская экономика v0.1: item grade, стартовое оружие, No-Grade crafting, merchant buy/sell, материалы, свиток возвращения и LV6 onboarding.
 
 ### Changed
 

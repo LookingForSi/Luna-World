@@ -134,7 +134,7 @@ local function updateDetails(): ()
 
 	local lines = {
 		definition.displayName,
-		string.format("%s · требуется LV %d", definition.rarity, definition.requiredLevel),
+		string.format("%s · %s · требуется LV %d", definition.grade, definition.rarity, definition.requiredLevel),
 	}
 	if typeof(entry.quantity) == "number" and entry.quantity > 1 then
 		table.insert(lines, string.format("Количество: %d", entry.quantity))
@@ -147,8 +147,8 @@ local function updateDetails(): ()
 		end
 	end
 	if definition.consumableEffect ~= nil then
-		local effectName = if definition.consumableEffect.kind == "HealHP" then "Восстановление HP" else "Восстановление ресурса"
-		table.insert(lines, string.format("%s: %g", effectName, definition.consumableEffect.amount))
+		local effectName = if definition.consumableEffect.kind == "HealHP" then "Восстановление HP" else if definition.consumableEffect.kind == "RestoreResource" then "Восстановление ресурса" else "Возвращение в Luna Village"
+		table.insert(lines, if definition.consumableEffect.kind == "ReturnToSettlement" then effectName else string.format("%s: %g", effectName, definition.consumableEffect.amount))
 	end
 
 	details.Text = table.concat(lines, "\n")

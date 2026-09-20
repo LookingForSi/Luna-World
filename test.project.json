@@ -3,7 +3,9 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Shared": { "$path": "src/shared" },
+      "Shared": {
+        "$path": "src/shared"
+      },
       "Remotes": {
         "$className": "Folder",
         "TargetRequest": { "$className": "RemoteEvent" },
@@ -16,7 +18,11 @@
         "InventoryActionRequest": { "$className": "RemoteEvent" },
         "InventorySnapshotRequest": { "$className": "RemoteEvent" },
         "InventorySnapshot": { "$className": "RemoteEvent" },
-        "InventoryActionResult": { "$className": "RemoteEvent" }
+        "InventoryActionResult": { "$className": "RemoteEvent" },
+        "EconomyRequest": { "$className": "RemoteEvent" },
+        "EconomySnapshot": { "$className": "RemoteEvent" },
+        "EconomyOpen": { "$className": "RemoteEvent" },
+        "EconomyResult": { "$className": "RemoteEvent" }
       },
       "TestRemotes": {
         "$className": "Folder",
@@ -34,12 +40,18 @@
       }
     },
     "ServerScriptService": {
-      "Server": { "$path": "src/server" },
-      "Tests": { "$path": "tests" }
+      "Server": {
+        "$path": "src/server"
+      },
+      "Tests": {
+        "$path": "tests"
+      }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Client": { "$path": "src/client" },
+        "Client": {
+          "$path": "src/client"
+        },
         "ManualAttackContractTest": {
           "$path": "tests/client/ManualAttackContract.client.luau"
         }

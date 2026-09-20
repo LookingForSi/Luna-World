@@ -84,6 +84,8 @@ Roadmap описывает порядок доказательства осно�
 - quest chain;
 - merchant;
 - blacksmith/equipment interaction;
+- узкий No-Grade crafting catalog без профессий и recipe items;
+- merchant buy/sell, материалы, consumables и return scroll;
 - onboarding;
 - respawn/safe zone flow.
 
@@ -189,7 +191,7 @@ v0.2 не проектируется детально до результато�
 - более глубокая party/social игра;
 - экономика;
 - PvP;
-- professions/crafting;
+- профессии и расширенный crafting;
 - monetization cosmetics/convenience.
 
 Приоритеты определяются поведением реальных игроков, а не желанием заранее реализовать полный список MMO-функций.

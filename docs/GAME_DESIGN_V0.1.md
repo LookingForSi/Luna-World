@@ -271,6 +271,8 @@ Inventory v0.1: простой ограниченный инвентарь.
 
 Валюта получается из PvE/quests и тратится на базовые consumables / starter equipment.
 
+Утверждённый блок Issue #13 добавляет узкую деревенскую экономику: merchant buy/sell, весь комплект No-Grade у кузнеца без collectible recipes и свиток возвращения. `Newbie` и `NoGrade` являются item grade и не заменяют rarity. Профессии, изучение рецептов, affix, enchantment, player trade и gear выше No-Grade остаются вне v0.1.
+
 ## 9. Quests
 
 Квестов должно быть немного, они направляют игрока по core loop.
@@ -374,7 +376,7 @@ Persistent schema имеет отдельный `DataVersion` и migration strat
 - castle sieges;
 - auction house;
 - player trading;
-- crafting;
+- профессии и расширенный crafting за пределами No-Grade каталога кузнеца;
 - enchantment;
 - mounts;
 - pets;
@@ -382,7 +384,7 @@ Persistent schema имеет отдельный `DataVersion` и migration strat
 - large raids;
 - battle pass;
 - monetization shop;
-- сложная экономика;
+- сложная/player-driven экономика;
 - десятки регионов и классов.
 
 ## 16. Definition of Done v0.1
