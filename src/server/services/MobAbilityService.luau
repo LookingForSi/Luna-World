@@ -11,6 +11,7 @@ local MobService = require(script.Parent.MobService)
 local CombatService = require(script.Parent.CombatService)
 local CombatPresentationService = require(script.Parent.CombatPresentationService)
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
+local DamageRules = require(ReplicatedStorage.Shared.combat.DamageRules)
 
 local MobAbilityService = {}
 
@@ -20,6 +21,7 @@ local nextActionReadyAtByMob: { [Model]: number } = setmetatable({}, { __mode = 
 local abilityCursorByMob: { [Model]: number } = setmetatable({}, { __mode = "k" }) :: any
 local buffGenerationByMob: { [Model]: number } = setmetatable({}, { __mode = "k" }) :: any
 local poisonGenerationByPlayer: { [Player]: number } = setmetatable({}, { __mode = "k" }) :: any
+local criticalRandom = Random.new()
 local started = false
 
 local function actorEntityId(mob: Model, definition: CombatTypes.MobDefinition): string
@@ -99,7 +101,21 @@ local function applyDamage(
 ): number?
 	local humanoid = livingPlayerHumanoid(target)
 	if humanoid == nil then return nil end
-	local damage = resolveIncomingDamage(target, rawDamage * outgoingMultiplier(mob), damageType)
+
+	local criticalChance = math.clamp(definition.criticalChance or 0, 0, 1)
+	local criticalMultiplier = math.max(
+		1,
+		definition.criticalDamageMultiplier or CombatConfig.CriticalDamageMultiplier
+	)
+	local rolled = DamageRules.resolve(
+		rawDamage * outgoingMultiplier(mob),
+		"DirectDamage",
+		criticalChance > 0,
+		criticalChance,
+		criticalMultiplier,
+		function() return criticalRandom:NextNumber() end
+	)
+	local damage = resolveIncomingDamage(target, rolled.amount, damageType)
 	if damage == nil then return nil end
 	humanoid:TakeDamage(damage)
 	publishToTarget(target, "Result", actionId, actorEntityId(mob, definition), {
@@ -107,7 +123,7 @@ local function applyDamage(
 		presentationKey = presentationKey,
 		outcome = "Applied",
 		amount = damage,
-		isCritical = false,
+		isCritical = rolled.isCritical,
 		definitionId = definition.id,
 		skillId = abilityId,
 	})
