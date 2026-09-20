@@ -209,21 +209,45 @@ local function createPalisadeLine(
 )
 	local wall = P.model(parent, name)
 	local horizontal = Vector3.new(toPosition.X - fromPosition.X, 0, toPosition.Z - fromPosition.Z)
-	local postSpacing = 6.5
+	local postSpacing = 4.0
 	local segments = math.max(1, math.ceil(horizontal.Magnitude / postSpacing))
+	local groundedPoints: { Vector3 } = {}
 
 	for index = 0, segments do
 		local alpha = index / segments
 		local authored = fromPosition:Lerp(toPosition, alpha)
 		local ground = Grounding.surfaceAt(authored)
+		table.insert(groundedPoints, ground)
 		local height = postHeight + ((index % 3) - 1) * 0.8
 		P.part(
 			wall,
 			string.format("Stake%03d", index + 1),
-			Vector3.new(3.1, height, 3.1),
+			Vector3.new(3.4, height, 3.4),
 			CFrame.new(ground + Vector3.new(0, height / 2 - 0.5, 0)),
 			Enum.Material.Wood,
 			COLORS.darkTimber
+		)
+	end
+
+	-- The stakes are now visually tight, and a continuous invisible barrier keeps
+	-- both avatars and humanoid mobs from threading through tiny terrain gaps.
+	for index = 1, #groundedPoints - 1 do
+		local a = groundedPoints[index]
+		local b = groundedPoints[index + 1]
+		P.segment(
+			wall,
+			string.format("PalisadeCollision_%03d", index),
+			a + Vector3.new(0, postHeight * 0.45, 0),
+			b + Vector3.new(0, postHeight * 0.45, 0),
+			2.0,
+			postHeight * 0.9,
+			Enum.Material.SmoothPlastic,
+			Color3.new(1, 1, 1),
+			{
+				canCollide = true,
+				transparency = 1,
+				attributes = { PalisadeCollision = true },
+			}
 		)
 	end
 end
