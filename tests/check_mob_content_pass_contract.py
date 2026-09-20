@@ -252,8 +252,6 @@ for token in (
 if "MobAbilityService.start()" not in MAIN or "MobAIService.start(MobAbilityService.requestAttack)" not in MAIN:
     raise AssertionError("server bootstrap must route mob attacks through MobAbilityService")
 
-print("Mob Content Pass v0.1 contract: PASS")
-
 # dev0.2 goblin tuning: wider local social response, stronger aggro and real perimeter roaming.
 for token in (
     "detectionRadius = 52, aggroRadius = 46, reacquireRadius = 64, leashDistance = 120",
@@ -268,3 +266,5 @@ for marker_id in ("spawn_goblin_patrol_south", "spawn_goblin_patrol_east", "spaw
     body = LAYOUT.split(f'id = "{marker_id}"', 1)[1].split("}", 1)[0]
     if "patrolCycleSeconds = 6" not in body:
         raise AssertionError(f"{marker_id} must actively traverse its perimeter patrol")
+
+print("Mob Content Pass v0.1 + dev0.2 tuning contract: PASS")
