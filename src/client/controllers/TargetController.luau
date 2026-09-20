@@ -23,7 +23,7 @@ local onTargetChanged: ((Model?) -> ())? = nil
 local selectedModel: Model? = nil
 local TARGET_ACTION = "LunaCycleTarget"
 local CLEAR_TARGET_ACTION = "LunaClearTarget"
-local DESKTOP_PICK_PADDING = 36
+local DESKTOP_PICK_PADDING = 52
 
 local function findEntityModel(instance: Instance?): Model?
 	local current = instance
@@ -87,6 +87,11 @@ local function syncConfirmedTarget(): ()
 	end
 
 	showConfirmedTarget(findEntityModelById(entityId))
+end
+
+local function toViewportPosition(screenPosition: Vector2): Vector2
+	local topLeftInset, _bottomRightInset = GuiService:GetGuiInset()
+	return screenPosition - topLeftInset
 end
 
 local function raycastEntity(screenPosition: Vector2): Model?
@@ -192,15 +197,16 @@ local function findForgivingScreenCandidate(screenPosition: Vector2): Model?
 end
 
 local function selectAtScreenPosition(screenPosition: Vector2, touchInput: boolean): ()
-	local exact = raycastEntity(screenPosition)
+	local viewportPosition = toViewportPosition(screenPosition)
+	local exact = raycastEntity(viewportPosition)
 	if exact ~= nil then
 		requestModel(exact)
 		return
 	end
 
 	if touchInput then
-		for _, offset in ClientCombatUiRules.getTouchProbeOffsets(24) do
-			local model = raycastEntity(screenPosition + offset)
+		for _, offset in ClientCombatUiRules.getTouchProbeOffsets(30) do
+			local model = raycastEntity(viewportPosition + offset)
 			if model ~= nil then
 				requestModel(model)
 				return
@@ -208,7 +214,7 @@ local function selectAtScreenPosition(screenPosition: Vector2, touchInput: boole
 		end
 	end
 
-	local forgiving = findForgivingScreenCandidate(screenPosition)
+	local forgiving = findForgivingScreenCandidate(viewportPosition)
 	if forgiving ~= nil then requestModel(forgiving) end
 end
 
