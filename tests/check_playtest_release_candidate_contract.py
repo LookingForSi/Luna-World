@@ -15,6 +15,10 @@ movement = read("src/client/controllers/MovementController.luau")
 progression = read("src/server/services/ProgressionService.luau")
 combat = read("src/server/services/CombatService.luau")
 server = read("src/server/main.server.luau")
+player_data = read("src/server/services/PlayerDataService.luau")
+respawn = read("src/server/services/RespawnService.luau")
+hud = read("src/client/ui/CombatHud.luau")
+inventory_ui = read("src/client/ui/InventoryUi.luau")
 
 assert "DataVersion = 3" in account
 assert "CharacterOrder" in account and "Characters" in account
@@ -43,6 +47,15 @@ assert "levelsGained > 0" in progression
 assert "restorePlayerVitalsAfterLevelUp" in progression
 assert "humanoid.Health = humanoid.MaxHealth" in combat
 assert "restoreCombatPoints(player)" in combat
+
+assert "player:SetAttribute(CombatConfig.ArchetypeAttribute, character.ArchetypeId)" in player_data
+assert "CharacterConfig.NicknameAttribute" in player_data
+assert "humanoid.DisplayName = nickname" in respawn
+assert "initializeReadyPlayer" in combat
+assert "Never manufacture the default knight before Character Lobby selection" in combat
+assert "CharacterConfig.NicknameAttribute" in hud
+assert "blocker.BackgroundTransparency = 1" in inventory_ui
+assert "panel.BackgroundTransparency = 0.03" in inventory_ui
 
 assert server.index("Players.CharacterAutoLoads = false") < server.index('WaitForChild("LunaWorldPlayableBlockout"')
 
