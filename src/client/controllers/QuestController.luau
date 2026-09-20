@@ -1,6 +1,5 @@
 --!strict
 
-local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -20,7 +19,6 @@ local snapshotRequest = remotes:WaitForChild("QuestSnapshotRequest") :: RemoteEv
 local snapshotEvent = remotes:WaitForChild("QuestSnapshot") :: RemoteEvent
 local dialogueEvent = remotes:WaitForChild("DialogueOpen") :: RemoteEvent
 
-local JOURNAL_ACTION = "LunaQuestJournalToggle"
 local WAYPOINT_HIDE_DISTANCE = 80
 local STUDS_PER_METER = 10
 
@@ -798,6 +796,13 @@ function QuestController.start(): ()
 	table.insert(connections, snapshotEvent.OnClientEvent:Connect(setSnapshot))
 	table.insert(connections, dialogueEvent.OnClientEvent:Connect(openDialogue))
 	table.insert(connections, UserInputService.InputBegan:Connect(function(input, processed)
+		if UserInputService:GetFocusedTextBox() ~= nil then return end
+		-- O is a Roblox camera key in some environments, so it must work even when
+		-- CoreScripts already marked the input as processed.
+		if input.KeyCode == Enum.KeyCode.O then
+			QuestController.toggleJournal()
+			return
+		end
 		if processed then return end
 		if input.KeyCode == Enum.KeyCode.M then QuestController.toggleMap() end
 	end))
@@ -806,26 +811,12 @@ function QuestController.start(): ()
 	end))
 	table.insert(connections, RunService.RenderStepped:Connect(updateNavigation))
 
-	ContextActionService:BindActionAtPriority(
-		JOURNAL_ACTION,
-		function(_actionName, inputState)
-			if inputState == Enum.UserInputState.Begin then
-				QuestController.toggleJournal()
-			end
-			return Enum.ContextActionResult.Sink
-		end,
-		false,
-		Enum.ContextActionPriority.High.Value + 30,
-		Enum.KeyCode.O
-	)
 
 	task.delay(0.8, rebuildMarkers)
 	snapshotRequest:FireServer()
 end
 
 function QuestController.stop(): ()
-	ContextActionService:UnbindAction(JOURNAL_ACTION)
-
 	for _, connection in connections do connection:Disconnect() end
 	table.clear(connections)
 
