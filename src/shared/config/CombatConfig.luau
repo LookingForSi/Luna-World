@@ -17,6 +17,7 @@ return table.freeze({
 	AutoAttackRetryIntervalSeconds = 0.1,
 	ClientAutoToggleTimeoutSeconds = 0.75,
 	RangeTolerance = 1.5,
+	ApproachMoveRefreshSeconds = 0.15,
 	FacingArcDegrees = 120,
 	MinAttackSpeedMultiplier = 0.5,
 	MaxAttackSpeedMultiplier = 2,
