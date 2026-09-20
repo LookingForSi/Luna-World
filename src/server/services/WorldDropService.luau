@@ -9,7 +9,7 @@ local InventoryService = require(script.Parent.InventoryService)
 
 local WorldDropService = {}
 
-local DROP_LIFETIME_SECONDS = 120
+local DROP_LIFETIME_SECONDS = 600
 local folder: Folder? = nil
 local connections: { RBXScriptConnection } = {}
 
