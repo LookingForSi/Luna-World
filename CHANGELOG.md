@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### dev0.2 — Targeting / approach combat UX
+
+- Removed the temporary Goblin Camp palisade from the generated world blockout.
+- Manual basic attacks and enemy skills now keep the authoritative OutOfRange rejection feedback, then automatically approach the selected mob and execute the requested action once in range.
+- Clearing the target cancels the approach immediately; desktop right mouse now issues the same semantic target-clear command while preserving normal camera input.
+- When an untargeted player is hit by a mob, the server automatically selects that attacker as the player's current target.
+- Out-of-range combat feedback now reads «цель слишком далеко».
+
 ### dev0.2 — Early combat + quest travel
 
 - Young Wolf base damage increased from 8 to 12; player physical defense now mitigates proportionally instead of subtracting flat damage, preventing starter mobs from collapsing to the 1-damage floor.
