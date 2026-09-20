@@ -335,43 +335,64 @@ local function prepareSpiderHollowTerrain(positions: { [string]: Vector3 })
 	local terrain = Workspace.Terrain
 	local floorTopY = center.Y + 6
 
-	-- Spider Hollow is a low, damp basin. Keep the combat floor broad enough for
-	-- the ten spiders, then build a real raised rim around it instead of leaving
-	-- the encounter on the same flat plane as Moonfall Road.
+	-- Keep the accepted combat-floor elevation, but reshape the Hollow from a
+	-- rectangular basin into a long rounded pocket following the east-west road.
+	-- The central block gives the encounter a stable fighting surface; the two
+	-- cylinders round the ends so the mud footprint reads as an oval/capsule from above.
+	local floorDepth = 20
+	local floorHalfLength = 170
+	local floorRadius = 135
 	terrain:FillBlock(
-		CFrame.new(center.X, floorTopY - 10, center.Z),
-		Vector3.new(600, 20, 500),
+		CFrame.new(center.X, floorTopY - floorDepth / 2, center.Z),
+		Vector3.new(floorHalfLength * 2, floorDepth, floorRadius * 2),
 		Enum.Material.Mud
 	)
-
-	local function ridge(name: string, offset: Vector3, size: Vector3, topOffset: number)
-		local topY = floorTopY + topOffset
-		terrain:FillBlock(
-			CFrame.new(center.X + offset.X, topY - size.Y / 2, center.Z + offset.Z),
-			size,
-			Enum.Material.Ground
+	for _, xOffset in ipairs({ -floorHalfLength, floorHalfLength }) do
+		terrain:FillCylinder(
+			CFrame.new(center.X + xOffset, floorTopY - floorDepth / 2, center.Z),
+			floorDepth,
+			floorRadius,
+			Enum.Material.Mud
 		)
 	end
 
-	-- Three closed sides plus two eastern shoulders leave one readable entrance
-	-- from Moonfall Road while still reading as a bowl from inside.
-	ridge("SpiderBasinRimWest", Vector3.new(-330, 0, 0), Vector3.new(180, 44, 650), 34)
-	ridge("SpiderBasinRimSouth", Vector3.new(0, 0, -285), Vector3.new(760, 38, 150), 30)
-	ridge("SpiderBasinRimNorth", Vector3.new(0, 0, 285), Vector3.new(760, 50, 170), 40)
-	ridge("SpiderBasinRimEastSouth", Vector3.new(315, 0, -190), Vector3.new(155, 34, 230), 27)
-	ridge("SpiderBasinRimEastNorth", Vector3.new(315, 0, 190), Vector3.new(155, 38, 230), 31)
-
-	-- The north rim continues into the Fallen Shrine mountain mass so the hollow
-	-- feels geologically embedded rather than like a fenced patch in a field.
-	local northDistance = shrine.Z - center.Z
-	for index, alpha in ipairs({ 0.42, 0.62, 0.80 }) do
-		local z = center.Z + northDistance * alpha
-		local rise = 42 + index * 13
-		local radius = 150 + index * 18
+	-- Broad spherical caps form a walkable, gradual shoulder around the oval.
+	-- Their centers sit deep below the combat floor, so only shallow upper caps
+	-- emerge above it; this avoids the old box-like cliff walls. The east side
+	-- remains the lowest/openest where Moonfall Road enters the Hollow.
+	local SpiderBasinSoftShoulders = {
+		{ offset = Vector3.new(-285, 0, 0), radius = 220, rise = 30, material = Enum.Material.Ground },
+		{ offset = Vector3.new(-175, 0, -190), radius = 195, rise = 27, material = Enum.Material.Ground },
+		{ offset = Vector3.new(0, 0, -205), radius = 190, rise = 24, material = Enum.Material.Ground },
+		{ offset = Vector3.new(165, 0, -175), radius = 180, rise = 19, material = Enum.Material.Ground },
+		{ offset = Vector3.new(-175, 0, 195), radius = 205, rise = 31, material = Enum.Material.Ground },
+		{ offset = Vector3.new(0, 0, 210), radius = 200, rise = 29, material = Enum.Material.Ground },
+		{ offset = Vector3.new(160, 0, 180), radius = 182, rise = 21, material = Enum.Material.Ground },
+	}
+	for _, shoulder in ipairs(SpiderBasinSoftShoulders) do
 		terrain:FillBall(
-			Vector3.new(center.X - 35 + index * 18, floorTopY + rise - radius, z),
+			Vector3.new(
+				center.X + shoulder.offset.X,
+				floorTopY + shoulder.rise - shoulder.radius,
+				center.Z + shoulder.offset.Z
+			),
+			shoulder.radius,
+			shoulder.material
+		)
+	end
+
+	-- Blend the northern shoulder into the Fallen Shrine mass with overlapping
+	-- smooth terrain instead of a hard ridge. This preserves the geological link
+	-- between the two zones without making the Hollow feel like a square crater.
+	local northDistance = shrine.Z - center.Z
+	for index, alpha in ipairs({ 0.46, 0.64, 0.81 }) do
+		local z = center.Z + northDistance * alpha
+		local radius = 175 + index * 18
+		local rise = 28 + index * 9
+		terrain:FillBall(
+			Vector3.new(center.X - 55 + index * 22, floorTopY + rise - radius, z),
 			radius,
-			if index >= 2 then Enum.Material.Rock else Enum.Material.Ground
+			if index >= 3 then Enum.Material.Rock else Enum.Material.Ground
 		)
 	end
 end
