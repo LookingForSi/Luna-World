@@ -60,7 +60,7 @@ def main() -> None:
     assert "baseplate.CanCollide = false" in bootstrap
 
     builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
-    assert 'TerrainRevision", "terrain-v07"' in builder
+    assert 'TerrainRevision", "terrain-v08"' in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
     assert "WorldDressingBlockout" in builder
@@ -134,11 +134,14 @@ def main() -> None:
         "LAKE_SURFACE_DROP = 8",
         "LAKE_WATER_DEPTH = 30",
         "LAKE_BASIN_CLEAR_DEPTH = 42",
-        "LAKE_SHORE_CLEAR_MARGIN = 22",
+        "LAKE_SHORE_WATER_OVERLAP = 8",
+        "LAKE_BED_OVERLAP = 6",
         "LAKE_BOUNDARY_MARGIN = 28",
         "LAKE_SLAB_STEP = 56",
         "LAKE_SLAB_OVERLAP = 28",
         'DeepBasinExcavated", true',
+        'LakeBedFilled", true',
+        '"ShorelineWaterOverlap", LAKE_SHORE_WATER_OVERLAP',
         "prepareGoblinCampBoundaryShelf",
         "slopeRows",
         "slopeRadius = 105",
@@ -165,6 +168,8 @@ def main() -> None:
     assert "carveLakeDisc" not in north
     assert "fillContinuousLakePath" not in north
     assert "bounds.maxX + 80" not in north
+    assert "LAKE_SHORE_CLEAR_MARGIN" not in north
+    assert "Enum.Material.Mud" in north
     assert "postSpacing = 4.0" in north
     assert "PalisadeCollision = true" in north
     assert "fenceSegments" in north
