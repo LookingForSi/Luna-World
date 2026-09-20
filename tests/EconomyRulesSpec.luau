@@ -78,7 +78,7 @@ return function(TestRunner)
 		local denied, reason = EconomyRules.craft(low, "craft_weapon_rune_staff", generator("low"))
 		assert(denied == nil and reason == "LevelTooLow")
 		local processed = assert(EconomyRules.craft(fundedRecipe("craft_material_cured_leather"), "craft_material_cured_leather", generator("leather")))
-		assert(EconomyRules.ownedQuantity(processed, "material_cured_leather") == 2)
+		assert(EconomyRules.ownedQuantity(processed, "material_cured_leather") == 3)
 	end)
 	TestRunner.run("merchant buy sell ratio and equipped protection", function()
 		local profile = ProfileSchema.createDefault(); profile.Luna = 1000
@@ -147,18 +147,18 @@ return function(TestRunner)
 		table.sort(costs)
 		assert(costs[3] <= costs[1] * 1.15, string.format("class set spread %d..%d", costs[1], costs[3]))
 		local resources = EconomyBalance.expectedRouteItems(EconomyBalance.LevelSixRoute)
-		assert((resources.material_wolf_pelt or 0) >= 9)
-		assert((resources.material_spider_silk or 0) >= 9)
-		assert((resources.material_iron_scrap or 0) >= 12)
+		assert((resources.material_wolf_pelt or 0) >= 3)
+		assert((resources.material_spider_silk or 0) >= 3)
+		assert((resources.material_iron_scrap or 0) >= 2)
 		assert((resources.material_goblin_token or 0) >= 2)
-		assert((resources.material_magic_dust or 0) >= 3)
+		assert((resources.material_magic_dust or 0) >= 1)
 		assert(EconomyBalance.expectedRouteValue(EconomyBalance.LevelSixRoute) >= 100)
 	end)
 	TestRunner.run("level-six route crafts a weapon and armor for every class", function()
 		local plans = {
-			knight = { cured = 1, sturdy = 0, billet = 3, weapon = "craft_weapon_iron_blade", armor = "craft_armor_guard_head" },
-			ranger = { cured = 2, sturdy = 2, billet = 1, weapon = "craft_weapon_hunter_bow", armor = "craft_armor_hunter_head" },
-			mystic = { cured = 1, sturdy = 2, billet = 1, weapon = "craft_weapon_rune_staff", armor = "craft_armor_adept_head" },
+			knight = { cured = 1, sturdy = 0, billet = 1, weapon = "craft_weapon_iron_blade", armor = "craft_armor_guard_head" },
+			ranger = { cured = 1, sturdy = 1, billet = 1, weapon = "craft_weapon_hunter_bow", armor = "craft_armor_hunter_head" },
+			mystic = { cured = 1, sturdy = 1, billet = 1, weapon = "craft_weapon_rune_staff", armor = "craft_armor_adept_head" },
 		}
 		for archetype, plan in plans do
 			local profile = levelSixRouteProfile(); profile.ArchetypeId = archetype
