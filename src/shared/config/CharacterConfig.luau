@@ -8,4 +8,7 @@ return table.freeze({
 	RequestsPerWindow = 12,
 	DeleteConfirmationPrefix = "DELETE:",
 	BuildLabel = "dev0.3-playtest-rc1",
+	NicknameAttribute = "CharacterNickname",
+	BodyTypeAttribute = "CharacterBodyType",
+	AppearancePresetAttribute = "CharacterAppearancePreset",
 })
