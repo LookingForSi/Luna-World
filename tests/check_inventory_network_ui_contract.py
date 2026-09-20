@@ -52,7 +52,7 @@ if "createClientSnapshot" not in SERVICE:
 if "InventoryNetworkService.start()" not in MAIN or "InventoryNetworkService.stop()" not in MAIN:
     raise AssertionError("server bootstrap must own inventory network lifecycle")
 
-for token in ("Enum.KeyCode.I", "Enum.KeyCode.ButtonSelect", "requestSnapshot"):
+for token in ("Enum.KeyCode.I", "Enum.KeyCode.ButtonSelect", "UserInputService.InputBegan", "requestSnapshot"):
     if token not in CONTROLLER:
         raise AssertionError(f"inventory controller missing {token}")
 
@@ -60,11 +60,11 @@ for token in ('"InventoryPanel"', '"InventoryList"', '"EquipmentList"', '"Equip"
     if token not in UI:
         raise AssertionError(f"inventory UI missing {token}")
 
-for token in ('"Inventory"', '"ИНВЕНТАРЬ [I]"'):
+for token in ('"Inventory"', '"ИНВЕНТАРЬ [I]"', '"ИНВЕНТАРЬ [SELECT]"', "GetLastInputType", "LastInputTypeChanged"):
     if token not in BAR:
         raise AssertionError(f"primary action block missing inventory access: {token}")
 
-for token in ("PickupPrompt", '"Подобрать"', "InventoryService.grantItem", "DropNameplate", "DropHighlight"):
+for token in ("PickupPrompt", '"Подобрать"', "InventoryService.grantItem", "DropNameplate", "DropHighlight", "DROP_LIFETIME_SECONDS = 600"):
     if token not in WORLD_DROP:
         raise AssertionError(f"world drop presentation/pickup missing {token}")
 
