@@ -412,6 +412,8 @@ function EconomyUi.showResult(value: any): ()
 			InventoryFull = "Инвентарь заполнен.",
 			EquippedItem = "Сначала снимите предмет.",
 			NotForSale = "Этот предмет не продаётся.",
+			InvalidQuantity = "Количество изменилось. Обновите корзину.",
+			NotOwned = "Предмет уже отсутствует в инвентаре.",
 		}
 		status.Text = reasons[value.reason] or "Операция отклонена."
 		status.TextColor3 = Color3.fromRGB(222, 145, 145)
