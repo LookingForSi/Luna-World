@@ -9,6 +9,7 @@ local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
+local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local HudLayout = require(script.Parent.HudLayout)
 
 local ActionBar = {}
@@ -19,6 +20,9 @@ local attackButton: TextButton? = nil
 local inventoryButton: TextButton? = nil
 local mapButton: TextButton? = nil
 local questButton: TextButton? = nil
+local quickSlotButton: TextButton? = nil
+local quickUseCallback: (() -> ())? = nil
+local quickStateCallback: (() -> any)? = nil
 local autoConnection: RBXScriptConnection? = nil
 local renderConnection: RBXScriptConnection? = nil
 local inputTypeConnection: RBXScriptConnection? = nil
@@ -56,7 +60,7 @@ local function inventoryBindingText(): string
 	if string.find(inputType.Name, "Gamepad") ~= nil then
 		return "ИНВЕНТАРЬ [SELECT]"
 	end
-	return "ИНВЕНТАРЬ [I]"
+	return "ИНВЕНТАРЬ [T]"
 end
 
 local function mapBindingText(): string
@@ -72,7 +76,7 @@ local function questBindingText(): string
 	if inputType == Enum.UserInputType.Touch or string.find(inputType.Name, "Gamepad") ~= nil then
 		return "ЗАДАНИЯ"
 	end
-	return "ЗАДАНИЯ [O]"
+	return "ЗАДАНИЯ [Y]"
 end
 
 local function updateBindingHints(): ()
@@ -102,6 +106,25 @@ local function updateCooldowns(): ()
 		local readyAt = player:GetAttribute(CombatConfig.BasicAttackReadyAtAttribute)
 		local remaining = if typeof(readyAt) == "number" then math.max(0, readyAt - now) else 0
 		attackButton.Text = if remaining > 0 then string.format("АТАКА\n%.1f", remaining) else "АТАКА"
+	end
+
+	if quickSlotButton ~= nil and quickStateCallback ~= nil then
+		local quickState = quickStateCallback()
+		local itemId = if typeof(quickState) == "table" then quickState.itemId else nil
+		local quantity = if typeof(quickState) == "table" and typeof(quickState.quantity) == "number" then quickState.quantity else 0
+		if typeof(itemId) == "string" then
+			local definition = ItemDefinitions[itemId]
+			local displayName = if definition ~= nil then definition.displayName else itemId
+			quickSlotButton.Text = string.format("[0]\n%s ×%d", displayName, quantity)
+			quickSlotButton.Active = quantity > 0
+			quickSlotButton.TextTransparency = if quantity > 0 then 0 else 0.45
+			quickSlotButton.BackgroundColor3 = if quantity > 0 then Color3.fromRGB(42, 45, 56) else Color3.fromRGB(33, 35, 43)
+		else
+			quickSlotButton.Text = "[0]"
+			quickSlotButton.Active = false
+			quickSlotButton.TextTransparency = 0.45
+			quickSlotButton.BackgroundColor3 = Color3.fromRGB(33, 35, 43)
+		end
 	end
 
 	local rawLevel = player:GetAttribute(ProgressionConfig.LevelAttribute)
@@ -170,6 +193,15 @@ local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (str
 		button.Position = UDim2.new((index - 1) * 0.1, 2, 0, 0)
 		button.TextSize = if UserInputService.TouchEnabled then 8 else 10
 
+		if index == 10 then
+			quickSlotButton = button
+			button.Text = "[0]"
+			table.insert(buttonConnections, button.Activated:Connect(function()
+				if quickUseCallback ~= nil then quickUseCallback() end
+			end))
+			continue
+		end
+
 		if skillId ~= nil then
 			local definition = SkillDefinitions[skillId]
 			if definition ~= nil then
@@ -194,9 +226,13 @@ function ActionBar.start(
 	onClearTarget: () -> (),
 	onInventoryToggle: () -> (),
 	onMapToggle: () -> (),
-	onQuestToggle: () -> ()
+	onQuestToggle: () -> (),
+	onQuickUse: () -> (),
+	getQuickState: () -> any
 ): ()
 	ActionBar.stop()
+	quickUseCallback = onQuickUse
+	quickStateCallback = getQuickState
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CombatActionBar"
@@ -282,7 +318,9 @@ function ActionBar.stop(): ()
 	table.clear(skillButtons)
 	table.clear(skillResourceTypes)
 	if screenGui ~= nil then screenGui:Destroy() end
-	screenGui, autoButton, attackButton, inventoryButton, mapButton, questButton = nil, nil, nil, nil, nil, nil
+	screenGui, autoButton, attackButton, inventoryButton, mapButton, questButton, quickSlotButton = nil, nil, nil, nil, nil, nil, nil
+	quickUseCallback = nil
+	quickStateCallback = nil
 end
 
 return ActionBar
