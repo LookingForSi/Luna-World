@@ -104,11 +104,17 @@ local function setExpanded(value: boolean): ()
 	expanded = value
 	if body ~= nil then body.Visible = expanded end
 	if frame ~= nil then
-		frame.Size = if expanded
-			then if currentMetrics ~= nil and ResponsiveLayout.isSmallTouch(currentMetrics :: ResponsiveLayout.Metrics)
-				then UDim2.fromOffset(math.min(300, (currentMetrics :: ResponsiveLayout.Metrics).contentSize.X), 150)
-				else UDim2.fromOffset(HudLayout.CombatLogSize.X, HudLayout.CombatLogSize.Y)
-			else UDim2.fromOffset(128, 30)
+		if currentMetrics ~= nil and (currentMetrics :: ResponsiveLayout.Metrics).isTouch then
+			local metrics = currentMetrics :: ResponsiveLayout.Metrics
+			local size = if expanded
+				then ResponsiveLayout.combatLogExpandedSize(metrics)
+				else ResponsiveLayout.combatLogCollapsedSize(metrics)
+			frame.Size = UDim2.fromOffset(size.X, size.Y)
+		else
+			frame.Size = if expanded
+				then UDim2.fromOffset(HudLayout.CombatLogSize.X, HudLayout.CombatLogSize.Y)
+				else UDim2.fromOffset(128, 30)
+		end
 	end
 	if toggleButton ~= nil then toggleButton.Text = if expanded then "Лог  ▲" else "Лог  ▼" end
 end
@@ -257,6 +263,7 @@ function CombatLog.start(): ()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CombatLog"
 	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 4
 	gui.Parent = player:WaitForChild("PlayerGui")
 
@@ -315,9 +322,9 @@ function CombatLog.start(): ()
 	entrySequence = 0
 	observedLevel = readLevel()
 	stopObserving = ResponsiveLayout.observe(function(metrics)
-		local wasSmallTouch = currentMetrics ~= nil and ResponsiveLayout.isSmallTouch(currentMetrics :: ResponsiveLayout.Metrics)
+		local wasTouch = currentMetrics ~= nil and (currentMetrics :: ResponsiveLayout.Metrics).isTouch
 		currentMetrics = metrics
-		if ResponsiveLayout.isSmallTouch(metrics) and not wasSmallTouch then expanded = false end
+		if metrics.isTouch and not wasTouch then expanded = false end
 		setExpanded(expanded)
 	end)
 
