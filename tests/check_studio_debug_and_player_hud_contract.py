@@ -26,7 +26,7 @@ ITEMS = "src/shared/definitions/ItemDefinitions.luau"
 CLIENT_DEBUG = "src/client/ui/StudioTestPanel.luau"
 HUD = "src/client/ui/CombatHud.luau"
 MOBS = "src/shared/definitions/MobDefinitions.luau"
-SERVER_MAIN = "src/server/bootstrap/adapters/ExistingServerComponents.luau"
+SERVER_MAIN = "src/server/bootstrap/manifests/DevCombinedServerManifest.luau"
 CLIENT_MAIN = "src/client/bootstrap/adapters/ExistingClientComponents.luau"
 DEFAULT_PROJECT = "default.project.json"
 
@@ -55,7 +55,7 @@ require(COMBAT, "player:SetAttribute(ARCHETYPE_ATTRIBUTE, archetypeId)", "new ar
 require(COMBAT, "player:LoadCharacter()", "class switch must rebuild combat state through the existing character lifecycle")
 require(COMBAT, "function CombatService._setMovementMultiplierForStudio", "CombatService Studio movement seam is missing")
 require(COMBAT, 'assert(RunService:IsStudio()', "Studio combat seams must hard-fail outside Studio")
-require(SERVER_MAIN, "StudioDebugService.start()", "server bootstrap must start the Studio debug service")
+require(SERVER_MAIN, "Components.studioDebug()", "DevCombined server manifest must include the Studio debug service")
 
 # Client debug controls also have their own Studio guard; live clients must never render them.
 require(CLIENT_DEBUG, "RunService:IsStudio()", "Studio class panel must be gated on the client")
