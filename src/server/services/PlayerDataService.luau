@@ -16,7 +16,7 @@ local RobloxProfileStore = require(script.Parent.Parent.persistence.RobloxProfil
 local SessionProfileStore = require(script.Parent.Parent.persistence.SessionProfileStore)
 
 local PlayerDataService = {}
-export type AccountState = "Loading" | "AccountReady" | "CharacterReady" | "Saving" | "Released" | "Error"
+export type AccountState = "Loading" | "AccountReady" | "CharacterReady" | "Transferring" | "Saving" | "Released" | "Error"
 type Session = {
 	state: AccountState,
 	token: string,
@@ -173,6 +173,23 @@ function PlayerDataService.stop(): ()
 		releasePlayer(player)
 	end
 	store = nil
+end
+
+function PlayerDataService.beginTransfer(player: Player): (boolean, string?)
+	local session = sessions[player]
+	if session == nil or session.state ~= "CharacterReady" or session.account == nil then return false, "CharacterNotReady" end
+	setState(player, session, "Transferring")
+	if not save(player, true) then return false, "SaveFailed" end
+	return true, nil
+end
+function PlayerDataService.recoverTransfer(player: Player): (boolean, string?)
+	local session = sessions[player]
+	if session == nil or session.state ~= "Released" or store == nil then return false, "NotReleased" end
+	local result = (store :: ProfileStoreContract.Store):claim(player.UserId, session.token, os.time())
+	if not result.ok then setState(player, session, "Error"); return false, result.reason end
+	session.account = result.profile
+	setState(player, session, "AccountReady")
+	return true, nil
 end
 
 function PlayerDataService.getState(player: Player): AccountState?
