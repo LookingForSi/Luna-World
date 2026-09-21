@@ -1081,22 +1081,23 @@ Foundation считается готовой, когда одновременн�
 
 ## 23. Branch / sequencing
 
-Этот spec создан в ветке:
+Design baseline первоначально был подготовлен в:
 
 ```text
 architecture/multi-place-foundation-v01
 ```
 
-Она основана на текущем HEAD mobile responsive work PR #36.
+Эта историческая design-ветка была основана на mobile PR #36.
 
-Перед началом архитектурной реализации:
+**Owner sequencing override — 2026-09-21:** mobile PR #36 закрыт без merge, Issue #37 сохраняется как post-foundation Mobile UX v2 backlog. Реализация multi-place foundation начинается первой от стабильного `main` dev0.3 RC1 в:
 
-1. PR #36 должен быть стабилизирован и принят;
-2. architecture branch должен быть синхронизирован с фактическим post-#36 baseline;
-3. затем создаётся implementation plan;
-4. только после review plan начинается кодовый refactor.
+```text
+architecture/multi-place-implementation-v01
+```
 
-Multi-place implementation не должен блокировать завершение текущего mobile acceptance.
+Причина: сначала стабилизировать bootstrap/application ownership и границы Lobby/World, затем строить новый mobile UI поверх новой архитектуры, а не переделывать его дважды.
+
+Implementation plan уже прошёл review. Gates выполняются последовательно; mobile redesign не входит в архитектурные commits и возвращается отдельным pass после foundation.
 
 ---
 
