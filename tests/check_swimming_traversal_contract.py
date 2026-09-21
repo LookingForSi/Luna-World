@@ -30,42 +30,15 @@ for forbidden in (
 
 if "Enum.Material.Water" not in south:
     raise AssertionError("river must use real Terrain water")
-if "Enum.Material.Water" not in north:
-    raise AssertionError("lake must use real Terrain water")
+if "\n\tcreateGoblinCemeteryLake(north, positions)\n" in north:
+    raise AssertionError("dev0.3 playtest must not generate the experimental lake")
 
 for source_name, source in (("river", south), ("recovery", recovery)):
     if "WaterRecovery" in source:
         raise AssertionError(f"{source_name} still contains a hidden water teleport hazard")
 
-if 'Purpose", "SwimmableWater"' not in north:
-    raise AssertionError("lake must be explicitly marked as swimmable")
-
-if "WaterRecovery" in north:
-    raise AssertionError("lake must not contain a hidden water teleport hazard")
-
-for token in (
-    "LAKE_WATER_DEPTH = 30",
-    "LAKE_BASIN_CLEAR_DEPTH = 40",
-    "LAKE_CLEAR_MARGIN = 34",
-    'DeepBasinExcavated", true',
-    "clearBottomY = waterSurfaceY + 1",
-    "shapeGoblinCemeteryLakeHillCliff",
-    'HillBankCliff", true',
-):
-    if token not in north:
-        raise AssertionError(f"accepted 21:20 lake contract missing: {token}")
-
-for lake_forbidden in (
-    "prepareGoblinCampBoundaryShelf",
-    "fillFlatLakeSlab",
-    "fillContinuousLakePath",
-    "carveLakeDisc",
-    "LakeBedFilled",
-    "ContainedWithinWorldBounds",
-    "ExtendsToWorldEdge",
-):
-    if lake_forbidden in north:
-        raise AssertionError(f"post-21:20 lake experiment still present: {lake_forbidden}")
+if "lake generation is intentionally disabled" not in north:
+    raise AssertionError("release must explicitly keep lake generation disabled")
 
 for forbidden in (
     "fellIntoRiver",
