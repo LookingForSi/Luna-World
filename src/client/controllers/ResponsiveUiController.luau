@@ -187,7 +187,7 @@ local function applyModals(playerGui: PlayerGui, metrics: ResponsiveLayout.Metri
 				then UDim2.new(1, -gap * 4, 0.52, -headerY / 2)
 				else UDim2.new(0.54, -gap * 2, 1, -(headerY + footerY))
 		end
-		if equipment ~= nil and equipment:IsA("Frame") then
+		if equipment ~= nil and equipment:IsA("GuiObject") then
 			equipment.Position = if portrait
 				then UDim2.new(0, gap * 2, 0.56, gap)
 				else UDim2.new(0.56, 0, 0, headerY)
