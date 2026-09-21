@@ -16,7 +16,7 @@ Lobby (Start Place) -> Moonfall World -> Ruins of Selene (reserved Dungeon)
 
 При этом сохранить `DevCombined` для полного локального цикла Lobby → Gameplay без настоящего teleport, не менять gameplay/balance и не переносить authoritative state на клиент или в `TeleportData`.
 
-Этот документ является только implementation plan. Выполнение Gates A–G начинается отдельной серией изменений после review плана и подтверждения, что baseline PR #36 принят и ветка синхронизирована с его итоговым HEAD.
+Этот документ является только implementation plan. Выполнение Gates A–G начинается отдельной серией изменений после review плана и подтверждения, что mobile baseline PR #36 вместе с follow-up Mobile UX v2 (#37) принят владельцем, слит в `main`, а архитектурная ветка синхронизирована с фактическим итоговым HEAD.
 
 ### Вне scope
 
@@ -74,7 +74,7 @@ Gates выполняются строго `A → B → C → D → E → F → G
 После каждого code gate:
 
 ```bash
-python3 tests/check_*.py
+for f in tests/check_*.py; do python3 "$f" || exit 1; done
 rojo build default.project.json -o /tmp/LunaWorld-default.rbxlx
 rojo build test.project.json -o /tmp/LunaWorld-tests.rbxlx
 git diff --check
@@ -105,7 +105,7 @@ Manual Roblox checks всегда маркировать `PASS`, `FAIL` или `
 Создать:
 
 - `src/shared/core/runtime/PlaceRole.luau` — frozen values/types `Lobby | World | Dungeon | DevCombined` и validation;
-- `src/shared/core/runtime/PlaceRuntime.luau` — `resolve(placeId, isStudio, override?)`, `getRole()`, `isLobby()`, `isWorld()`, `isDungeon()`, `isDevCombined()`; только этот модуль знает role resolution;
+- `src/shared/core/runtime/PlaceRuntime.luau` — pure role resolution `resolve(placeId, gameId, isStudio, override?)` и predicates `isLobby(role)`, `isWorld(role)`, `isDungeon(role)`, `isDevCombined(role)`; только этот модуль знает role resolution. Не хранить mutable module-global `currentRole`: resolved role передаётся bootstrap/application context явно, чтобы tests и несколько runtime contexts не зависели от скрытого singleton-state;
 - `src/shared/config/PlaceConfig.luau` — deployment mapping без выдуманных production IDs; до Gate D разрешён только явный Studio `DevCombined` override, production unset fail-fast;
 - `src/shared/core/runtime/RuntimeComponent.luau` — тип `{ name: string, start: () -> (), stop: () -> () }`;
 - `src/shared/core/runtime/RuntimeManifest.luau` — ordered список components и проверка уникальных имён.
@@ -121,7 +121,7 @@ Manual Roblox checks всегда маркировать `PASS`, `FAIL` или `
 - `src/server/bootstrap/manifests/DungeonServerManifest.luau`;
 - `src/server/bootstrap/manifests/DevCombinedServerManifest.luau`.
 
-На Gate A production manifests могут быть неполными и не использоваться в default mapping, но их allowlists уже тестируются. `DevCombinedServerManifest` обязан воспроизвести текущий порядок запуска. Логику поиска `LunaWorldPlayableBlockout`, tagging spawn и ожидание world bootstrap временно оформить отдельным named component/adaptor, а не спрятать в generic bootstrap.
+На Gate A production manifests могут быть неполными и не использоваться в default mapping, но их allowlists уже тестируются. `DevCombinedServerManifest` обязан воспроизвести текущий порядок запуска. Логику поиска `LunaWorldPlayableBlockout`, tagging spawn и ожидание world bootstrap временно оформить отдельным named component/adaptor, а не спрятать в generic bootstrap. Текущий auto-running `WorldBootstrap.server.luau` должен быть явно учтён как legacy dev-only prerequisite: либо временно остаётся отдельным DevCombined bootstrap с characterization contract, либо превращается в управляемый adapter/module. Нельзя считать lifecycle полностью manifest-owned, оставив скрытый auto-run script вне allowlist.
 
 Изменить `src/server/main.server.luau`: оставить ранний `Players.CharacterAutoLoads = false`, resolve role и один вызов `ServerBootstrap.start(manifest)`. Entry point больше не требует каждый gameplay service напрямую.
 
@@ -239,7 +239,7 @@ Server-authoritative `PlaceTransferService` выполняет freeze → save �
 
 - `src/server/core/transfer/TeleportGateway.luau` — injectable wrapper над server-only `TeleportService:TeleportAsync()` и `TeleportInitFailed`;
 - `src/server/core/transfer/PlaceTransferService.luau` — validation destination/active owned character, freeze, save/release, intent creation, teleport, failure compensation, per-player idempotency/rate limit;
-- `src/server/core/transfer/CharacterArrivalService.luau` — читает join data, claims profile, atomically consumes/validates intent, сверяет owned `characterId`, destination role/entry point, затем вызывает существующий activation seam;
+- `src/server/core/transfer/CharacterArrivalService.luau` — читает join data, выполняет дешёвую shape/version/destination проверку без consume, claims profile, затем atomically consumes intent с match по `transferId`/user/destination, сверяет owned `characterId` и entry point и только после этого вызывает существующий activation seam. Любая ошибка после успешного claim обязана симметрично release/cleanup destination lease; invalid intent не должен оставлять профиль занятым;
 - `src/server/core/transfer/GameplayMutationGate.luau` либо узкий PlayerDataService query, который existing authoritative services используют для отказа во время transfer;
 - минимальные `EnterWorldRequest`/`TransferResult` remotes в role mappings или compatibility remote lookup. Handler принимает только request id + `characterId`/destination intent и повторно проверяет ownership на server.
 
@@ -270,7 +270,9 @@ Server-authoritative `PlaceTransferService` выполняет freeze → save �
 10. autosave/PlayerRemoving/BindToClose не конфликтуют с `Transferring`;
 11. source recovery re-claims/unfreezes безопасно либо переводит в actionable Error без silent data loss;
 12. concurrent double Enter World создаёт не более одного transfer;
-13. mutation requests во время freeze отклоняются server-side.
+13. mutation requests во время freeze отклоняются server-side;
+14. destination успешно claim-ит profile, но intent уже consumed/expired/mismatched — destination гарантированно release-ит lease и не оставляет `Busy`;
+15. intent успешно consumed, но character activation/arrival component падает — destination выполняет deterministic cleanup/release и выдаёт явный recovery/error path без потерянной ownership.
 
 ### Gate C acceptance
 
@@ -298,7 +300,7 @@ Experience содержит Lobby как Start Place и Moonfall World; role-spe
 
 Сохранить `default.project.json` как backward-compatible alias на `DevCombined` на время migration, если текущий workflow от него зависит. Не дублировать вручную remote lists: либо вынести генерируемый/проверяемый common mapping, либо добавить contract test, гарантирующий одинаковые имена и классы remotes между нужными Places.
 
-Изменить `src/shared/config/PlaceConfig.luau`: внести реальные numeric `LobbyPlaceId`, `MoonfallPlaceId` и Experience universe context только после создания owner-side Places. IDs не размазывать по code/project manifests.
+Изменить `src/shared/config/PlaceConfig.luau`: внести реальные numeric `LobbyPlaceId`, `MoonfallPlaceId` только после создания owner-side Places и хранить их в явных deployment mappings по `game.GameId`/environment (как минимум `test` и `production`). Нельзя иметь один неразличимый набор IDs для test и production universes. IDs не размазывать по code/project manifests; unknown universe/place fail-fast.
 
 Добавить `docs/MULTI_PLACE_DEPLOYMENT.md` на русском с publish order, назначением Start Place, безопасными test/prod ID slots, rollback и published acceptance. Не хранить secrets.
 
@@ -308,7 +310,7 @@ Experience содержит Lobby как Start Place и Moonfall World; role-spe
 
 - `tests/check_place_project_mappings.py` — production Lobby не мапит gameplay/worldgen; Moonfall не мапит Lobby UI; Studio debug отсутствует в production;
 - `tests/check_remote_mapping_compatibility.py`;
-- `tests/check_place_config_contract.py` — production IDs положительные/уникальные, unknown fail-fast;
+- `tests/check_place_config_contract.py` — deployment mappings разделены по universe/environment (`game.GameId`), Place IDs положительные/уникальные внутри environment, test Experience не может случайно использовать production destinations, unknown universe/place fail-fast;
 - build каждого mapping через Rojo;
 - full existing Python/Luau suite.
 
@@ -330,6 +332,19 @@ Experience содержит Lobby как Start Place и Moonfall World; role-spe
 Без этого результата Gate D помечается `DEFERRED — pending owner runtime acceptance`; Gate E может готовить независимую tooling separation, но foundation нельзя объявлять готовой и нельзя принимать решения, зависящие от реального handoff result.
 
 ## 8. Gate E — Разделение authored world и worldgen tooling
+
+### Обязательный authored-world bake checkpoint
+
+Перед исключением runtime worldgen выполнить отдельный owner-visible bake/migration:
+
+1. зафиксировать backup/snapshot текущего owner-accepted Moonfall baseline;
+2. в dev/worldgen authoring режиме один раз сгенерировать текущий terrain/static blockout в Studio;
+3. сохранить получившийся Terrain/static environment непосредственно в Moonfall Place как authored content;
+4. убедиться, что в bake не возвращаются отклонённые экспериментальные world changes (в частности отключённая генерация проблемного lake не должна «случайно» стать частью production authored terrain);
+5. перезапустить Moonfall без runtime generator и сравнить spawn anchors, дороги, высоты, water/traversal и ключевые POI;
+6. только после owner smoke и contract checks исключать generator из production mapping.
+
+Нельзя просто переместить `PlayableWorldBlockout` в `tools/` и объявить authored-world migration завершённой: физический Moonfall Place должен реально содержать сохранённый production Terrain/static environment.
 
 ### Результат gate
 
