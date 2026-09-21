@@ -58,7 +58,9 @@ assert "Components.worldBootstrap()" not in world_server, "production World mani
 for forbidden in ("Components.character()", "Components.economy()", "Components.economyWorld()", "Components.npcWorld()", "Components.travel()", "Components.quests()", "Components.worldBootstrap()"):
     assert forbidden not in dungeon_server, f"Dungeon server illegally contains {forbidden}"
 assert "Components.worldBootstrap()" in dev_server
-assert "Components.character()" in dev_server and "Components.combat()" in dev_server
+assert "Components.worldSpawnAnchor()" in dev_server
+assert "Components.devCombinedGameplay()" in dev_server
+assert "Components.character()" not in dev_server and "Components.combat()" not in dev_server
 
 lobby_client = read("src/client/bootstrap/manifests/LobbyClientManifest.luau")
 world_client = read("src/client/bootstrap/manifests/WorldClientManifest.luau")
