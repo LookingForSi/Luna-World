@@ -6,6 +6,7 @@ local Workspace = game:GetService("Workspace")
 local WorldLayout = require(ReplicatedStorage.Shared.world.WorldLayout)
 local Grounding = require(script.Parent.TerrainGrounding)
 local P = require(script.Parent.BlockoutPrimitives)
+local GoblinCemeteryLakeTerrain = require(script.Parent.GoblinCemeteryLakeTerrain)
 
 local NorthernZonesBlockout = {}
 
@@ -553,107 +554,13 @@ local function createMoonfallLandmarks(parent: Instance, positions: { [string]: 
 	P.groundedPart(props, "CrossroadsPost", crossroads + Vector3.new(12, 0, -8), Vector3.new(3, 13, 3), Enum.Material.Wood, COLORS.darkTimber)
 end
 
-local function shapeGoblinCemeteryLakeHillCliff(center: Vector3, waterSurfaceY: number)
-	local terrain = Workspace.Terrain
-	local cliffSegments = {
-		{ xOffset = 292, zOffset = -55, zSize = 190 },
-		{ xOffset = 310, zOffset = 105, zSize = 210 },
-		{ xOffset = 280, zOffset = 270, zSize = 175 },
-	}
-
-	for _, spec in ipairs(cliffSegments) do
-		local hillSample = Grounding.surfaceAt(
-			center + Vector3.new(spec.xOffset + 95, 0, spec.zOffset)
-		)
-		local cliffTopY = math.max(hillSample.Y + 5, waterSurfaceY + 30)
-		local clearBottomY = waterSurfaceY + 1
-		local clearHeight = cliffTopY - clearBottomY + 14
-
-		-- Remove the old grassy shelf above the water with a broad cut. The cut
-		-- starts just above the waterline so it cannot carve a dry notch through
-		-- the lake itself, but it reaches far enough inland to eliminate the
-		-- suspended terrain lip seen from the opposite shore.
-		terrain:FillBlock(
-			CFrame.new(
-				center.X + spec.xOffset - 38,
-				clearBottomY + clearHeight / 2,
-				center.Z + spec.zOffset
-			),
-			Vector3.new(118, clearHeight, spec.zSize),
-			Enum.Material.Air
-		)
-
-		-- Rebuild a narrow rock face farther back from the water. This leaves a
-		-- clean shoreline instead of grass projecting over empty space.
-		local rockBottomY = waterSurfaceY - 10
-		local rockHeight = cliffTopY - rockBottomY
-		terrain:FillBlock(
-			CFrame.new(
-				center.X + spec.xOffset + 26,
-				rockBottomY + rockHeight / 2,
-				center.Z + spec.zOffset
-			),
-			Vector3.new(28, rockHeight, spec.zSize),
-			Enum.Material.Rock
-		)
-	end
-end
-
 local function createGoblinCemeteryLake(parent: Instance, positions: { [string]: Vector3 })
 	local lake = P.model(parent, "GoblinCemeteryLake")
 	lake:SetAttribute("Purpose", "SwimmableWater")
-	local terrain = Workspace.Terrain
-
 	local goblin = positions.poi_goblin_camp
 	local cemetery = positions.poi_old_cemetery
-	local center = goblin:Lerp(cemetery, 0.52) + Vector3.new(85, 0, 0)
-	local ground = Grounding.surfaceAt(center)
-	local LAKE_SURFACE_DROP = 8
-	local LAKE_WATER_DEPTH = 30
-	local LAKE_BASIN_CLEAR_DEPTH = 40
-	local LAKE_AIR_CLEARANCE_HEIGHT = 46
-	local LAKE_CLEAR_MARGIN = 34
-	local waterSurfaceY = ground.Y - LAKE_SURFACE_DROP
-
-	local lobes = {
-		{ offset = Vector3.new(-90, 0, -35), size = Vector3.new(420, 32, 300), yaw = -8 },
-		{ offset = Vector3.new(90, 0, 45), size = Vector3.new(430, 32, 320), yaw = 10 },
-		{ offset = Vector3.new(10, 0, 145), size = Vector3.new(330, 32, 240), yaw = -3 },
-	}
-
-	for _, spec in ipairs(lobes) do
-		local position = center + spec.offset
-		local rotation = CFrame.Angles(0, math.rad(spec.yaw), 0)
-
-		-- Excavate one continuous deep basin before filling it. The previous pass
-		-- only cleared air above the water and then painted 12 studs of water over
-		-- the old terrain, which left grass immediately under the transparent
-		-- surface in shallow sections.
-		local totalClearHeight = LAKE_BASIN_CLEAR_DEPTH + LAKE_AIR_CLEARANCE_HEIGHT
-		local clearCenterY = waterSurfaceY + (LAKE_AIR_CLEARANCE_HEIGHT - LAKE_BASIN_CLEAR_DEPTH) / 2
-		terrain:FillBlock(
-			CFrame.new(position.X, clearCenterY, position.Z) * rotation,
-			Vector3.new(
-				spec.size.X + LAKE_CLEAR_MARGIN * 2,
-				totalClearHeight,
-				spec.size.Z + LAKE_CLEAR_MARGIN * 2
-			),
-			Enum.Material.Air
-		)
-		terrain:FillBlock(
-			CFrame.new(position.X, waterSurfaceY - LAKE_WATER_DEPTH / 2, position.Z) * rotation,
-			Vector3.new(spec.size.X, LAKE_WATER_DEPTH, spec.size.Z),
-			Enum.Material.Water
-		)
-
-		-- Lake Terrain water is intentionally swimmable; no hidden teleport hazard volume.
-	end
-
-	shapeGoblinCemeteryLakeHillCliff(center, waterSurfaceY)
-	lake:SetAttribute("WaterSurfaceDrop", LAKE_SURFACE_DROP)
-	lake:SetAttribute("WaterDepth", LAKE_WATER_DEPTH)
-	lake:SetAttribute("DeepBasinExcavated", true)
-	lake:SetAttribute("HillBankCliff", true)
+	local surfaceReference = goblin:Lerp(cemetery, 0.52) + Vector3.new(85, 0, 0)
+	GoblinCemeteryLakeTerrain.build(lake, surfaceReference)
 end
 
 local function createDarkWoodland(parent: Instance, positions: { [string]: Vector3 })
