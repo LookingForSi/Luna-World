@@ -25,11 +25,13 @@ assert "Players.CharacterAutoLoads = false" in data
 assert "AccountReady" in data and "CharacterReady" in data
 assert client.index("CharacterLobbyController.start()") < client.index('GetAttribute("CharacterReady")')
 assert "ResponsiveLayout.observe" in lobby and "DeleteCharacterModal" in lobby
+assert "ResponsiveLayout.lobbyRosterWidth(metrics)" in lobby
+assert "ResponsiveLayout.isLandscapeTouch(metrics)" in lobby
 assert "DELETE:nil" not in lobby
 assert "IgnoreGuiInset = true" in lobby and "Size = UDim2.fromScale(1, 1)" in lobby
 assert "geometryChanged" in lobby and "previousViewport" in lobby
 assert "LastInputTypeChanged" in read("src/client/ui/ResponsiveLayout.luau")
-assert "MobilePortrait" in lobby and "CreationModal" in lobby and 'Name = "Close"' in lobby
+assert "PortraitFallback" in lobby and "CreationModal" in lobby and 'Name = "Close"' in lobby
 assert "Мой Roblox ник" in lobby and "Имя свободно" in lobby
 assert "Class_" in lobby and "Body_" in lobby and "refreshClassButtons" in lobby and "refreshBodyButtons" in lobby
 assert "SettingsButton" not in lobby and "SettingsModal" not in lobby
