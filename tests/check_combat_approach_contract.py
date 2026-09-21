@@ -49,8 +49,14 @@ for token in (
     if token not in combat:
         raise AssertionError(f"attacker auto-target authority missing: {token}")
 
-for forbidden in ('createPalisadeLine', 'fenceSegments', '"Palisade%02d"'):
-    if forbidden in north:
-        raise AssertionError(f"goblin camp fence must be removed: {forbidden}")
+for required in (
+    "createCampPalisadeLine",
+    "fenceSegments",
+    '"CampPalisade%02d"',
+    "gateHalfWidth = 32",
+    "PalisadeCollision = true",
+):
+    if required not in north:
+        raise AssertionError(f"accepted collision-sealed goblin palisade contract missing: {required}")
 
 print("Click-to-range combat + retaliation targeting contract: PASS")
