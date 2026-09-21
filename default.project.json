@@ -35,6 +35,12 @@
         "CharacterResult": { "$className": "RemoteEvent" }
       }
     },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "$properties": {
+        "ScreenOrientation": "LandscapeSensor"
+      }
+    },
     "ServerScriptService": {
       "Server": {
         "$path": "src/server"

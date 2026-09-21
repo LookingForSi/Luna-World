@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Mobile phone UI now uses a landscape-only composition with compact edge HUD, six-slot action bar, and safe-area constrained dialogs.
+
+### Fixed
+
+- Legacy characters without a nickname can now be deleted through a two-step confirmation without producing `DELETE:nil`.
+
 ### Playtest RC — consolidated build
 
 - Для dev0.3 playtest генерация Goblin/Cemetery lake временно полностью отключена: NorthernZonesBlockout больше не вызывает createGoblinCemeteryLake(), поэтому релиз не изменяет terrain этой зоны. Код прежнего озера оставлен архивно для последующей переработки; остальные world/gameplay/UI изменения dev0.3 продолжают собираться.

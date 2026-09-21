@@ -291,7 +291,7 @@ function CharacterService.start(storeOverride: any?): ()
 				return
 			end
 			if action == "Delete" then
-				if typeof(p.characterId) ~= "string" or typeof(p.confirmation) ~= "string" then
+				if typeof(p.characterId) ~= "string" or p.confirmed ~= true then
 					response(result, player, id, action, false, "InvalidRequest")
 					return
 				end
@@ -299,10 +299,6 @@ function CharacterService.start(storeOverride: any?): ()
 				local c = if account then account.Characters[p.characterId] else nil
 				if c == nil then
 					response(result, player, id, action, false, "CharacterNotOwned")
-					return
-				end
-				if p.confirmation ~= CharacterConfig.DeleteConfirmationPrefix .. tostring(c.Nickname) then
-					response(result, player, id, action, false, "ConfirmationMismatch")
 					return
 				end
 				local canonical = normalizeNickname(c.Nickname)
@@ -324,9 +320,19 @@ function CharacterService.start(storeOverride: any?): ()
 					response(result, player, id, action, false, "StoreError")
 					return
 				end
-				local released, releaseReason =
-					nicknameStore:release(canonical, { userId = player.UserId, characterId = p.characterId })
-				response(result, player, id, action, released, releaseReason, roster(player))
+				-- Migrated NeedsIdentity characters may never have reserved a nickname.
+				-- Only release an actual, valid canonical reservation.
+				if canonical ~= nil then
+					local released, releaseReason = nicknameStore:release(
+						canonical,
+						{ userId = player.UserId, characterId = p.characterId }
+					)
+					if not released then
+						response(result, player, id, action, false, releaseReason or "StoreError")
+						return
+					end
+				end
+				response(result, player, id, action, true, nil, roster(player))
 				return
 			end
 			response(result, player, id, tostring(action), false, "UnknownAction")

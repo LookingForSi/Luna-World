@@ -21,6 +21,11 @@ ResponsiveLayout.TouchLargeShortSide = 700
 ResponsiveLayout.DesktopMargin = 24
 ResponsiveLayout.TouchMargin = 10
 ResponsiveLayout.MinimumTouchTarget = 44
+ResponsiveLayout.MobileEdgeMargin = 8
+ResponsiveLayout.MobileGap = 6
+ResponsiveLayout.MobileModalHorizontalMargin = 16
+ResponsiveLayout.MobileModalVerticalMargin = 10
+ResponsiveLayout.MobileBarHeight = 18
 
 function ResponsiveLayout.resolve(viewport: Vector2, isTouch: boolean): Mode
 	if not isTouch then return "Desktop" end
@@ -35,7 +40,9 @@ function ResponsiveLayout.metrics(camera: Camera?): Metrics
 	local topLeft, bottomRight = GuiService:GetGuiInset()
 	local isTouch = UserInputService.TouchEnabled
 	local mode = ResponsiveLayout.resolve(viewport, isTouch)
-	local margin = if mode == "Desktop" then ResponsiveLayout.DesktopMargin else ResponsiveLayout.TouchMargin
+	local margin = if mode == "Desktop" then ResponsiveLayout.DesktopMargin
+		elseif mode == "MobileLandscape" then ResponsiveLayout.MobileEdgeMargin
+		else ResponsiveLayout.TouchMargin
 	return {
 		mode = mode,
 		viewport = viewport,
@@ -55,6 +62,12 @@ function ResponsiveLayout.isSmallTouch(metrics: Metrics): boolean
 end
 
 function ResponsiveLayout.modalSize(metrics: Metrics, desktopSize: Vector2): Vector2
+	if metrics.mode == "MobileLandscape" then
+		return Vector2.new(
+			math.min(desktopSize.X, metrics.contentSize.X - ResponsiveLayout.MobileModalHorizontalMargin * 2),
+			math.min(desktopSize.Y, metrics.contentSize.Y - ResponsiveLayout.MobileModalVerticalMargin * 2)
+		)
+	end
 	return Vector2.new(
 		math.min(desktopSize.X, metrics.contentSize.X),
 		math.min(desktopSize.Y, metrics.contentSize.Y)

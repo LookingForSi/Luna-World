@@ -11,6 +11,7 @@ local ProgressionRules = require(ReplicatedStorage.Shared.progression.Progressio
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local HudLayout = require(script.Parent.HudLayout)
+local ResponsiveLayout = require(script.Parent.ResponsiveLayout)
 
 local ActionBar = {}
 local player = Players.LocalPlayer
@@ -164,7 +165,11 @@ local function updateCooldowns(): ()
 end
 
 local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (string) -> ()): ()
-	local width = if UserInputService.TouchEnabled then 350 else HudLayout.SkillBarSize.X
+	local metrics = ResponsiveLayout.metrics(workspace.CurrentCamera)
+	local mobileLandscape = metrics.mode == "MobileLandscape"
+	local slotCount = if mobileLandscape then 6 else 10
+	local quickSlotIndex = slotCount
+	local width = if mobileLandscape then 306 elseif UserInputService.TouchEnabled then 350 else HudLayout.SkillBarSize.X
 	local skillFrame = Instance.new("Frame")
 	skillFrame.Name = "SkillBar"
 	skillFrame.AnchorPoint = Vector2.new(1, 1)
@@ -185,18 +190,18 @@ local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (str
 	content.BackgroundTransparency = 1
 	content.Parent = skillFrame
 
-	for index = 1, 10 do
+	for index = 1, slotCount do
 		local skillId = skillIds[index]
 		local button = makeButton(
 			content,
 			"SkillSlot" .. tostring(index),
 			"",
-			UDim2.new(0.1, -4, 1, 0)
+			UDim2.new(1 / slotCount, -4, 1, 0)
 		)
-		button.Position = UDim2.new((index - 1) * 0.1, 2, 0, 0)
+		button.Position = UDim2.new((index - 1) / slotCount, 2, 0, 0)
 		button.TextSize = if UserInputService.TouchEnabled then 8 else 10
 
-		if index == 10 then
+		if index == quickSlotIndex then
 			quickSlotButton = button
 			button.Text = if UserInputService.TouchEnabled then "БЫСТРО" else "[0]"
 			table.insert(buttonConnections, button.Activated:Connect(function()
@@ -240,10 +245,11 @@ function ActionBar.start(
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CombatActionBar"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = false
+	gui.IgnoreGuiInset = true
 	gui.Parent = player:WaitForChild("PlayerGui")
 
-	local actionHeight = if UserInputService.TouchEnabled then HudLayout.ActionBarSize.Y + 12 else HudLayout.ActionBarSize.Y
+	local mobileLandscape = ResponsiveLayout.metrics(workspace.CurrentCamera).mode == "MobileLandscape"
+	local actionHeight = if mobileLandscape then 112 elseif UserInputService.TouchEnabled then HudLayout.ActionBarSize.Y + 12 else HudLayout.ActionBarSize.Y
 	local frame = Instance.new("Frame")
 	frame.Name = "PrimaryActions"
 	frame.AnchorPoint = Vector2.new(1, 1)
@@ -263,7 +269,7 @@ function ActionBar.start(
 	content.BackgroundTransparency = 1
 	content.Parent = frame
 
-	mapButton = makeButton(content, "Map", mapBindingText(), UDim2.new(0.31, -2, 0, 36))
+	mapButton = makeButton(content, "Map", mapBindingText(), UDim2.new(0.31, -2, 0, if mobileLandscape then 34 else 36))
 	local mapToggle = mapButton :: TextButton
 
 	questButton = makeButton(content, "Quests", questBindingText(), UDim2.new(0.31, -2, 0, 36))
@@ -274,7 +280,7 @@ function ActionBar.start(
 	local inventory = inventoryButton :: TextButton
 	inventory.Position = UDim2.new(0.69, 0, 0, 0)
 
-	local lowerRowHeight = if UserInputService.TouchEnabled then 104 else 92
+	local lowerRowHeight = if mobileLandscape then 62 elseif UserInputService.TouchEnabled then 104 else 92
 	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.31, -2, 0, lowerRowHeight))
 	local auto = autoButton :: TextButton
 	auto.Position = UDim2.new(0, 0, 0, 42)

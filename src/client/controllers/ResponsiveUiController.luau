@@ -41,13 +41,13 @@ local function applyHud(playerGui: PlayerGui, metrics: ResponsiveLayout.Metrics)
 		local target = frame(hud, "TargetFrame")
 		if ResponsiveLayout.isSmallTouch(metrics) then
 			if playerPanel ~= nil then
-				playerPanel.AnchorPoint = Vector2.zero
-				playerPanel.Position = UDim2.fromOffset(metrics.safeTopLeft.X + metrics.margin, metrics.safeTopLeft.Y + metrics.margin)
-				playerPanel.Size = UDim2.fromOffset(math.min(220, metrics.contentSize.X * 0.48), 160)
+				playerPanel.AnchorPoint = Vector2.new(1, 0)
+				playerPanel.Position = UDim2.new(1, -(metrics.safeBottomRight.X + metrics.margin), 0, metrics.safeTopLeft.Y + metrics.margin)
+				playerPanel.Size = UDim2.fromOffset(math.min(210, metrics.contentSize.X * 0.32), 120)
 			end
 			if target ~= nil then
 				target.Position = UDim2.new(0.5, 0, 0, metrics.safeTopLeft.Y + metrics.margin)
-				target.Size = UDim2.fromOffset(math.min(220, metrics.contentSize.X * 0.46), 72)
+				target.Size = UDim2.fromOffset(math.min(210, metrics.contentSize.X * 0.32), 54)
 			end
 		else
 			if playerPanel ~= nil then
@@ -73,15 +73,15 @@ local function applyHud(playerGui: PlayerGui, metrics: ResponsiveLayout.Metrics)
 		local skills = frame(actionsGui, "SkillBar")
 		if ResponsiveLayout.isSmallTouch(metrics) then
 			if actions ~= nil then
-				actions.Position = UDim2.new(1, -(metrics.safeBottomRight.X + metrics.margin), 1, -(metrics.safeBottomRight.Y + 120))
-				actions.Size = UDim2.fromOffset(math.min(300, metrics.contentSize.X * 0.48), 142)
+				actions.Position = UDim2.new(1, -(metrics.safeBottomRight.X + metrics.margin), 1, -(metrics.safeBottomRight.Y + metrics.margin))
+				actions.Size = UDim2.fromOffset(math.min(250, metrics.contentSize.X * 0.34), 112)
 				local constraint = actions:FindFirstChildOfClass("UISizeConstraint")
 				if constraint ~= nil then constraint.Enabled = false end
 			end
 			if skills ~= nil then
 				skills.Position = UDim2.new(0.5, 0, 1, -(metrics.safeBottomRight.Y + metrics.margin))
 				skills.AnchorPoint = Vector2.new(0.5, 1)
-				skills.Size = UDim2.fromOffset(math.min(360, metrics.contentSize.X * 0.48), 54)
+				skills.Size = UDim2.fromOffset(math.min(306, metrics.contentSize.X * 0.42), 54)
 			end
 		end
 	end

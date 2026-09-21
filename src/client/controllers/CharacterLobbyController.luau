@@ -106,7 +106,11 @@ local function friendlyReason(reason: any): string
 		NicknameTaken = "Это имя уже занято",
 		Filtered = "Имя не прошло фильтрацию Roblox",
 		SlotLimit = "Все слоты персонажей заняты",
-		StoreError = "Сервис имён временно недоступен",
+		StoreError = "Сервис сохранения временно недоступен. Попробуйте ещё раз.",
+		ConfirmationMismatch = "Подтверждение удаления устарело. Откройте окно снова.",
+		InvalidRequest = "Некорректный запрос. Попробуйте ещё раз.",
+		CharacterNotOwned = "Персонаж больше не принадлежит этому аккаунту.",
+		RateLimited = "Слишком много запросов. Подождите немного.",
 	}
 	return map[tostring(reason)] or tostring(reason)
 end
@@ -129,8 +133,10 @@ local function render()
 	end
 	local metrics = layoutMetrics or ResponsiveLayout.metrics(workspace.CurrentCamera)
 	local portrait = metrics.mode == "MobilePortrait"
+	local mobileLandscape = metrics.mode == "MobileLandscape"
 	local smallTouch = ResponsiveLayout.isSmallTouch(metrics)
 	local edge = if smallTouch then 10 else 28
+	local contentTop = if mobileLandscape then edge + 68 else edge + 96
 	local root = screen:FindFirstChild("LobbyRoot") :: Frame
 	if not root then
 		return
@@ -149,7 +155,7 @@ local function render()
 		Name = "Title",
 		BackgroundTransparency = 1,
 		Position = UDim2.fromOffset(edge, edge),
-		Size = UDim2.new(1, -edge * 2, 0, 56),
+		Size = UDim2.new(1, -edge * 2, 0, if mobileLandscape then 34 else 56),
 		Text = "LUNA WORLD",
 		TextColor3 = palette.moon,
 		Font = Enum.Font.GothamBold,
@@ -163,7 +169,7 @@ local function render()
 		Text = if roster then "Выберите героя" else "Загрузка аккаунта…",
 		TextColor3 = palette.text,
 		Font = Enum.Font.Gotham,
-		TextSize = 18,
+		TextSize = if mobileLandscape then 15 else 18,
 	})
 	if not roster then
 		return
@@ -172,9 +178,7 @@ local function render()
 		Name = "CharacterRoster",
 		BackgroundColor3 = palette.panel,
 		BorderSizePixel = 0,
-		Position = if portrait
-			then UDim2.fromOffset(edge, edge + 96)
-			else UDim2.fromOffset(edge, edge + 96),
+		Position = UDim2.fromOffset(edge, contentTop),
 		Size = if portrait
 			then UDim2.new(1, -edge * 2, 0, math.min(210, metrics.contentSize.Y * 0.32))
 			else UDim2.new(0.34, -edge, 1, -(edge * 2 + 126)),
@@ -193,7 +197,7 @@ local function render()
 	for _, c in roster.characters do
 		local b = new("TextButton", cards, {
 			Name = "CharacterCard",
-			Size = UDim2.new(1, -8, 0, 76),
+			Size = UDim2.new(1, -8, 0, if mobileLandscape then 56 else 76),
 			BackgroundColor3 = if selected == c.characterId then palette.accent else palette.panelSoft,
 			TextColor3 = palette.text,
 			Text = string.format(
@@ -217,7 +221,7 @@ local function render()
 			Name = "CreateSlot",
 			Active = true,
 			AutoButtonColor = true,
-			Size = UDim2.new(1, -8, 0, 56),
+			Size = UDim2.new(1, -8, 0, if mobileLandscape then 46 else 56),
 			BackgroundColor3 = palette.panel,
 			TextColor3 = palette.accentBright,
 			Text = "＋ Создать персонажа",
@@ -227,7 +231,7 @@ local function render()
 		add.TextColor3 = palette.accentBright
 		add.Activated:Connect(function()
 			local shade = createModalShade(root)
-			local modalSize = ResponsiveLayout.modalSize(metrics, Vector2.new(590, 540))
+			local modalSize = ResponsiveLayout.modalSize(metrics, if mobileLandscape then Vector2.new(760, 350) else Vector2.new(590, 540))
 			local modal = new("ScrollingFrame", root, {
 				Name = "CreationModal",
 				AnchorPoint = Vector2.new(0.5, 0.5),
@@ -432,8 +436,8 @@ local function render()
 	local preview = new("Frame", root, {
 		Name = "CharacterPreview",
 		Position = if portrait
-			then UDim2.fromOffset(edge, edge + 96 + math.min(210, metrics.contentSize.Y * 0.32) + 10)
-			else UDim2.new(0.34, edge, 0, edge + 96),
+			then UDim2.fromOffset(edge, contentTop + math.min(210, metrics.contentSize.Y * 0.32) + 10)
+			else UDim2.new(0.34, edge, 0, contentTop),
 		Size = if portrait
 			then UDim2.new(1, -edge * 2, 1, -(edge * 2 + 136 + math.min(210, metrics.contentSize.Y * 0.32)))
 			else UDim2.new(0.66, -(edge * 2), 1, -(edge * 2 + 126)),
@@ -553,18 +557,29 @@ local function render()
 		rounded(del, 8)
 		outlined(del, palette.danger, 0.15)
 		del.Activated:Connect(function()
-			local confirm = new("TextBox", preview, {
-				Name = "DeleteConfirmation",
-				Position = UDim2.fromOffset(24, 205),
-				Size = UDim2.new(1, -48, 0, 48),
-				PlaceholderText = "Введите DELETE:" .. tostring(chosen.nickname),
-				Text = "",
-				TextSize = 15,
+			local shade = createModalShade(root)
+			local confirm = new("Frame", root, {
+				Name = "DeleteCharacterModal", AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(math.min(430, metrics.contentSize.X - 32), 220),
+				BackgroundColor3 = palette.panel, BorderSizePixel = 0, ZIndex = 8,
 			})
-			confirm.FocusLost:Connect(function(enter)
-				if enter then
-					send("Delete", { characterId = chosen.characterId, confirmation = confirm.Text })
-				end
+			stylePanel(confirm, 12)
+			new("TextLabel", confirm, { BackgroundTransparency = 1, Position = UDim2.fromOffset(20, 14), Size = UDim2.new(1, -40, 0, 30),
+				Text = "Удалить персонажа?", TextColor3 = palette.moon, Font = Enum.Font.GothamBold, TextSize = 20, ZIndex = 9 })
+			new("TextLabel", confirm, { BackgroundTransparency = 1, Position = UDim2.fromOffset(20, 50), Size = UDim2.new(1, -40, 0, 80),
+				Text = string.format("%s • %s • LV %d\nДействие необратимо.", chosen.nickname or "Без имени", chosen.archetypeId, chosen.level),
+				TextColor3 = palette.text, TextWrapped = true, TextSize = 15, ZIndex = 9 })
+			local cancel = new("TextButton", confirm, { Name = "CancelDelete", Position = UDim2.new(0, 20, 1, -64), Size = UDim2.new(0.5, -26, 0, 44), Text = "Отмена", ZIndex = 9 })
+			styleButton(cancel, false)
+			local erase = new("TextButton", confirm, { Name = "ConfirmDelete", Position = UDim2.new(0.5, 6, 1, -64), Size = UDim2.new(0.5, -26, 0, 44),
+				BackgroundColor3 = palette.danger, TextColor3 = palette.text, Text = "Удалить", Font = Enum.Font.GothamBold, ZIndex = 9 })
+			rounded(erase, 8)
+			local function dismissDelete(): () shade:Destroy(); confirm:Destroy() end
+			cancel.Activated:Connect(dismissDelete)
+			shade.Activated:Connect(dismissDelete)
+			erase.Activated:Connect(function()
+				erase.Active = false
+				send("Delete", { characterId = chosen.characterId, confirmed = true })
 			end)
 		end)
 	end

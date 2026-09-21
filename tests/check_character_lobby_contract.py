@@ -24,7 +24,8 @@ assert "FilterStringAsync" in service and "CharacterNotOwned" in service
 assert "Players.CharacterAutoLoads = false" in data
 assert "AccountReady" in data and "CharacterReady" in data
 assert client.index("CharacterLobbyController.start()") < client.index('GetAttribute("CharacterReady")')
-assert "ResponsiveLayout.observe" in lobby and "DeleteConfirmation" in lobby
+assert "ResponsiveLayout.observe" in lobby and "DeleteCharacterModal" in lobby
+assert "DELETE:nil" not in lobby
 assert "IgnoreGuiInset = true" in lobby and "Size = UDim2.fromScale(1, 1)" in lobby
 assert "geometryChanged" in lobby and "previousViewport" in lobby
 assert "LastInputTypeChanged" in read("src/client/ui/ResponsiveLayout.luau")

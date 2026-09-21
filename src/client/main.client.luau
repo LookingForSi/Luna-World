@@ -23,6 +23,12 @@ local StarterGui = game:GetService("StarterGui")
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombatUiRules)
 
+-- PlayerGui is the runtime safety net for places published before the
+-- StarterGui property is synchronized. Set this before the lobby is created.
+local localPlayer = Players.LocalPlayer
+local playerGui = localPlayer:WaitForChild("PlayerGui") :: PlayerGui
+playerGui.ScreenOrientation = Enum.ScreenOrientation.LandscapeSensor
+
 local function disableStockHealthGui(): ()
 	for _ = 1, 5 do
 		local ok = pcall(function()
@@ -118,7 +124,6 @@ local function startGameplay(): ()
 end
 
 CharacterLobbyController.start()
-local localPlayer = Players.LocalPlayer
 if localPlayer:GetAttribute("CharacterReady") then
 	startGameplay()
 end

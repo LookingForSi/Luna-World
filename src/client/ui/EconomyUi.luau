@@ -75,10 +75,21 @@ local function clearList(): ()
 	for _, connection in rowConnections do connection:Disconnect() end
 	table.clear(rowConnections)
 	if list == nil then return end
-	for _, child in list:GetChildren() do
-		if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
-			child:Destroy()
-		end
+	for _, child in list:GetChildren() do child:Destroy() end
+end
+
+local function configureListLayout(grid: boolean): ()
+	if list == nil then return end
+	if grid then
+		local layout = Instance.new("UIGridLayout")
+		layout.Name = "MobileBlacksmithTopicsGrid"
+		layout.CellSize = UDim2.new(0.5, -6, 0, 52)
+		layout.CellPadding = UDim2.fromOffset(6, 6)
+		layout.Parent = list
+	else
+		local layout = Instance.new("UIListLayout")
+		layout.Padding = UDim.new(0, 4)
+		layout.Parent = list
 	end
 end
 
@@ -340,6 +351,11 @@ end
 rebuild = function(): ()
 	clearList()
 	if list == nil then return end
+	local mobileBlacksmith = mode == "DialogueBlacksmith"
+		and workspace.CurrentCamera ~= nil
+		and workspace.CurrentCamera.ViewportSize.X > workspace.CurrentCamera.ViewportSize.Y
+		and game:GetService("UserInputService").TouchEnabled
+	configureListLayout(mobileBlacksmith)
 
 	if balance ~= nil then
 		balance.Text = if snapshot ~= nil then string.format("Luna: %d", snapshot.luna) else "Luna: —"
@@ -509,9 +525,6 @@ function EconomyUi.start(actionCallbacks: any): ()
 	scrolling.BorderSizePixel = 0
 	scrolling.ScrollBarThickness = 6
 	scrolling.Parent = root
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 4)
-	layout.Parent = scrolling
 	list = scrolling
 
 	status = label(root, "", UDim2.new(0, 16, 1, -38), UDim2.new(1, -32, 0, 24), 12)

@@ -11,6 +11,7 @@ local ProgressionRules = require(ReplicatedStorage.Shared.progression.Progressio
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombatUiRules)
 local HudLayout = require(script.Parent.HudLayout)
+local ResponsiveLayout = require(script.Parent.ResponsiveLayout)
 
 local CombatHud = {}
 
@@ -38,6 +39,7 @@ local playerMaxHealthConnection: RBXScriptConnection? = nil
 local characterAddedConnection: RBXScriptConnection? = nil
 local statusConnections: { RBXScriptConnection } = {}
 local presentationConnection: RBXScriptConnection? = nil
+local stopResponsive: (() -> ())? = nil
 local feedbackGeneration = 0
 local currentTarget: Model? = nil
 
@@ -227,6 +229,7 @@ local function makePlayerStatusRow(
 	valueLabel.Text = "0 / 0"
 	valueLabel.TextSize = 11
 	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+	valueLabel.ZIndex = 3
 
 	local fill = makeStatusBar(
 		parent,
@@ -344,6 +347,30 @@ function CombatHud.start(): ()
 	)
 	xpLabel.Text = "XP"
 
+	stopResponsive = ResponsiveLayout.observe(function(metrics)
+		local mobile = metrics.mode == "MobileLandscape"
+		for row, name in { "CombatPoints", "PlayerHealth", "PlayerResource", "LevelXP" } do
+			local label = playerPanel:FindFirstChild(name .. "Label") :: TextLabel?
+			local value = playerPanel:FindFirstChild(name .. "Value") :: TextLabel?
+			local bar = playerPanel:FindFirstChild(name .. "Bar") :: Frame?
+			if mobile then
+				local y = 28 + (row - 1) * 21
+				if bar then bar.Position = UDim2.fromOffset(8, y); bar.Size = UDim2.new(1, -16, 0, 18) end
+				if label then label.Position = UDim2.fromOffset(12, y); label.Size = UDim2.fromOffset(38, 18); label.TextSize = 10; label.ZIndex = 3 end
+				if value then
+					value.Position = UDim2.fromOffset(48, y); value.Size = UDim2.new(1, -60, 0, 18)
+					value.TextColor3 = Color3.fromRGB(10, 12, 16); value.TextSize = 10; value.ZIndex = 3
+				end
+			end
+		end
+		if mobile then
+			targetNameLabel.Position = UDim2.fromOffset(8, 2); targetNameLabel.Size = UDim2.new(1, -16, 0, 22); targetNameLabel.TextSize = 13
+			targetHealthTextLabel.Position = UDim2.fromOffset(8, 25); targetHealthTextLabel.Size = UDim2.new(1, -16, 0, 18); targetHealthTextLabel.TextSize = 10
+			local bar = targetHealthFill and targetHealthFill.Parent
+			if bar and bar:IsA("Frame") then bar.Position = UDim2.fromOffset(8, 42); bar.Size = UDim2.new(1, -16, 0, 8) end
+		end
+	end)
+
 	local feedback = makeTextLabel(gui, "CombatFeedback", UDim2.new(0.5, -160, 1, -122))
 	feedback.Size = UDim2.fromOffset(320, 28)
 	feedback.TextXAlignment = Enum.TextXAlignment.Center
@@ -426,6 +453,7 @@ function CombatHud.setTarget(target: Model?): ()
 end
 
 function CombatHud.stop(): ()
+	if stopResponsive ~= nil then stopResponsive(); stopResponsive = nil end
 	feedbackGeneration += 1
 	disconnectTarget()
 	disconnectPlayerHealth()
