@@ -8,11 +8,11 @@
 
 ### Changed
 
-- Mobile phone UI now uses a landscape-only composition with compact edge HUD, six-slot action bar, and safe-area constrained dialogs.
+- Телефонный интерфейс теперь использует отдельную горизонтальную композицию: компактный HUD по краям экрана, панель на шесть слотов и диалоги в пределах безопасной области.
 
 ### Fixed
 
-- Legacy characters without a nickname can now be deleted through a two-step confirmation without producing `DELETE:nil`.
+- Legacy-персонажей без имени теперь можно удалить через двухэтапное подтверждение без появления `DELETE:nil`.
 
 ### Playtest RC — consolidated build
 
