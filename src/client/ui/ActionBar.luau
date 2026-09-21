@@ -166,10 +166,12 @@ end
 
 local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (string) -> ()): ()
 	local metrics = ResponsiveLayout.metrics(workspace.CurrentCamera)
-	local mobileLandscape = metrics.mode == "MobileLandscape"
-	local slotCount = if mobileLandscape then 6 else 10
+	local touchLandscape = ResponsiveLayout.isLandscapeTouch(metrics)
+	local slotCount = if touchLandscape then 6 else 10
 	local quickSlotIndex = slotCount
-	local width = if mobileLandscape then 306 elseif UserInputService.TouchEnabled then 350 else HudLayout.SkillBarSize.X
+	local barSize = if touchLandscape
+		then ResponsiveLayout.skillBarSize(metrics, slotCount)
+		else Vector2.new(if UserInputService.TouchEnabled then 350 else HudLayout.SkillBarSize.X, HudLayout.SkillBarSize.Y)
 	local skillFrame = Instance.new("Frame")
 	skillFrame.Name = "SkillBar"
 	skillFrame.AnchorPoint = Vector2.new(1, 1)
@@ -179,7 +181,7 @@ local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (str
 		1,
 		-HudLayout.CornerMargin
 	)
-	skillFrame.Size = UDim2.fromOffset(width, HudLayout.SkillBarSize.Y)
+	skillFrame.Size = UDim2.fromOffset(barSize.X, barSize.Y)
 	HudLayout.applyPanelStyle(skillFrame)
 	skillFrame.Parent = gui
 
@@ -199,7 +201,9 @@ local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (str
 			UDim2.new(1 / slotCount, -4, 1, 0)
 		)
 		button.Position = UDim2.new((index - 1) / slotCount, 2, 0, 0)
-		button.TextSize = if UserInputService.TouchEnabled then 8 else 10
+		button.TextSize = if touchLandscape
+			then math.round(ResponsiveLayout.scaled(metrics, 9, 8, 11))
+			else if UserInputService.TouchEnabled then 8 else 10
 
 		if index == quickSlotIndex then
 			quickSlotButton = button
@@ -248,16 +252,20 @@ function ActionBar.start(
 	gui.IgnoreGuiInset = true
 	gui.Parent = player:WaitForChild("PlayerGui")
 
-	local mobileLandscape = ResponsiveLayout.metrics(workspace.CurrentCamera).mode == "MobileLandscape"
-	local actionHeight = if mobileLandscape then 112 elseif UserInputService.TouchEnabled then HudLayout.ActionBarSize.Y + 12 else HudLayout.ActionBarSize.Y
+	local metrics = ResponsiveLayout.metrics(workspace.CurrentCamera)
+	local touchLandscape = ResponsiveLayout.isLandscapeTouch(metrics)
+	local actionSize = if touchLandscape
+		then ResponsiveLayout.primaryActionsSize(metrics)
+		else Vector2.new(HudLayout.ActionBarSize.X, if UserInputService.TouchEnabled then HudLayout.ActionBarSize.Y + 12 else HudLayout.ActionBarSize.Y)
+	local actionHeight = actionSize.Y
 	local frame = Instance.new("Frame")
 	frame.Name = "PrimaryActions"
 	frame.AnchorPoint = Vector2.new(1, 1)
 	frame.Position = UDim2.new(1, -HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)
-	frame.Size = UDim2.fromOffset(HudLayout.ActionBarSize.X, actionHeight)
+	frame.Size = UDim2.fromOffset(actionSize.X, actionSize.Y)
 	local sizeConstraint = Instance.new("UISizeConstraint")
-	sizeConstraint.MaxSize = Vector2.new(HudLayout.ActionBarSize.X, actionHeight)
-	sizeConstraint.MinSize = Vector2.new(300, actionHeight)
+	sizeConstraint.MaxSize = actionSize
+	sizeConstraint.MinSize = if touchLandscape then actionSize else Vector2.new(300, actionHeight)
 	sizeConstraint.Parent = frame
 	HudLayout.applyPanelStyle(frame)
 	frame.Parent = gui
@@ -269,30 +277,36 @@ function ActionBar.start(
 	content.BackgroundTransparency = 1
 	content.Parent = frame
 
-	mapButton = makeButton(content, "Map", mapBindingText(), UDim2.new(0.31, -2, 0, if mobileLandscape then 34 else 36))
+	local utilityHeight = if touchLandscape
+		then math.clamp(actionHeight * 0.30, 32, 40)
+		else 36
+	mapButton = makeButton(content, "Map", mapBindingText(), UDim2.new(0.31, -2, 0, utilityHeight))
 	local mapToggle = mapButton :: TextButton
 
-	questButton = makeButton(content, "Quests", questBindingText(), UDim2.new(0.31, -2, 0, 36))
+	questButton = makeButton(content, "Quests", questBindingText(), UDim2.new(0.31, -2, 0, utilityHeight))
 	local quests = questButton :: TextButton
 	quests.Position = UDim2.new(0.345, 0, 0, 0)
 
-	inventoryButton = makeButton(content, "Inventory", inventoryBindingText(), UDim2.new(0.31, -2, 0, 36))
+	inventoryButton = makeButton(content, "Inventory", inventoryBindingText(), UDim2.new(0.31, -2, 0, utilityHeight))
 	local inventory = inventoryButton :: TextButton
 	inventory.Position = UDim2.new(0.69, 0, 0, 0)
 
-	local lowerRowHeight = if mobileLandscape then 62 elseif UserInputService.TouchEnabled then 104 else 92
+	local lowerY = utilityHeight + (if touchLandscape then metrics.gap else 6)
+	local lowerRowHeight = if touchLandscape
+		then math.clamp(actionHeight - HudLayout.InnerPadding * 2 - lowerY, 54, 76)
+		elseif UserInputService.TouchEnabled then 104 else 92
 	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.31, -2, 0, lowerRowHeight))
 	local auto = autoButton :: TextButton
-	auto.Position = UDim2.new(0, 0, 0, 42)
+	auto.Position = UDim2.new(0, 0, 0, lowerY)
 
 	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.31, -2, 0, lowerRowHeight))
-	clearButton.Position = UDim2.new(0.345, 0, 0, 42)
+	clearButton.Position = UDim2.new(0.345, 0, 0, lowerY)
 
 	local attackDiameter = lowerRowHeight
 	attackButton = makeButton(content, "Attack", "АТАКА", UDim2.fromOffset(attackDiameter, attackDiameter))
 	local attack = attackButton :: TextButton
 	attack.AnchorPoint = Vector2.new(1, 0)
-	attack.Position = UDim2.new(1, 0, 0, 42)
+	attack.Position = UDim2.new(1, 0, 0, lowerY)
 	attack.TextSize = 19
 
 	local attackCorner = Instance.new("UICorner")
