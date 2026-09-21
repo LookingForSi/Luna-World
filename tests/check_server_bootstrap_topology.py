@@ -37,27 +37,52 @@ EXPECTED_SERVICES = {
 EXPECTED_DEV_ORDER = [
     "worldBootstrap",
     "worldSpawnAnchor",
-    "economy",
-    "playerData",
-    "character",
-    "progression",
-    "combat",
-    "regeneration",
-    "respawn",
-    "studioDebug",
-    "mobAbilities",
-    "mobAI",
-    "mobs",
-    "loot",
-    "worldDrops",
-    "inventoryNetwork",
-    "economyNetwork",
-    "economyWorld",
-    "quests",
-    "travel",
-    "npcWorld",
+    "devCombinedGameplay",
 ]
 
+LEGACY_START_ORDER = [
+    "EconomyService.start()",
+    "PlayerDataService.start()",
+    "CharacterService.start()",
+    "ProgressionService.start()",
+    "CombatService.start()",
+    "PlayerRegenerationService.start()",
+    "RespawnService.start()",
+    "StudioDebugService.start()",
+    "MobAbilityService.start()",
+    "MobAIService.start(MobAbilityService.requestAttack)",
+    "MobService.start()",
+    "LootService.start()",
+    "WorldDropService.start()",
+    "InventoryNetworkService.start()",
+    "EconomyNetworkService.start()",
+    "EconomyWorldService.start()",
+    "QuestService.start()",
+    "TravelService.start()",
+    "NpcWorldService.start()",
+]
+
+LEGACY_STOP_ORDER = [
+    "StudioDebugService.stop()",
+    "RespawnService.stop()",
+    "PlayerRegenerationService.stop()",
+    "InventoryNetworkService.stop()",
+    "WorldDropService.stop()",
+    "NpcWorldService.stop()",
+    "EconomyWorldService.stop()",
+    "TravelService.stop()",
+    "QuestService.stop()",
+    "EconomyNetworkService.stop()",
+    "EconomyService.stop()",
+    "LootService.stop()",
+    "MobAIService.stop()",
+    "MobAbilityService.stop()",
+    "MobService.stop()",
+    "CombatService.stop()",
+    "ProgressionService.stop()",
+    "CharacterService.stop()",
+    "PlayerDataService.stop()",
+]
 project = json.loads(PROJECT_FILE.read_text(encoding="utf-8"))
 server_mapping = project["tree"]["ServerScriptService"]["Server"]["$path"]
 assert server_mapping == "src/server"
@@ -76,6 +101,11 @@ assert resolved_services == EXPECTED_SERVICES, (
 )
 assert "MobAIService.start(MobAbilityService.requestAttack)" in adapters
 assert 'workspace:WaitForChild("LunaWorldPlayableBlockout", 15)' in adapters
+
+start_positions = [adapters.index(token) for token in LEGACY_START_ORDER]
+assert start_positions == sorted(start_positions), "DevCombined legacy startup order changed"
+stop_positions = [adapters.index(token) for token in LEGACY_STOP_ORDER]
+assert stop_positions == sorted(stop_positions), "DevCombined legacy shutdown order changed"
 
 dev = DEV_MANIFEST.read_text(encoding="utf-8")
 actual_order = re.findall(r"Components\.([A-Za-z0-9_]+)\(\)", dev)
