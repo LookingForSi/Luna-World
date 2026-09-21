@@ -60,7 +60,7 @@ def main() -> None:
     assert "baseplate.CanCollide = false" in bootstrap
 
     builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
-    assert 'TerrainRevision", "terrain-v10"' in builder
+    assert 'TerrainRevision", "terrain-v11"' in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
     assert "WorldDressingBlockout" in builder
@@ -130,18 +130,6 @@ def main() -> None:
         "floorRadius = 135",
         "createSpiderWeb",
         "Enum.Material.Mud",
-        "GoblinCemeteryLake",
-        "LAKE_SURFACE_DROP = 8",
-        "LAKE_WATER_DEPTH = 30",
-        "LAKE_BASIN_CLEAR_DEPTH = 40",
-        "LAKE_AIR_CLEARANCE_HEIGHT = 46",
-        "LAKE_CLEAR_MARGIN = 34",
-        "shapeGoblinCemeteryLakeHillCliff",
-        '"Purpose", "SwimmableWater"',
-        'DeepBasinExcavated", true',
-        'HillBankCliff", true',
-        "clearBottomY = waterSurfaceY + 1",
-        "Vector3.new(118, clearHeight, spec.zSize)",
         "DarkWoodlandThreshold",
         "OldCemetery",
         "FallenShrine",
@@ -150,14 +138,11 @@ def main() -> None:
     ):
         assert token in north
     assert "BillboardGui" not in north
+    assert "lake generation is intentionally disabled" in north
+    assert "\n\tcreateGoblinCemeteryLake(north, positions)\n" not in north
     assert "WaterRecovery" not in north
     assert "Enum.Material.Water" in north
     assert "Enum.Material.Glass" not in north
-    assert "prepareGoblinCampBoundaryShelf" not in north
-    assert "fillFlatLakeSlab" not in north
-    assert "fillContinuousLakePath" not in north
-    assert "LakeBedFilled" not in north
-    assert "ContainedWithinWorldBounds" not in north
     assert "Enum.Material.Mud" in north
     assert "postSpacing = 4.0" in north
     assert "PalisadeCollision = true" in north
