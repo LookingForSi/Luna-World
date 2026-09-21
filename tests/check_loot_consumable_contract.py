@@ -12,7 +12,7 @@ def read(path: str) -> str:
 
 LOOT = read("src/server/services/LootService.luau")
 INVENTORY = read("src/server/services/InventoryService.luau")
-MAIN = read("src/server/main.server.luau")
+MAIN = read("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 LOG = read("src/client/ui/CombatLog.luau")
 CONFIG = read("src/shared/config/InventoryConfig.luau")
 
@@ -27,7 +27,7 @@ for token in (
     if token not in LOOT:
         raise AssertionError(f"LootService contract missing {token}")
 
-if "LootService.start()" not in MAIN or "LootService.stop()" not in MAIN:
+if "LootService.start" not in MAIN or "LootService.stop" not in MAIN:
     raise AssertionError("server bootstrap must own LootService lifecycle")
 
 for token in ('"xp"', '"luna"', '"loot_item"', '"loot_item_full"'):
