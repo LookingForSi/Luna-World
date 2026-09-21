@@ -44,9 +44,19 @@ if 'Purpose", "SwimmableWater"' not in north:
 if "WaterRecovery" in north:
     raise AssertionError("lake must not contain a hidden water teleport hazard")
 
-for token in ("WATER_DEPTH = 14", "Enum.Material.Mud", "BED_WATER_OVERLAP = 2"):
+for token in (
+    "WATER_DEPTH = 12",
+    "WATER_SURFACE_Y = 76",
+    "BED_THICKNESS = 4",
+    "terrain:WriteVoxels(region, VOXEL_RESOLUTION, materials, occupancy)",
+    "Enum.Material.Mud",
+):
     if token not in lake:
         raise AssertionError(f"rebuilt shallow lake contract missing: {token}")
+
+for segmented in ("fillScanline", "SCANLINE_STEP", "terrain:FillBlock"):
+    if segmented in lake:
+        raise AssertionError(f"lake must be one voxel body, not segmented strips: {segmented}")
 
 for lake_forbidden in (
     "prepareGoblinCampBoundaryShelf",
