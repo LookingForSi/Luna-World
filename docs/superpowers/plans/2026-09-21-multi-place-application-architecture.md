@@ -2,7 +2,7 @@
 
 Дата: 2026-09-21
 
-Ветка: `architecture/multi-place-foundation-v01`
+Ветка реализации: `architecture/multi-place-implementation-v01`
 
 Design baseline: `docs/superpowers/specs/2026-09-21-multi-place-application-architecture-design.md`
 
@@ -16,7 +16,7 @@ Lobby (Start Place) -> Moonfall World -> Ruins of Selene (reserved Dungeon)
 
 При этом сохранить `DevCombined` для полного локального цикла Lobby → Gameplay без настоящего teleport, не менять gameplay/balance и не переносить authoritative state на клиент или в `TeleportData`.
 
-Этот документ является только implementation plan. Выполнение Gates A–G начинается отдельной серией изменений после review плана и подтверждения, что mobile baseline PR #36 вместе с follow-up Mobile UX v2 (#37) принят владельцем, слит в `main`, а архитектурная ветка синхронизирована с фактическим итоговым HEAD.
+Этот документ является implementation plan. По owner decision 2026-09-21 multi-place foundation выполняется первой от стабильного `main` dev0.3 RC1; незавершённый mobile PR #36 закрыт без merge, а Mobile UX v2 (#37) переносится после архитектурных foundation gates, чтобы не переделывать bootstrap/UI ownership дважды. Mobile redesign не должен блокировать Gates A–E, но его product requirements сохраняются как отдельный backlog/spec.
 
 ### Вне scope
 
