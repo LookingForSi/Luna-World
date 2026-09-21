@@ -68,11 +68,12 @@ local function styleButton(button: TextButton, selectedState: boolean?): ()
 	outlined(button, if selectedState then palette.accentBright else palette.line, if selectedState then 0 else 0.2)
 end
 
-local function sectionLabel(parent: Instance, textValue: string, y: number): TextLabel
+local function sectionLabel(parent: Instance, textValue: string, y: number, horizontalPadding: number?, height: number?): TextLabel
+	local padding = horizontalPadding or 32
 	return new("TextLabel", parent, {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(32, y),
-		Size = UDim2.new(1, -64, 0, 22),
+		Position = UDim2.fromOffset(padding, y),
+		Size = UDim2.new(1, -padding * 2, 0, height or 22),
 		Text = textValue,
 		TextColor3 = palette.muted,
 		TextSize = 13,
@@ -132,11 +133,20 @@ local function render()
 		return
 	end
 	local metrics = layoutMetrics or ResponsiveLayout.metrics(workspace.CurrentCamera)
-	local portrait = metrics.mode == "MobilePortrait"
-	local mobileLandscape = metrics.mode == "MobileLandscape"
-	local smallTouch = ResponsiveLayout.isSmallTouch(metrics)
-	local edge = if smallTouch then 10 else 28
-	local contentTop = if mobileLandscape then edge + 64 else edge + 96
+	local portrait = metrics.layoutClass == "PortraitFallback"
+	local touchLandscape = ResponsiveLayout.isLandscapeTouch(metrics)
+	local touchLayout = metrics.isTouch
+	local edge = if touchLayout then metrics.edge else 28
+	local gap = if touchLayout then metrics.gap else 8
+	local left = if touchLayout then metrics.safeTopLeft.X + edge else edge
+	local top = if touchLayout then metrics.safeTopLeft.Y + edge else edge
+	local titleHeight = if touchLayout
+		then ResponsiveLayout.fluidHeight(metrics, 0.085, 30, 48)
+		else 56
+	local statusHeight = if touchLayout
+		then ResponsiveLayout.scaled(metrics, 20, 18, 26)
+		else 30
+	local contentTop = top + titleHeight + statusHeight + gap
 	local root = screen:FindFirstChild("LobbyRoot") :: Frame
 	if not root then
 		return
@@ -154,8 +164,8 @@ local function render()
 	new("TextLabel", root, {
 		Name = "Title",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(edge, edge),
-		Size = UDim2.new(1, -edge * 2, 0, if mobileLandscape then 34 else 56),
+		Position = UDim2.fromOffset(left, top),
+		Size = UDim2.new(1, -(left + (if touchLayout then metrics.safeBottomRight.X + edge else edge)), 0, titleHeight),
 		Text = "LUNA WORLD",
 		TextColor3 = palette.moon,
 		Font = Enum.Font.GothamBold,
@@ -164,23 +174,32 @@ local function render()
 	local status = new("TextLabel", root, {
 		Name = "Status",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(edge, if mobileLandscape then edge + 36 else edge + 58),
-		Size = UDim2.new(1, -edge * 2, 0, if mobileLandscape then 22 else 30),
+		Position = UDim2.fromOffset(left, top + titleHeight),
+		Size = UDim2.new(1, -(left + (if touchLayout then metrics.safeBottomRight.X + edge else edge)), 0, statusHeight),
 		Text = if roster then "Выберите героя" else "Загрузка аккаунта…",
 		TextColor3 = palette.text,
 		Font = Enum.Font.Gotham,
-		TextSize = if mobileLandscape then 15 else 18,
+		TextSize = if touchLayout then math.round(ResponsiveLayout.scaled(metrics, 15, 14, 18)) else 18,
 	})
 	if not roster then
 		return
 	end
+	local rosterWidth = if touchLandscape then ResponsiveLayout.lobbyRosterWidth(metrics) else 0
+	local touchContentHeight = if touchLandscape
+		then math.max(
+			180,
+			metrics.viewport.Y - contentTop - metrics.safeBottomRight.Y - edge - ResponsiveLayout.scaled(metrics, 26, 22, 30)
+		)
+		else 0
 	local cards = new("ScrollingFrame", root, {
 		Name = "CharacterRoster",
 		BackgroundColor3 = palette.panel,
 		BorderSizePixel = 0,
-		Position = UDim2.fromOffset(edge, contentTop),
+		Position = UDim2.fromOffset(left, contentTop),
 		Size = if portrait
-			then UDim2.new(1, -edge * 2, 0, math.min(210, metrics.contentSize.Y * 0.32))
+			then UDim2.new(1, -(left + metrics.safeBottomRight.X + edge), 0, math.min(210, metrics.contentSize.Y * 0.32))
+			elseif touchLandscape
+			then UDim2.fromOffset(rosterWidth, touchContentHeight)
 			else UDim2.new(0.34, -edge, 1, -(edge * 2 + 126)),
 		CanvasSize = UDim2.fromOffset(0, 0),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
@@ -197,7 +216,12 @@ local function render()
 	for _, c in roster.characters do
 		local b = new("TextButton", cards, {
 			Name = "CharacterCard",
-			Size = UDim2.new(1, -8, 0, if mobileLandscape then 56 else 76),
+			Size = UDim2.new(
+				1,
+				-8,
+				0,
+				if touchLandscape then ResponsiveLayout.fluidHeight(metrics, 0.14, 50, 64) else 76
+			),
 			BackgroundColor3 = if selected == c.characterId then palette.accent else palette.panelSoft,
 			TextColor3 = palette.text,
 			Text = string.format(
@@ -221,7 +245,7 @@ local function render()
 			Name = "CreateSlot",
 			Active = true,
 			AutoButtonColor = true,
-			Size = UDim2.new(1, -8, 0, if mobileLandscape then 46 else 56),
+			Size = UDim2.new(1, -8, 0, if touchLandscape then metrics.touchTarget else 56),
 			BackgroundColor3 = palette.panel,
 			TextColor3 = palette.accentBright,
 			Text = "＋ Создать персонажа",
@@ -231,8 +255,8 @@ local function render()
 		add.TextColor3 = palette.accentBright
 		add.Activated:Connect(function()
 			local shade = createModalShade(root)
-			local modalSize = ResponsiveLayout.modalSize(metrics, if mobileLandscape then Vector2.new(760, 350) else Vector2.new(590, 540))
-			local modal = new(if mobileLandscape then "Frame" else "ScrollingFrame", root, {
+			local modalSize = ResponsiveLayout.modalSize(metrics, if touchLandscape then Vector2.new(760, 520) else Vector2.new(590, 540))
+			local modal = new(if touchLandscape then "Frame" else "ScrollingFrame", root, {
 				Name = "CreationModal",
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.fromScale(0.5, 0.5),
@@ -243,14 +267,16 @@ local function render()
 			})
 			if modal:IsA("ScrollingFrame") then
 				modal.CanvasSize = UDim2.fromOffset(0, 520)
-				modal.ScrollBarThickness = if smallTouch then 5 else 0
+				modal.ScrollBarThickness = if touchLayout then 5 else 0
 			end
 			stylePanel(modal, 14)
 			local form: Instance = modal
-			if mobileLandscape then
+			if touchLandscape then
+				local headerHeight = ResponsiveLayout.scaled(metrics, 54, 48, 60)
+				local footerHeight = metrics.touchTarget + gap * 2
 				form = new("ScrollingFrame", modal, {
-					Name = "CreationContent", Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 1, -116),
-					CanvasSize = UDim2.fromOffset(0, 420), AutomaticCanvasSize = Enum.AutomaticSize.None,
+					Name = "CreationContent", Position = UDim2.fromOffset(0, headerHeight), Size = UDim2.new(1, 0, 1, -(headerHeight + footerHeight)),
+					CanvasSize = UDim2.fromOffset(0, 0), AutomaticCanvasSize = Enum.AutomaticSize.None,
 					ScrollBarThickness = 5, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 6,
 				})
 			end
@@ -283,10 +309,10 @@ local function render()
 			close.Activated:Connect(dismiss)
 			shade.Activated:Connect(dismiss)
 
-			sectionLabel(form, "ИМЯ ПЕРСОНАЖА", if mobileLandscape then 4 else 72)
+			sectionLabel(form, "ИМЯ ПЕРСОНАЖА", if touchLandscape then 4 else 72)
 			local name = new("TextBox", form, {
 				Name = "Nickname",
-				Position = UDim2.fromOffset(32, if mobileLandscape then 28 else 98),
+				Position = UDim2.fromOffset(32, if touchLandscape then 28 else 98),
 				Size = UDim2.new(1, -64, 0, 48),
 				BackgroundColor3 = palette.bgDeep,
 				TextColor3 = palette.text,
@@ -302,7 +328,7 @@ local function render()
 			rounded(name, 8)
 			outlined(name)
 
-			sectionLabel(form, "КЛАСС", if mobileLandscape then 84 else 160)
+			sectionLabel(form, "КЛАСС", if touchLandscape then 84 else 160)
 			local class = "knight"
 			local classButtons: { [string]: TextButton } = {}
 			local classNames = { knight = "РЫЦАРЬ", ranger = "СЛЕДОПЫТ", mystic = "МИСТИК" }
@@ -320,8 +346,8 @@ local function render()
 			for i, v in { "knight", "ranger", "mystic" } do
 				local button = new("TextButton", form, {
 					Name = "Class_" .. v,
-					Position = UDim2.new((i - 1) / 3, 32 + (i - 1) * 4, 0, if mobileLandscape then 108 else 188),
-					Size = UDim2.new(1 / 3, -26, 0, if mobileLandscape then 52 else 68),
+					Position = UDim2.new((i - 1) / 3, 32 + (i - 1) * 4, 0, if touchLandscape then 108 else 188),
+					Size = UDim2.new(1 / 3, -26, 0, if touchLandscape then 52 else 68),
 					TextSize = 13,
 					TextWrapped = true,
 					ZIndex = 6,
@@ -335,7 +361,7 @@ local function render()
 			end
 			refreshClassButtons()
 
-			sectionLabel(form, "ПОЛ", if mobileLandscape then 172 else 272)
+			sectionLabel(form, "ПОЛ", if touchLandscape then 172 else 272)
 			local body = "male"
 			local bodyButtons: { [string]: TextButton } = {}
 			local function refreshBodyButtons(): ()
@@ -351,7 +377,7 @@ local function render()
 			for i, v in { "male", "female" } do
 				local button = new("TextButton", form, {
 					Name = "Body_" .. v,
-					Position = UDim2.new((i - 1) / 2, 32 + (i - 1) * 4, 0, if mobileLandscape then 196 else 300),
+					Position = UDim2.new((i - 1) / 2, 32 + (i - 1) * 4, 0, if touchLandscape then 196 else 300),
 					Size = UDim2.new(0.5, -36, 0, 48),
 					TextSize = 14,
 					ZIndex = 6,
@@ -365,9 +391,9 @@ local function render()
 			end
 			refreshBodyButtons()
 
-			sectionLabel(form, "БЫСТРЫЙ ВЫБОР ИМЕНИ", if mobileLandscape then 256 else 364)
+			sectionLabel(form, "БЫСТРЫЙ ВЫБОР ИМЕНИ", if touchLandscape then 256 else 364)
 			local mine = new("TextButton", form, {
-				Position = UDim2.new(0, 32, 0, if mobileLandscape then 280 else 392),
+				Position = UDim2.new(0, 32, 0, if touchLandscape then 280 else 392),
 				Size = UDim2.new(0.34, -24, 0, 42),
 				Text = "Мой Roblox ник",
 				TextSize = 12,
@@ -375,7 +401,7 @@ local function render()
 			})
 			styleButton(mine, false)
 			local random = new("TextButton", form, {
-				Position = UDim2.new(0.34, 8, 0, if mobileLandscape then 280 else 392),
+				Position = UDim2.new(0.34, 8, 0, if touchLandscape then 280 else 392),
 				Size = UDim2.new(0.33, -16, 0, 42),
 				Text = "✦ Случайное",
 				TextSize = 12,
@@ -383,7 +409,7 @@ local function render()
 			})
 			styleButton(random, false)
 			local check = new("TextButton", form, {
-				Position = UDim2.new(0.67, 8, 0, if mobileLandscape then 280 else 392),
+				Position = UDim2.new(0.67, 8, 0, if touchLandscape then 280 else 392),
 				Size = UDim2.new(0.33, -40, 0, 42),
 				Text = "Проверить",
 				TextSize = 12,
@@ -394,7 +420,7 @@ local function render()
 			local nameStatus = new("TextLabel", form, {
 				Name = "NicknameStatus",
 				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(32, if mobileLandscape then 328 else 440),
+				Position = UDim2.fromOffset(32, if touchLandscape then 328 else 440),
 				Size = UDim2.new(1, -64, 0, 22),
 				Text = if RunService:IsStudio() then "Studio: строгая проверка имени отключена" else "",
 				TextColor3 = palette.muted,
@@ -421,7 +447,7 @@ local function render()
 
 			local create = new("TextButton", modal, {
 				Name = "CreateCharacter",
-				Position = if mobileLandscape then UDim2.new(0, 32, 1, -54) else UDim2.fromOffset(32, 474),
+				Position = if touchLandscape then UDim2.new(0, 32, 1, -54) else UDim2.fromOffset(32, 474),
 				Size = UDim2.new(1, -64, 0, 48),
 				BackgroundColor3 = palette.accent,
 				TextColor3 = palette.text,
