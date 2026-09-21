@@ -51,7 +51,7 @@ require(BAR, "UserInputService.TouchEnabled", "mobile must receive a custom enla
 require(BAR, "UISizeConstraint", "action bar must fit narrow mobile viewports")
 require(BAR, "SkillCooldownAttributePrefix", "skill cooldown display must use server attributes")
 require(BAR, "BasicAttackReadyAtAttribute", "Attack cooldown display must use server attributes")
-require(BAR, 'local slotCount = if mobileLandscape then 6 else 10', "mobile landscape must expose six slots while desktop keeps ten")
+require(BAR, 'local slotCount = if touchLandscape then 6 else 10', "touch landscape must expose six slots while desktop keeps ten")
 require(BAR, '"SkillBar"', "skills must live in a separate skill bar")
 require(BAR, '"ИНВЕНТАРЬ [T]"', "primary actions must expose inventory")
 require(BAR, 'button.Text = ""', "locked skills must stay visually hidden until unlock")
