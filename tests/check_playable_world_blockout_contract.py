@@ -10,7 +10,7 @@ REQUIRED_FILES = [
     ROOT / "src/server/world/WorldDressingBlockout.luau",
     ROOT / "src/server/world/WorldCompositionBlockout.luau",
     ROOT / "src/server/world/PlayableWorldBlockout.luau",
-    ROOT / "src/server/world/WorldBootstrap.server.luau",
+    ROOT / "src/server/world/WorldBootstrap.luau",
     ROOT / "src/server/world/TraversalRecovery.luau",
     ROOT / "src/client/world-preview/ZonePresentation.client.luau",
 ]
@@ -52,7 +52,7 @@ def main() -> None:
     ):
         assert token in grounding
 
-    bootstrap = read(ROOT / "src/server/world/WorldBootstrap.server.luau")
+    bootstrap = read(ROOT / "src/server/world/WorldBootstrap.luau")
     assert "PlayableWorldBlockout" in bootstrap
     assert "WorldGreyboxBuilder" not in bootstrap
     assert "TraversalRecovery" in bootstrap
