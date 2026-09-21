@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local InventoryConfig = require(ReplicatedStorage.Shared.config.InventoryConfig)
 local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local HudLayout = require(script.Parent.HudLayout)
+local ResponsiveLayout = require(script.Parent.ResponsiveLayout)
 
 local InventoryUi = {}
 
@@ -14,7 +15,7 @@ local screenGui: ScreenGui? = nil
 local root: Frame? = nil
 local modalBlocker: TextButton? = nil
 local inventoryList: ScrollingFrame? = nil
-local equipmentList: Frame? = nil
+local equipmentList: ScrollingFrame? = nil
 local detailsLabel: TextLabel? = nil
 local statusLabel: TextLabel? = nil
 local lunaLabel: TextLabel? = nil
@@ -32,6 +33,8 @@ local currentSnapshot: any = nil
 local selectedKind: "Inventory" | "Equipment"? = nil
 local selectedIdentifier: string? = nil
 local callbacks: any = nil
+local stopResponsive: (() -> ())? = nil
+local currentMetrics: ResponsiveLayout.Metrics? = nil
 
 local SLOT_LABELS = {
 	Weapon = "Оружие",
@@ -51,6 +54,8 @@ local STAT_LABELS = {
 	criticalChance = "Крит",
 	attackSpeedMultiplier = "Скорость атаки",
 }
+
+local FILTER_ORDER = { "All", "Consumables", "Equipment", "Materials" }
 
 local FILTER_LABELS = {
 	All = "ВСЕ",
@@ -244,12 +249,15 @@ local function rebuildInventory(): ()
 			text = displayName .. quantity
 		end
 
+		local slotSize = if currentMetrics ~= nil and (currentMetrics :: ResponsiveLayout.Metrics).isTouch
+			then ResponsiveLayout.scaled(currentMetrics :: ResponsiveLayout.Metrics, 62, 56, 72)
+			else 66
 		local button = makeButton(
 			list,
 			"Slot" .. tostring(slotIndex),
 			text,
 			UDim2.fromOffset(0, 0),
-			UDim2.fromOffset(66, 66)
+			UDim2.fromOffset(slotSize, slotSize)
 		)
 		button.LayoutOrder = slotIndex
 		button.TextWrapped = true
@@ -277,6 +285,11 @@ local function rebuildEquipment(): ()
 	if container == nil then return end
 	for _, child in container:GetChildren() do child:Destroy() end
 
+	local metrics = currentMetrics
+	local touch = metrics ~= nil and (metrics :: ResponsiveLayout.Metrics).isTouch
+	local rowHeight = if touch then (metrics :: ResponsiveLayout.Metrics).touchTarget else 34
+	local rowGap = if touch then math.max(3, (metrics :: ResponsiveLayout.Metrics).gap / 2) else 4
+
 	for index, slot in InventoryConfig.EquipmentSlots do
 		local entry = if currentSnapshot ~= nil and typeof(currentSnapshot.equipment) == "table"
 			then currentSnapshot.equipment[slot]
@@ -290,8 +303,8 @@ local function rebuildEquipment(): ()
 			container,
 			slot,
 			string.format("%s: %s", SLOT_LABELS[slot] or slot, displayName),
-			UDim2.fromOffset(0, (index - 1) * 38),
-			UDim2.new(1, 0, 0, 34)
+			UDim2.fromOffset(0, (index - 1) * (rowHeight + rowGap)),
+			UDim2.new(1, -4, 0, rowHeight)
 		)
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextSize = 11
@@ -427,8 +440,7 @@ function InventoryUi.start(actionCallbacks: any): ()
 	local equippedTitle = makeLabel(panel, "Экипировка", UDim2.fromOffset(410, 52), UDim2.fromOffset(290, 24), 13)
 	equippedTitle.Font = Enum.Font.GothamBold
 
-	local filterOrder = { "All", "Consumables", "Equipment", "Materials" }
-	for index, filterId in filterOrder do
+	for index, filterId in FILTER_ORDER do
 		local selectedFilter = filterId
 		local button = makeButton(
 			panel,
@@ -470,11 +482,16 @@ function InventoryUi.start(actionCallbacks: any): ()
 	layout.Parent = list
 	inventoryList = list
 
-	local equipment = Instance.new("Frame")
+	local equipment = Instance.new("ScrollingFrame")
 	equipment.Name = "EquipmentList"
 	equipment.Position = UDim2.fromOffset(410, 80)
 	equipment.Size = UDim2.fromOffset(294, 224)
 	equipment.BackgroundTransparency = 1
+	equipment.BorderSizePixel = 0
+	equipment.CanvasSize = UDim2.fromOffset(0, 0)
+	equipment.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	equipment.ScrollingDirection = Enum.ScrollingDirection.Y
+	equipment.ScrollBarThickness = 4
 	equipment.Parent = panel
 	equipmentList = equipment
 
@@ -526,12 +543,59 @@ function InventoryUi.start(actionCallbacks: any): ()
 		end
 	end))
 
+	local lastSignature = ""
+	stopResponsive = ResponsiveLayout.observe(function(metrics)
+		currentMetrics = metrics
+		local signature = metrics.layoutClass .. ":" .. tostring(metrics.touchTarget) .. ":" .. tostring(math.round(metrics.contentSize.X))
+		if signature == lastSignature then return end
+		lastSignature = signature
+
+		if metrics.isTouch then
+			local filterY = ResponsiveLayout.scaled(metrics, 56, 50, 68)
+			for index, filterId in FILTER_ORDER do
+				local filter = filterButtons[filterId]
+				if filter ~= nil then
+					filter.Position = UDim2.new((index - 1) * 0.25, metrics.gap / 2, 0, filterY)
+					filter.Size = UDim2.new(0.25, -metrics.gap, 0, metrics.touchTarget)
+					filter.TextSize = math.round(ResponsiveLayout.scaled(metrics, 10, 9, 12))
+				end
+			end
+			invTitle.Visible = false
+			equippedTitle.Visible = false
+			local grid = list:FindFirstChildOfClass("UIGridLayout")
+			if grid ~= nil then
+				local cell = ResponsiveLayout.scaled(metrics, 62, 56, 72)
+				grid.CellSize = UDim2.fromOffset(cell, cell)
+				grid.CellPadding = UDim2.fromOffset(metrics.gap, metrics.gap)
+			end
+		else
+			for index, filterId in FILTER_ORDER do
+				local filter = filterButtons[filterId]
+				if filter ~= nil then
+					filter.Position = UDim2.fromOffset(16 + (index - 1) * 94, 78)
+					filter.Size = UDim2.fromOffset(89, 28)
+					filter.TextSize = 10
+				end
+			end
+			invTitle.Visible = true
+			equippedTitle.Visible = true
+			local grid = list:FindFirstChildOfClass("UIGridLayout")
+			if grid ~= nil then
+				grid.CellSize = UDim2.fromOffset(66, 66)
+				grid.CellPadding = UDim2.fromOffset(6, 6)
+			end
+		end
+		rebuild()
+	end)
+
 	screenGui = gui
 	setPanelOpen(false)
 	rebuild()
 end
 
 function InventoryUi.stop(): ()
+	if stopResponsive ~= nil then stopResponsive(); stopResponsive = nil end
+	currentMetrics = nil
 	if closeConnection ~= nil then closeConnection:Disconnect(); closeConnection = nil end
 	for _, connection in actionConnections do connection:Disconnect() end
 	table.clear(actionConnections)
