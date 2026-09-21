@@ -12,8 +12,22 @@ local StarterGearRules = require(ReplicatedStorage.Shared.economy.StarterGearRul
 
 local function generator(prefix: string): () -> string local n = 0; return function() n += 1; return prefix .. n end end
 local function fundedRecipe(id: string): any
-	local profile = ProfileSchema.createDefault(); profile.Luna = 10000
+	local profile = ProfileSchema.createDefault(); profile.Luna = 10000; profile.Level = 15
 	for _, ingredient in CraftingDefinitions[id].ingredients do profile = assert(InventoryRules.add(profile, ingredient.itemId, ingredient.quantity, generator(ingredient.itemId))) end
+	return profile
+end
+local function levelSixRouteProfile(): any
+	local profile = ProfileSchema.createDefault()
+	profile.Level = 6
+	profile.Luna = math.floor(EconomyBalance.expectedDirectLuna(EconomyBalance.LevelSixRoute))
+	for itemId, quantity in EconomyBalance.expectedRouteItems(EconomyBalance.LevelSixRoute) do
+		local whole = math.floor(quantity)
+		if whole > 0 then profile = assert(InventoryRules.add(profile, itemId, whole, generator(itemId))) end
+	end
+	return profile
+end
+local function craftRepeated(profile: any, recipeId: string, count: number): any
+	for _ = 1, count do profile = assert(EconomyRules.craft(profile, recipeId, generator(recipeId))) end
 	return profile
 end
 
@@ -45,24 +59,31 @@ return function(TestRunner)
 			for _, ingredient in recipe.ingredients do assert(ItemDefinitions[ingredient.itemId].category == "Material" and ingredient.quantity > 0) end
 			local retail = ItemDefinitions[recipe.outputItemId].merchantRetail
 			local cost = assert(EconomyRules.craftCost(id)); local sell = assert(EconomyRules.buybackPrice(recipe.outputItemId))
-			assert(retail == EconomyRules.expectedCraftRetail(id)); assert(sell < cost)
+			assert(retail == EconomyRules.expectedCraftRetail(id)); assert(sell * recipe.outputQuantity < cost)
 		end
 	end)
 	TestRunner.run("craft is atomic for success and rejection", function()
 		local profile = fundedRecipe("craft_armor_guard_head"); local before = profile.Luna
 		local crafted = assert(EconomyRules.craft(profile, "craft_armor_guard_head", generator("gear")))
 		assert(crafted.Luna == before - CraftingDefinitions.craft_armor_guard_head.fee); assert(#crafted.Inventory == 1)
-		local empty = ProfileSchema.createDefault(); local rejected, reason = EconomyRules.craft(empty, "craft_armor_guard_head", generator("none")); assert(rejected == nil and reason == "InsufficientLuna")
+		local empty = ProfileSchema.createDefault(); empty.Level = 15; local rejected, reason = EconomyRules.craft(empty, "craft_armor_guard_head", generator("none")); assert(rejected == nil and reason == "InsufficientLuna")
 		empty.Luna = 100; rejected, reason = EconomyRules.craft(empty, "craft_armor_guard_head", generator("none")); assert(rejected == nil and reason == "InsufficientMaterials")
 		local full = fundedRecipe("craft_armor_guard_head")
 		for _, ingredient in CraftingDefinitions.craft_armor_guard_head.ingredients do full = assert(InventoryRules.add(full, ingredient.itemId, 1, generator("extra"))) end
 		for index = #full.Inventory + 1, 40 do local instanceId = "filler" .. index; full.Items[instanceId] = { ItemId = "material_wolf_pelt", Quantity = 1 }; full.Inventory[index] = instanceId end
 		local fullResult, fullReason = EconomyRules.craft(full, "craft_armor_guard_head", generator("full")); assert(fullResult == nil and fullReason == "InventoryFull")
 	end)
+	TestRunner.run("craft enforces level and material output quantity", function()
+		local low = fundedRecipe("craft_weapon_rune_staff"); low.Level = 5
+		local denied, reason = EconomyRules.craft(low, "craft_weapon_rune_staff", generator("low"))
+		assert(denied == nil and reason == "LevelTooLow")
+		local processed = assert(EconomyRules.craft(fundedRecipe("craft_material_cured_leather"), "craft_material_cured_leather", generator("leather")))
+		assert(EconomyRules.ownedQuantity(processed, "material_cured_leather") == 3)
+	end)
 	TestRunner.run("merchant buy sell ratio and equipped protection", function()
 		local profile = ProfileSchema.createDefault(); profile.Luna = 1000
-		local bought = assert(EconomyRules.buy(profile, "material_iron_scrap", 2, generator("buy"))); assert(bought.Luna == 964)
-		local sold = assert(EconomyRules.sell(bought, bought.Inventory[1], 1)); assert(sold.Luna == 974)
+		local bought = assert(EconomyRules.buy(profile, "consumable_minor_healing_draught", 2, generator("buy"))); assert(bought.Luna == 940)
+		local sold = assert(EconomyRules.sell(bought, bought.Inventory[1], 1)); assert(sold.Luna == 958)
 		local equippedProfile = ProfileSchema.createDefault(); equippedProfile.Items.x = { ItemId = "weapon_iron_blade", Quantity = 1 }; equippedProfile.Equipment.Weapon = "x"
 		local denied, reason = EconomyRules.sell(equippedProfile, "x", 1); assert(denied == nil and reason == "EquippedItem")
 	end)
@@ -91,20 +112,35 @@ return function(TestRunner)
 		assert(rejected == nil)
 		assert(profile.Items[peltId].Quantity == 5, "failed batch must not mutate the source profile")
 	end)
-	TestRunner.run("starter grant is archetype-specific and idempotent", function()
+	TestRunner.run("starter grant repairs legacy mismatch without downgrading valid class gear", function()
 		for _, archetype in { "knight", "ranger", "mystic" } do
 			local profile = ProfileSchema.createDefault(); profile.ArchetypeId = archetype
 			local first = assert(StarterGearRules.grantAndEquip(profile, generator(archetype))); local second = assert(StarterGearRules.grantAndEquip(first, generator("again")))
 			assert(#first.Inventory == 0 and #second.Inventory == 0); assert(first.Equipment.Weapon ~= nil and first.Equipment.Weapon == second.Equipment.Weapon)
 			assert(first.Items[first.Equipment.Weapon].ItemId == StarterGearRules.itemForArchetype(archetype))
 		end
-		local inventoryOnly = ProfileSchema.createDefault(); inventoryOnly = assert(InventoryRules.add(inventoryOnly, "weapon_training_sword", 1, generator("legacy")))
-		local equipped = assert(StarterGearRules.grantAndEquip(inventoryOnly, generator("unused"))); assert(equipped.Equipment.Weapon ~= nil and #equipped.Inventory == 0)
 
-		local switched = assert(StarterGearRules.switchArchetype(equipped, "ranger", generator("switch")))
-		assert(switched.ArchetypeId == "ranger")
+		local legacyRanger = ProfileSchema.createDefault()
+		legacyRanger.ArchetypeId = "ranger"
+		legacyRanger.Items.legacySword = { ItemId = "weapon_training_sword", Quantity = 1 }
+		legacyRanger.Equipment.Weapon = "legacySword"
+		local repaired = assert(StarterGearRules.grantAndEquip(legacyRanger, generator("repair")))
+		assert(repaired.Equipment.Weapon ~= nil)
+		assert(repaired.Items[repaired.Equipment.Weapon].ItemId == "weapon_ash_bow")
+		assert(repaired.Inventory[1] == "legacySword")
+
+		local gearedRanger = ProfileSchema.createDefault()
+		gearedRanger.ArchetypeId = "ranger"
+		gearedRanger.Items.hunterBow = { ItemId = "weapon_hunter_bow", Quantity = 1 }
+		gearedRanger.Equipment.Weapon = "hunterBow"
+		gearedRanger = assert(InventoryRules.add(gearedRanger, "weapon_ash_bow", 1, generator("starter")))
+		local preserved = assert(StarterGearRules.grantAndEquip(gearedRanger, generator("unused")))
+		assert(preserved.Equipment.Weapon == "hunterBow")
+
+		local switched = assert(StarterGearRules.switchArchetype(preserved, "mystic", generator("switch")))
+		assert(switched.ArchetypeId == "mystic")
 		assert(switched.Equipment.Weapon ~= nil)
-		assert(switched.Items[switched.Equipment.Weapon].ItemId == "weapon_ash_bow")
+		assert(switched.Items[switched.Equipment.Weapon].ItemId == "weapon_ash_staff")
 		assert(ItemDefinitions.weapon_ash_bow.displayName == "Учебный лук")
 		assert(ItemDefinitions.weapon_ash_staff.displayName == "Учебный посох")
 	end)
@@ -121,10 +157,33 @@ return function(TestRunner)
 		}) == nil)
 		assert(EconomyRequestRules.validateSellBatch(2, "SellBatch", {}) == nil)
 	end)
-	TestRunner.run("natural route has the intended full-set expected value", function()
-		local value = EconomyBalance.expectedRouteValue(EconomyBalance.NaturalRoute); local cost = EconomyBalance.fullSetCraftCost("knight")
-		assert(value >= cost and value <= cost * 1.2, string.format("route %.1f vs set %d", value, cost))
-		local levelSixValue = EconomyBalance.expectedRouteValue(EconomyBalance.LevelSixRoute)
-		assert(levelSixValue >= assert(EconomyRules.craftCost("craft_weapon_rune_staff")), "LV6 route must fund a noticeable upgrade")
+	TestRunner.run("class set route values stay within fifteen percent", function()
+		local costs = { EconomyBalance.fullSetCraftCost("knight"), EconomyBalance.fullSetCraftCost("ranger"), EconomyBalance.fullSetCraftCost("mystic") }
+		table.sort(costs)
+		assert(costs[3] <= costs[1] * 1.15, string.format("class set spread %d..%d", costs[1], costs[3]))
+		local resources = EconomyBalance.expectedRouteItems(EconomyBalance.LevelSixRoute)
+		assert((resources.material_wolf_pelt or 0) >= 3)
+		assert((resources.material_spider_silk or 0) >= 3)
+		assert((resources.material_iron_scrap or 0) >= 2)
+		assert((resources.material_goblin_token or 0) >= 2)
+		assert((resources.material_magic_dust or 0) >= 1)
+		assert(EconomyBalance.expectedRouteValue(EconomyBalance.LevelSixRoute) >= 100)
+	end)
+	TestRunner.run("level-six route crafts a weapon and armor for every class", function()
+		local plans = {
+			knight = { cured = 1, sturdy = 0, billet = 1, weapon = "craft_weapon_iron_blade", armor = "craft_armor_guard_head" },
+			ranger = { cured = 1, sturdy = 1, billet = 1, weapon = "craft_weapon_hunter_bow", armor = "craft_armor_hunter_head" },
+			mystic = { cured = 1, sturdy = 1, billet = 1, weapon = "craft_weapon_rune_staff", armor = "craft_armor_adept_head" },
+		}
+		for archetype, plan in plans do
+			local profile = levelSixRouteProfile(); profile.ArchetypeId = archetype
+			profile = craftRepeated(profile, "craft_material_cured_leather", plan.cured)
+			profile = craftRepeated(profile, "craft_material_sturdy_thread", plan.sturdy)
+			profile = craftRepeated(profile, "craft_material_iron_billet", plan.billet)
+			profile = assert(EconomyRules.craft(profile, plan.weapon, generator(archetype .. "weapon")))
+			profile = assert(EconomyRules.craft(profile, plan.armor, generator(archetype .. "armor")))
+			assert(EconomyRules.ownedQuantity(profile, CraftingDefinitions[plan.weapon].outputItemId) == 1)
+			assert(EconomyRules.ownedQuantity(profile, CraftingDefinitions[plan.armor].outputItemId) == 1)
+		end
 	end)
 end

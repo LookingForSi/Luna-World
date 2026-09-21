@@ -2,6 +2,7 @@
 
 local EquipmentRules = require(script.Parent.Parent.inventory.EquipmentRules)
 local InventoryRules = require(script.Parent.Parent.inventory.InventoryRules)
+local ItemDefinitions = require(script.Parent.Parent.definitions.ItemDefinitions)
 local ProfileSchema = require(script.Parent.Parent.persistence.ProfileSchema)
 local PersistenceTypes = require(script.Parent.Parent.types.PersistenceTypes)
 
@@ -13,13 +14,33 @@ function StarterGearRules.itemForArchetype(archetypeId: string): string?
 	return byArchetype[archetypeId]
 end
 
+local function equippedWeaponMatchesArchetype(profile: PersistenceTypes.Profile, archetypeId: string): boolean
+	local instanceId = profile.Equipment.Weapon
+	if instanceId == nil then return false end
+	local record = profile.Items[instanceId]
+	local definition = if record ~= nil then ItemDefinitions[record.ItemId] else nil
+	if definition == nil or definition.equipmentSlot ~= "Weapon" then return false end
+	local allowed = definition.allowedArchetypes
+	if allowed == nil then return true end
+	for _, candidate in allowed do
+		if candidate == archetypeId then return true end
+	end
+	return false
+end
+
 function StarterGearRules.grantAndEquipForArchetype(
 	profile: PersistenceTypes.Profile,
 	archetypeId: string,
-	generateId: () -> string
+	generateId: () -> string,
+	forceStarterWeapon: boolean?
 ): (PersistenceTypes.Profile?, string?)
 	local itemId = byArchetype[archetypeId]
 	if itemId == nil then return nil, "InvalidArchetype" end
+	-- Normal login must never downgrade a character that already has a valid
+	-- class weapon equipped. We only repair missing/incompatible legacy weapons.
+	if forceStarterWeapon ~= true and equippedWeaponMatchesArchetype(profile, archetypeId) then
+		return profile, nil
+	end
 	for instanceId, record in profile.Items do
 		if record.ItemId == itemId then
 			if profile.Equipment.Weapon == instanceId then return profile, nil end
@@ -49,7 +70,7 @@ function StarterGearRules.switchArchetype(
 	if byArchetype[archetypeId] == nil then return nil, "InvalidArchetype" end
 	local staged = ProfileSchema.clone(profile)
 	staged.ArchetypeId = archetypeId
-	return StarterGearRules.grantAndEquipForArchetype(staged, archetypeId, generateId)
+	return StarterGearRules.grantAndEquipForArchetype(staged, archetypeId, generateId, true)
 end
 
 return table.freeze(StarterGearRules)

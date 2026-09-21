@@ -12,6 +12,7 @@ local InventoryUi = {}
 local player = Players.LocalPlayer
 local screenGui: ScreenGui? = nil
 local root: Frame? = nil
+local modalBlocker: TextButton? = nil
 local inventoryList: ScrollingFrame? = nil
 local equipmentList: Frame? = nil
 local detailsLabel: TextLabel? = nil
@@ -357,6 +358,7 @@ end
 
 local function setPanelOpen(open: boolean): ()
 	if root ~= nil then root.Visible = open end
+	if modalBlocker ~= nil then modalBlocker.Visible = open end
 end
 
 function InventoryUi.toggle(): ()
@@ -372,7 +374,25 @@ function InventoryUi.start(actionCallbacks: any): ()
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 8
+	-- The full-screen input blocker is a sibling of InventoryPanel. In Sibling
+	-- mode the panel's whole subtree stays above that blocker instead of child
+	-- labels/buttons (default ZIndex=1) falling behind it.
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = player:WaitForChild("PlayerGui")
+	local blocker = Instance.new("TextButton")
+	blocker.Name = "ModalBlocker"
+	blocker.Size = UDim2.fromScale(1, 1)
+	blocker.BackgroundColor3 = Color3.new(0, 0, 0)
+	-- Keep the blocker only as an input shield. The previous 55% black overlay
+	-- made both the world and low-ZIndex inventory contents look unreadably dim.
+	blocker.BackgroundTransparency = 1
+	blocker.Text = ""
+	blocker.Active = true
+	blocker.Modal = true
+	blocker.Visible = false
+	blocker.ZIndex = 1
+	blocker.Parent = gui
+	modalBlocker = blocker
 
 	local panel = Instance.new("Frame")
 	panel.Name = "InventoryPanel"
@@ -380,7 +400,11 @@ function InventoryUi.start(actionCallbacks: any): ()
 	panel.Position = UDim2.fromScale(0.5, 0.5)
 	panel.Size = UDim2.fromOffset(720, 500)
 	HudLayout.applyPanelStyle(panel)
+	-- Inventory is a reading-heavy screen; keep it effectively opaque even though
+	-- the shared HUD panels intentionally use translucency.
+	panel.BackgroundTransparency = 0.03
 	panel.Visible = false
+	panel.ZIndex = 2
 	panel.Parent = gui
 	root = panel
 
@@ -455,10 +479,12 @@ function InventoryUi.start(actionCallbacks: any): ()
 	equipmentList = equipment
 
 	detailsLabel = makeLabel(panel, "Выберите предмет.", UDim2.fromOffset(410, 314), UDim2.fromOffset(294, 92), 12)
+	detailsLabel.Name = "Details"
 	detailsLabel.TextWrapped = true
 	detailsLabel.TextYAlignment = Enum.TextYAlignment.Top
 
 	statusLabel = makeLabel(panel, "", UDim2.fromOffset(410, 406), UDim2.fromOffset(294, 20), 11)
+	statusLabel.Name = "Status"
 
 	equipButton = makeButton(panel, "Equip", "НАДЕТЬ", UDim2.fromOffset(410, 438), UDim2.fromOffset(68, 32))
 	unequipButton = makeButton(panel, "Unequip", "СНЯТЬ", UDim2.fromOffset(410, 438), UDim2.fromOffset(68, 32))
@@ -511,6 +537,7 @@ function InventoryUi.stop(): ()
 	table.clear(actionConnections)
 	if screenGui ~= nil then screenGui:Destroy(); screenGui = nil end
 	root = nil
+	modalBlocker = nil
 	inventoryList = nil
 	equipmentList = nil
 	detailsLabel = nil

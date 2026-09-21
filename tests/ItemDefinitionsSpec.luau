@@ -21,7 +21,7 @@ return function(TestRunner)
 				assert(definition.maxStack == 1)
 			end
 		end
-		assert(count == 35)
+		assert(count == 46)
 	end)
 
 	TestRunner.run("weapons keep archetype ownership and approved level tiers", function()

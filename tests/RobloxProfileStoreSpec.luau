@@ -16,8 +16,10 @@ return function(TestRunner)
 
 		local first = store:claim(42, "session-a", 100)
 		assert(first.ok)
-		if not first.ok then return end
-		first.profile.Luna = 15
+		if not first.ok then
+			return
+		end
+		first.profile.Settings.SoundVolume = 0.15
 		assert(store:save(42, "session-a", first.profile, 110).ok)
 
 		local blocked = store:claim(42, "session-b", 120)
@@ -26,8 +28,10 @@ return function(TestRunner)
 
 		local second = store:claim(42, "session-b", 140)
 		assert(second.ok)
-		if not second.ok then return end
-		assert(second.profile.Luna == 15)
+		if not second.ok then
+			return
+		end
+		assert(second.profile.Settings.SoundVolume == 0.15)
 	end)
 
 	TestRunner.run("expired lease can be claimed but stale owner cannot overwrite it", function()
@@ -37,8 +41,10 @@ return function(TestRunner)
 		assert(first.ok)
 		local second = store:claim(7, "session-b", 300)
 		assert(second.ok)
-		if not first.ok then return end
-		first.profile.Luna = 999
+		if not first.ok then
+			return
+		end
+		first.profile.Settings.SoundVolume = 0.99
 		local staleSave = store:save(7, "session-a", first.profile, 301)
 		assert(not staleSave.ok and staleSave.reason == "Conflict")
 	end)

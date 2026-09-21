@@ -5,7 +5,10 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local AccountSchema = require(ReplicatedStorage.Shared.persistence.AccountSchema)
 local PersistenceConfig = require(ReplicatedStorage.Shared.config.PersistenceConfig)
+local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
+local CharacterConfig = require(ReplicatedStorage.Shared.config.CharacterConfig)
 local ProfileSchema = require(ReplicatedStorage.Shared.persistence.ProfileSchema)
 local PersistenceTypes = require(ReplicatedStorage.Shared.types.PersistenceTypes)
 local ProfileStoreContract = require(script.Parent.Parent.persistence.ProfileStoreContract)
@@ -13,13 +16,12 @@ local RobloxProfileStore = require(script.Parent.Parent.persistence.RobloxProfil
 local SessionProfileStore = require(script.Parent.Parent.persistence.SessionProfileStore)
 
 local PlayerDataService = {}
-
-export type ProfileState = "Loading" | "Ready" | "Saving" | "Released" | "Error"
-
+export type AccountState = "Loading" | "AccountReady" | "CharacterReady" | "Saving" | "Released" | "Error"
 type Session = {
-	state: ProfileState,
+	state: AccountState,
 	token: string,
-	profile: PersistenceTypes.Profile?,
+	account: PersistenceTypes.AccountProfile?,
+	activeCharacterId: string?,
 	generation: number,
 }
 
@@ -27,204 +29,243 @@ local sessions: { [Player]: Session } = {}
 local started = false
 local serviceGeneration = 0
 local store: ProfileStoreContract.Store? = nil
-local playerAddedConnection: RBXScriptConnection? = nil
-local playerRemovingConnection: RBXScriptConnection? = nil
-local profileReadyEvent = Instance.new("BindableEvent")
-local profileChangedEvent = Instance.new("BindableEvent")
-
-PlayerDataService.ProfileReady = profileReadyEvent.Event
+local connections: { RBXScriptConnection } = {}
+local accountReadyEvent, characterReadyEvent, profileChangedEvent =
+	Instance.new("BindableEvent"), Instance.new("BindableEvent"), Instance.new("BindableEvent")
+PlayerDataService.AccountReady = accountReadyEvent.Event
+PlayerDataService.CharacterReady = characterReadyEvent.Event
+-- Compatibility name intentionally means gameplay-ready, never merely account-loaded.
+PlayerDataService.ProfileReady = characterReadyEvent.Event
 PlayerDataService.ProfileChanged = profileChangedEvent.Event
 
-local function now(): number
-	return os.time()
+local function setState(player: Player, session: Session, state: AccountState): ()
+	session.state = state
+	player:SetAttribute("ProfileState", state)
+	player:SetAttribute("AccountReady", state == "AccountReady" or state == "CharacterReady")
+	player:SetAttribute("CharacterReady", state == "CharacterReady")
 end
 
-local function createDefaultStore(): ProfileStoreContract.Store
+local function defaultStore(): ProfileStoreContract.Store
 	if RunService:IsStudio() and not PersistenceConfig.UseDataStoreInStudio then
 		return SessionProfileStore.new()
 	end
 	return RobloxProfileStore.new()
 end
 
-local function setState(player: Player, session: Session, state: ProfileState): ()
-	session.state = state
-	player:SetAttribute("ProfileState", state)
-end
-
 local function loadPlayer(player: Player, generation: number): ()
-	if player.Parent ~= Players or generation ~= serviceGeneration then return end
-	local activeStore = store
-	if activeStore == nil then return end
-
-	local token = HttpService:GenerateGUID(false)
+	if player.Parent ~= Players or generation ~= serviceGeneration or store == nil then
+		return
+	end
 	local session: Session = {
 		state = "Loading",
-		token = token,
-		profile = nil,
+		token = HttpService:GenerateGUID(false),
+		account = nil,
+		activeCharacterId = nil,
 		generation = generation,
 	}
 	sessions[player] = session
 	setState(player, session, "Loading")
-
-	local result = activeStore:claim(player.UserId, token, now())
-	if sessions[player] ~= session or generation ~= serviceGeneration or player.Parent ~= Players then
-		if result.ok then
-			activeStore:release(player.UserId, token, result.profile, now())
-		end
+	local result = (store :: ProfileStoreContract.Store):claim(player.UserId, session.token, os.time())
+	if sessions[player] ~= session or player.Parent ~= Players then
 		return
 	end
-
 	if not result.ok then
 		setState(player, session, "Error")
-		warn(string.format("Player profile load failed for %s: %s", player.Name, result.reason))
-		if not RunService:IsStudio() then
-			player:Kick("Не удалось загрузить данные персонажа. Попробуйте войти снова.")
-		end
+		warn("Account load failed for " .. player.Name .. ": " .. result.reason)
 		return
 	end
-
-	local valid, reason = ProfileSchema.validateCurrent(result.profile)
+	local valid, reason = AccountSchema.validateCurrent(result.profile)
 	if not valid then
 		setState(player, session, "Error")
-		warn(string.format("Player profile validation failed for %s: %s", player.Name, reason or "unknown"))
-		if not RunService:IsStudio() then
-			player:Kick("Данные персонажа не прошли проверку. Вход остановлен для защиты сохранения.")
-		end
+		warn("Account validation failed for " .. player.Name .. ": " .. tostring(reason))
 		return
 	end
-
-	session.profile = result.profile
-	setState(player, session, "Ready")
+	session.account = result.profile
+	setState(player, session, "AccountReady")
 	player:SetAttribute("DataVersion", result.profile.DataVersion)
-	profileReadyEvent:Fire(player)
+	accountReadyEvent:Fire(player)
 end
 
-local function saveSession(player: Player, release: boolean): boolean
-	local session = sessions[player]
-	local activeStore = store
-	if session == nil or activeStore == nil or session.profile == nil then return false end
-	if session.state ~= "Ready" and session.state ~= "Saving" then return false end
-
-	local snapshot = ProfileSchema.clone(session.profile)
-	if release then setState(player, session, "Saving") end
-	local result = if release
-		then activeStore:release(player.UserId, session.token, snapshot, now())
-		else activeStore:save(player.UserId, session.token, snapshot, now())
-
-	if not result.ok then
-		setState(player, session, "Error")
-		warn(string.format("Player profile %s failed for %s: %s", if release then "release" else "save", player.Name, result.reason))
-		if not release and not RunService:IsStudio() and player.Parent == Players then
-			player:Kick("Не удалось безопасно сохранить данные персонажа. Сессия остановлена для защиты прогресса.")
-		end
+local function snapshot(session: Session): PersistenceTypes.AccountProfile?
+	return if session.account then AccountSchema.clone(session.account) else nil
+end
+local function save(player: Player, release: boolean): boolean
+	local session, activeStore = sessions[player], store
+	if session == nil or session.account == nil or activeStore == nil then
 		return false
 	end
-
+	local account = snapshot(session) :: PersistenceTypes.AccountProfile
 	if release then
+		setState(player, session, "Saving")
+	end
+	local result = if release
+		then activeStore:release(player.UserId, session.token, account, os.time())
+		else activeStore:save(player.UserId, session.token, account, os.time())
+	if not result.ok then
+		setState(player, session, "Error")
+		warn("Account save failed for " .. player.Name .. ": " .. result.reason)
+		return false
+	end
+	if release then
+		session.account = nil
+		session.activeCharacterId = nil
 		setState(player, session, "Released")
-		session.profile = nil
 	end
 	return true
 end
 
 local function releasePlayer(player: Player): ()
-	local session = sessions[player]
-	if session == nil then return end
-	if session.profile ~= nil and (session.state == "Ready" or session.state == "Saving") then
-		saveSession(player, true)
+	if sessions[player] then
+		save(player, true)
+		sessions[player] = nil
 	end
-	sessions[player] = nil
 end
 
-local function autosaveLoop(generation: number): ()
+function PlayerDataService.start(override: ProfileStoreContract.Store?): ()
+	if started then
+		return
+	end
+	started = true
+	serviceGeneration += 1
+	store = override or defaultStore()
+	ProfileStoreContract.assertValid(store)
+	Players.CharacterAutoLoads = false
+	table.insert(
+		connections,
+		Players.PlayerAdded:Connect(function(player)
+			task.spawn(loadPlayer, player, serviceGeneration)
+		end)
+	)
+	table.insert(connections, Players.PlayerRemoving:Connect(releasePlayer))
+	for _, player in Players:GetPlayers() do
+		task.spawn(loadPlayer, player, serviceGeneration)
+	end
 	task.spawn(function()
+		local generation = serviceGeneration
 		while started and generation == serviceGeneration do
 			task.wait(PersistenceConfig.AutosaveSeconds)
-			if not started or generation ~= serviceGeneration then return end
 			for player, session in sessions do
-				if player.Parent == Players and session.state == "Ready" and session.profile ~= nil then
-					saveSession(player, false)
+				if
+					player.Parent == Players and (session.state == "AccountReady" or session.state == "CharacterReady")
+				then
+					save(player, false)
 				end
 			end
 		end
 	end)
 end
 
-function PlayerDataService.start(storeOverride: ProfileStoreContract.Store?): ()
-	if started then return end
-	started = true
-	serviceGeneration += 1
-	local generation = serviceGeneration
-	store = storeOverride or createDefaultStore()
-	ProfileStoreContract.assertValid(store)
-
-	playerAddedConnection = Players.PlayerAdded:Connect(function(player)
-		task.spawn(loadPlayer, player, generation)
-	end)
-	playerRemovingConnection = Players.PlayerRemoving:Connect(releasePlayer)
-	for _, player in Players:GetPlayers() do
-		task.spawn(loadPlayer, player, generation)
-	end
-	autosaveLoop(generation)
-end
-
 function PlayerDataService.stop(): ()
-	if not started then return end
+	if not started then
+		return
+	end
 	started = false
 	serviceGeneration += 1
-	if playerAddedConnection ~= nil then playerAddedConnection:Disconnect(); playerAddedConnection = nil end
-	if playerRemovingConnection ~= nil then playerRemovingConnection:Disconnect(); playerRemovingConnection = nil end
-
+	for _, connection in connections do
+		connection:Disconnect()
+	end
+	table.clear(connections)
 	local players = {}
-	for player in sessions do table.insert(players, player) end
-	for _, player in players do releasePlayer(player) end
-	table.clear(sessions)
+	for player in sessions do
+		table.insert(players, player)
+	end
+	for _, player in players do
+		releasePlayer(player)
+	end
 	store = nil
 end
 
-function PlayerDataService.getState(player: Player): ProfileState?
-	local session = sessions[player]
-	return if session ~= nil then session.state else nil
+function PlayerDataService.getState(player: Player): AccountState?
+	local s = sessions[player]
+	return if s then s.state else nil
 end
-
+function PlayerDataService.isAccountReady(player: Player): boolean
+	local s = sessions[player]
+	return s ~= nil and s.account ~= nil and (s.state == "AccountReady" or s.state == "CharacterReady")
+end
 function PlayerDataService.isReady(player: Player): boolean
-	local session = sessions[player]
-	return session ~= nil and session.state == "Ready" and session.profile ~= nil
+	local s = sessions[player]
+	return s ~= nil and s.state == "CharacterReady" and s.activeCharacterId ~= nil and s.account ~= nil
 end
-
+function PlayerDataService.getAccountCopy(player: Player): PersistenceTypes.AccountProfile?
+	local s = sessions[player]
+	return if s and s.account then AccountSchema.clone(s.account) else nil
+end
+function PlayerDataService.getActiveCharacterId(player: Player): string?
+	local s = sessions[player]
+	return if s then s.activeCharacterId else nil
+end
 function PlayerDataService.getProfileCopy(player: Player): PersistenceTypes.Profile?
-	local session = sessions[player]
-	if session == nil or session.state ~= "Ready" or session.profile == nil then return nil end
-	return ProfileSchema.clone(session.profile)
+	local s = sessions[player]
+	if not PlayerDataService.isReady(player) or s == nil or s.account == nil then
+		return nil
+	end
+	return ProfileSchema.clone(s.account.Characters[s.activeCharacterId :: string])
 end
-
-function PlayerDataService.mutate(
-	player: Player,
-	callback: (PersistenceTypes.Profile) -> ()
-): (boolean, string?)
-	local session = sessions[player]
-	if session == nil or session.state ~= "Ready" or session.profile == nil then
-		return false, "ProfileNotReady"
+function PlayerDataService.mutate(player: Player, callback: (PersistenceTypes.Profile) -> ()): (boolean, string?)
+	local s = sessions[player]
+	if not PlayerDataService.isReady(player) or s == nil or s.account == nil then
+		return false, "CharacterNotReady"
 	end
-
-	local before = ProfileSchema.clone(session.profile)
-	local ok, err = pcall(callback, session.profile)
-	if not ok then
-		session.profile = before
-		return false, "MutationFailed"
+	local id = s.activeCharacterId :: string
+	local before = AccountSchema.clone(s.account)
+	local ok = pcall(callback, s.account.Characters[id])
+	local valid, reason = AccountSchema.validateCurrent(s.account)
+	if not ok or not valid then
+		s.account = before
+		return false, if not ok then "MutationFailed" else reason
 	end
-	local valid, reason = ProfileSchema.validateCurrent(session.profile)
-	if not valid then
-		session.profile = before
-		return false, reason or "InvalidProfile"
-	end
-
 	profileChangedEvent:Fire(player)
 	return true, nil
 end
-
-function PlayerDataService.saveNow(player: Player): boolean
-	return saveSession(player, false)
+function PlayerDataService.mutateAccount(
+	player: Player,
+	callback: (PersistenceTypes.AccountProfile) -> ()
+): (boolean, string?)
+	local s = sessions[player]
+	if s == nil or s.account == nil or not PlayerDataService.isAccountReady(player) then
+		return false, "AccountNotReady"
+	end
+	local before = AccountSchema.clone(s.account)
+	local ok = pcall(callback, s.account)
+	local valid, reason = AccountSchema.validateCurrent(s.account)
+	if not ok or not valid then
+		s.account = before
+		return false, if not ok then "MutationFailed" else reason
+	end
+	return true, nil
 end
+function PlayerDataService.selectCharacter(player: Player, characterId: string): (boolean, string?)
+	local s = sessions[player]
+	if s == nil or s.account == nil or s.state ~= "AccountReady" then
+		return false, "AccountNotReady"
+	end
+	local character = s.account.Characters[characterId]
+	if character == nil then
+		return false, "CharacterNotOwned"
+	end
+	if character.NeedsIdentity then
+		return false, "IdentityIncomplete"
+	end
+	s.activeCharacterId = characterId
+	s.account.SelectedCharacterId = characterId
+	character.LastPlayedAt = os.time()
 
+	-- Runtime identity must be projected before CharacterReady/LoadCharacter.
+	-- Combat, HUD and starter-gear systems read these attributes during the
+	-- initial CharacterAdded lifecycle.
+	player:SetAttribute("ActiveCharacterId", characterId)
+	player:SetAttribute(CombatConfig.ArchetypeAttribute, character.ArchetypeId)
+	player:SetAttribute(CharacterConfig.NicknameAttribute, character.Nickname or player.DisplayName)
+	player:SetAttribute(CharacterConfig.BodyTypeAttribute, character.BodyType or "male")
+	player:SetAttribute(CharacterConfig.AppearancePresetAttribute, character.AppearancePresetId or "default")
+
+	setState(player, s, "CharacterReady")
+	characterReadyEvent:Fire(player)
+	player:LoadCharacter()
+	return true, nil
+end
+function PlayerDataService.saveNow(player: Player): boolean
+	return save(player, false)
+end
 return PlayerDataService

@@ -18,14 +18,15 @@ CONFIG = read("src/shared/config/PersistenceConfig.luau")
 
 for token in (
     '"Loading"',
-    '"Ready"',
+    '"AccountReady"',
+    '"CharacterReady"',
     '"Saving"',
     '"Released"',
     '"Error"',
     "ProfileReady",
     "ProfileChanged",
     "PlayerDataService.mutate",
-    "ProfileSchema.validateCurrent",
+    "AccountSchema.validateCurrent",
     "AutosaveSeconds",
 ):
     if token not in DATA:

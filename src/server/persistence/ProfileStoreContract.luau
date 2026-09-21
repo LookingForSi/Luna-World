@@ -6,18 +6,26 @@ local ProfileStoreContract = {}
 
 export type FailureReason = "NotFound" | "Busy" | "Conflict" | "StoreError" | "InvalidProfile"
 
-export type ClaimResult =
-	{ ok: true, profile: PersistenceTypes.Profile }
-	| { ok: false, reason: FailureReason }
+export type ClaimResult = { ok: true, profile: PersistenceTypes.AccountProfile } | { ok: false, reason: FailureReason }
 
-export type MutationResult =
-	{ ok: true }
-	| { ok: false, reason: FailureReason }
+export type MutationResult = { ok: true } | { ok: false, reason: FailureReason }
 
 export type Store = {
 	claim: (self: any, userId: number, sessionToken: string, now: number) -> ClaimResult,
-	save: (self: any, userId: number, sessionToken: string, profile: PersistenceTypes.Profile, now: number) -> MutationResult,
-	release: (self: any, userId: number, sessionToken: string, profile: PersistenceTypes.Profile, now: number) -> MutationResult,
+	save: (
+		self: any,
+		userId: number,
+		sessionToken: string,
+		profile: PersistenceTypes.AccountProfile,
+		now: number
+	) -> MutationResult,
+	release: (
+		self: any,
+		userId: number,
+		sessionToken: string,
+		profile: PersistenceTypes.AccountProfile,
+		now: number
+	) -> MutationResult,
 }
 
 function ProfileStoreContract.assertValid(store: any): ()

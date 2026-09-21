@@ -246,6 +246,34 @@ function CombatService.refreshPlayerStats(player: Player): boolean
 	return true
 end
 
+
+function CombatService.restorePlayerVitalsAfterLevelUp(player: Player): boolean
+	if player.Parent ~= Players or not PlayerDataService.isReady(player) then return false end
+
+	-- Rebuild the authoritative snapshot first so the refill uses the new
+	-- level's maxima (including equipment modifiers).
+	local state = statesByPlayer[player]
+	if state == nil then
+		state = getState(player)
+	else
+		CombatService.refreshPlayerStats(player)
+		state = statesByPlayer[player]
+	end
+	if state == nil then return false end
+
+	state.stats.resource = ResourceRules.restore(state.stats.resource, state.stats.resource.maximum)
+	state.regenerationElapsed = 0
+	replicateResource(player, state)
+	restoreCombatPoints(player)
+
+	local character = player.Character
+	local humanoid = if character ~= nil then character:FindFirstChildOfClass("Humanoid") else nil
+	if humanoid ~= nil and humanoid.Health > 0 then
+		humanoid.Health = humanoid.MaxHealth
+	end
+	return true
+end
+
 local function getPlayerByCanonicalTargetId(targetId: string): Player?
 	for _, candidate in Players:GetPlayers() do
 		if targetId == "player:" .. tostring(candidate.UserId) then return candidate end
@@ -1014,15 +1042,28 @@ local function bindCharacter(player: Player, character: Model): ()
 	local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 10)
 	if player.Character == character and humanoid ~= nil and humanoid:IsA("Humanoid") then
 		characterDeathConnections[player] = humanoid.Died:Connect(function() clearPlayerState(player) end)
-		getState(player)
+		if PlayerDataService.isReady(player) then
+			getState(player)
+		end
 	end
+end
+
+local function initializeReadyPlayer(player: Player): ()
+	if player.Parent ~= Players or not PlayerDataService.isReady(player) then return end
+	-- Do not preserve a pre-lobby/default combat snapshot. CharacterReady means
+	-- PlayerDataService has already projected the selected profile archetype.
+	clearPlayerState(player, true)
+	replicateState(player, getState(player))
 end
 
 local function onPlayerAdded(player: Player): ()
 	if characterAddedConnections[player] ~= nil then return end
 	setReplicatedTarget(player, nil)
 	ensureCombatPoints(player)
-	replicateState(player, getState(player))
+	-- Never manufacture the default knight before Character Lobby selection.
+	if PlayerDataService.isReady(player) then
+		replicateState(player, getState(player))
+	end
 	characterAddedConnections[player] = player.CharacterAdded:Connect(function(character) bindCharacter(player, character) end)
 	if player.Character ~= nil then bindCharacter(player, player.Character) end
 end
@@ -1177,7 +1218,7 @@ function CombatService.start(): ()
 	table.insert(serviceConnections, skillRequest.OnServerEvent:Connect(onSkillRequest))
 	table.insert(serviceConnections, Players.PlayerAdded:Connect(onPlayerAdded))
 	table.insert(serviceConnections, PlayerDataService.ProfileReady:Connect(function(player)
-		CombatService.refreshPlayerStats(player)
+		initializeReadyPlayer(player)
 	end))
 	table.insert(serviceConnections, PlayerDataService.ProfileChanged:Connect(function(player)
 		CombatService.refreshPlayerStats(player)

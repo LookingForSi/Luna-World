@@ -6,6 +6,55 @@
 
 ## [Unreleased]
 
+### Playtest RC — consolidated build
+
+- Для dev0.3 playtest генерация Goblin/Cemetery lake временно полностью отключена: NorthernZonesBlockout больше не вызывает createGoblinCemeteryLake(), поэтому релиз не изменяет terrain этой зоны. Код прежнего озера оставлен архивно для последующей переработки; остальные world/gameplay/UI изменения dev0.3 продолжают собираться.
+
+- Коррекция отката озера: предыдущий rollback к ранней 12-stud версии отменён. Озеро восстановлено ТОЧНО к owner-accepted состоянию PR #29 после `world: deepen lake basin and remove terrain overhang` (4ec5d6f) и его контрактов до начала `world: open lake to boundary...`: глубина 30, basin 40, margin 34, swimmable Terrain.Water, recessed hill-bank cliff; без world-edge extension и без prepareGoblinCampBoundaryShelf. GoblinShelfEdge также восстановлен как в этом состоянии.
+
+- Озеро и lake-facing terrain откатаны к последнему принятому состоянию до серии экспериментов с расширением воды: восстановлены три исходных water-lobe, прежняя глубина 12, вертикальный hill-bank cliff/«стена» и старый shoreline; полностью удалены prepareGoblinCampBoundaryShelf, flat-slab/organic lake, искусственное дно Mud и все последующие расширения воды к границе карты. Остальные изменения dev0.3 сохранены.
+
+- Чаша озера доведена до физически цельной геометрии: убрана воздушная канавка между водой и берегом, вода заходит под берег на небольшой overlap, а под всем водяным объёмом восстановлено непрерывное Mud-дно без воздушного кармана.
+
+- Исправлен QuestMarker snapshot race после Character Lobby: QuestService при старте догоняет уже CharacterReady игроков, а клиент повторяет первый QuestSnapshotRequest до получения валидного snapshot; `!/?` над NPC больше не зависят от порядка запуска сервисов.
+
+- Собрана единая playtest-сборка: Crafting World Pass, responsive mobile UI, Character Lobby, reordered LV1–14 mob route, Spider Hollow polish, swimming, lake/world-edge polish и full restore при level-up.
+- Character Lobby дополнительно защищён для playtest: Roblox auto-spawn отключается до world bootstrap, Studio nickname index работает без включённого API Services, creation modal адаптирован под phone portrait и показывает результат проверки nickname внутри окна.
+- Character Lobby теперь занимает весь viewport устройства; исправлен input-race, при котором `LastInputTypeChanged` мог перерисовать lobby между нажатием и `Activated` и визуально делать кнопку «Создать персонажа» нерабочей.
+- Creation UX переработан: выбранные класс и пол теперь визуально фиксируются, Studio принимает любое непустое имя без TextService/боевого nickname-policy, а live nickname-pattern исправлен для обычных имён вроде `Astrafox` и `LookingFor`.
+- Lobby переведён с горчичной палитры на холодную лунную сине-фиолетовую тему Luna World; незавершённые настройки UI/text/sound временно скрыты до отдельного прохода.
+- Добавлена кнопка «Мой Roblox ник» и сохранена генерация случайного fantasy nickname.
+- Spider Hollow использует непрерывные изогнутые terrain-ridges вместо отдельных куч.
+- Озеро перестроено как единый глубокий swimmable water body с плоской поверхностью: вместо Terrain.FillCylinder-слайсов используются короткие перекрывающиеся FillBlock-секции на одной отметке воды; западный берег меандрирует, а весь water volume жёстко ограничен WorldBounds и больше не выходит за карту.
+- Поднятая boundary-facing площадка Goblin Camp сохраняет высоту, но внутренний край переходит в длинный пологий terrain-склон вместо резкого обрыва.
+- При фактическом level-up CP, HP и class resource полностью восстанавливаются до новых максимумов; обычный XP без повышения уровня refill не даёт.
+- Исправлен Character Lobby → runtime bridge: выбранный archetype и nickname переносятся до первого spawn, CombatService больше не создаёт ранний default-knight state, RespawnService не спавнит персонажа до CharacterReady; nickname показывается в HUD и над персонажем.
+- Инвентарь больше не затемняет весь экран: modal blocker оставлен только как невидимый input shield, а панель инвентаря сделана практически непрозрачной для чтения.
+- То же правило применено ко всем gameplay-модалкам: торговец/кузнец, NPC dialogue, quest offer и travel confirm больше не используют fullscreen dark veil; EconomyUi переведён на sibling Z-order, чтобы текст и кнопки не попадали под собственный blocker.
+
+
+### Changed
+
+- Добавлен единый responsive layout для desktop, tablet и телефонов в portrait/landscape: HUD стал компактнее, модальные окна ограничиваются safe area, а торговля на узком экране переходит в вертикальный flow.
+- Quest offer получил прокручиваемое описание и фиксированную доступную шапку/нижние действия; открытые модальные окна блокируют gameplay taps под собой.
+
+### Added
+
+- Добавлен предыгровой Character Lobby dev0.3: до пяти независимых персонажей аккаунта, выбор класса и типа тела, глобальная атомарная резервация nickname, безопасное подтверждение удаления и responsive creation flow.
+- Persistent account schema поднята до `DataVersion = 3`; migration v2→v3 переносит весь прежний progression, Luna, inventory, equipment и quests в legacy-персонажа без потери данных.
+- Lifecycle разделён на `AccountReady` и `CharacterReady`; Roblox character и gameplay-клиент не запускаются до server-authoritative выбора принадлежащего аккаунту героя.
+
+- Реализованы четыре раздела кузнеца, переработка сырья и полные ранние No-Grade наборы Рыцаря, Следопыта и Мистика.
+- LV6 crafting balance привязан к реальному маршруту Q2–Q5: ранние переработки и рецепты откалиброваны так, чтобы weapon + первая class armor были достижимы без скрытого фарма уровня LV9–10.
+- Добавлены server-authoritative требования уровня, количество результата рецепта, стабильная сортировка и состояния доступности в интерфейсе.
+
+### Changed
+
+- Готовая классовая экипировка и обработанные материалы убраны из обычного ассортимента торговца; ранние рецепты теперь используют добычу маршрута Wolves → Spiders → Goblins.
+- Goblin Shaman получил надёжный signature-drop Magic Dust для первого Mystic-рецепта; обычные crafting materials сохраняют пониженный drop-rate.
+- Login starter-repair больше не переэкипирует учебное оружие поверх подходящего классу оружия; legacy mismatch автоматически исправляется.
+- В двухпанельной продаже количество можно редактировать напрямую; Enter переносит/обновляет позицию и пересчитывает итог.
+
 ### dev0.2 — Economy usability / crafting planning
 
 - Стартовое Newbie-оружие приведено к классовой схеме: Рыцарь — «Учебный меч», Следопыт — «Учебный лук», Мистик — «Учебный посох»; Studio-переключение класса теперь атомарно обновляет persistent archetype и экипирует соответствующее стартовое оружие.

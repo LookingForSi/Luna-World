@@ -12,15 +12,19 @@ return function(TestRunner)
 
 		local first = store:claim(42, "session-a", 0)
 		assert(first.ok)
-		if not first.ok then return end
-		first.profile.Luna = 10
+		if not first.ok then
+			return
+		end
+		first.profile.Settings.SoundVolume = 0.1
 		assert(store:save(42, "session-a", first.profile, 1).ok)
 		assert(store:release(42, "session-a", first.profile, 2).ok)
 
 		local second = store:claim(42, "session-b", 3)
 		assert(second.ok)
-		if not second.ok then return end
-		assert(second.profile.Luna == 10)
+		if not second.ok then
+			return
+		end
+		assert(second.profile.Settings.SoundVolume == 0.1)
 	end)
 
 	TestRunner.run("in memory profile store isolates active ownership", function()

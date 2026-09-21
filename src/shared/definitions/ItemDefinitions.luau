@@ -38,7 +38,8 @@ local function equipment(
 	rarity: ItemTypes.ItemRarity,
 	requiredLevel: number,
 	slot: ItemTypes.EquipmentSlot,
-	statModifiers: any
+	statModifiers: any,
+	archetypeId: string?
 ): ItemTypes.ItemDefinition
 	return table.freeze({
 		id = id,
@@ -51,7 +52,7 @@ local function equipment(
 		maxStack = 1,
 		equipmentSlot = slot,
 		requiredLevel = requiredLevel,
-		allowedArchetypes = nil,
+		allowedArchetypes = if archetypeId ~= nil then table.freeze({ archetypeId }) else nil,
 		statModifiers = mods(statModifiers),
 		consumableEffect = nil,
 	})
@@ -96,13 +97,21 @@ local definitions: { [string]: ItemTypes.ItemDefinition } = {
 	weapon_moonveil_staff = weapon("weapon_moonveil_staff", "Посох лунной вуали", "Rare", 7, "mystic", { magicAttack = 9, criticalChance = 0.01 }),
 
 	armor_worn_head = equipment("armor_worn_head", "Потрёпанный капюшон", "Armor", "Common", 1, "Head", { physicalDefense = 2 }),
-	armor_guard_head = equipment("armor_guard_head", "Шлем стража", "Armor", "Uncommon", 4, "Head", { physicalDefense = 4, maxHealth = 8 }),
+	armor_guard_head = equipment("armor_guard_head", "Шлем стража", "Armor", "Uncommon", 4, "Head", { physicalDefense = 4, maxHealth = 8 }, "knight"),
 	armor_worn_chest = equipment("armor_worn_chest", "Потрёпанный доспех", "Armor", "Common", 1, "Chest", { physicalDefense = 4, maxHealth = 8 }),
-	armor_guard_chest = equipment("armor_guard_chest", "Доспех стража", "Armor", "Uncommon", 4, "Chest", { physicalDefense = 8, maxHealth = 18 }),
+	armor_guard_chest = equipment("armor_guard_chest", "Доспех стража", "Armor", "Uncommon", 4, "Chest", { physicalDefense = 8, maxHealth = 18 }, "knight"),
 	armor_worn_gloves = equipment("armor_worn_gloves", "Потрёпанные перчатки", "Armor", "Common", 1, "Gloves", { physicalDefense = 1 }),
-	armor_guard_gloves = equipment("armor_guard_gloves", "Перчатки стража", "Armor", "Uncommon", 4, "Gloves", { physicalDefense = 2, criticalChance = 0.005 }),
+	armor_guard_gloves = equipment("armor_guard_gloves", "Перчатки стража", "Armor", "Uncommon", 4, "Gloves", { physicalDefense = 2, criticalChance = 0.005 }, "knight"),
 	armor_worn_boots = equipment("armor_worn_boots", "Потрёпанные сапоги", "Armor", "Common", 1, "Boots", { physicalDefense = 1 }),
-	armor_guard_boots = equipment("armor_guard_boots", "Сапоги стража", "Armor", "Uncommon", 4, "Boots", { physicalDefense = 2, maxHealth = 5 }),
+	armor_guard_boots = equipment("armor_guard_boots", "Сапоги стража", "Armor", "Uncommon", 4, "Boots", { physicalDefense = 2, maxHealth = 5 }, "knight"),
+	armor_hunter_head = equipment("armor_hunter_head", "Капюшон охотника", "Armor", "Uncommon", 4, "Head", { physicalDefense = 2, maxResource = 8 }, "ranger"),
+	armor_hunter_chest = equipment("armor_hunter_chest", "Куртка охотника", "Armor", "Uncommon", 5, "Chest", { physicalDefense = 5, maxHealth = 12 }, "ranger"),
+	armor_hunter_gloves = equipment("armor_hunter_gloves", "Перчатки охотника", "Armor", "Uncommon", 4, "Gloves", { physicalDefense = 1, criticalChance = 0.01 }, "ranger"),
+	armor_hunter_boots = equipment("armor_hunter_boots", "Сапоги охотника", "Armor", "Uncommon", 4, "Boots", { physicalDefense = 1, attackSpeedMultiplier = 0.03 }, "ranger"),
+	armor_adept_head = equipment("armor_adept_head", "Капюшон адепта", "Armor", "Uncommon", 5, "Head", { physicalDefense = 1, maxResource = 12 }, "mystic"),
+	armor_adept_chest = equipment("armor_adept_chest", "Роба адепта", "Armor", "Uncommon", 6, "Chest", { physicalDefense = 3, maxHealth = 8, maxResource = 10 }, "mystic"),
+	armor_adept_gloves = equipment("armor_adept_gloves", "Перчатки адепта", "Armor", "Uncommon", 6, "Gloves", { physicalDefense = 1, magicAttack = 1, criticalChance = 0.005 }, "mystic"),
+	armor_adept_boots = equipment("armor_adept_boots", "Сапоги адепта", "Armor", "Uncommon", 5, "Boots", { physicalDefense = 1, maxResource = 8 }, "mystic"),
 	accessory_moon_charm = equipment("accessory_moon_charm", "Лунный талисман", "Accessory", "Common", 1, "Accessory", { maxResource = 5 }),
 	accessory_silver_moon_charm = equipment("accessory_silver_moon_charm", "Серебряный лунный талисман", "Accessory", "Uncommon", 4, "Accessory", { maxResource = 12, criticalChance = 0.005 }),
 
@@ -115,9 +124,12 @@ local definitions: { [string]: ItemTypes.ItemDefinition } = {
 	material_bone_fragment = stackable("material_bone_fragment", "Фрагмент древней кости", "Material", "Common", nil),
 	material_fallen_relic = stackable("material_fallen_relic", "Осквернённая реликвия", "Material", "Uncommon", nil),
 	material_ancient_shard = stackable("material_ancient_shard", "Осколок древнего камня", "Material", "Uncommon", nil),
-	material_iron_scrap = stackable("material_iron_scrap", "Железный лом", "Material", "Common", nil, 18),
+	material_iron_scrap = stackable("material_iron_scrap", "Железный лом", "Material", "Common", nil, 5),
 	material_cured_leather = stackable("material_cured_leather", "Выделанная кожа", "Material", "Common", nil, 16),
-	material_magic_dust = stackable("material_magic_dust", "Магическая пыль", "Material", "Uncommon", nil, 24),
+	material_sturdy_thread = stackable("material_sturdy_thread", "Прочная нить", "Material", "Common", nil),
+	material_iron_billet = stackable("material_iron_billet", "Железная заготовка", "Material", "Common", nil),
+	material_arcane_thread = stackable("material_arcane_thread", "Зачарованная нить", "Material", "Uncommon", nil),
+	material_magic_dust = stackable("material_magic_dust", "Магическая пыль", "Material", "Uncommon", nil, 5),
 	consumable_minor_healing_draught = stackable(
 		"consumable_minor_healing_draught",
 		"Малое лечебное зелье",
@@ -154,13 +166,16 @@ local definitions: { [string]: ItemTypes.ItemDefinition } = {
 
 local retailOverrides = {
 	material_wolf_pelt = 12, material_sharp_fang = 16, material_spider_silk = 15,
-	material_venom_sac = 22, material_goblin_token = 14, material_dire_hide = 24,
+	material_venom_sac = 22, material_goblin_token = 5, material_dire_hide = 24,
 	material_bone_fragment = 15, material_fallen_relic = 26, material_ancient_shard = 28,
 	consumable_minor_healing_draught = 30, consumable_minor_resource_draught = 32,
 	armor_worn_head = 55, armor_worn_chest = 90, armor_worn_gloves = 40, armor_worn_boots = 40, accessory_moon_charm = 70,
-	weapon_iron_blade = 351, weapon_hunter_bow = 322, weapon_rune_staff = 413,
-	armor_guard_head = 174, armor_guard_chest = 339, armor_guard_gloves = 183,
-	armor_guard_boots = 186, accessory_silver_moon_charm = 317,
+	material_cured_leather = 26, material_sturdy_thread = 32, material_iron_billet = 43, material_arcane_thread = 109,
+	weapon_iron_blade = 172, weapon_hunter_bow = 233, weapon_rune_staff = 191,
+	armor_guard_head = 113, armor_guard_chest = 259, armor_guard_gloves = 152, armor_guard_boots = 144,
+	armor_hunter_head = 133, armor_hunter_chest = 226, armor_hunter_gloves = 195, armor_hunter_boots = 130,
+	armor_adept_head = 147, armor_adept_chest = 247, armor_adept_gloves = 205, armor_adept_boots = 144,
+	accessory_silver_moon_charm = 222,
 }
 for id, price in retailOverrides do
 	local original: any = definitions[id]

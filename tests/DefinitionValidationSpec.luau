@@ -9,6 +9,7 @@ local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitio
 local MobAbilityDefinitions = require(ReplicatedStorage.Shared.definitions.MobAbilityDefinitions)
 local LootTableDefinitions = require(ReplicatedStorage.Shared.definitions.LootTableDefinitions)
 local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
+local CraftingDefinitions = require(ReplicatedStorage.Shared.definitions.CraftingDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 
 local SUPPORTED_RESOURCES = { Stamina = true, Focus = true, Mana = true }
@@ -62,6 +63,19 @@ return function(TestRunner)
 		assertUniqueStableIds(SkillDefinitions, "skill")
 		assertUniqueStableIds(MobDefinitions, "mob")
 		assertUniqueStableIds(MobAbilityDefinitions, "mob ability")
+	end)
+
+	TestRunner.run("craft definitions use valid stable identifiers and items", function()
+		assertUniqueStableIds(CraftingDefinitions, "craft")
+		for _, recipe in CraftingDefinitions do
+			assert(ItemDefinitions[recipe.outputItemId] ~= nil, recipe.id .. ".outputItemId must exist")
+			assert(recipe.requiredLevel % 1 == 0 and recipe.requiredLevel > 0)
+			assert(recipe.outputQuantity % 1 == 0 and recipe.outputQuantity > 0)
+			assert(recipe.sortOrder % 1 == 0 and recipe.sortOrder > 0)
+			for _, ingredient in recipe.ingredients do
+				assert(ItemDefinitions[ingredient.itemId] ~= nil, recipe.id .. " ingredient must exist")
+			end
+		end
 	end)
 
 	TestRunner.run("archetypes declare their approved resource and basic attack", function()

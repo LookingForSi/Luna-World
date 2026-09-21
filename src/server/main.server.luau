@@ -1,6 +1,11 @@
 --!strict
 
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
+
+-- Character Lobby owns the first spawn. Disable Roblox auto-spawn before any
+-- world/service waits so a player can never briefly enter gameplay first.
+Players.CharacterAutoLoads = false
 
 local CombatService = require(script.Parent.services.CombatService)
 local MobService = require(script.Parent.services.MobService)
@@ -16,6 +21,7 @@ local NpcWorldService = require(script.Parent.services.NpcWorldService)
 local QuestService = require(script.Parent.services.QuestService)
 local TravelService = require(script.Parent.services.TravelService)
 local PlayerDataService = require(script.Parent.services.PlayerDataService)
+local CharacterService = require(script.Parent.services.CharacterService)
 local ProgressionService = require(script.Parent.services.ProgressionService)
 local PlayerRegenerationService = require(script.Parent.services.PlayerRegenerationService)
 local RespawnService = require(script.Parent.services.RespawnService)
@@ -34,6 +40,7 @@ end
 
 EconomyService.start()
 PlayerDataService.start()
+CharacterService.start()
 ProgressionService.start()
 CombatService.start()
 PlayerRegenerationService.start()
@@ -69,5 +76,6 @@ game:BindToClose(function()
 	MobService.stop()
 	CombatService.stop()
 	ProgressionService.stop()
+	CharacterService.stop()
 	PlayerDataService.stop()
 end)

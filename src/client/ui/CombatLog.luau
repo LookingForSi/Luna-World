@@ -11,6 +11,7 @@ local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinit
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local HudLayout = require(script.Parent.HudLayout)
+local ResponsiveLayout = require(script.Parent.ResponsiveLayout)
 
 local CombatLog = {}
 
@@ -26,6 +27,8 @@ local expanded = true
 local entryLabels: { TextLabel } = {}
 local entrySequence = 0
 local observedLevel: number? = nil
+local stopObserving: (() -> ())? = nil
+local currentMetrics: ResponsiveLayout.Metrics? = nil
 
 local MAX_ENTRIES = 200
 local ENTRY_HEIGHT = 18
@@ -102,7 +105,9 @@ local function setExpanded(value: boolean): ()
 	if body ~= nil then body.Visible = expanded end
 	if frame ~= nil then
 		frame.Size = if expanded
-			then UDim2.fromOffset(HudLayout.CombatLogSize.X, HudLayout.CombatLogSize.Y)
+			then if currentMetrics ~= nil and ResponsiveLayout.isSmallTouch(currentMetrics :: ResponsiveLayout.Metrics)
+				then UDim2.fromOffset(math.min(300, (currentMetrics :: ResponsiveLayout.Metrics).contentSize.X), 150)
+				else UDim2.fromOffset(HudLayout.CombatLogSize.X, HudLayout.CombatLogSize.Y)
 			else UDim2.fromOffset(128, 30)
 	end
 	if toggleButton ~= nil then toggleButton.Text = if expanded then "Лог  ▲" else "Лог  ▼" end
@@ -309,7 +314,12 @@ function CombatLog.start(): ()
 	table.clear(entryLabels)
 	entrySequence = 0
 	observedLevel = readLevel()
-	setExpanded(true)
+	stopObserving = ResponsiveLayout.observe(function(metrics)
+		local wasSmallTouch = currentMetrics ~= nil and ResponsiveLayout.isSmallTouch(currentMetrics :: ResponsiveLayout.Metrics)
+		currentMetrics = metrics
+		if ResponsiveLayout.isSmallTouch(metrics) and not wasSmallTouch then expanded = false end
+		setExpanded(expanded)
+	end)
 
 	toggle.Activated:Connect(function()
 		setExpanded(not expanded)
@@ -321,6 +331,7 @@ end
 function CombatLog.stop(): ()
 	if presentationConnection ~= nil then presentationConnection:Disconnect(); presentationConnection = nil end
 	if levelConnection ~= nil then levelConnection:Disconnect(); levelConnection = nil end
+	if stopObserving ~= nil then stopObserving(); stopObserving = nil end
 	if screenGui ~= nil then screenGui:Destroy(); screenGui = nil end
 	frame = nil
 	body = nil
@@ -329,6 +340,7 @@ function CombatLog.stop(): ()
 	entrySequence = 0
 	observedLevel = nil
 	expanded = true
+	currentMetrics = nil
 end
 
 return CombatLog

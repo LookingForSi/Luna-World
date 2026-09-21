@@ -31,10 +31,12 @@ local travelConfirm: Frame? = nil
 local journal: Frame? = nil
 local journalList: ScrollingFrame? = nil
 local mapFrame: Frame? = nil
+local modalBlocker: TextButton? = nil
 local mapCanvas: Frame? = nil
 local playerDot: TextLabel? = nil
 
 local snapshot: any = { quests = {}, markers = {} }
+local firstSnapshotReceived = false
 local connections: { RBXScriptConnection } = {}
 local markerGuis: { BillboardGui } = {}
 local waypointLabels: { [string]: TextLabel } = {}
@@ -480,9 +482,20 @@ local function showQuestOffer(value: any, topic: any): ()
 	title.Font = Enum.Font.GothamBold
 	title.ZIndex = 22
 
-	local description = makeText(questOffer, topic.description or "", 14)
-	description.Position = UDim2.fromOffset(0, 60)
-	description.Size = UDim2.new(1, 0, 1, -160)
+	local descriptionScroll = Instance.new("ScrollingFrame")
+	descriptionScroll.Name = "DescriptionScroll"
+	descriptionScroll.Position = UDim2.fromOffset(0, 60)
+	descriptionScroll.Size = UDim2.new(1, 0, 1, -160)
+	descriptionScroll.BackgroundTransparency = 1
+	descriptionScroll.BorderSizePixel = 0
+	descriptionScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	descriptionScroll.CanvasSize = UDim2.fromOffset(0, 0)
+	descriptionScroll.ScrollBarThickness = 5
+	descriptionScroll.ZIndex = 22
+	descriptionScroll.Parent = questOffer
+	local description = makeText(descriptionScroll, topic.description or "", 14)
+	description.Size = UDim2.new(1, -10, 0, 0)
+	description.AutomaticSize = Enum.AutomaticSize.Y
 	description.TextYAlignment = Enum.TextYAlignment.Top
 	description.ZIndex = 22
 
@@ -698,6 +711,7 @@ end
 
 local function setSnapshot(value: any): ()
 	if typeof(value) ~= "table" or typeof(value.quests) ~= "table" then return end
+	firstSnapshotReceived = true
 	snapshot = value
 	syncActiveQuestState()
 	buildJournal()
@@ -844,6 +858,20 @@ function QuestController.start(): ()
 	rootGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	rootGui.Parent = player:WaitForChild("PlayerGui")
 	gui = rootGui
+	local blocker = Instance.new("TextButton")
+	blocker.Name = "ModalBlocker"
+	blocker.Size = UDim2.fromScale(1, 1)
+	blocker.BackgroundColor3 = Color3.new(0, 0, 0)
+	-- Keep modal behaviour without a fullscreen dark veil. Each dialog/panel is
+	-- responsible for its own readable background.
+	blocker.BackgroundTransparency = 1
+	blocker.Text = ""
+	blocker.Active = true
+	blocker.Modal = true
+	blocker.Visible = false
+	blocker.ZIndex = 1
+	blocker.Parent = rootGui
+	modalBlocker = blocker
 
 	local dialogueFrame = Instance.new("Frame")
 	dialogueFrame.Name = "DialogueShell"
@@ -851,6 +879,7 @@ function QuestController.start(): ()
 	dialogueFrame.Position = UDim2.fromScale(0.5, 0.48)
 	dialogueFrame.Size = UDim2.fromScale(0.42, 0.40)
 	HudLayout.applyPanelStyle(dialogueFrame)
+	dialogueFrame.BackgroundTransparency = 0.03
 	dialogueFrame.Visible = false
 	dialogueFrame.ZIndex = 10
 	dialogueFrame.Parent = rootGui
@@ -862,6 +891,7 @@ function QuestController.start(): ()
 	offerFrame.Position = UDim2.fromScale(0.5, 0.48)
 	offerFrame.Size = UDim2.fromOffset(560, 360)
 	HudLayout.applyPanelStyle(offerFrame)
+	offerFrame.BackgroundTransparency = 0.03
 	offerFrame.Visible = false
 	offerFrame.ZIndex = 20
 	offerFrame.Parent = rootGui
@@ -873,6 +903,7 @@ function QuestController.start(): ()
 	travelFrame.Position = UDim2.fromScale(0.5, 0.48)
 	travelFrame.Size = UDim2.fromOffset(520, 250)
 	HudLayout.applyPanelStyle(travelFrame)
+	travelFrame.BackgroundTransparency = 0.03
 	travelFrame.Visible = false
 	travelFrame.ZIndex = 24
 	travelFrame.Parent = rootGui
@@ -880,6 +911,18 @@ function QuestController.start(): ()
 
 	journal = buildJournalFrame(rootGui)
 	mapFrame = buildMap(rootGui)
+	local function syncModalBlocker(): ()
+		if modalBlocker == nil then return end
+		modalBlocker.Visible = (dialogue ~= nil and dialogue.Visible)
+			or (questOffer ~= nil and questOffer.Visible)
+			or (travelConfirm ~= nil and travelConfirm.Visible)
+			or (journal ~= nil and journal.Visible)
+			or (mapFrame ~= nil and mapFrame.Visible)
+	end
+	for _, modal in { dialogueFrame, offerFrame, travelFrame, journal :: Frame, mapFrame :: Frame } do
+		table.insert(connections, modal:GetPropertyChangedSignal("Visible"):Connect(syncModalBlocker))
+	end
+	syncModalBlocker()
 
 	table.insert(connections, snapshotEvent.OnClientEvent:Connect(setSnapshot))
 	table.insert(connections, dialogueEvent.OnClientEvent:Connect(openDialogue))
@@ -926,10 +969,19 @@ function QuestController.start(): ()
 
 
 	task.delay(0.8, rebuildMarkers)
+	firstSnapshotReceived = false
 	snapshotRequest:FireServer()
+	for _, delaySeconds in { 0.35, 0.9, 1.8, 3.0 } do
+		task.delay(delaySeconds, function()
+			if gui ~= nil and not firstSnapshotReceived then
+				snapshotRequest:FireServer()
+			end
+		end)
+	end
 end
 
 function QuestController.stop(): ()
+	firstSnapshotReceived = false
 	for _, connection in connections do connection:Disconnect() end
 	table.clear(connections)
 
@@ -948,6 +1000,7 @@ function QuestController.stop(): ()
 	journal = nil
 	journalList = nil
 	mapFrame = nil
+	modalBlocker = nil
 	mapCanvas = nil
 	playerDot = nil
 end

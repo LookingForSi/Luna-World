@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PROJECT_FILE = ROOT / "default.project.json"
 BOOTSTRAP_FILE = ROOT / "src/server/main.server.luau"
 EXPECTED_SERVICES = {
+    "CharacterService",
     "CombatService",
 	"EconomyNetworkService",
 	"EconomyService",

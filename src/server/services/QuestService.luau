@@ -202,6 +202,16 @@ function QuestService.start(): ()
 	table.insert(connections,MobService.MobDied:Connect(function(killer,mobId) if killer then mutateCredit(killer,"KillMob",mobId) end end))
 	table.insert(connections,PlayerDataService.ProfileReady:Connect(function(player) QuestService.push(player) end))
 	table.insert(connections,Players.PlayerRemoving:Connect(function(player) lastRequest[player]=nil end))
+
+	-- Character Lobby can make a player CharacterReady while the rest of the
+	-- server bootstrap is still starting. If ProfileReady fired before this
+	-- service subscribed, proactively catch that player up now.
+	for _, player in Players:GetPlayers() do
+		if PlayerDataService.isReady(player) then
+			task.defer(QuestService.push, player)
+		end
+	end
+
 	task.spawn(function() while started and generation==own do task.wait(0.5); for _,player in Players:GetPlayers() do
 		local profile=PlayerDataService.getProfileCopy(player); local character=player.Character; local root=if character then character:FindFirstChild("HumanoidRootPart") else nil; local humanoid=if character then character:FindFirstChildOfClass("Humanoid") else nil
 		if profile and root and root:IsA("BasePart") and humanoid and humanoid.Health>0 then for questId,record in profile.Quests do if record.State=="Active" then for _,objective in QuestDefinitions[questId].objectives do if objective.kind=="ReachLocation" and (record.Progress[objective.id] or 0)<objective.required then local position=poi(objective.poiId); if position and (root.Position-position).Magnitude<=objective.radius then mutateCredit(player,"ReachLocation",objective.poiId) end end end end end end

@@ -94,9 +94,10 @@ end
 local function updateAuto(): ()
 	if autoButton == nil then return end
 	local enabled = player:GetAttribute(CombatConfig.AutoAttackEnabledAttribute) == true
-	autoButton.Text = if enabled
-		then string.format("AUTO [%s]\nВКЛ", autoBindingHint())
-		else string.format("AUTO [%s]\nВЫКЛ", autoBindingHint())
+	local hint = if UserInputService:GetLastInputType() == Enum.UserInputType.Touch
+		then "AUTO"
+		else string.format("AUTO [%s]", autoBindingHint())
+	autoButton.Text = hint .. if enabled then "\nВКЛ" else "\nВЫКЛ"
 	autoButton.BackgroundColor3 = if enabled then Color3.fromRGB(91, 105, 58) else Color3.fromRGB(42, 45, 56)
 end
 
@@ -115,12 +116,14 @@ local function updateCooldowns(): ()
 		if typeof(itemId) == "string" then
 			local definition = ItemDefinitions[itemId]
 			local displayName = if definition ~= nil then definition.displayName else itemId
-			quickSlotButton.Text = string.format("[0]\n%s ×%d", displayName, quantity)
+			quickSlotButton.Text = if UserInputService:GetLastInputType() == Enum.UserInputType.Touch
+				then string.format("%s ×%d", displayName, quantity)
+				else string.format("[0]\n%s ×%d", displayName, quantity)
 			quickSlotButton.Active = quantity > 0
 			quickSlotButton.TextTransparency = if quantity > 0 then 0 else 0.45
 			quickSlotButton.BackgroundColor3 = if quantity > 0 then Color3.fromRGB(42, 45, 56) else Color3.fromRGB(33, 35, 43)
 		else
-			quickSlotButton.Text = "[0]"
+			quickSlotButton.Text = if UserInputService:GetLastInputType() == Enum.UserInputType.Touch then "БЫСТРО" else "[0]"
 			quickSlotButton.Active = false
 			quickSlotButton.TextTransparency = 0.45
 			quickSlotButton.BackgroundColor3 = Color3.fromRGB(33, 35, 43)
@@ -195,7 +198,7 @@ local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (str
 
 		if index == 10 then
 			quickSlotButton = button
-			button.Text = "[0]"
+			button.Text = if UserInputService.TouchEnabled then "БЫСТРО" else "[0]"
 			table.insert(buttonConnections, button.Activated:Connect(function()
 				if quickUseCallback ~= nil then quickUseCallback() end
 			end))

@@ -31,4 +31,26 @@ export type Profile = {
 	Quests: { [string]: QuestRecord },
 }
 
+export type BodyType = "male" | "female"
+
+export type CharacterProfile = Profile & {
+	CharacterId: string,
+	Nickname: string?,
+	BodyType: BodyType?,
+	AppearancePresetId: string?,
+	CreatedAt: number,
+	LastPlayedAt: number,
+	LastZoneId: string?,
+	NeedsIdentity: boolean,
+}
+
+export type AccountProfile = {
+	DataVersion: number,
+	CharacterSlotLimit: number,
+	CharacterOrder: { string },
+	Characters: { [string]: CharacterProfile },
+	SelectedCharacterId: string?,
+	Settings: { UiScale: number, TextScale: number, SoundVolume: number },
+}
+
 return table.freeze({})

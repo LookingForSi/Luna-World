@@ -78,7 +78,7 @@ function RespawnPrompt.start(): ()
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	local panel = Instance.new("Frame")
-	panel.Name = "DeathDialog"
+	panel.Name = "RespawnDialog"
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
 	panel.Position = UDim2.fromScale(0.5, 0.52)
 	panel.Size = UDim2.fromOffset(430, 170)

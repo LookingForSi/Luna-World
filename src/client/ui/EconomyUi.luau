@@ -13,6 +13,7 @@ local EconomyUi = {}
 
 local gui: ScreenGui? = nil
 local panel: Frame? = nil
+local modalBlocker: TextButton? = nil
 local list: ScrollingFrame? = nil
 local title: TextLabel? = nil
 local balance: TextLabel? = nil
@@ -173,7 +174,7 @@ local function addTopic(text: string, nextMode: string): ()
 end
 
 local function dialogueModeForCurrent(): string
-	return if mode == "Craft" then "DialogueBlacksmith" else "DialogueMerchant"
+	return if string.sub(mode, 1, 5) == "Craft" then "DialogueBlacksmith" else "DialogueMerchant"
 end
 
 local function addBackToDialogue(): ()
@@ -194,7 +195,10 @@ local function rebuildDialogue(): boolean
 		return true
 	elseif mode == "DialogueBlacksmith" then
 		title.Text = "ДИАЛОГ — КУЗНЕЦ"
-		addTopic("Ковать", "Craft")
+		addTopic("Ковать — Рыцарь", "CraftKnight")
+		addTopic("Ковать — Следопыт", "CraftRanger")
+		addTopic("Ковать — Мистик", "CraftMystic")
+		addTopic("Обработать материалы", "CraftMaterial")
 		return true
 	end
 	return false
@@ -251,11 +255,24 @@ local function rebuildSell(): ()
 		add.AutoButtonColor = price ~= nil
 		add.BackgroundTransparency = if price ~= nil then 0 else 0.55
 		if price ~= nil then
-			table.insert(rowConnections, add.Activated:Connect(function()
+			local function normalizedQuantity(): number
 				local requested = tonumber(quantity.Text) or 1
-				local normalized = math.clamp(math.floor(requested), 1, entry.quantity)
+				return math.clamp(math.floor(requested), 1, entry.quantity)
+			end
+			local function putInCart(): ()
+				local normalized = normalizedQuantity()
+				quantity.Text = tostring(normalized)
 				sellCart[entry.instanceId] = normalized
 				rebuild()
+			end
+			table.insert(rowConnections, add.Activated:Connect(putInCart))
+			table.insert(rowConnections, quantity.FocusLost:Connect(function(enterPressed: boolean)
+				local normalized = normalizedQuantity()
+				quantity.Text = tostring(normalized)
+				if sellCart[entry.instanceId] ~= nil or enterPressed then
+					sellCart[entry.instanceId] = normalized
+					rebuild()
+				end
 			end))
 		end
 	end
@@ -293,9 +310,11 @@ local function rebuildSell(): ()
 		UDim2.new(0.51, -8, 0, 34),
 		13
 	)
+	totalLabel.Name = "SellTotal"
 	totalLabel.Font = Enum.Font.GothamBold
 
 	local confirm = button(workspace, if total > 0 then string.format("ПРОДАТЬ ВЫБРАННОЕ · +%d Luna", total) else "ПРОДАТЬ ВЫБРАННОЕ")
+	confirm.Name = "SellConfirm"
 	confirm.Position = UDim2.new(0.51, 0, 1, -42)
 	confirm.Size = UDim2.new(0.49, 0, 0, 36)
 	confirm.TextSize = 11
@@ -330,16 +349,21 @@ rebuild = function(): ()
 
 	addBackToDialogue()
 
-	if mode == "Craft" then
-		if title ~= nil then title.Text = "КУЗНЕЦ — КОВАТЬ" end
+	if string.sub(mode, 1, 5) == "Craft" then
+		local discipline = string.sub(mode, 6)
+		local disciplineNames = { Knight = "РЫЦАРЬ", Ranger = "СЛЕДОПЫТ", Mystic = "МИСТИК" }
+		if title ~= nil then title.Text = if discipline == "Material" then "КУЗНЕЦ — ОБРАБОТКА" else "КУЗНЕЦ — " .. disciplineNames[discipline] end
 		for _, entry in snapshot.crafts do
 			local recipe = CraftingDefinitions[entry.craftId]
+			if recipe.discipline ~= discipline and not (recipe.outputItemId == "accessory_silver_moon_charm" and discipline ~= "Material") then continue end
 			local output = ItemDefinitions[recipe.outputItemId]
 			local parts = {}
-			local available = snapshot.luna >= recipe.fee
+			local levelReady = snapshot.level >= recipe.requiredLevel
+			local lunaReady = snapshot.luna >= recipe.fee
+			local materialsReady = true
 			for _, material in recipe.ingredients do
 				local have = owned(material.itemId)
-				if have < material.quantity then available = false end
+				if have < material.quantity then materialsReady = false end
 				table.insert(parts, string.format(
 					"%s %d/%d",
 					ItemDefinitions[material.itemId].displayName,
@@ -347,19 +371,28 @@ rebuild = function(): ()
 					material.quantity
 				))
 			end
+			local available = levelReady and lunaReady and materialsReady
+			local state = if not levelReady then "Нужен уровень" else if not lunaReady then "Не хватает Luna" else if not materialsReady then "Не хватает материалов" else "Доступно"
+			local outputSuffix = if recipe.outputQuantity > 1 then string.format(" ×%d", recipe.outputQuantity) else ""
+			local details = if discipline == "Material"
+				then string.format("%s → %s%s · %d Luna", table.concat(parts, ", "), output.displayName, outputSuffix, recipe.fee)
+				else string.format("%s\n%s · %d Luna", statSummary(output), table.concat(parts, ", "), recipe.fee)
 			local row = button(list, string.format(
-				"%s [%s] · %s · %d Luna\n%s",
+				"%s%s [%s] · LV%d\n%s · %s",
 				output.displayName,
+				outputSuffix,
 				output.grade,
-				statSummary(output),
-				recipe.fee,
-				table.concat(parts, ", ")
+				recipe.requiredLevel,
+				details,
+				state
 			))
+			row.Size = UDim2.new(1, -12, 0, 68)
+			row.Active = available
 			row.AutoButtonColor = available
 			row.BackgroundTransparency = if available then 0 else 0.45
-			table.insert(rowConnections, row.Activated:Connect(function()
-				callbacks.craft(entry.craftId)
-			end))
+			if available then
+				table.insert(rowConnections, row.Activated:Connect(function() callbacks.craft(entry.craftId) end))
+			end
 		end
 	elseif mode == "Buy" then
 		if title ~= nil then title.Text = "ТОРГОВЕЦ — КУПИТЬ" end
@@ -384,6 +417,7 @@ end
 function EconomyUi.open(nextMode: string): ()
 	setMode(nextMode)
 	if panel ~= nil then panel.Visible = true end
+	if modalBlocker ~= nil then modalBlocker.Visible = true end
 	rebuild()
 end
 
@@ -409,6 +443,7 @@ function EconomyUi.showResult(value: any): ()
 			TooFar = "Подойдите ближе к NPC.",
 			InsufficientLuna = "Недостаточно Luna.",
 			InsufficientMaterials = "Не хватает материалов.",
+			LevelTooLow = "Недостаточный уровень.",
 			InventoryFull = "Инвентарь заполнен.",
 			EquippedItem = "Сначала снимите предмет.",
 			NotForSale = "Этот предмет не продаётся.",
@@ -428,14 +463,31 @@ function EconomyUi.start(actionCallbacks: any): ()
 	screen.ResetOnSpawn = false
 	screen.IgnoreGuiInset = true
 	screen.DisplayOrder = 9
+	screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screen.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+	local blocker = Instance.new("TextButton")
+	blocker.Name = "ModalBlocker"
+	blocker.Size = UDim2.fromScale(1, 1)
+	blocker.BackgroundColor3 = Color3.new(0, 0, 0)
+	-- Input shield only. Do not visually darken the world or the modal contents.
+	blocker.BackgroundTransparency = 1
+	blocker.Text = ""
+	blocker.Active = true
+	blocker.Modal = true
+	blocker.Visible = false
+	blocker.ZIndex = 1
+	blocker.Parent = screen
+	modalBlocker = blocker
 
 	local root = Instance.new("Frame")
 	root.AnchorPoint = Vector2.new(0.5, 0.5)
 	root.Position = UDim2.fromScale(0.5, 0.5)
 	root.Size = UDim2.fromOffset(680, 500)
 	HudLayout.applyPanelStyle(root)
+	root.BackgroundTransparency = 0.03
 	root.Visible = false
+	root.Name = "EconomyPanel"
+	root.ZIndex = 2
 	root.Parent = screen
 
 	title = label(root, "ДИАЛОГ", UDim2.fromOffset(16, 10), UDim2.fromOffset(350, 28), 17)
@@ -444,6 +496,7 @@ function EconomyUi.start(actionCallbacks: any): ()
 	local close = HudLayout.makeCloseButton(root, 12)
 	table.insert(connections, close.Activated:Connect(function()
 		root.Visible = false
+		if modalBlocker ~= nil then modalBlocker.Visible = false end
 	end))
 
 	local scrolling = Instance.new("ScrollingFrame")
@@ -464,7 +517,7 @@ function EconomyUi.start(actionCallbacks: any): ()
 	status = label(root, "", UDim2.new(0, 16, 1, -38), UDim2.new(1, -32, 0, 24), 12)
 	toast = label(
 		screen,
-		"У тебя уже есть материалы — кузнец в Luna Village может изготовить No-Grade экипировку. Торговец покупает loot и продаёт материалы и расходники.",
+		"У тебя уже есть материалы — кузнец в Luna Village может обработать сырьё и изготовить No-Grade экипировку. Торговец покупает добычу и продаёт расходники.",
 		UDim2.new(0.5, -300, 0, 80),
 		UDim2.fromOffset(600, 70),
 		14
@@ -487,6 +540,7 @@ function EconomyUi.stop(): ()
 	clearList()
 	if gui ~= nil then gui:Destroy(); gui = nil end
 	panel = nil
+	modalBlocker = nil
 	list = nil
 	title = nil
 	balance = nil

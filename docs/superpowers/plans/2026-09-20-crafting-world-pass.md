@@ -119,9 +119,9 @@ export type CraftDefinition = {
 
 | Stable ID | Имя | Рецепт | Output | LV | Fee |
 |---|---|---:|---:|---:|---:|
-| existing `material_cured_leather` | Выделанная кожа | Волчья шкура ×3 | ×2 | 2 | 4 |
-| `material_sturdy_thread` | Прочная нить | Паучий шёлк ×3 | ×2 | 4 | 4 |
-| `material_iron_billet` | Железная заготовка | Железный лом ×4 + Гоблинский жетон ×1 | ×1 | 4 | 8 |
+| existing `material_cured_leather` | Выделанная кожа | Волчья шкура ×3 | ×3 | 2 | 4 |
+| `material_sturdy_thread` | Прочная нить | Паучий шёлк ×3 | ×3 | 4 | 4 |
+| `material_iron_billet` | Железная заготовка | Железный лом ×2 + Гоблинский жетон ×1 | ×2 | 4 | 8 |
 | `material_arcane_thread` | Зачарованная нить | Прочная нить ×2 + Магическая пыль ×2 | ×1 | 6 | 10 |
 
 Это создаёт цепочки длиной 1–2 переработки:
@@ -134,6 +134,13 @@ export type CraftDefinition = {
 Processed materials не должны быть обязательным прямым drop обычных мобов. Если оставить bonus-drop у elite/late mob, он должен быть редким и восприниматься как экономия одного шага.
 
 ---
+
+
+### 3.3. Контрольный маршрут до LV6
+
+Balance acceptance должен моделировать реальный квестовый путь, а не поздний фарм: 4 Young Wolves, 4 Grey Wolves + Pack Leader, 4 Goblin Scouts + 1 Warrior, 4 Spiders + 1 Brood Spider и 1 Goblin Shaman как естественный добор последних XP до LV6. Вместе с наградами Q2–Q5 этого достаточно для достижения LV6. Именно на этом маршруте ожидаемых ресурсов должно хватать на оружие и минимум одну часть брони каждого класса.
+
+Goblin Shaman является единственным ранним тематическим источником Magic Dust, поэтому его signature-drop не должен требовать многократного фарма одного spawn только ради первого Mystic-рецепта.
 
 ## 4. Классовая экипировка
 
@@ -151,7 +158,7 @@ Processed materials не должны быть обязательным прям
 
 | Предмет | LV | Материалы | Fee |
 |---|---:|---|---:|
-| Железный клинок | 4 | Iron Billet ×2 + Sharp Fang ×1 | 30 |
+| Железный клинок | 4 | Iron Billet ×1 + Sharp Fang ×1 | 30 |
 | Шлем стража | 4 | Iron Billet ×1 + Cured Leather ×1 | 18 |
 | Доспех стража | 5 | Iron Billet ×2 + Cured Leather ×3 | 35 |
 | Перчатки стража | 4 | Iron Billet ×1 + Cured Leather ×1 + Sturdy Thread ×1 | 16 |
@@ -205,8 +212,8 @@ Processed materials не должны быть обязательным прям
 
 | Предмет | LV | Материалы | Fee |
 |---|---:|---|---:|
-| Рунный посох | 6 | Iron Billet ×1 + Magic Dust ×2 + Sturdy Thread ×2 | 30 |
-| Капюшон адепта | 5 | Cured Leather ×1 + Sturdy Thread ×2 + Magic Dust ×1 | 18 |
+| Рунный посох | 6 | Iron Billet ×1 + Magic Dust ×1 + Sturdy Thread ×2 | 30 |
+| Капюшон адепта | 5 | Cured Leather ×1 + Sturdy Thread ×1 | 18 |
 | Роба адепта | 6 | Cured Leather ×2 + Sturdy Thread ×3 + Magic Dust ×2 | 32 |
 | Перчатки адепта | 6 | Cured Leather ×1 + Arcane Thread ×1 + Magic Dust ×1 | 18 |
 | Сапоги адепта | 5 | Cured Leather ×1 + Sturdy Thread ×2 + Magic Dust ×1 | 16 |

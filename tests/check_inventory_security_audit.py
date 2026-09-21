@@ -52,7 +52,7 @@ for forbidden in (
     if forbidden in NETWORK:
         raise AssertionError(f"forbidden client-authoritative mutation exposed: {forbidden}")
 
-if "ProfileSchema.validateCurrent(session.profile)" not in DATA:
+if "AccountSchema.validateCurrent(s.account)" not in DATA:
     raise AssertionError("every profile mutation must be validated before commit")
 
 print("Inventory and profile malicious-request audit: PASS")

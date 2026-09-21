@@ -335,43 +335,94 @@ local function prepareSpiderHollowTerrain(positions: { [string]: Vector3 })
 	local terrain = Workspace.Terrain
 	local floorTopY = center.Y + 6
 
-	-- Spider Hollow is a low, damp basin. Keep the combat floor broad enough for
-	-- the ten spiders, then build a real raised rim around it instead of leaving
-	-- the encounter on the same flat plane as Moonfall Road.
+	-- Keep the accepted combat-floor elevation, but reshape the Hollow from a
+	-- rectangular basin into a long rounded pocket following the east-west road.
+	-- The central block gives the encounter a stable fighting surface; the two
+	-- cylinders round the ends so the mud footprint reads as an oval/capsule from above.
+	local floorDepth = 20
+	local floorHalfLength = 170
+	local floorRadius = 135
 	terrain:FillBlock(
-		CFrame.new(center.X, floorTopY - 10, center.Z),
-		Vector3.new(600, 20, 500),
+		CFrame.new(center.X, floorTopY - floorDepth / 2, center.Z),
+		Vector3.new(floorHalfLength * 2, floorDepth, floorRadius * 2),
 		Enum.Material.Mud
 	)
+	for _, xOffset in ipairs({ -floorHalfLength, floorHalfLength }) do
+		terrain:FillCylinder(
+			CFrame.new(center.X + xOffset, floorTopY - floorDepth / 2, center.Z),
+			floorDepth,
+			floorRadius,
+			Enum.Material.Mud
+		)
+	end
 
-	local function ridge(name: string, offset: Vector3, size: Vector3, topOffset: number)
-		local topY = floorTopY + topOffset
-		terrain:FillBlock(
-			CFrame.new(center.X + offset.X, topY - size.Y / 2, center.Z + offset.Z),
-			size,
+	-- Shape each long side as one continuous curved hill rather than a row of
+	-- visually separate mounds. Dense overlapping caps follow a gentle arc; the
+	-- spacing is deliberately much smaller than the radius so the silhouette
+	-- reads as one ridge from inside the Hollow and from the road.
+	local function fillCurvedRidge(points: { Vector3 }, radius: number, rise: number): ()
+		for index = 1, #points - 1 do
+			local a = points[index]
+			local b = points[index + 1]
+			local horizontal = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
+			local steps = math.max(1, math.ceil(horizontal.Magnitude / 42))
+			for step = 0, steps - 1 do
+				local alpha = step / steps
+				local point = a:Lerp(b, alpha)
+				terrain:FillBall(
+					Vector3.new(point.X, floorTopY + rise - radius, point.Z),
+					radius,
+					Enum.Material.Ground
+				)
+			end
+		end
+		local last = points[#points]
+		terrain:FillBall(
+			Vector3.new(last.X, floorTopY + rise - radius, last.Z),
+			radius,
 			Enum.Material.Ground
 		)
 	end
 
-	-- Three closed sides plus two eastern shoulders leave one readable entrance
-	-- from Moonfall Road while still reading as a bowl from inside.
-	ridge("SpiderBasinRimWest", Vector3.new(-330, 0, 0), Vector3.new(180, 44, 650), 34)
-	ridge("SpiderBasinRimSouth", Vector3.new(0, 0, -285), Vector3.new(760, 38, 150), 30)
-	ridge("SpiderBasinRimNorth", Vector3.new(0, 0, 285), Vector3.new(760, 50, 170), 40)
-	ridge("SpiderBasinRimEastSouth", Vector3.new(315, 0, -190), Vector3.new(155, 34, 230), 27)
-	ridge("SpiderBasinRimEastNorth", Vector3.new(315, 0, 190), Vector3.new(155, 38, 230), 31)
+	local northRidge = {
+		center + Vector3.new(-250, 0, 175),
+		center + Vector3.new(-165, 0, 205),
+		center + Vector3.new(-55, 0, 218),
+		center + Vector3.new(60, 0, 212),
+		center + Vector3.new(155, 0, 182),
+	}
+	local southRidge = {
+		center + Vector3.new(-250, 0, -170),
+		center + Vector3.new(-165, 0, -202),
+		center + Vector3.new(-55, 0, -216),
+		center + Vector3.new(60, 0, -207),
+		center + Vector3.new(155, 0, -176),
+	}
+	fillCurvedRidge(northRidge, 205, 27)
+	fillCurvedRidge(southRidge, 200, 25)
 
-	-- The north rim continues into the Fallen Shrine mountain mass so the hollow
-	-- feels geologically embedded rather than like a fenced patch in a field.
+	-- One broad western connector closes the back of the oval while keeping the
+	-- eastern road entrance low and readable.
+	fillCurvedRidge({
+		center + Vector3.new(-235, 0, -155),
+		center + Vector3.new(-292, 0, -78),
+		center + Vector3.new(-310, 0, 0),
+		center + Vector3.new(-292, 0, 82),
+		center + Vector3.new(-235, 0, 160),
+	}, 210, 29)
+
+	-- Blend the northern shoulder into the Fallen Shrine mass with overlapping
+	-- smooth terrain instead of a hard ridge. This preserves the geological link
+	-- between the two zones without making the Hollow feel like a square crater.
 	local northDistance = shrine.Z - center.Z
-	for index, alpha in ipairs({ 0.42, 0.62, 0.80 }) do
+	for index, alpha in ipairs({ 0.46, 0.64, 0.81 }) do
 		local z = center.Z + northDistance * alpha
-		local rise = 42 + index * 13
-		local radius = 150 + index * 18
+		local radius = 175 + index * 18
+		local rise = 28 + index * 9
 		terrain:FillBall(
-			Vector3.new(center.X - 35 + index * 18, floorTopY + rise - radius, z),
+			Vector3.new(center.X - 55 + index * 22, floorTopY + rise - radius, z),
 			radius,
-			if index >= 2 then Enum.Material.Rock else Enum.Material.Ground
+			if index >= 3 then Enum.Material.Rock else Enum.Material.Ground
 		)
 	end
 end
@@ -505,37 +556,44 @@ end
 local function shapeGoblinCemeteryLakeHillCliff(center: Vector3, waterSurfaceY: number)
 	local terrain = Workspace.Terrain
 	local cliffSegments = {
-		{ xOffset = 300, zOffset = -35, zSize = 150 },
-		{ xOffset = 320, zOffset = 105, zSize = 170 },
-		{ xOffset = 285, zOffset = 235, zSize = 135 },
+		{ xOffset = 292, zOffset = -55, zSize = 190 },
+		{ xOffset = 310, zOffset = 105, zSize = 210 },
+		{ xOffset = 280, zOffset = 270, zSize = 175 },
 	}
 
 	for _, spec in ipairs(cliffSegments) do
 		local hillSample = Grounding.surfaceAt(
-			center + Vector3.new(spec.xOffset + 70, 0, spec.zOffset)
+			center + Vector3.new(spec.xOffset + 95, 0, spec.zOffset)
 		)
-		local cliffBottomY = waterSurfaceY - 5
-		local cliffTopY = math.max(hillSample.Y + 6, waterSurfaceY + 28)
-		local cliffHeight = cliffTopY - cliffBottomY
+		local cliffTopY = math.max(hillSample.Y + 5, waterSurfaceY + 30)
+		local clearBottomY = waterSurfaceY + 1
+		local clearHeight = cliffTopY - clearBottomY + 14
 
-		-- Cut away the grassy shelf on the lake side so the hill meets the water
-		-- as a readable vertical bank rather than appearing to hover above it.
+		-- Remove the old grassy shelf above the water with a broad cut. The cut
+		-- starts just above the waterline so it cannot carve a dry notch through
+		-- the lake itself, but it reaches far enough inland to eliminate the
+		-- suspended terrain lip seen from the opposite shore.
 		terrain:FillBlock(
 			CFrame.new(
-				center.X + spec.xOffset - 24,
-				cliffBottomY + cliffHeight / 2,
+				center.X + spec.xOffset - 38,
+				clearBottomY + clearHeight / 2,
 				center.Z + spec.zOffset
 			),
-			Vector3.new(64, cliffHeight, spec.zSize),
+			Vector3.new(118, clearHeight, spec.zSize),
 			Enum.Material.Air
 		)
+
+		-- Rebuild a narrow rock face farther back from the water. This leaves a
+		-- clean shoreline instead of grass projecting over empty space.
+		local rockBottomY = waterSurfaceY - 10
+		local rockHeight = cliffTopY - rockBottomY
 		terrain:FillBlock(
 			CFrame.new(
-				center.X + spec.xOffset + 10,
-				cliffBottomY + cliffHeight / 2,
+				center.X + spec.xOffset + 26,
+				rockBottomY + rockHeight / 2,
 				center.Z + spec.zOffset
 			),
-			Vector3.new(20, cliffHeight, spec.zSize),
+			Vector3.new(28, rockHeight, spec.zSize),
 			Enum.Material.Rock
 		)
 	end
@@ -543,7 +601,7 @@ end
 
 local function createGoblinCemeteryLake(parent: Instance, positions: { [string]: Vector3 })
 	local lake = P.model(parent, "GoblinCemeteryLake")
-	lake:SetAttribute("Purpose", "TraversalBarrier")
+	lake:SetAttribute("Purpose", "SwimmableWater")
 	local terrain = Workspace.Terrain
 
 	local goblin = positions.poi_goblin_camp
@@ -551,8 +609,10 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 	local center = goblin:Lerp(cemetery, 0.52) + Vector3.new(85, 0, 0)
 	local ground = Grounding.surfaceAt(center)
 	local LAKE_SURFACE_DROP = 8
-	local LAKE_WATER_DEPTH = 12
-	local LAKE_AIR_CLEARANCE_HEIGHT = 28
+	local LAKE_WATER_DEPTH = 30
+	local LAKE_BASIN_CLEAR_DEPTH = 40
+	local LAKE_AIR_CLEARANCE_HEIGHT = 46
+	local LAKE_CLEAR_MARGIN = 34
 	local waterSurfaceY = ground.Y - LAKE_SURFACE_DROP
 
 	local lobes = {
@@ -561,16 +621,23 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 		{ offset = Vector3.new(10, 0, 145), size = Vector3.new(330, 32, 240), yaw = -3 },
 	}
 
-	for index, spec in ipairs(lobes) do
+	for _, spec in ipairs(lobes) do
 		local position = center + spec.offset
 		local rotation = CFrame.Angles(0, math.rad(spec.yaw), 0)
+
+		-- Excavate one continuous deep basin before filling it. The previous pass
+		-- only cleared air above the water and then painted 12 studs of water over
+		-- the old terrain, which left grass immediately under the transparent
+		-- surface in shallow sections.
+		local totalClearHeight = LAKE_BASIN_CLEAR_DEPTH + LAKE_AIR_CLEARANCE_HEIGHT
+		local clearCenterY = waterSurfaceY + (LAKE_AIR_CLEARANCE_HEIGHT - LAKE_BASIN_CLEAR_DEPTH) / 2
 		terrain:FillBlock(
-			CFrame.new(
-				position.X,
-				waterSurfaceY + LAKE_AIR_CLEARANCE_HEIGHT / 2 - 2,
-				position.Z
-			) * rotation,
-			Vector3.new(spec.size.X, LAKE_AIR_CLEARANCE_HEIGHT, spec.size.Z),
+			CFrame.new(position.X, clearCenterY, position.Z) * rotation,
+			Vector3.new(
+				spec.size.X + LAKE_CLEAR_MARGIN * 2,
+				totalClearHeight,
+				spec.size.Z + LAKE_CLEAR_MARGIN * 2
+			),
 			Enum.Material.Air
 		)
 		terrain:FillBlock(
@@ -579,27 +646,13 @@ local function createGoblinCemeteryLake(parent: Instance, positions: { [string]:
 			Enum.Material.Water
 		)
 
-		P.part(
-			lake,
-			string.format("WaterRecovery%02d", index),
-			Vector3.new(spec.size.X - 10, 20, spec.size.Z - 10),
-			CFrame.new(position.X, waterSurfaceY - 4, position.Z) * rotation,
-			Enum.Material.SmoothPlastic,
-			Color3.new(1, 1, 1),
-			{
-				canCollide = false,
-				transparency = 1,
-				attributes = {
-					WaterRecovery = true,
-					WaterSurfaceY = waterSurfaceY,
-					HazardKind = "Lake",
-				},
-			}
-		)
+		-- Lake Terrain water is intentionally swimmable; no hidden teleport hazard volume.
 	end
 
 	shapeGoblinCemeteryLakeHillCliff(center, waterSurfaceY)
 	lake:SetAttribute("WaterSurfaceDrop", LAKE_SURFACE_DROP)
+	lake:SetAttribute("WaterDepth", LAKE_WATER_DEPTH)
+	lake:SetAttribute("DeepBasinExcavated", true)
 	lake:SetAttribute("HillBankCliff", true)
 end
 
@@ -751,7 +804,8 @@ function NorthernZonesBlockout.build(parent: Instance)
 	createMoonfallLandmarks(north, positions)
 	createGoblinCamp(north, positions)
 	createSpiderHollow(north, positions)
-	createGoblinCemeteryLake(north, positions)
+	-- dev0.3 playtest: lake generation is intentionally disabled. The authored/base
+	-- terrain is left untouched here while the lake is redesigned separately.
 	createDarkWoodland(north, positions)
 	createCemetery(north, positions)
 	createShrine(north, positions)
