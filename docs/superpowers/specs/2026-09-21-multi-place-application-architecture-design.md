@@ -2,8 +2,8 @@
 
 Статус: **approved design baseline — 2026-09-21**.
 
-Основание: владелец проекта утвердил модель  
-**Lobby Place → Moonfall World Place → отдельные Dungeon/Region Places**,  
+Основание: владелец проекта утвердил модель
+**Lobby Place → Moonfall World Place → отдельные Dungeon/Region Places**,
 при этом для разработки сохраняется **dev-combined Place**, где Lobby и World можно запускать в одном Studio-сеансе без реального teleport.
 
 ---
