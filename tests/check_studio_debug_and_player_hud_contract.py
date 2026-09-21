@@ -26,8 +26,8 @@ ITEMS = "src/shared/definitions/ItemDefinitions.luau"
 CLIENT_DEBUG = "src/client/ui/StudioTestPanel.luau"
 HUD = "src/client/ui/CombatHud.luau"
 MOBS = "src/shared/definitions/MobDefinitions.luau"
-SERVER_MAIN = "src/server/main.server.luau"
-CLIENT_MAIN = "src/client/main.client.luau"
+SERVER_MAIN = "src/server/bootstrap/adapters/ExistingServerComponents.luau"
+CLIENT_MAIN = "src/client/bootstrap/adapters/ExistingClientComponents.luau"
 DEFAULT_PROJECT = "default.project.json"
 
 # The debug switch must be absent from the static production Rojo tree and created only by a Studio-gated server service.
