@@ -4,19 +4,21 @@ local Workspace = game:GetService("Workspace")
 
 local GoblinCemeteryLakeTerrain = {}
 
-local WATER_SURFACE_Y = 74
-local WATER_DEPTH = 14
-local BED_THICKNESS = 6
-local BED_WATER_OVERLAP = 2
-local WATER_SHORE_OVERLAP = 6
-local SCANLINE_STEP = 12
-local SCANLINE_OVERLAP = 2
-local AIR_CLEARANCE_HEIGHT = 52
-local LEGACY_RESET_BOTTOM_Y = 26
-local RESTORED_BANK_TOP_Y = 82
+-- Roblox Terrain is a 4x4x4-stud voxel grid. The lake is authored directly on
+-- that grid and committed with one WriteVoxels call so there are no independently
+-- voxelized Water blocks/scanlines that can render as internal slabs.
+local VOXEL_RESOLUTION = 4
+local WATER_SURFACE_Y = 76
+local WATER_DEPTH = 12
+local WATER_BOTTOM_Y = WATER_SURFACE_Y - WATER_DEPTH
+local BED_THICKNESS = 4
+local CLEAR_TOP_Y = 132
 
--- World-space outline. It deliberately stays outside the Goblin Camp preserve
--- rectangle, the cemetery encounter floor, Moonfall Road, and WorldBounds.
+local LEGACY_RESET_BOTTOM_Y = 24
+local RESTORED_BANK_TOP_Y = 84
+
+-- World-space outline requested by the owner. It stays outside the Goblin Camp
+-- preserve rectangle, Old Cemetery authored content, Moonfall Road and bounds.
 local LAKE_OUTLINE = {
 	Vector2.new(300, 2220),
 	Vector2.new(430, 2160),
@@ -35,10 +37,8 @@ local LAKE_OUTLINE = {
 	Vector2.new(300, 2300),
 }
 
--- This is a one-way terrain migration boundary, not the former lake shape. It
--- encloses every legacy lobe and deep excavation while remaining outside all
--- three hard-preserve areas. Re-filling it makes rebuilds deterministic even
--- when Studio starts with terrain-v10 already baked into the place.
+-- Migration envelope only: restore terrain damaged by earlier lake experiments
+-- before carving the final polygon. It does not define the new shoreline.
 local LEGACY_RESET_OUTLINE = {
 	Vector2.new(290, 2110),
 	Vector2.new(760, 2110),
@@ -49,92 +49,105 @@ local LEGACY_RESET_OUTLINE = {
 	Vector2.new(285, 2540),
 }
 
-local function intersectionsAt(outline: { Vector2 }, z: number): { number }
-	local intersections = {}
-	for index, first in ipairs(outline) do
-		local second = outline[index % #outline + 1]
-		local crosses = (first.Y <= z and second.Y > z) or (second.Y <= z and first.Y > z)
+local function containsPoint(outline: { Vector2 }, x: number, z: number): boolean
+	local inside = false
+	local previous = outline[#outline]
+
+	for _, current in ipairs(outline) do
+		local crosses = (current.Y > z) ~= (previous.Y > z)
 		if crosses then
-			local alpha = (z - first.Y) / (second.Y - first.Y)
-			table.insert(intersections, first.X + (second.X - first.X) * alpha)
+			local edgeX = (previous.X - current.X) * (z - current.Y) / (previous.Y - current.Y) + current.X
+			if x < edgeX then
+				inside = not inside
+			end
 		end
+		previous = current
 	end
-	table.sort(intersections)
-	return intersections
+
+	return inside
 end
 
-local function zBounds(outline: { Vector2 }): (number, number)
+local function boundsOf(outlines: { { Vector2 } }): (number, number, number, number)
+	local minX = math.huge
+	local maxX = -math.huge
 	local minZ = math.huge
 	local maxZ = -math.huge
-	for _, point in ipairs(outline) do
-		minZ = math.min(minZ, point.Y)
-		maxZ = math.max(maxZ, point.Y)
-	end
-	return minZ, maxZ
-end
 
-local function resetLegacyCorridor(terrain: Terrain)
-	local minZ, maxZ = zBounds(LEGACY_RESET_OUTLINE)
-	local height = RESTORED_BANK_TOP_Y - LEGACY_RESET_BOTTOM_Y
-	for z = minZ + SCANLINE_STEP / 2, maxZ - SCANLINE_STEP / 2, SCANLINE_STEP do
-		local intersections = intersectionsAt(LEGACY_RESET_OUTLINE, z)
-		for index = 1, #intersections - 1, 2 do
-			local minX = intersections[index]
-			local maxX = intersections[index + 1]
-			terrain:FillBlock(
-				CFrame.new((minX + maxX) / 2, LEGACY_RESET_BOTTOM_Y + height / 2, z),
-				Vector3.new(maxX - minX, height, SCANLINE_STEP + SCANLINE_OVERLAP),
-				Enum.Material.Ground
-			)
+	for _, outline in ipairs(outlines) do
+		for _, point in ipairs(outline) do
+			minX = math.min(minX, point.X)
+			maxX = math.max(maxX, point.X)
+			minZ = math.min(minZ, point.Y)
+			maxZ = math.max(maxZ, point.Y)
 		end
 	end
+
+	return minX, maxX, minZ, maxZ
 end
 
-local function fillScanline(terrain: Terrain, z: number, minX: number, maxX: number, waterSurfaceY: number)
-	local clearWidth = maxX - minX
-	local waterWidth = clearWidth + WATER_SHORE_OVERLAP * 2
-	local centerX = (minX + maxX) / 2
-	local waterBottomY = waterSurfaceY - WATER_DEPTH
-	local stripDepth = SCANLINE_STEP + SCANLINE_OVERLAP
-
-	-- Air is restricted to the authored footprint. Water extends beneath the
-	-- untouched bank on both sides, so clearing can never form a dry trench.
-	terrain:FillBlock(
-		CFrame.new(centerX, waterBottomY + (WATER_DEPTH + AIR_CLEARANCE_HEIGHT) / 2, z),
-		Vector3.new(clearWidth, WATER_DEPTH + AIR_CLEARANCE_HEIGHT, stripDepth),
-		Enum.Material.Air
-	)
-
-	-- The bed meets the water volume with a deliberate overlap. Fill it before
-	-- Water so the final material at the seam remains swimmable Water.
-	terrain:FillBlock(
-		CFrame.new(centerX, waterBottomY - (BED_THICKNESS - BED_WATER_OVERLAP) / 2, z),
-		Vector3.new(waterWidth, BED_THICKNESS + BED_WATER_OVERLAP, stripDepth),
-		Enum.Material.Mud
-	)
-	terrain:FillBlock(
-		CFrame.new(centerX, waterSurfaceY - WATER_DEPTH / 2, z),
-		Vector3.new(waterWidth, WATER_DEPTH, stripDepth),
-		Enum.Material.Water
+local function voxelCenter(region: Region3, xIndex: number, yIndex: number, zIndex: number): Vector3
+	local minCorner = region.CFrame.Position - region.Size / 2
+	return minCorner + Vector3.new(
+		(xIndex - 0.5) * VOXEL_RESOLUTION,
+		(yIndex - 0.5) * VOXEL_RESOLUTION,
+		(zIndex - 0.5) * VOXEL_RESOLUTION
 	)
 end
 
 function GoblinCemeteryLakeTerrain.build(lake: Model)
 	local terrain = Workspace.Terrain
-	resetLegacyCorridor(terrain)
-	local minZ, maxZ = zBounds(LAKE_OUTLINE)
+	local minX, maxX, minZ, maxZ = boundsOf({ LAKE_OUTLINE, LEGACY_RESET_OUTLINE })
 
-	for z = minZ + SCANLINE_STEP / 2, maxZ - SCANLINE_STEP / 2, SCANLINE_STEP do
-		local intersections = intersectionsAt(LAKE_OUTLINE, z)
-		for index = 1, #intersections - 1, 2 do
-			fillScanline(terrain, z, intersections[index], intersections[index + 1], WATER_SURFACE_Y)
+	-- Work on one grid-aligned terrain region. Read first so everything outside
+	-- the migration/lake masks remains byte-for-byte the current terrain.
+	local region = Region3.new(
+		Vector3.new(minX - VOXEL_RESOLUTION, LEGACY_RESET_BOTTOM_Y, minZ - VOXEL_RESOLUTION),
+		Vector3.new(maxX + VOXEL_RESOLUTION, CLEAR_TOP_Y, maxZ + VOXEL_RESOLUTION)
+	):ExpandToGrid(VOXEL_RESOLUTION)
+
+	local materials, occupancy = terrain:ReadVoxels(region, VOXEL_RESOLUTION)
+
+	for xIndex = 1, #materials do
+		for yIndex = 1, #materials[xIndex] do
+			for zIndex = 1, #materials[xIndex][yIndex] do
+				local center = voxelCenter(region, xIndex, yIndex, zIndex)
+				local inReset = containsPoint(LEGACY_RESET_OUTLINE, center.X, center.Z)
+				local inLake = containsPoint(LAKE_OUTLINE, center.X, center.Z)
+
+				-- First erase the accumulated terrain damage from prior lake
+				-- experiments, but only inside the explicit migration envelope.
+				if inReset and center.Y >= LEGACY_RESET_BOTTOM_Y and center.Y < RESTORED_BANK_TOP_Y then
+					materials[xIndex][yIndex][zIndex] = Enum.Material.Ground
+					occupancy[xIndex][yIndex][zIndex] = 1
+				end
+
+				if inLake then
+					if center.Y >= WATER_SURFACE_Y and center.Y < CLEAR_TOP_Y then
+						-- Clear only the exact lake footprint above the water.
+						materials[xIndex][yIndex][zIndex] = Enum.Material.Air
+						occupancy[xIndex][yIndex][zIndex] = 0
+					elseif center.Y >= WATER_BOTTOM_Y and center.Y < WATER_SURFACE_Y then
+						-- Exactly three full 4-stud Water voxels: one continuous
+						-- body, one surface level, no per-strip rasterization.
+						materials[xIndex][yIndex][zIndex] = Enum.Material.Water
+						occupancy[xIndex][yIndex][zIndex] = 1
+					elseif center.Y >= WATER_BOTTOM_Y - BED_THICKNESS and center.Y < WATER_BOTTOM_Y then
+						-- Solid bed directly touches the Water; there is no void.
+						materials[xIndex][yIndex][zIndex] = Enum.Material.Mud
+						occupancy[xIndex][yIndex][zIndex] = 1
+					end
+				end
+			end
 		end
 	end
+
+	terrain:WriteVoxels(region, VOXEL_RESOLUTION, materials, occupancy)
 
 	lake:SetAttribute("WaterSurfaceY", WATER_SURFACE_Y)
 	lake:SetAttribute("WaterDepth", WATER_DEPTH)
 	lake:SetAttribute("LakeBedMaterial", "Mud")
-	lake:SetAttribute("LakeGeometry", "AxisAlignedPolygonScanlines")
+	lake:SetAttribute("LakeGeometry", "SingleRegionPolygonVoxels")
+	lake:SetAttribute("VoxelResolution", VOXEL_RESOLUTION)
 	lake:SetAttribute("ContainedWithinWorldBounds", true)
 end
 
