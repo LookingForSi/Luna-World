@@ -27,7 +27,7 @@ ECONOMY = "src/client/ui/EconomyUi.luau"
 QUEST = "src/client/controllers/QuestController.luau"
 CONFIG = "src/shared/config/CombatConfig.luau"
 PROGRESSION_CONFIG = "src/shared/config/ProgressionConfig.luau"
-CLIENT_MAIN = "src/client/main.client.luau"
+CLIENT_MAIN = "src/client/bootstrap/adapters/ExistingClientComponents.luau"
 COMBAT = "src/server/services/CombatService.luau"
 
 require(LAYOUT, "HudLayout.CornerMargin = 24", "all corner panels must share one visible safe margin")
