@@ -12,6 +12,7 @@ REQUIRED_FILES = [
     ROOT / "src/server/world/PlayableWorldBlockout.luau",
     ROOT / "src/server/world/WorldBootstrap.luau",
     ROOT / "src/server/world/TraversalRecovery.luau",
+    ROOT / "src/server-world-preview/WorldPreviewBootstrap.server.luau",
     ROOT / "src/client/world-preview/ZonePresentation.client.luau",
 ]
 
@@ -27,7 +28,14 @@ def main() -> None:
 
     project = read(ROOT / "world.project.json")
     assert '"$path": "src/server/world"' in project
+    assert '"$path": "src/server-world-preview/WorldPreviewBootstrap.server.luau"' in project
     assert '"$path": "src/client/world-preview"' in project
+
+    preview_bootstrap = read(ROOT / "src/server-world-preview/WorldPreviewBootstrap.server.luau")
+    assert "WorldBootstrap.start()" in preview_bootstrap
+    assert "game:BindToClose(WorldBootstrap.stop)" in preview_bootstrap
+    default_project = read(ROOT / "default.project.json")
+    assert "src/server-world-preview" not in default_project
 
     primitives = read(ROOT / "src/server/world/BlockoutPrimitives.luau")
     for token in (
