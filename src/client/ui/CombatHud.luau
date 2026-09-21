@@ -348,26 +348,83 @@ function CombatHud.start(): ()
 	xpLabel.Text = "XP"
 
 	stopResponsive = ResponsiveLayout.observe(function(metrics)
-		local mobile = metrics.mode == "MobileLandscape"
+		local touchLayout = metrics.isTouch
+		local compactBarHeight = ResponsiveLayout.scaled(metrics, 18, 16, 20)
+		local headerHeight = ResponsiveLayout.scaled(metrics, 24, 22, 28)
+		local rowGap = math.max(2, math.floor(metrics.gap / 2))
+
 		for row, name in { "CombatPoints", "PlayerHealth", "PlayerResource", "LevelXP" } do
 			local label = playerPanel:FindFirstChild(name .. "Label") :: TextLabel?
 			local value = playerPanel:FindFirstChild(name .. "Value") :: TextLabel?
 			local bar = playerPanel:FindFirstChild(name .. "Bar") :: Frame?
-			if mobile then
-				local y = 28 + (row - 1) * 21
-				if bar then bar.Position = UDim2.fromOffset(8, y); bar.Size = UDim2.new(1, -16, 0, 18) end
-				if label then label.Position = UDim2.fromOffset(12, y); label.Size = UDim2.fromOffset(38, 18); label.TextSize = 10; label.ZIndex = 3 end
+			if touchLayout then
+				local y = headerHeight + (row - 1) * (compactBarHeight + rowGap)
+				if bar then
+					bar.Position = UDim2.fromOffset(8, y)
+					bar.Size = UDim2.new(1, -16, 0, compactBarHeight)
+				end
+				if label then
+					label.Position = UDim2.fromOffset(12, y)
+					label.Size = UDim2.fromOffset(38, compactBarHeight)
+					label.TextSize = math.round(ResponsiveLayout.scaled(metrics, 10, 9, 11))
+					label.ZIndex = 3
+				end
 				if value then
-					value.Position = UDim2.fromOffset(48, y); value.Size = UDim2.new(1, -60, 0, 18)
-					value.TextColor3 = Color3.fromRGB(10, 12, 16); value.TextSize = 10; value.ZIndex = 3
+					value.Position = UDim2.fromOffset(48, y)
+					value.Size = UDim2.new(1, -60, 0, compactBarHeight)
+					value.TextColor3 = Color3.fromRGB(10, 12, 16)
+					value.TextSize = math.round(ResponsiveLayout.scaled(metrics, 10, 9, 11))
+					value.ZIndex = 3
+				end
+			else
+				local y = 34 + (row - 1) * 37
+				if label then
+					label.Position = UDim2.fromOffset(8, y)
+					label.Size = UDim2.new(1, -16, 0, 15)
+					label.TextSize = 11
+					label.ZIndex = 1
+				end
+				if value then
+					value.Position = UDim2.fromOffset(8, y)
+					value.Size = UDim2.new(1, -16, 0, 15)
+					value.TextColor3 = Color3.fromRGB(235, 235, 240)
+					value.TextSize = 11
+					value.ZIndex = 3
+				end
+				if bar then
+					bar.Position = UDim2.fromOffset(8, y + 17)
+					bar.Size = UDim2.new(1, -16, 0, 12)
 				end
 			end
 		end
-		if mobile then
-			targetNameLabel.Position = UDim2.fromOffset(8, 2); targetNameLabel.Size = UDim2.new(1, -16, 0, 22); targetNameLabel.TextSize = 13
-			targetHealthTextLabel.Position = UDim2.fromOffset(8, 25); targetHealthTextLabel.Size = UDim2.new(1, -16, 0, 18); targetHealthTextLabel.TextSize = 10
-			local bar = targetHealthFill and targetHealthFill.Parent
-			if bar and bar:IsA("Frame") then bar.Position = UDim2.fromOffset(8, 42); bar.Size = UDim2.new(1, -16, 0, 8) end
+
+		local targetBar = targetHealthFill and targetHealthFill.Parent
+		if touchLayout then
+			local targetSize = ResponsiveLayout.targetSize(metrics)
+			local titleHeight = ResponsiveLayout.scaled(metrics, 20, 18, 24)
+			local hpHeight = ResponsiveLayout.scaled(metrics, 15, 13, 18)
+			local targetBarHeight = math.max(7, math.floor(targetSize.Y * 0.14))
+			targetNameLabel.Position = UDim2.fromOffset(8, 2)
+			targetNameLabel.Size = UDim2.new(1, -16, 0, titleHeight)
+			targetNameLabel.TextSize = math.round(ResponsiveLayout.scaled(metrics, 13, 12, 15))
+			targetHealthTextLabel.Position = UDim2.fromOffset(8, 2 + titleHeight)
+			targetHealthTextLabel.Size = UDim2.new(1, -16, 0, hpHeight)
+			targetHealthTextLabel.TextSize = math.round(ResponsiveLayout.scaled(metrics, 10, 9, 11))
+			if targetBar and targetBar:IsA("Frame") then
+				targetBar.Position = UDim2.fromOffset(8, targetSize.Y - targetBarHeight - 4)
+				targetBar.Size = UDim2.new(1, -16, 0, targetBarHeight)
+			end
+		else
+			targetNameLabel.Position = UDim2.fromOffset(8, 4)
+			targetNameLabel.Size = UDim2.new(1, -16, 0, 22)
+			targetNameLabel.TextSize = 16
+			targetHealthTextLabel.Position = UDim2.fromOffset(8, 28)
+			targetHealthTextLabel.Size = UDim2.new(1, -16, 0, 22)
+			targetHealthTextLabel.TextSize = 16
+			if targetBar and targetBar:IsA("Frame") then
+				targetBar.Position = UDim2.fromOffset(8, 60)
+				targetBar.Size = UDim2.new(1, -16, 0, 14)
+			end
 		end
 	end)
 
