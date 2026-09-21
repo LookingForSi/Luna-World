@@ -322,3 +322,13 @@ Persistent запись пользователя теперь является `
 Сессия имеет два явных рубежа. `AccountReady` разрешает только работу roster/lobby API. `CharacterReady` появляется после проверки принадлежности `CharacterId`, назначает активный профиль и только затем разрешает spawn и gameplay services. Совместимое событие `ProfileReady` означает именно `CharacterReady`.
 
 Character API принимает только узкие команды roster/check/create/select/delete, применяет rate limit и возвращает DTO без inventory, quest state и иных изменяемых authoritative структур. Nickname нормализуется pure-правилами, проходит Roblox TextService filtering и резервируется в отдельном индексе через атомарный `UpdateAsync`. При неудачном создании reservation откатывается; при удалении имя освобождается только после успешной записи account.
+
+## 16. Multi-place application boundary
+
+Runtime выбирает одну из явных ролей `Lobby`, `World`, `Dungeon` или `DevCombined` через fail-closed deployment configuration. Production Lobby не поднимает gameplay/world services, а World и Dungeon не запускают Character Lobby. `DevCombined` сохраняет быстрый Studio flow, но использует те же application states и domain rules; локальным является только transition adapter.
+
+Client application проходит состояния `Boot → Lobby → Transitioning → Gameplay` либо `Error`. Gameplay feature runtime и input не стартуют до открытия `ArrivalReadyGate`; повторный transition идемпотентен, а ошибка запуска вызывает симметричный rollback уже запущенных components.
+
+Межсерверный переход передаёт только routing/correlation metadata. Luna, XP, inventory, equipment, quests и иное authoritative состояние не входят в transport payload. Source server блокирует gameplay mutations на время перехода, а destination обязан проверить intent, владение персонажем, роль назначения и lifecycle profile. Persistent schema остаётся `DataVersion = 3`.
+
+Role-specific Rojo mappings хранят production boundaries отдельно от `DevCombined` и preview tooling. Production Moonfall не содержит autorun world generator: accepted terrain/static environment должен быть one-shot сохранён владельцем в Roblox Place, а исходники генератора остаются только в `tools/worldgen`. До опубликованного теста реальные Place IDs остаются пустыми, и неизвестный universe/place не получает fallback в `DevCombined`.

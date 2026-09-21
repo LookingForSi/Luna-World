@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Architecture — multi-place Gates B–F
+
+- Введён role-aware application shell для Lobby, World, Dungeon и DevCombined, а gameplay-клиент запускается только после arrival-ready boundary.
+- Добавлены server-side seam безопасного transfer intent, fail-closed deployment mappings и отдельные Rojo-проекты по ролям Place без изменения `DataVersion = 3`.
+- Runtime-генерация Moonfall исключена из production mapping и сохранена как dev/editor world-authoring tooling; физический Studio bake остаётся owner checkpoint.
+- Зафиксированы feature ownership seams для lobby, quests, economy, inventory и server-authoritative combat без изменения gameplay values и remote semantics.
+
 ### Playtest RC — consolidated build
 
 - Для dev0.3 playtest генерация Goblin/Cemetery lake временно полностью отключена: NorthernZonesBlockout больше не вызывает createGoblinCemeteryLake(), поэтому релиз не изменяет terrain этой зоны. Код прежнего озера оставлен архивно для последующей переработки; остальные world/gameplay/UI изменения dev0.3 продолжают собираться.
