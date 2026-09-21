@@ -32,6 +32,18 @@ local function setModal(panel: Frame?, metrics: ResponsiveLayout.Metrics, deskto
 			child.Enabled = metrics.layoutClass == "Desktop"
 		end
 	end
+
+	local close = panel:FindFirstChild("Close", true)
+	if close ~= nil and close:IsA("GuiObject") then
+		close.AnchorPoint = Vector2.new(1, 0)
+		if metrics.isTouch then
+			close.Position = UDim2.new(1, -metrics.gap, 0, metrics.gap)
+			close.Size = UDim2.fromOffset(metrics.touchTarget, metrics.touchTarget)
+		else
+			close.Position = UDim2.new(1, -10, 0, 10)
+			close.Size = UDim2.fromOffset(32, 30)
+		end
+	end
 end
 
 local function applyHud(playerGui: PlayerGui, metrics: ResponsiveLayout.Metrics): ()
@@ -166,7 +178,8 @@ local function applyModals(playerGui: PlayerGui, metrics: ResponsiveLayout.Metri
 		local details = inventory:FindFirstChild("Details", true)
 		local status = inventory:FindFirstChild("Status", true)
 		local portrait = metrics.layoutClass == "PortraitFallback"
-		local headerY = ResponsiveLayout.scaled(metrics, 72, 60, 84)
+		local titleBand = ResponsiveLayout.scaled(metrics, 54, 48, 64)
+		local headerY = titleBand + touchTarget + gap * 2
 		local footerY = touchTarget + gap * 2
 		if list ~= nil and list:IsA("ScrollingFrame") then
 			list.Position = UDim2.fromOffset(gap * 2, headerY)
