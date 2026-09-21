@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 CONFIG = (ROOT / "src/shared/config/CombatConfig.luau").read_text(encoding="utf-8")
 SERVICE = (ROOT / "src/server/services/PlayerRegenerationService.luau").read_text(encoding="utf-8")
-MAIN = (ROOT / "src/server/main.server.luau").read_text(encoding="utf-8")
+MAIN = (ROOT / "src/server/bootstrap/adapters/ExistingServerComponents.luau").read_text(encoding="utf-8")
 
 for token in (
     "ResourceRegenerationIntervalSeconds = 0.2",
@@ -32,8 +32,8 @@ for token in (
         raise AssertionError(f"health regeneration service contract missing: {token}")
 
 for token in (
-    "PlayerRegenerationService.start()",
-    "PlayerRegenerationService.stop()",
+    "PlayerRegenerationService.start",
+    "PlayerRegenerationService.stop",
 ):
     if token not in MAIN:
         raise AssertionError(f"server regeneration lifecycle missing: {token}")
