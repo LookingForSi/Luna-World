@@ -8,6 +8,7 @@ local EconomyRules = require(ReplicatedStorage.Shared.economy.EconomyRules)
 local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local HudLayout = require(script.Parent.HudLayout)
+local ResponsiveLayout = require(script.Parent.ResponsiveLayout)
 
 local EconomyUi = {}
 
@@ -26,6 +27,8 @@ local connections: { RBXScriptConnection } = {}
 local rowConnections: { RBXScriptConnection } = {}
 local sellCart: { [string]: number } = {}
 local onboarded = false
+local stopResponsive: (() -> ())? = nil
+local currentMetrics: ResponsiveLayout.Metrics? = nil
 
 local function updateOnboarding(): ()
 	local level = Players.LocalPlayer:GetAttribute(ProgressionConfig.LevelAttribute)
@@ -59,7 +62,9 @@ end
 
 local function button(parent: Instance, text: string): TextButton
 	local value = Instance.new("TextButton")
-	value.Size = UDim2.new(1, -12, 0, 48)
+	local metrics = currentMetrics or ResponsiveLayout.metrics(workspace.CurrentCamera)
+	local rowHeight = if metrics.isTouch then metrics.touchTarget else 48
+	value.Size = UDim2.new(1, -12, 0, rowHeight)
 	value.BackgroundColor3 = Color3.fromRGB(48, 52, 61)
 	value.BorderSizePixel = 0
 	value.TextColor3 = Color3.fromRGB(232, 220, 184)
@@ -80,15 +85,18 @@ end
 
 local function configureListLayout(grid: boolean): ()
 	if list == nil then return end
+	local metrics = currentMetrics or ResponsiveLayout.metrics(workspace.CurrentCamera)
 	if grid then
 		local layout = Instance.new("UIGridLayout")
 		layout.Name = "MobileBlacksmithTopicsGrid"
-		layout.CellSize = UDim2.new(0.5, -6, 0, 52)
-		layout.CellPadding = UDim2.fromOffset(6, 6)
+		local columns = if metrics.layoutClass == "ExpandedLandscape" then 4 else 2
+		local gap = metrics.gap
+		layout.CellSize = UDim2.new(1 / columns, -gap, 0, metrics.touchTarget)
+		layout.CellPadding = UDim2.fromOffset(gap, gap)
 		layout.Parent = list
 	else
 		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 4)
+		layout.Padding = UDim.new(0, if metrics.isTouch then metrics.gap else 4)
 		layout.Parent = list
 	end
 end
@@ -222,9 +230,14 @@ local function rebuildSell(): ()
 	reconcileSellCart()
 	if title ~= nil then title.Text = "ТОРГОВЕЦ — ПРОДАТЬ" end
 
+	local metrics = currentMetrics or ResponsiveLayout.metrics(workspace.CurrentCamera)
+	local touch = metrics.isTouch
+	local controlSize = if touch then metrics.touchTarget else 28
+	local sellRowHeight = if touch then controlSize + metrics.gap * 2 else 62
+
 	local workspace = Instance.new("Frame")
 	workspace.Name = "SellWorkspace"
-	workspace.Size = UDim2.new(1, -12, 0, 350)
+	workspace.Size = UDim2.new(1, -12, 0, if touch then math.max(350, metrics.contentSize.Y * 0.72) else 350)
 	workspace.BackgroundTransparency = 1
 	workspace.Parent = list
 
@@ -237,7 +250,7 @@ local function rebuildSell(): ()
 	for _, entry in snapshot.inventory do
 		local item = ItemDefinitions[entry.itemId]
 		local price = EconomyRules.buybackPrice(entry.itemId)
-		local row = sellRow(inventoryPane, 62)
+		local row = sellRow(inventoryPane, sellRowHeight)
 		local itemText = if price ~= nil
 			then string.format("%s ×%d\n%d Luna / шт.", item.displayName, entry.quantity, price)
 			else string.format("%s ×%d\nне продаётся", item.displayName, entry.quantity)
@@ -246,8 +259,8 @@ local function rebuildSell(): ()
 
 		local quantity = Instance.new("TextBox")
 		quantity.Name = "Quantity"
-		quantity.Position = UDim2.new(1, -98, 0, 8)
-		quantity.Size = UDim2.fromOffset(42, 28)
+		quantity.Position = UDim2.new(1, -(controlSize * 2 + metrics.gap * 3), 0, metrics.gap)
+		quantity.Size = UDim2.fromOffset(controlSize, controlSize)
 		quantity.BackgroundColor3 = Color3.fromRGB(31, 34, 41)
 		quantity.BorderSizePixel = 0
 		quantity.TextColor3 = Color3.fromRGB(238, 235, 224)
@@ -259,8 +272,8 @@ local function rebuildSell(): ()
 		quantity.Parent = row
 
 		local add = button(row, "→")
-		add.Position = UDim2.new(1, -50, 0, 8)
-		add.Size = UDim2.fromOffset(42, 28)
+		add.Position = UDim2.new(1, -(controlSize + metrics.gap), 0, metrics.gap)
+		add.Size = UDim2.fromOffset(controlSize, controlSize)
 		add.TextSize = 16
 		add.Active = price ~= nil
 		add.AutoButtonColor = price ~= nil
@@ -294,7 +307,7 @@ local function rebuildSell(): ()
 		local item = ItemDefinitions[entry.itemId]
 		local price = EconomyRules.buybackPrice(entry.itemId)
 		if price == nil then continue end
-		local row = sellRow(cartPane, 54)
+		local row = sellRow(cartPane, if touch then controlSize + metrics.gap * 2 else 54)
 		local name = label(
 			row,
 			string.format("%s ×%d\n+%d Luna", item.displayName, selectedQuantity, price * selectedQuantity),
@@ -304,8 +317,8 @@ local function rebuildSell(): ()
 		)
 		name.TextWrapped = true
 		local remove = button(row, "←")
-		remove.Position = UDim2.new(1, -50, 0, 10)
-		remove.Size = UDim2.fromOffset(42, 28)
+		remove.Position = UDim2.new(1, -(controlSize + metrics.gap), 0, metrics.gap)
+		remove.Size = UDim2.fromOffset(controlSize, controlSize)
 		remove.TextSize = 16
 		table.insert(rowConnections, remove.Activated:Connect(function()
 			sellCart[entry.instanceId] = nil
@@ -351,10 +364,9 @@ end
 rebuild = function(): ()
 	clearList()
 	if list == nil then return end
+	local metrics = currentMetrics or ResponsiveLayout.metrics(workspace.CurrentCamera)
 	local mobileBlacksmith = mode == "DialogueBlacksmith"
-		and workspace.CurrentCamera ~= nil
-		and workspace.CurrentCamera.ViewportSize.X > workspace.CurrentCamera.ViewportSize.Y
-		and game:GetService("UserInputService").TouchEnabled
+		and ResponsiveLayout.isLandscapeTouch(metrics)
 	configureListLayout(mobileBlacksmith)
 
 	if balance ~= nil then
@@ -402,7 +414,7 @@ rebuild = function(): ()
 				details,
 				state
 			))
-			row.Size = UDim2.new(1, -12, 0, 68)
+			row.Size = UDim2.new(1, -12, 0, if metrics.isTouch then math.max(68, metrics.touchTarget + metrics.gap * 3) else 68)
 			row.Active = available
 			row.AutoButtonColor = available
 			row.BackgroundTransparency = if available then 0 else 0.45
@@ -528,12 +540,15 @@ function EconomyUi.start(actionCallbacks: any): ()
 	list = scrolling
 
 	status = label(root, "", UDim2.new(0, 16, 1, -38), UDim2.new(1, -32, 0, 24), 12)
+	local initialMetrics = ResponsiveLayout.metrics(workspace.CurrentCamera)
+	local toastWidth = ResponsiveLayout.fluidWidth(initialMetrics, 0.68, 320, 600)
+	local toastHeight = ResponsiveLayout.fluidHeight(initialMetrics, 0.18, 64, 86)
 	toast = label(
 		screen,
 		"У тебя уже есть материалы — кузнец в Luna Village может обработать сырьё и изготовить No-Grade экипировку. Торговец покупает добычу и продаёт расходники.",
-		UDim2.new(0.5, -300, 0, 80),
-		UDim2.fromOffset(600, 70),
-		14
+		UDim2.new(0.5, -toastWidth / 2, 0, initialMetrics.safeTopLeft.Y + initialMetrics.edge + initialMetrics.touchTarget),
+		UDim2.fromOffset(toastWidth, toastHeight),
+		if initialMetrics.isTouch then 12 else 14
 	)
 	toast.BackgroundTransparency = 0.12
 	toast.BackgroundColor3 = Color3.fromRGB(28, 30, 38)
@@ -542,12 +557,31 @@ function EconomyUi.start(actionCallbacks: any): ()
 	toast.Visible = false
 
 	table.insert(connections, Players.LocalPlayer:GetAttributeChangedSignal(ProgressionConfig.LevelAttribute):Connect(updateOnboarding))
+
+	local lastResponsiveSignature = ""
+	stopResponsive = ResponsiveLayout.observe(function(metrics)
+		currentMetrics = metrics
+		local signature = metrics.layoutClass .. ":" .. tostring(metrics.touchTarget) .. ":" .. tostring(math.round(metrics.contentSize.X))
+		if signature == lastResponsiveSignature then return end
+		lastResponsiveSignature = signature
+		if toast ~= nil then
+			local width = ResponsiveLayout.fluidWidth(metrics, 0.68, 320, 600)
+			local height = ResponsiveLayout.fluidHeight(metrics, 0.18, 64, 86)
+			toast.Position = UDim2.new(0.5, -width / 2, 0, metrics.safeTopLeft.Y + metrics.edge + metrics.touchTarget)
+			toast.Size = UDim2.fromOffset(width, height)
+			toast.TextSize = if metrics.isTouch then 12 else 14
+		end
+		if panel ~= nil and panel.Visible then rebuild() end
+	end)
+
 	gui = screen
 	panel = root
 	updateOnboarding()
 end
 
 function EconomyUi.stop(): ()
+	if stopResponsive ~= nil then stopResponsive(); stopResponsive = nil end
+	currentMetrics = nil
 	for _, connection in connections do connection:Disconnect() end
 	table.clear(connections)
 	clearList()
