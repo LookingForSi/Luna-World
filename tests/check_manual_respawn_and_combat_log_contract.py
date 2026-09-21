@@ -40,7 +40,7 @@ require("src/client/ui/CombatLog.luau", "ClientCombatLogRules.isRelevant", "comb
 require("src/client/ui/CombatLog.luau", "Лог  ▲", "combat log must be user-toggleable")
 require("src/client/ui/CombatLog.luau", "цель замедлена", "combat log must make Snare confirmation visible")
 require("src/client/ui/CombatLog.luau", "защита +%d%%", "combat log must expose Defensive Stance magnitude")
-require("src/client/main.client.luau", "CombatLog.start()", "client bootstrap must start combat log")
-require("src/client/main.client.luau", "RespawnPrompt.start()", "client bootstrap must start respawn prompt")
+require("src/client/bootstrap/adapters/ExistingClientComponents.luau", "CombatLog.start()", "client bootstrap must start combat log")
+require("src/client/bootstrap/adapters/ExistingClientComponents.luau", "RespawnPrompt.start()", "client bootstrap must start respawn prompt")
 
 print("Manual respawn and combat log contract: PASS")
