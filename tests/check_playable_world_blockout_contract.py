@@ -61,7 +61,7 @@ def main() -> None:
     assert "baseplate.CanCollide = false" in bootstrap
 
     builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
-    assert 'TerrainRevision", "terrain-v11"' in builder
+    assert 'TerrainRevision", "terrain-v12"' in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
     assert "WorldDressingBlockout" in builder
@@ -157,24 +157,31 @@ def main() -> None:
 
     lake_terrain = read(ROOT / "src/server/world/GoblinCemeteryLakeTerrain.luau")
     for token in (
-        "WATER_DEPTH = 14",
-        "SCANLINE_STEP = 12",
-        "SCANLINE_OVERLAP = 2",
-        "WATER_SHORE_OVERLAP = 6",
-        "BED_THICKNESS = 6",
-        "BED_WATER_OVERLAP = 2",
-        "WATER_SURFACE_Y = 74",
-        "resetLegacyCorridor(terrain)",
-        "intersectionsAt",
+        "VOXEL_RESOLUTION = 4",
+        "WATER_DEPTH = 12",
+        "BED_THICKNESS = 4",
+        "WATER_SURFACE_Y = 76",
+        "terrain:ReadVoxels(region, VOXEL_RESOLUTION)",
+        "terrain:WriteVoxels(region, VOXEL_RESOLUTION, materials, occupancy)",
+        ":ExpandToGrid(VOXEL_RESOLUTION)",
+        "containsPoint(LAKE_OUTLINE",
         "Enum.Material.Air",
         "Enum.Material.Mud",
         "Enum.Material.Water",
-        'LakeGeometry", "AxisAlignedPolygonScanlines"',
+        'LakeGeometry", "SingleRegionPolygonVoxels"',
         'ContainedWithinWorldBounds", true',
     ):
         assert token in lake_terrain
-    assert "FillCylinder" not in lake_terrain
-    assert "CFrame.Angles" not in lake_terrain
+    for forbidden in (
+        "FillCylinder",
+        "terrain:FillBlock",
+        "CFrame.Angles",
+        "fillScanline",
+        "SCANLINE_STEP",
+        "SCANLINE_OVERLAP",
+        "WATER_SHORE_OVERLAP",
+    ):
+        assert forbidden not in lake_terrain
 
     for removed_square_rim in (
         "SpiderBasinRimWest",
