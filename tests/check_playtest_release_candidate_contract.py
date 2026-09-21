@@ -44,8 +44,18 @@ for token in (
 ):
     assert token in world
 
-for token in ("WATER_DEPTH = 14", "intersectionsAt", "resetLegacyCorridor", "Enum.Material.Water"):
+for token in (
+    "WATER_DEPTH = 12",
+    "VOXEL_RESOLUTION = 4",
+    "terrain:ReadVoxels(region, VOXEL_RESOLUTION)",
+    "terrain:WriteVoxels(region, VOXEL_RESOLUTION, materials, occupancy)",
+    'LakeGeometry", "SingleRegionPolygonVoxels"',
+    "Enum.Material.Water",
+):
     assert token in lake
+
+for segmented in ("fillScanline", "SCANLINE_STEP", "terrain:FillBlock"):
+    assert segmented not in lake
 
 for forbidden in (
     "prepareGoblinCampBoundaryShelf",
