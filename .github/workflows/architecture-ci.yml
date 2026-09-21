@@ -1,0 +1,51 @@
+name: Architecture CI
+
+on:
+  push:
+    branches:
+      - architecture/multi-place-implementation-v01
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  contracts-and-builds:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python contract checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in tests/check_*.py; do
+            echo "::group::$f"
+            python3 "$f"
+            echo "::endgroup::"
+          done
+
+      - name: Setup Rokit
+        uses: paradoxum-games/setup-rokit@v3
+        with:
+          cache: true
+
+      - name: Rojo builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          rojo --version
+          rojo build default.project.json -o /tmp/LunaWorld-default.rbxlx
+          rojo build test.project.json -o /tmp/LunaWorld-tests.rbxlx
+          rojo build world.project.json -o /tmp/LunaWorld-world.rbxlx
+
+      - name: Diff whitespace check
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check origin/main...HEAD
