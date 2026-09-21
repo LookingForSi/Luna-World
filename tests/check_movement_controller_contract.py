@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTROLLER = ROOT / "src/client/controllers/MovementController.luau"
-BOOTSTRAP = ROOT / "src/client/main.client.luau"
+BOOTSTRAP = ROOT / "src/client/bootstrap/adapters/ExistingClientComponents.luau"
 
 
 def require(source: str, token: str, message: str) -> None:
