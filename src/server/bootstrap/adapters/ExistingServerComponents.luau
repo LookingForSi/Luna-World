@@ -42,6 +42,63 @@ local function component(
 	}
 end
 
+local function stopDevCombinedGameplay(): ()
+	-- Compatibility shutdown order from the accepted dev0.3 RC1 bootstrap.
+	-- Gate A deliberately preserves this ordering instead of assuming that
+	-- reverse startup order is safe across the legacy service graph.
+	StudioDebugService.stop()
+	RespawnService.stop()
+	PlayerRegenerationService.stop()
+	InventoryNetworkService.stop()
+	WorldDropService.stop()
+	NpcWorldService.stop()
+	EconomyWorldService.stop()
+	TravelService.stop()
+	QuestService.stop()
+	EconomyNetworkService.stop()
+	EconomyService.stop()
+	LootService.stop()
+	MobAIService.stop()
+	MobAbilityService.stop()
+	MobService.stop()
+	CombatService.stop()
+	ProgressionService.stop()
+	CharacterService.stop()
+	PlayerDataService.stop()
+end
+
+function ExistingServerComponents.devCombinedGameplay(): RuntimeComponent.RuntimeComponent
+	return component("DevCombinedGameplay", function()
+		local ok, startError = pcall(function()
+			-- Exact accepted dev0.3 RC1 startup order.
+			EconomyService.start()
+			PlayerDataService.start()
+			CharacterService.start()
+			ProgressionService.start()
+			CombatService.start()
+			PlayerRegenerationService.start()
+			RespawnService.start()
+			StudioDebugService.start()
+			MobAbilityService.start()
+			MobAIService.start(MobAbilityService.requestAttack)
+			MobService.start()
+			LootService.start()
+			WorldDropService.start()
+			InventoryNetworkService.start()
+			EconomyNetworkService.start()
+			EconomyWorldService.start()
+			QuestService.start()
+			TravelService.start()
+			NpcWorldService.start()
+		end)
+
+		if not ok then
+			stopDevCombinedGameplay()
+			error(string.format("DevCombined gameplay bootstrap failed: %s", tostring(startError)), 2)
+		end
+	end, stopDevCombinedGameplay)
+end
+
 function ExistingServerComponents.worldBootstrap(): RuntimeComponent.RuntimeComponent
 	return component("WorldBootstrap", WorldBootstrap.start, WorldBootstrap.stop)
 end
