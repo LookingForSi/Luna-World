@@ -8,6 +8,7 @@ local ArchetypeDefinitions = require(ReplicatedStorage.Shared.definitions.Archet
 local CharacterConfig = require(ReplicatedStorage.Shared.config.CharacterConfig)
 local PersistenceConfig = require(ReplicatedStorage.Shared.config.PersistenceConfig)
 local CharacterRules = require(ReplicatedStorage.Shared.characters.CharacterRules)
+local CharacterDeleteRules = require(ReplicatedStorage.Shared.characters.CharacterDeleteRules)
 local NicknameRules = require(ReplicatedStorage.Shared.characters.NicknameRules)
 local ProfileSchema = require(ReplicatedStorage.Shared.persistence.ProfileSchema)
 local NicknameStore = require(script.Parent.Parent.persistence.NicknameStore)
@@ -303,14 +304,7 @@ function CharacterService.start(storeOverride: any?): ()
 				end
 				local canonical = normalizeNickname(c.Nickname)
 				local ok, why = PlayerDataService.mutateAccount(player, function(value)
-					value.Characters[p.characterId] = nil
-					local i = table.find(value.CharacterOrder, p.characterId)
-					if i then
-						table.remove(value.CharacterOrder, i)
-					end
-					if value.SelectedCharacterId == p.characterId then
-						value.SelectedCharacterId = nil
-					end
+					CharacterDeleteRules.removeOwned(value, p.characterId)
 				end)
 				if not ok then
 					response(result, player, id, action, false, why)
@@ -328,8 +322,12 @@ function CharacterService.start(storeOverride: any?): ()
 						{ userId = player.UserId, characterId = p.characterId }
 					)
 					if not released then
-						response(result, player, id, action, false, releaseReason or "StoreError")
-						return
+						warn(string.format(
+							"Character %s was deleted, but nickname release failed for user %d: %s",
+							p.characterId,
+							player.UserId,
+							tostring(releaseReason or "StoreError")
+						))
 					end
 				end
 				response(result, player, id, action, true, nil, roster(player))

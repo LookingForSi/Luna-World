@@ -30,7 +30,8 @@ assert "MinimumTouchTarget = 44" in policy, "touch targets не должны б�
 assert 'UserInputType.Touch then "БЫСТРО"' in actions
 assert 'then "AUTO"' in actions, "touch UI не должен показывать desktop hotkey AUTO"
 assert 'inventory.Position = UDim2.fromOffset(0, 28)' in controller
-assert 'cart.Position = UDim2.fromOffset(0, 270)' in controller
+assert 'cart.Position = UDim2.new(0.5, 5, 0, 28)' in controller
+assert 'confirm.Position = UDim2.new(0.5, 5, 1, -46)' in controller
 assert 'cart.Position = UDim2.new(0.51, 0, 0, 28)' in controller
 assert 'Name = "SellConfirm"' in economy
 

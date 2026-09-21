@@ -28,11 +28,14 @@ assert main.index("ScreenOrientation") < main.index("CharacterLobbyController.st
 for token in ("MobileLandscape", "MobileEdgeMargin", "MinimumTouchTarget", "MobileModalHorizontalMargin"):
     require(layout, token, f"shared mobile policy missing {token}")
 require(lobby, "mobileLandscape", "lobby must have a mobile landscape composition")
+require(lobby, 'Name = "CreationContent"', "mobile creation must scroll only its central content")
+require(lobby, 'Position = if mobileLandscape then UDim2.new(0, 32, 1, -54)', "mobile creation footer must stay fixed")
 require(lobby, 'Name = "DeleteCharacterModal"', "two-step delete modal missing")
 require(lobby, 'chosen.nickname or "Без имени"', "unnamed character fallback missing")
 assert "DELETE:nil" not in lobby and "DeleteConfirmationPrefix .. tostring" not in service
 require(service, "p.confirmed ~= true", "server explicit confirmation missing")
 require(service, "if canonical ~= nil then", "unnamed nickname release guard missing")
+require(service, "CharacterDeleteRules.removeOwned", "delete behavior must use its tested pure rule")
 require(service, 'response(result, player, id, action, false, "CharacterNotOwned")', "ownership validation missing")
 
 require(responsive, "Vector2.new(1, 0)", "player status top-right anchor missing")
@@ -50,5 +53,6 @@ require(responsive, "child.Enabled = metrics.mode == \"Desktop\"", "desktop mini
 require(inventory, 'blocker.Modal = true', "inventory gameplay input blocker missing")
 require(economy, 'blocker.Modal = true', "economy gameplay input blocker missing")
 require(economy, 'layout.Name = "MobileBlacksmithTopicsGrid"', "mobile blacksmith must use a compact 2x2 grid")
+assert "sell.Size = UDim2.new(1, -12, 0, 540)" not in responsive
 
 print("mobile landscape UX contract: PASS")

@@ -2,6 +2,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AccountSchema = require(ReplicatedStorage.Shared.persistence.AccountSchema)
 local CharacterRules = require(ReplicatedStorage.Shared.characters.CharacterRules)
+local CharacterDeleteRules = require(ReplicatedStorage.Shared.characters.CharacterDeleteRules)
 local MigrationRules = require(ReplicatedStorage.Shared.persistence.MigrationRules)
 local NicknameRules = require(ReplicatedStorage.Shared.characters.NicknameRules)
 return function(TestRunner)
@@ -47,5 +48,18 @@ return function(TestRunner)
 		local a = AccountSchema.createDefault()
 		assert(a.Characters ~= nil and a.CharacterOrder ~= nil)
 		assert(AccountSchema.validateCurrent(a))
+	end)
+	TestRunner.run("character deletion handles named, unnamed, selected and non-selected characters", function()
+		local account = AccountSchema.createDefault()
+		account.Characters.named = { Nickname = "LunaFox" }
+		account.Characters.legacy = { Nickname = nil, NeedsIdentity = true }
+		account.CharacterOrder = { "named", "legacy" }
+		account.SelectedCharacterId = "legacy"
+		local removedNamed, namedNickname = CharacterDeleteRules.removeOwned(account, "named")
+		assert(removedNamed and namedNickname == "LunaFox" and account.SelectedCharacterId == "legacy")
+		local removedLegacy, legacyNickname = CharacterDeleteRules.removeOwned(account, "legacy")
+		assert(removedLegacy and legacyNickname == nil and account.SelectedCharacterId == nil)
+		local removedForeign = CharacterDeleteRules.removeOwned(account, "not-owned")
+		assert(not removedForeign and #account.CharacterOrder == 0)
 	end)
 end

@@ -74,14 +74,14 @@ local function applyHud(playerGui: PlayerGui, metrics: ResponsiveLayout.Metrics)
 		if ResponsiveLayout.isSmallTouch(metrics) then
 			if actions ~= nil then
 				actions.Position = UDim2.new(1, -(metrics.safeBottomRight.X + metrics.margin), 1, -(metrics.safeBottomRight.Y + metrics.margin))
-				actions.Size = UDim2.fromOffset(math.min(250, metrics.contentSize.X * 0.34), 112)
+				actions.Size = UDim2.fromOffset(math.min(240, metrics.contentSize.X * 0.30), 112)
 				local constraint = actions:FindFirstChildOfClass("UISizeConstraint")
 				if constraint ~= nil then constraint.Enabled = false end
 			end
 			if skills ~= nil then
 				skills.Position = UDim2.new(0.5, 0, 1, -(metrics.safeBottomRight.Y + metrics.margin))
 				skills.AnchorPoint = Vector2.new(0.5, 1)
-				skills.Size = UDim2.fromOffset(math.min(306, metrics.contentSize.X * 0.42), 54)
+				skills.Size = UDim2.fromOffset(math.min(300, metrics.contentSize.X * 0.38), 54)
 			end
 		end
 	end
@@ -101,13 +101,13 @@ local function applyModals(playerGui: PlayerGui, metrics: ResponsiveLayout.Metri
 		local inventory = sell:FindFirstChild("SellInventory")
 		local cart = sell:FindFirstChild("SellCart")
 		if ResponsiveLayout.isSmallTouch(metrics) then
-			sell.Size = UDim2.new(1, -12, 0, 540)
-			if inventory ~= nil and inventory:IsA("ScrollingFrame") then inventory.Position = UDim2.fromOffset(0, 28); inventory.Size = UDim2.new(1, 0, 0, 210) end
-			if cart ~= nil and cart:IsA("ScrollingFrame") then cart.Position = UDim2.fromOffset(0, 270); cart.Size = UDim2.new(1, 0, 0, 170) end
+			sell.Size = UDim2.new(1, -12, 1, -8)
+			if inventory ~= nil and inventory:IsA("ScrollingFrame") then inventory.Position = UDim2.fromOffset(0, 28); inventory.Size = UDim2.new(0.5, -5, 1, -36) end
+			if cart ~= nil and cart:IsA("ScrollingFrame") then cart.Position = UDim2.new(0.5, 5, 0, 28); cart.Size = UDim2.new(0.5, -5, 1, -112) end
 			local total = sell:FindFirstChild("SellTotal")
-			if total ~= nil and total:IsA("GuiObject") then total.Position = UDim2.fromOffset(4, 448); total.Size = UDim2.new(1, -8, 0, 34) end
+			if total ~= nil and total:IsA("GuiObject") then total.Position = UDim2.new(0.5, 9, 1, -80); total.Size = UDim2.new(0.5, -13, 0, 30) end
 			local confirm = sell:FindFirstChild("SellConfirm")
-			if confirm ~= nil and confirm:IsA("GuiObject") then confirm.Position = UDim2.fromOffset(0, 488); confirm.Size = UDim2.new(1, 0, 0, ResponsiveLayout.MinimumTouchTarget) end
+			if confirm ~= nil and confirm:IsA("GuiObject") then confirm.Position = UDim2.new(0.5, 5, 1, -46); confirm.Size = UDim2.new(0.5, -5, 0, ResponsiveLayout.MinimumTouchTarget) end
 		else
 			if inventory ~= nil and inventory:IsA("ScrollingFrame") then inventory.Position = UDim2.fromOffset(0, 28); inventory.Size = UDim2.new(0.49, 0, 1, -74) end
 			if cart ~= nil and cart:IsA("ScrollingFrame") then cart.Position = UDim2.new(0.51, 0, 0, 28); cart.Size = UDim2.new(0.49, 0, 1, -74) end

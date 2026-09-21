@@ -232,18 +232,28 @@ local function render()
 		add.Activated:Connect(function()
 			local shade = createModalShade(root)
 			local modalSize = ResponsiveLayout.modalSize(metrics, if mobileLandscape then Vector2.new(760, 350) else Vector2.new(590, 540))
-			local modal = new("ScrollingFrame", root, {
+			local modal = new(if mobileLandscape then "Frame" else "ScrollingFrame", root, {
 				Name = "CreationModal",
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.fromScale(0.5, 0.5),
 				Size = UDim2.fromOffset(modalSize.X, modalSize.Y),
-				CanvasSize = UDim2.fromOffset(0, 520),
-				ScrollBarThickness = if smallTouch then 5 else 0,
 				BackgroundColor3 = palette.panel,
 				BorderSizePixel = 0,
 				ZIndex = 5,
 			})
+			if modal:IsA("ScrollingFrame") then
+				modal.CanvasSize = UDim2.fromOffset(0, 520)
+				modal.ScrollBarThickness = if smallTouch then 5 else 0
+			end
 			stylePanel(modal, 14)
+			local form: Instance = modal
+			if mobileLandscape then
+				form = new("ScrollingFrame", modal, {
+					Name = "CreationContent", Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 1, -116),
+					CanvasSize = UDim2.fromOffset(0, 420), AutomaticCanvasSize = Enum.AutomaticSize.None,
+					ScrollBarThickness = 5, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 6,
+				})
+			end
 
 			new("TextLabel", modal, {
 				BackgroundTransparency = 1,
@@ -273,10 +283,10 @@ local function render()
 			close.Activated:Connect(dismiss)
 			shade.Activated:Connect(dismiss)
 
-			sectionLabel(modal, "ИМЯ ПЕРСОНАЖА", 72)
-			local name = new("TextBox", modal, {
+			sectionLabel(form, "ИМЯ ПЕРСОНАЖА", if mobileLandscape then 4 else 72)
+			local name = new("TextBox", form, {
 				Name = "Nickname",
-				Position = UDim2.fromOffset(32, 98),
+				Position = UDim2.fromOffset(32, if mobileLandscape then 28 else 98),
 				Size = UDim2.new(1, -64, 0, 48),
 				BackgroundColor3 = palette.bgDeep,
 				TextColor3 = palette.text,
@@ -292,7 +302,7 @@ local function render()
 			rounded(name, 8)
 			outlined(name)
 
-			sectionLabel(modal, "КЛАСС", 160)
+			sectionLabel(form, "КЛАСС", if mobileLandscape then 84 else 160)
 			local class = "knight"
 			local classButtons: { [string]: TextButton } = {}
 			local classNames = { knight = "РЫЦАРЬ", ranger = "СЛЕДОПЫТ", mystic = "МИСТИК" }
@@ -308,10 +318,10 @@ local function render()
 				end
 			end
 			for i, v in { "knight", "ranger", "mystic" } do
-				local button = new("TextButton", modal, {
+				local button = new("TextButton", form, {
 					Name = "Class_" .. v,
-					Position = UDim2.new((i - 1) / 3, 32 + (i - 1) * 4, 0, 188),
-					Size = UDim2.new(1 / 3, -26, 0, 68),
+					Position = UDim2.new((i - 1) / 3, 32 + (i - 1) * 4, 0, if mobileLandscape then 108 else 188),
+					Size = UDim2.new(1 / 3, -26, 0, if mobileLandscape then 52 else 68),
 					TextSize = 13,
 					TextWrapped = true,
 					ZIndex = 6,
@@ -325,7 +335,7 @@ local function render()
 			end
 			refreshClassButtons()
 
-			sectionLabel(modal, "ПОЛ", 272)
+			sectionLabel(form, "ПОЛ", if mobileLandscape then 172 else 272)
 			local body = "male"
 			local bodyButtons: { [string]: TextButton } = {}
 			local function refreshBodyButtons(): ()
@@ -339,9 +349,9 @@ local function render()
 				end
 			end
 			for i, v in { "male", "female" } do
-				local button = new("TextButton", modal, {
+				local button = new("TextButton", form, {
 					Name = "Body_" .. v,
-					Position = UDim2.new((i - 1) / 2, 32 + (i - 1) * 4, 0, 300),
+					Position = UDim2.new((i - 1) / 2, 32 + (i - 1) * 4, 0, if mobileLandscape then 196 else 300),
 					Size = UDim2.new(0.5, -36, 0, 48),
 					TextSize = 14,
 					ZIndex = 6,
@@ -355,25 +365,25 @@ local function render()
 			end
 			refreshBodyButtons()
 
-			sectionLabel(modal, "БЫСТРЫЙ ВЫБОР ИМЕНИ", 364)
-			local mine = new("TextButton", modal, {
-				Position = UDim2.new(0, 32, 0, 392),
+			sectionLabel(form, "БЫСТРЫЙ ВЫБОР ИМЕНИ", if mobileLandscape then 256 else 364)
+			local mine = new("TextButton", form, {
+				Position = UDim2.new(0, 32, 0, if mobileLandscape then 280 else 392),
 				Size = UDim2.new(0.34, -24, 0, 42),
 				Text = "Мой Roblox ник",
 				TextSize = 12,
 				ZIndex = 6,
 			})
 			styleButton(mine, false)
-			local random = new("TextButton", modal, {
-				Position = UDim2.new(0.34, 8, 0, 392),
+			local random = new("TextButton", form, {
+				Position = UDim2.new(0.34, 8, 0, if mobileLandscape then 280 else 392),
 				Size = UDim2.new(0.33, -16, 0, 42),
 				Text = "✦ Случайное",
 				TextSize = 12,
 				ZIndex = 6,
 			})
 			styleButton(random, false)
-			local check = new("TextButton", modal, {
-				Position = UDim2.new(0.67, 8, 0, 392),
+			local check = new("TextButton", form, {
+				Position = UDim2.new(0.67, 8, 0, if mobileLandscape then 280 else 392),
 				Size = UDim2.new(0.33, -40, 0, 42),
 				Text = "Проверить",
 				TextSize = 12,
@@ -381,10 +391,10 @@ local function render()
 			})
 			styleButton(check, false)
 
-			local nameStatus = new("TextLabel", modal, {
+			local nameStatus = new("TextLabel", form, {
 				Name = "NicknameStatus",
 				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(32, 440),
+				Position = UDim2.fromOffset(32, if mobileLandscape then 328 else 440),
 				Size = UDim2.new(1, -64, 0, 22),
 				Text = if RunService:IsStudio() then "Studio: строгая проверка имени отключена" else "",
 				TextColor3 = palette.muted,
@@ -411,7 +421,7 @@ local function render()
 
 			local create = new("TextButton", modal, {
 				Name = "CreateCharacter",
-				Position = UDim2.fromOffset(32, 474),
+				Position = if mobileLandscape then UDim2.new(0, 32, 1, -54) else UDim2.fromOffset(32, 474),
 				Size = UDim2.new(1, -64, 0, 48),
 				BackgroundColor3 = palette.accent,
 				TextColor3 = palette.text,
@@ -639,7 +649,7 @@ function CharacterLobbyController.start(): ()
 		if p.action == "CheckNickname" then
 			local rootNow = screen and screen:FindFirstChild("LobbyRoot")
 			local modal = rootNow and rootNow:FindFirstChild("CreationModal")
-			local modalStatus = modal and modal:FindFirstChild("NicknameStatus")
+			local modalStatus = modal and modal:FindFirstChild("NicknameStatus", true)
 			local s = modalStatus or (rootNow and rootNow:FindFirstChild("Status"))
 			if s and s:IsA("TextLabel") then
 				s.Text = if p.ok then (if RunService:IsStudio() then "Имя доступно в Studio" else "Имя свободно") else friendlyReason(p.reason)
@@ -656,7 +666,7 @@ function CharacterLobbyController.start(): ()
 		elseif not p.ok then
 			local rootNow = screen and screen:FindFirstChild("LobbyRoot")
 			local modal = rootNow and rootNow:FindFirstChild("CreationModal")
-			local modalStatus = modal and modal:FindFirstChild("NicknameStatus")
+			local modalStatus = modal and modal:FindFirstChild("NicknameStatus", true)
 			local s = modalStatus or (rootNow and rootNow:FindFirstChild("Status"))
 			if s and s:IsA("TextLabel") then
 				s.Text = friendlyReason(p.reason)
