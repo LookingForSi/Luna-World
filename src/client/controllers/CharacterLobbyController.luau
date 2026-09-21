@@ -493,15 +493,21 @@ local function render()
 	local preview = new("Frame", root, {
 		Name = "CharacterPreview",
 		Position = if portrait
-			then UDim2.fromOffset(edge, contentTop + math.min(210, metrics.contentSize.Y * 0.32) + 10)
+			then UDim2.fromOffset(left, contentTop + math.min(210, metrics.contentSize.Y * 0.32) + gap)
+			elseif touchLandscape
+			then UDim2.fromOffset(left + rosterWidth + gap, contentTop)
 			else UDim2.new(0.34, edge, 0, contentTop),
 		Size = if portrait
-			then UDim2.new(1, -edge * 2, 1, -(edge * 2 + 136 + math.min(210, metrics.contentSize.Y * 0.32)))
+			then UDim2.new(1, -(left + metrics.safeBottomRight.X + edge), 1, -(edge * 2 + 136 + math.min(210, metrics.contentSize.Y * 0.32)))
+			elseif touchLandscape
+			then UDim2.fromOffset(math.max(220, metrics.contentSize.X - rosterWidth - gap), touchContentHeight)
 			else UDim2.new(0.66, -(edge * 2), 1, -(edge * 2 + 126)),
 		BackgroundColor3 = palette.panel,
 		BorderSizePixel = 0,
 	})
 	stylePanel(preview, 12)
+	local previewPadding = if touchLandscape then ResponsiveLayout.scaled(metrics, 16, 12, 22) else 20
+	local previewActionHeight = if touchLandscape then metrics.touchTarget else 54
 	local chosen = nil
 	for _, c in roster.characters do
 		if c.characterId == selected then
@@ -510,8 +516,8 @@ local function render()
 	end
 	new("TextLabel", preview, {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(20, 20),
-		Size = UDim2.new(1, -40, 0, 110),
+		Position = UDim2.fromOffset(previewPadding, previewPadding),
+		Size = UDim2.new(1, -previewPadding * 2, 0, if touchLandscape then ResponsiveLayout.fluidHeight(metrics, 0.24, 72, 104) else 110),
 		Text = if chosen
 			then string.format(
 				"%s\n%s • Уровень %d\nXP %d • Luna %d",
@@ -523,13 +529,17 @@ local function render()
 			)
 			else "Выберите карточку героя",
 		TextColor3 = palette.text,
-		TextSize = 20,
+		TextSize = if touchLandscape then math.round(ResponsiveLayout.scaled(metrics, 17, 15, 20)) else 20,
 		Font = Enum.Font.GothamSemibold,
 	})
 	local play = new("TextButton", preview, {
 		Name = "EnterWorld",
-		Position = UDim2.new(0, 24, 1, -78),
-		Size = UDim2.new(1, -48, 0, 54),
+		Position = if touchLandscape
+			then UDim2.new(if chosen then 0.36 else 0, previewPadding, 1, -(previewActionHeight + previewPadding))
+			else UDim2.new(0, 24, 1, -78),
+		Size = if touchLandscape
+			then UDim2.new(if chosen then 0.64 else 1, -(previewPadding * 2), 0, previewActionHeight)
+			else UDim2.new(1, -48, 0, 54),
 		BackgroundColor3 = palette.accentBright,
 		TextColor3 = palette.bg,
 		Text = if chosen and chosen.needsIdentity
@@ -546,66 +556,140 @@ local function render()
 	play.TextColor3 = if chosen then palette.text else palette.muted
 	play.Activated:Connect(function()
 		if chosen and chosen.needsIdentity then
-			local name = new(
-				"TextBox",
-				preview,
-				{
+			if touchLandscape then
+				local shade = createModalShade(root)
+				local modalSize = ResponsiveLayout.modalSize(metrics, Vector2.new(520, 300))
+				local modal = new("Frame", root, {
+					Name = "LegacyIdentityModal",
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromScale(0.5, 0.5),
+					Size = UDim2.fromOffset(modalSize.X, modalSize.Y),
+					BackgroundColor3 = palette.panel,
+					BorderSizePixel = 0,
+					ZIndex = 8,
+				})
+				stylePanel(modal, 12)
+				local pad = ResponsiveLayout.scaled(metrics, 18, 14, 24)
+				local target = metrics.touchTarget
+				local modalGap = metrics.gap
+				new("TextLabel", modal, {
+					BackgroundTransparency = 1,
+					Position = UDim2.fromOffset(pad, pad),
+					Size = UDim2.new(1, -pad * 2, 0, target),
+					Text = "Завершить создание",
+					TextColor3 = palette.moon,
+					Font = Enum.Font.GothamBold,
+					TextSize = math.round(ResponsiveLayout.scaled(metrics, 19, 17, 22)),
+					TextXAlignment = Enum.TextXAlignment.Left,
+					ZIndex = 9,
+				})
+				local name = new("TextBox", modal, {
+					Name = "LegacyNickname",
+					Position = UDim2.fromOffset(pad, pad + target + modalGap),
+					Size = UDim2.new(1, -pad * 2, 0, target),
+					PlaceholderText = "Новое уникальное имя",
+					Text = "",
+					TextSize = 16,
+					ZIndex = 9,
+				})
+				local bodyType = "male"
+				local body = new("TextButton", modal, {
+					Position = UDim2.fromOffset(pad, pad + (target + modalGap) * 2),
+					Size = UDim2.new(1, -pad * 2, 0, target),
+					Text = "Тип тела: Мужской (сменить)",
+					TextSize = 14,
+					ZIndex = 9,
+				})
+				styleButton(body, false)
+				body.Activated:Connect(function()
+					bodyType = if bodyType == "male" then "female" else "male"
+					body.Text = if bodyType == "male"
+						then "Тип тела: Мужской (сменить)"
+						else "Тип тела: Женский (сменить)"
+				end)
+				local complete = new("TextButton", modal, {
+					Position = UDim2.new(0.5, modalGap / 2, 1, -(target + pad)),
+					Size = UDim2.new(0.5, -(pad + modalGap / 2), 0, target),
+					BackgroundColor3 = palette.accent,
+					Text = "СОХРАНИТЬ",
+					TextSize = 14,
+					ZIndex = 9,
+				})
+				styleButton(complete, true)
+				local cancel = new("TextButton", modal, {
+					Position = UDim2.new(0, pad, 1, -(target + pad)),
+					Size = UDim2.new(0.5, -(pad + modalGap / 2), 0, target),
+					Text = "ОТМЕНА",
+					TextSize = 14,
+					ZIndex = 9,
+				})
+				styleButton(cancel, false)
+				local function dismissIdentity(): ()
+					shade:Destroy()
+					modal:Destroy()
+				end
+				shade.Activated:Connect(dismissIdentity)
+				cancel.Activated:Connect(dismissIdentity)
+				complete.Activated:Connect(function()
+					send("CompleteIdentity", {
+						characterId = chosen.characterId,
+						nickname = name.Text,
+						archetypeId = chosen.archetypeId,
+						bodyType = bodyType,
+						appearancePresetId = "default",
+					})
+				end)
+			else
+				local name = new("TextBox", preview, {
 					Name = "LegacyNickname",
 					Position = UDim2.fromOffset(24, 270),
 					Size = UDim2.new(1, -48, 0, 46),
 					PlaceholderText = "Новое уникальное имя",
 					Text = "",
 					TextSize = 16,
-				}
-			)
-			local bodyType = "male"
-			local body = new(
-				"TextButton",
-				preview,
-				{
+				})
+				local bodyType = "male"
+				local body = new("TextButton", preview, {
 					Position = UDim2.fromOffset(24, 320),
 					Size = UDim2.new(1, -48, 0, 38),
 					Text = "Тип тела: Мужской (сменить)",
 					TextSize = 14,
-				}
-			)
-			body.Activated:Connect(function()
-				bodyType = if bodyType == "male" then "female" else "male"
-				body.Text = if bodyType == "male"
-					then "Тип тела: Мужской (сменить)"
-					else "Тип тела: Женский (сменить)"
-			end)
-			local complete = new(
-				"TextButton",
-				preview,
-				{
+				})
+				body.Activated:Connect(function()
+					bodyType = if bodyType == "male" then "female" else "male"
+					body.Text = if bodyType == "male"
+						then "Тип тела: Мужской (сменить)"
+						else "Тип тела: Женский (сменить)"
+				end)
+				local complete = new("TextButton", preview, {
 					Position = UDim2.fromOffset(24, 364),
 					Size = UDim2.new(1, -48, 0, 48),
 					BackgroundColor3 = palette.accentBright,
 					Text = "СОХРАНИТЬ ИМЯ И ТИП ТЕЛА",
 					TextSize = 14,
-				}
-			)
-			complete.Activated:Connect(function()
-				send(
-					"CompleteIdentity",
-					{
+				})
+				complete.Activated:Connect(function()
+					send("CompleteIdentity", {
 						characterId = chosen.characterId,
 						nickname = name.Text,
 						archetypeId = chosen.archetypeId,
 						bodyType = bodyType,
 						appearancePresetId = "default",
-					}
-				)
-			end)
+					})
+				end)
+			end
 		elseif chosen then
 			send("Select", { characterId = chosen.characterId })
 		end
 	end)
 	if chosen then
 		local del = new("TextButton", preview, {
-			Position = UDim2.fromOffset(24, 150),
-			Size = UDim2.fromOffset(190, 44),
+			Position = if touchLandscape
+				then UDim2.new(0, previewPadding, 1, -(previewActionHeight + previewPadding))
+				else UDim2.fromOffset(24, 150),
+			Size = if touchLandscape
+				then UDim2.new(0.34, -previewPadding, 0, previewActionHeight)
+				else UDim2.fromOffset(190, 44),
 			BackgroundColor3 = palette.danger,
 			TextColor3 = palette.text,
 			Text = "Удалить персонажа",
@@ -617,7 +701,7 @@ local function render()
 			local shade = createModalShade(root)
 			local confirm = new("Frame", root, {
 				Name = "DeleteCharacterModal", AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(math.min(430, metrics.contentSize.X - 32), 220),
+				Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(ResponsiveLayout.modalSize(metrics, Vector2.new(430, 220)).X, ResponsiveLayout.modalSize(metrics, Vector2.new(430, 220)).Y),
 				BackgroundColor3 = palette.panel, BorderSizePixel = 0, ZIndex = 8,
 			})
 			stylePanel(confirm, 12)
@@ -626,9 +710,11 @@ local function render()
 			new("TextLabel", confirm, { BackgroundTransparency = 1, Position = UDim2.fromOffset(20, 50), Size = UDim2.new(1, -40, 0, 80),
 				Text = string.format("%s • %s • LV %d\nДействие необратимо.", chosen.nickname or "Без имени", chosen.archetypeId, chosen.level),
 				TextColor3 = palette.text, TextWrapped = true, TextSize = 15, ZIndex = 9 })
-			local cancel = new("TextButton", confirm, { Name = "CancelDelete", Position = UDim2.new(0, 20, 1, -64), Size = UDim2.new(0.5, -26, 0, 44), Text = "Отмена", ZIndex = 9 })
+			local deleteTarget = if touchLayout then metrics.touchTarget else 44
+			local deletePad = if touchLayout then metrics.gap * 2 else 20
+			local cancel = new("TextButton", confirm, { Name = "CancelDelete", Position = UDim2.new(0, deletePad, 1, -(deleteTarget + deletePad)), Size = UDim2.new(0.5, -(deletePad + metrics.gap / 2), 0, deleteTarget), Text = "Отмена", ZIndex = 9 })
 			styleButton(cancel, false)
-			local erase = new("TextButton", confirm, { Name = "ConfirmDelete", Position = UDim2.new(0.5, 6, 1, -64), Size = UDim2.new(0.5, -26, 0, 44),
+			local erase = new("TextButton", confirm, { Name = "ConfirmDelete", Position = UDim2.new(0.5, metrics.gap / 2, 1, -(deleteTarget + deletePad)), Size = UDim2.new(0.5, -(deletePad + metrics.gap / 2), 0, deleteTarget),
 				BackgroundColor3 = palette.danger, TextColor3 = palette.text, Text = "Удалить", Font = Enum.Font.GothamBold, ZIndex = 9 })
 			rounded(erase, 8)
 			local function dismissDelete(): () shade:Destroy(); confirm:Destroy() end
@@ -643,7 +729,7 @@ local function render()
 	new("TextLabel", root, {
 		Name = "BuildLabel",
 		BackgroundTransparency = 1,
-		Position = UDim2.new(0, edge, 1, -(edge + 28)),
+		Position = UDim2.new(0, left, 1, -(metrics.safeBottomRight.Y + edge + ResponsiveLayout.scaled(metrics, 24, 20, 28))),
 		Size = UDim2.new(0.5, -edge, 0, 24),
 		Text = roster.buildLabel,
 		TextColor3 = palette.muted,
