@@ -18,8 +18,8 @@ CONTROLLER = read("src/client/controllers/InventoryController.luau")
 UI = read("src/client/ui/InventoryUi.luau")
 BAR = read("src/client/ui/ActionBar.luau")
 WORLD_DROP = read("src/server/services/WorldDropService.luau")
-MAIN = read("src/server/main.server.luau")
-CLIENT = read("src/client/main.client.luau")
+MAIN = read("src/server/bootstrap/adapters/ExistingServerComponents.luau")
+CLIENT = read("src/client/bootstrap/adapters/ExistingClientComponents.luau")
 
 for remote in (
     "InventoryActionRequest",
@@ -49,7 +49,7 @@ for forbidden in ("SetInventory", "SetXP", "SetEquipment", "GrantItemRequest"):
 
 if "createClientSnapshot" not in SERVICE:
     raise AssertionError("InventoryService must produce a sanitized client snapshot")
-if "InventoryNetworkService.start()" not in MAIN or "InventoryNetworkService.stop()" not in MAIN:
+if "InventoryNetworkService.start" not in MAIN or "InventoryNetworkService.stop" not in MAIN:
     raise AssertionError("server bootstrap must own inventory network lifecycle")
 
 for token in ("Enum.KeyCode.T", "Enum.KeyCode.Zero", "Enum.KeyCode.ButtonSelect", "BindActionAtPriority", "ContextActionPriority.High", "UserInputService.InputBegan", "GetFocusedTextBox", "requestSnapshot", "assignQuickSlot", "requestQuickUse", "getQuickSlotState"):
