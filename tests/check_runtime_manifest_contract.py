@@ -19,8 +19,8 @@ client_main = read("src/client/main.client.luau")
 
 for role in ("Lobby", "World", "Dungeon", "DevCombined"):
     assert f'"{role}"' in place_role
-assert "StudioDefaultRole = "DevCombined"" in place_config
-assert "Deployments = {}" in place_config, "Gate A must not invent production Place IDs"
+assert 'StudioDefaultRole = PlaceRole.DevCombined' in place_config
+assert "local deployments: { Deployment } = {}" in place_config, "Gate A must not invent production Place IDs"
 assert "PlaceRole override is allowed only in Studio" in place_runtime
 assert "No production PlaceRole configured" in place_runtime
 assert "currentRole" not in place_runtime, "PlaceRuntime must stay pure/stateless"
