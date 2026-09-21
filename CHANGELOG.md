@@ -8,7 +8,7 @@
 
 ### Playtest RC — consolidated build
 
-- Озеро между Goblin Camp и Old Cemetery полностью пересобрано с нуля как единый terrain-блок: неправильный вытянутый контур растрируется короткими неповёрнутыми полосами на одном уровне, глубина Water составляет 14 studs, а непосредственно под водой лежит сплошное Mud-дно. Water немного заходит под нетронутый берег, тогда как Air очищается только внутри контура; старые повёрнутые lobes, глубокая чаша, cliff-pass и расширение к границе мира удалены. Территории Goblin Camp, Old Cemetery и Moonfall Road остаются за пределами прохода генератора.
+- Озеро между Goblin Camp и Old Cemetery пересобрано как один grid-aligned Terrain voxel-region: генерация полосами/FillBlock полностью удалена после runtime-регрессии с видимыми Water-слайсами. Builder читает единый Region3 через ReadVoxels, правит polygon-mask и один раз пишет весь объём через WriteVoxels. Поверхность воды выровнена по 4-stud terrain grid (Y=76), глубина — 12 studs (3 полных Water-voxel слоя), непосредственно под ней лежит 4-stud Mud-дно; Air очищается только внутри lake polygon. Goblin Camp, Old Cemetery и Moonfall Road остаются за пределами authored lake/migration masks.
 
 - Исправлен QuestMarker snapshot race после Character Lobby: QuestService при старте догоняет уже CharacterReady игроков, а клиент повторяет первый QuestSnapshotRequest до получения валидного snapshot; `!/?` над NPC больше не зависят от порядка запуска сервисов.
 
