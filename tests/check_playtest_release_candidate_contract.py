@@ -11,6 +11,7 @@ responsive = read("src/client/ui/ResponsiveLayout.luau")
 craft = read("src/shared/definitions/CraftingDefinitions.luau")
 mobs = read("src/shared/definitions/MobDefinitions.luau")
 world = read("src/server/world/NorthernZonesBlockout.luau")
+lake = read("src/server/world/GoblinCemeteryLakeTerrain.luau")
 movement = read("src/client/controllers/MovementController.luau")
 progression = read("src/server/services/ProgressionService.luau")
 combat = read("src/server/services/CombatService.luau")
@@ -38,16 +39,13 @@ assert 'aggressionMode = "Passive"' in mobs
 
 for token in (
     "fillCurvedRidge",
-    "shapeGoblinCemeteryLakeHillCliff",
     'Purpose", "SwimmableWater"',
-    "LAKE_WATER_DEPTH = 30",
-    "LAKE_BASIN_CLEAR_DEPTH = 40",
-    "LAKE_CLEAR_MARGIN = 34",
-    'DeepBasinExcavated", true',
-    "clearBottomY = waterSurfaceY + 1",
-    'HillBankCliff", true',
+    "GoblinCemeteryLakeTerrain.build(lake, surfaceReference)",
 ):
     assert token in world
+
+for token in ("WATER_DEPTH = 14", "intersectionsAt", "Enum.Material.Water"):
+    assert token in lake
 
 for forbidden in (
     "prepareGoblinCampBoundaryShelf",
@@ -55,11 +53,10 @@ for forbidden in (
     "fillContinuousLakePath",
     "carveLakeDisc",
     "LakeBedFilled",
-    "ContainedWithinWorldBounds",
     "ExtendsToWorldEdge",
     "WaterRecovery",
 ):
-    assert forbidden not in world
+    assert forbidden not in world and forbidden not in lake
 
 assert "Enum.HumanoidStateType.Swimming" in movement
 assert "Enum.ContextActionResult.Pass" in movement

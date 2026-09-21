@@ -8,6 +8,7 @@ movement = (ROOT / "src/client/controllers/MovementController.luau").read_text(e
 recovery = (ROOT / "src/server/world/TraversalRecovery.luau").read_text(encoding="utf-8")
 south = (ROOT / "src/server/world/VillageAndMeadowsBlockout.luau").read_text(encoding="utf-8")
 north = (ROOT / "src/server/world/NorthernZonesBlockout.luau").read_text(encoding="utf-8")
+lake = (ROOT / "src/server/world/GoblinCemeteryLakeTerrain.luau").read_text(encoding="utf-8")
 presentation = (ROOT / "src/client/world-preview/ZonePresentation.client.luau").read_text(encoding="utf-8")
 
 for token in (
@@ -30,7 +31,7 @@ for forbidden in (
 
 if "Enum.Material.Water" not in south:
     raise AssertionError("river must use real Terrain water")
-if "Enum.Material.Water" not in north:
+if "Enum.Material.Water" not in lake:
     raise AssertionError("lake must use real Terrain water")
 
 for source_name, source in (("river", south), ("recovery", recovery)):
@@ -43,17 +44,9 @@ if 'Purpose", "SwimmableWater"' not in north:
 if "WaterRecovery" in north:
     raise AssertionError("lake must not contain a hidden water teleport hazard")
 
-for token in (
-    "LAKE_WATER_DEPTH = 30",
-    "LAKE_BASIN_CLEAR_DEPTH = 40",
-    "LAKE_CLEAR_MARGIN = 34",
-    'DeepBasinExcavated", true',
-    "clearBottomY = waterSurfaceY + 1",
-    "shapeGoblinCemeteryLakeHillCliff",
-    'HillBankCliff", true',
-):
-    if token not in north:
-        raise AssertionError(f"accepted 21:20 lake contract missing: {token}")
+for token in ("WATER_DEPTH = 14", "Enum.Material.Mud", "BED_WATER_OVERLAP = 2"):
+    if token not in lake:
+        raise AssertionError(f"rebuilt shallow lake contract missing: {token}")
 
 for lake_forbidden in (
     "prepareGoblinCampBoundaryShelf",
@@ -61,11 +54,10 @@ for lake_forbidden in (
     "fillContinuousLakePath",
     "carveLakeDisc",
     "LakeBedFilled",
-    "ContainedWithinWorldBounds",
     "ExtendsToWorldEdge",
 ):
-    if lake_forbidden in north:
-        raise AssertionError(f"post-21:20 lake experiment still present: {lake_forbidden}")
+    if lake_forbidden in north or lake_forbidden in lake:
+        raise AssertionError(f"obsolete lake generator still present: {lake_forbidden}")
 
 for forbidden in (
     "fellIntoRiver",

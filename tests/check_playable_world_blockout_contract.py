@@ -7,6 +7,7 @@ REQUIRED_FILES = [
     ROOT / "src/server/world/BlockoutPrimitives.luau",
     ROOT / "src/server/world/VillageAndMeadowsBlockout.luau",
     ROOT / "src/server/world/NorthernZonesBlockout.luau",
+    ROOT / "src/server/world/GoblinCemeteryLakeTerrain.luau",
     ROOT / "src/server/world/WorldDressingBlockout.luau",
     ROOT / "src/server/world/WorldCompositionBlockout.luau",
     ROOT / "src/server/world/PlayableWorldBlockout.luau",
@@ -60,7 +61,7 @@ def main() -> None:
     assert "baseplate.CanCollide = false" in bootstrap
 
     builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
-    assert 'TerrainRevision", "terrain-v10"' in builder
+    assert 'TerrainRevision", "terrain-v11"' in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
     assert "WorldDressingBlockout" in builder
@@ -131,17 +132,8 @@ def main() -> None:
         "createSpiderWeb",
         "Enum.Material.Mud",
         "GoblinCemeteryLake",
-        "LAKE_SURFACE_DROP = 8",
-        "LAKE_WATER_DEPTH = 30",
-        "LAKE_BASIN_CLEAR_DEPTH = 40",
-        "LAKE_AIR_CLEARANCE_HEIGHT = 46",
-        "LAKE_CLEAR_MARGIN = 34",
-        "shapeGoblinCemeteryLakeHillCliff",
+        "GoblinCemeteryLakeTerrain.build(lake, surfaceReference)",
         '"Purpose", "SwimmableWater"',
-        'DeepBasinExcavated", true',
-        'HillBankCliff", true',
-        "clearBottomY = waterSurfaceY + 1",
-        "Vector3.new(118, clearHeight, spec.zSize)",
         "DarkWoodlandThreshold",
         "OldCemetery",
         "FallenShrine",
@@ -151,19 +143,36 @@ def main() -> None:
         assert token in north
     assert "BillboardGui" not in north
     assert "WaterRecovery" not in north
-    assert "Enum.Material.Water" in north
     assert "Enum.Material.Glass" not in north
     assert "prepareGoblinCampBoundaryShelf" not in north
     assert "fillFlatLakeSlab" not in north
     assert "fillContinuousLakePath" not in north
     assert "LakeBedFilled" not in north
-    assert "ContainedWithinWorldBounds" not in north
     assert "Enum.Material.Mud" in north
     assert "postSpacing = 4.0" in north
     assert "PalisadeCollision = true" in north
     assert "fenceSegments" in north
     assert "Grounding.treeSurfaceAt(position)" in north
     assert "for index = 1, 11 do" in north
+
+    lake_terrain = read(ROOT / "src/server/world/GoblinCemeteryLakeTerrain.luau")
+    for token in (
+        "WATER_DEPTH = 14",
+        "SCANLINE_STEP = 12",
+        "SCANLINE_OVERLAP = 2",
+        "WATER_SHORE_OVERLAP = 6",
+        "BED_THICKNESS = 6",
+        "BED_WATER_OVERLAP = 2",
+        "intersectionsAt",
+        "Enum.Material.Air",
+        "Enum.Material.Mud",
+        "Enum.Material.Water",
+        'LakeGeometry", "AxisAlignedPolygonScanlines"',
+        'ContainedWithinWorldBounds", true',
+    ):
+        assert token in lake_terrain
+    assert "FillCylinder" not in lake_terrain
+    assert "CFrame.Angles" not in lake_terrain
 
     for removed_square_rim in (
         "SpiderBasinRimWest",
