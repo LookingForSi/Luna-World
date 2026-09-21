@@ -36,30 +36,9 @@ assert 'displayName = "Ядовитый паук", level = 6' in mobs
 assert 'displayName = "Паук-матка", level = 8' in mobs
 assert 'aggressionMode = "Passive"' in mobs
 
-for token in (
-    "fillCurvedRidge",
-    "shapeGoblinCemeteryLakeHillCliff",
-    'Purpose", "SwimmableWater"',
-    "LAKE_WATER_DEPTH = 30",
-    "LAKE_BASIN_CLEAR_DEPTH = 40",
-    "LAKE_CLEAR_MARGIN = 34",
-    'DeepBasinExcavated", true',
-    "clearBottomY = waterSurfaceY + 1",
-    'HillBankCliff", true',
-):
-    assert token in world
-
-for forbidden in (
-    "prepareGoblinCampBoundaryShelf",
-    "fillFlatLakeSlab",
-    "fillContinuousLakePath",
-    "carveLakeDisc",
-    "LakeBedFilled",
-    "ContainedWithinWorldBounds",
-    "ExtendsToWorldEdge",
-    "WaterRecovery",
-):
-    assert forbidden not in world
+assert "fillCurvedRidge" in world
+assert "lake generation is intentionally disabled" in world
+assert "\n\tcreateGoblinCemeteryLake(north, positions)\n" not in world
 
 assert "Enum.HumanoidStateType.Swimming" in movement
 assert "Enum.ContextActionResult.Pass" in movement
