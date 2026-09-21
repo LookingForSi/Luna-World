@@ -804,7 +804,8 @@ function NorthernZonesBlockout.build(parent: Instance)
 	createMoonfallLandmarks(north, positions)
 	createGoblinCamp(north, positions)
 	createSpiderHollow(north, positions)
-	createGoblinCemeteryLake(north, positions)
+	-- dev0.3 playtest: lake generation is intentionally disabled. The authored/base
+	-- terrain is left untouched here while the lake is redesigned separately.
 	createDarkWoodland(north, positions)
 	createCemetery(north, positions)
 	createShrine(north, positions)
