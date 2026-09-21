@@ -136,7 +136,7 @@ local function render()
 	local mobileLandscape = metrics.mode == "MobileLandscape"
 	local smallTouch = ResponsiveLayout.isSmallTouch(metrics)
 	local edge = if smallTouch then 10 else 28
-	local contentTop = if mobileLandscape then edge + 68 else edge + 96
+	local contentTop = if mobileLandscape then edge + 64 else edge + 96
 	local root = screen:FindFirstChild("LobbyRoot") :: Frame
 	if not root then
 		return
@@ -164,8 +164,8 @@ local function render()
 	local status = new("TextLabel", root, {
 		Name = "Status",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(edge, edge + 58),
-		Size = UDim2.new(1, -edge * 2, 0, 30),
+		Position = UDim2.fromOffset(edge, if mobileLandscape then edge + 36 else edge + 58),
+		Size = UDim2.new(1, -edge * 2, 0, if mobileLandscape then 22 else 30),
 		Text = if roster then "Выберите героя" else "Загрузка аккаунта…",
 		TextColor3 = palette.text,
 		Font = Enum.Font.Gotham,
