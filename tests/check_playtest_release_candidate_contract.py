@@ -46,27 +46,24 @@ for token in (
 
 for token in (
     "WATER_DEPTH = 12",
-    "VOXEL_RESOLUTION = 4",
-    "terrain:ReadVoxels(region, VOXEL_RESOLUTION)",
-    "terrain:WriteVoxels(region, VOXEL_RESOLUTION, materials, occupancy)",
-    'LakeGeometry", "SingleRegionPolygonVoxels"',
+    "WATER_SURFACE_Y = 76",
+    "BANK_TOP_Y = 80",
+    "resetLegacyCorridor",
+    "fillLakeSection",
+    'LakeGeometry", "RiverStyleOverlappingFillBlocks"',
     "Enum.Material.Water",
 ):
     assert token in lake
 
-for segmented in ("fillScanline", "SCANLINE_STEP", "terrain:FillBlock"):
-    assert segmented not in lake
-
-for forbidden in (
-    "prepareGoblinCampBoundaryShelf",
-    "fillFlatLakeSlab",
-    "fillContinuousLakePath",
-    "carveLakeDisc",
-    "LakeBedFilled",
-    "ExtendsToWorldEdge",
-    "WaterRecovery",
+for obsolete in (
+    "ReadVoxels",
+    "WriteVoxels",
+    "Region3",
+    "fillScanline",
+    "SCANLINE_STEP",
+    "FillCylinder",
 ):
-    assert forbidden not in world and forbidden not in lake
+    assert obsolete not in lake
 
 assert "Enum.HumanoidStateType.Swimming" in movement
 assert "Enum.ContextActionResult.Pass" in movement
