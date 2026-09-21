@@ -1,5 +1,5 @@
 {
-  "name": "LunaWorldWorld",
+  "name": "LunaWorld-moonfall",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
@@ -87,7 +87,24 @@
     },
     "ServerScriptService": {
       "Server": {
-        "$path": "src/server"
+        "Main": {
+          "$path": "src/server/main.server.luau"
+        },
+        "bootstrap": {
+          "$path": "src/server/bootstrap"
+        },
+        "services": {
+          "$path": "src/server/services"
+        },
+        "persistence": {
+          "$path": "src/server/persistence"
+        },
+        "core": {
+          "$path": "src/server/core"
+        },
+        "features": {
+          "$path": "src/server/features"
+        }
       }
     },
     "StarterPlayer": {
