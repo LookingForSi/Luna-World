@@ -47,27 +47,26 @@ if "WaterRecovery" in north:
 for token in (
     "WATER_DEPTH = 12",
     "WATER_SURFACE_Y = 76",
-    "BED_THICKNESS = 4",
-    "terrain:WriteVoxels(region, VOXEL_RESOLUTION, materials, occupancy)",
-    "Enum.Material.Mud",
+    "BANK_TOP_Y = 80",
+    "RESET_SIZE_X = 1020",
+    "RESET_SIZE_Z = 600",
+    "fillLakeSection",
+    "terrain:FillBlock",
+    "Enum.Material.Water",
 ):
     if token not in lake:
         raise AssertionError(f"rebuilt shallow lake contract missing: {token}")
 
-for segmented in ("fillScanline", "SCANLINE_STEP", "terrain:FillBlock"):
-    if segmented in lake:
-        raise AssertionError(f"lake must be one voxel body, not segmented strips: {segmented}")
-
-for lake_forbidden in (
-    "prepareGoblinCampBoundaryShelf",
-    "fillFlatLakeSlab",
-    "fillContinuousLakePath",
-    "carveLakeDisc",
-    "LakeBedFilled",
-    "ExtendsToWorldEdge",
+for obsolete in (
+    "ReadVoxels",
+    "WriteVoxels",
+    "Region3",
+    "fillScanline",
+    "SCANLINE_STEP",
+    "FillCylinder",
 ):
-    if lake_forbidden in north or lake_forbidden in lake:
-        raise AssertionError(f"obsolete lake generator still present: {lake_forbidden}")
+    if obsolete in lake:
+        raise AssertionError(f"obsolete lake architecture still present: {obsolete}")
 
 for forbidden in (
     "fellIntoRiver",
