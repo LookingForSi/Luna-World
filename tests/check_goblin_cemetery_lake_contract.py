@@ -1,78 +1,67 @@
 #!/usr/bin/env python3
-"""Static geometry and preservation contract for the rebuilt corridor lake."""
-import re
+"""Static contract for the simplified river-style Goblin/Cemetery lake."""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-LAKE_PATH = ROOT / "src/server/world/GoblinCemeteryLakeTerrain.luau"
-NORTH_PATH = ROOT / "src/server/world/NorthernZonesBlockout.luau"
-
-lake = LAKE_PATH.read_text(encoding="utf-8")
-north = NORTH_PATH.read_text(encoding="utf-8")
+LAKE = (ROOT / "src/server/world/GoblinCemeteryLakeTerrain.luau").read_text(encoding="utf-8")
+NORTH = (ROOT / "src/server/world/NorthernZonesBlockout.luau").read_text(encoding="utf-8")
 
 for token in (
-    "local VOXEL_RESOLUTION = 4",
-    "local WATER_SURFACE_Y = 76",
-    "local WATER_DEPTH = 12",
-    "local BED_THICKNESS = 4",
-    "terrain:ReadVoxels(region, VOXEL_RESOLUTION)",
-    "terrain:WriteVoxels(region, VOXEL_RESOLUTION, materials, occupancy)",
-    "Region3.new(",
-    ":ExpandToGrid(VOXEL_RESOLUTION)",
-    "containsPoint(LAKE_OUTLINE",
-    "containsPoint(LEGACY_RESET_OUTLINE",
+    "WATER_SURFACE_Y = 76",
+    "WATER_DEPTH = 12",
+    "BANK_TOP_Y = 80",
+    "RESET_BOTTOM_Y = 20",
+    "RESET_CLEAR_TOP_Y = 140",
+    "SHORE_OVERLAP = 8",
+    "RESET_SIZE_X = 1020",
+    "RESET_SIZE_Z = 600",
+    "LAKE_SECTIONS",
+    "WestArm",
+    "MiddleWest",
+    "MiddleEast",
+    "EastBasin",
+    "resetLegacyCorridor",
+    "fillLakeSection",
+    "terrain:FillBlock",
+    "Enum.Material.Ground",
+    "Enum.Material.Grass",
     "Enum.Material.Air",
-    "Enum.Material.Mud",
     "Enum.Material.Water",
-    'LakeGeometry", "SingleRegionPolygonVoxels"',
-    'ContainedWithinWorldBounds", true',
+    'LakeGeometry", "RiverStyleOverlappingFillBlocks"',
+    'LakeSectionCount", #LAKE_SECTIONS',
 ):
-    assert token in lake, f"single-region lake contract missing: {token}"
+    assert token in LAKE, f"simple lake contract missing: {token}"
 
-assert 'Purpose", "SwimmableWater"' in north
-assert "GoblinCemeteryLakeTerrain.build(lake)" in north
+assert 'Purpose", "SwimmableWater"' in NORTH
+assert "GoblinCemeteryLakeTerrain.build(lake)" in NORTH
 
-# Water is written as one voxel volume; no independently rasterized strips/lobes.
+# Explicitly reject the failed experimental architectures.
 for forbidden in (
+    "ReadVoxels",
+    "WriteVoxels",
+    "Region3",
+    "FillCylinder",
     "fillScanline",
     "SCANLINE_STEP",
     "SCANLINE_OVERLAP",
-    "WATER_SHORE_OVERLAP",
-    "FillCylinder",
-    "terrain:FillBlock",
-    "CFrame.Angles",
     "fillContinuousLakePath",
     "fillFlatLakeSlab",
     "carveLakeDisc",
     "prepareGoblinCampBoundaryShelf",
     "shapeGoblinCemeteryLakeHillCliff",
-    "ExtendsToWorldEdge",
     "WaterRecovery",
+    "LakeBedFilled",
 ):
-    assert forbidden not in lake, f"obsolete segmented lake generator still present: {forbidden}"
+    assert forbidden not in LAKE, f"obsolete lake architecture still present: {forbidden}"
 
-assert lake.index("terrain:ReadVoxels") < lake.index("terrain:WriteVoxels")
-assert lake.index("Enum.Material.Mud") < lake.index("Enum.Material.Water")
+# Preserve areas: reset corridor is z=2100..2700. Goblin Camp ends near z=2030;
+# Old Cemetery content begins around z=2792.
+assert "RESET_CENTER = Vector3.new(770, 0, 2400)" in LAKE
+assert "RESET_SIZE_Z = 600" in LAKE
 
-all_points = [
-    (float(x), float(z))
-    for x, z in re.findall(r"Vector2\.new\(([-\d.]+), ([-\d.]+)\)", lake)
-]
-points = all_points[:15]
-assert len(points) == 15
-assert min(x for x, _ in points) >= 300
-assert max(x for x, _ in points) <= 1240
+# Exactly four authored Water sections; all use the same WATER_SURFACE_Y/depth.
+assert LAKE.count('name = "') == 4
+assert LAKE.count("Enum.Material.Water") == 1
+assert "WATER_SURFACE_Y - WATER_DEPTH / 2" in LAKE
 
-# Goblin Camp: center (560, 1920), half extents (137, 110), plus 50-stud
-# preservation margin. Cemetery authored content begins at z=2792; keep 50 studs.
-assert min(z for _, z in points) >= 1920 + 110 + 50
-assert max(z for _, z in points) <= 2792 - 50
-
-legacy_reset = all_points[15:]
-assert len(legacy_reset) == 7
-assert min(z for _, z in legacy_reset) >= 1920 + 110 + 50
-assert max(z for _, z in legacy_reset) <= 2792 - 50
-assert min(x for x, _ in legacy_reset) > 22
-assert max(x for x, _ in legacy_reset) <= 1300
-
-print("Goblin/Cemetery single-region voxel lake contract: PASS")
+print("Goblin/Cemetery river-style lake contract: PASS")
