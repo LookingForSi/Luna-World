@@ -554,13 +554,10 @@ local function createMoonfallLandmarks(parent: Instance, positions: { [string]: 
 	P.groundedPart(props, "CrossroadsPost", crossroads + Vector3.new(12, 0, -8), Vector3.new(3, 13, 3), Enum.Material.Wood, COLORS.darkTimber)
 end
 
-local function createGoblinCemeteryLake(parent: Instance, positions: { [string]: Vector3 })
+local function createGoblinCemeteryLake(parent: Instance)
 	local lake = P.model(parent, "GoblinCemeteryLake")
 	lake:SetAttribute("Purpose", "SwimmableWater")
-	local goblin = positions.poi_goblin_camp
-	local cemetery = positions.poi_old_cemetery
-	local surfaceReference = goblin:Lerp(cemetery, 0.52) + Vector3.new(85, 0, 0)
-	GoblinCemeteryLakeTerrain.build(lake, surfaceReference)
+	GoblinCemeteryLakeTerrain.build(lake)
 end
 
 local function createDarkWoodland(parent: Instance, positions: { [string]: Vector3 })
@@ -711,7 +708,7 @@ function NorthernZonesBlockout.build(parent: Instance)
 	createMoonfallLandmarks(north, positions)
 	createGoblinCamp(north, positions)
 	createSpiderHollow(north, positions)
-	createGoblinCemeteryLake(north, positions)
+	createGoblinCemeteryLake(north)
 	createDarkWoodland(north, positions)
 	createCemetery(north, positions)
 	createShrine(north, positions)

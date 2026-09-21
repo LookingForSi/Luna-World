@@ -40,11 +40,11 @@ assert 'aggressionMode = "Passive"' in mobs
 for token in (
     "fillCurvedRidge",
     'Purpose", "SwimmableWater"',
-    "GoblinCemeteryLakeTerrain.build(lake, surfaceReference)",
+    "GoblinCemeteryLakeTerrain.build(lake)",
 ):
     assert token in world
 
-for token in ("WATER_DEPTH = 14", "intersectionsAt", "Enum.Material.Water"):
+for token in ("WATER_DEPTH = 14", "intersectionsAt", "resetLegacyCorridor", "Enum.Material.Water"):
     assert token in lake
 
 for forbidden in (
