@@ -156,6 +156,11 @@ function CharacterService.start(storeOverride: any?): ()
 					return
 				end
 				local ok, reason = PlayerDataService.selectCharacter(player, p.characterId)
+				if ok and RunService:IsStudio() then
+					-- DevCombined has no destination server. Keep arrival as a separate
+					-- authoritative seam so Gate C can confirm it only after intent validation.
+					ok, reason = PlayerDataService.confirmArrival(player)
+				end
 				response(result, player, id, action, ok, reason)
 				return
 			end

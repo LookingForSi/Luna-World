@@ -29,6 +29,10 @@ local EconomyUi = require(clientRoot.ui.EconomyUi)
 
 local ExistingClientComponents = {}
 
+function ExistingClientComponents.requestCharacterSelection(characterId: string): ()
+	CharacterLobbyController.requestSelect(characterId)
+end
+
 local function component(
 	name: string,
 	startFn: () -> (),
@@ -57,13 +61,14 @@ function ExistingClientComponents.stockHealthGui(): RuntimeComponent.RuntimeComp
 	return component("StockHealthGui", disableStockHealthGui, function() end)
 end
 
-function ExistingClientComponents.characterLobby(): RuntimeComponent.RuntimeComponent
-	return component("CharacterLobby", CharacterLobbyController.start, CharacterLobbyController.stop)
+function ExistingClientComponents.characterLobby(onEnterWorld: ((string) -> ())?): RuntimeComponent.RuntimeComponent
+	return component("CharacterLobby", function()
+		CharacterLobbyController.start({ onEnterWorld = onEnterWorld })
+	end, CharacterLobbyController.stop)
 end
 
-function ExistingClientComponents.gameplayAfterCharacterReady(): RuntimeComponent.RuntimeComponent
+function ExistingClientComponents.gameplay(): RuntimeComponent.RuntimeComponent
 	local gameplayStarted = false
-	local readyConnection: RBXScriptConnection? = nil
 	local archetypeConnection: RBXScriptConnection? = nil
 
 	local function stopGameplay(): ()
@@ -155,23 +160,7 @@ function ExistingClientComponents.gameplayAfterCharacterReady(): RuntimeComponen
 		ResponsiveUiController.start()
 	end
 
-	return component("CharacterReadyGameplay", function()
-		local player = Players.LocalPlayer
-		if player:GetAttribute("CharacterReady") then
-			startGameplay()
-		end
-		readyConnection = player:GetAttributeChangedSignal("CharacterReady"):Connect(function()
-			if player:GetAttribute("CharacterReady") then
-				startGameplay()
-			end
-		end)
-	end, function()
-		if readyConnection ~= nil then
-			readyConnection:Disconnect()
-			readyConnection = nil
-		end
-		stopGameplay()
-	end)
+	return component("Gameplay", startGameplay, stopGameplay)
 end
 
 return table.freeze(ExistingClientComponents)

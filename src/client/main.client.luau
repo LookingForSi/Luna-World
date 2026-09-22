@@ -5,27 +5,31 @@ local RunService = game:GetService("RunService")
 
 local PlaceRole = require(ReplicatedStorage.Shared.core.runtime.PlaceRole)
 local PlaceRuntime = require(ReplicatedStorage.Shared.core.runtime.PlaceRuntime)
-local ClientBootstrap = require(script.Parent.bootstrap.ClientBootstrap)
-
-local LobbyClientManifest = require(script.Parent.bootstrap.manifests.LobbyClientManifest)
-local WorldClientManifest = require(script.Parent.bootstrap.manifests.WorldClientManifest)
-local DungeonClientManifest = require(script.Parent.bootstrap.manifests.DungeonClientManifest)
-local DevCombinedClientManifest = require(script.Parent.bootstrap.manifests.DevCombinedClientManifest)
+local ClientApplication = require(script.Parent.bootstrap.ClientApplication)
+local LobbyClientRuntime = require(script.Parent.bootstrap.LobbyClientRuntime)
+local GameplayClientRuntime = require(script.Parent.bootstrap.GameplayClientRuntime)
+local LocalPlaceTransitionAdapter = require(script.Parent.bootstrap.transport.LocalPlaceTransitionAdapter)
+local TeleportTransitionAdapter = require(script.Parent.bootstrap.transport.TeleportTransitionAdapter)
+local ExistingClientComponents = require(script.Parent.bootstrap.adapters.ExistingClientComponents)
 
 local role = PlaceRuntime.resolve(game.PlaceId, game.GameId, RunService:IsStudio(), nil)
 
-local manifest
-if role == PlaceRole.Lobby then
-	manifest = LobbyClientManifest
-elseif role == PlaceRole.World then
-	manifest = WorldClientManifest
-elseif role == PlaceRole.Dungeon then
-	manifest = DungeonClientManifest
-elseif role == PlaceRole.DevCombined then
-	manifest = DevCombinedClientManifest
-else
+if not PlaceRole.isValid(role) then
 	error(string.format("Unsupported client PlaceRole: %s", tostring(role)))
 end
 
-local stop = ClientBootstrap.start(manifest)
-script.Destroying:Connect(stop)
+local selectCharacter = ExistingClientComponents.requestCharacterSelection
+local adapter = if role == PlaceRole.DevCombined
+	then LocalPlaceTransitionAdapter.new(selectCharacter)
+	else TeleportTransitionAdapter.new(function(_characterId: string)
+		-- Gate C replaces this presentation-only boundary with a server transfer request.
+	end)
+local application = ClientApplication.new(LobbyClientRuntime.new(), GameplayClientRuntime.new(), adapter)
+local ok, reason = application:start({ mode = role })
+if not ok then
+	error(string.format("Client application failed to start for %s: %s", role, tostring(reason)))
+end
+
+script.Destroying:Connect(function()
+	application:stop()
+end)

@@ -10,6 +10,7 @@ service = read("src/server/services/CharacterService.luau")
 data = read("src/server/services/PlayerDataService.luau")
 client = read("src/client/main.client.luau")
 client_adapter = read("src/client/bootstrap/adapters/ExistingClientComponents.luau")
+client_application = read("src/client/bootstrap/ClientApplication.luau")
 dev_client_manifest = read("src/client/bootstrap/manifests/DevCombinedClientManifest.luau")
 lobby = read("src/client/controllers/CharacterLobbyController.luau")
 project = json.loads(read("default.project.json"))
@@ -25,9 +26,9 @@ assert "UseDataStoreInStudio" in nickname_store and "studioIndex" in nickname_st
 assert "FilterStringAsync" in service and "CharacterNotOwned" in service
 assert "Players.CharacterAutoLoads = false" in data
 assert "AccountReady" in data and "CharacterReady" in data
-assert "ClientBootstrap.start(manifest)" in client
-assert dev_client_manifest.index("Components.characterLobby()") < dev_client_manifest.index("Components.gameplayAfterCharacterReady()")
-assert 'GetAttribute("CharacterReady")' in client_adapter and "startGameplay()" in client_adapter
+assert "ClientApplication.new" in client
+assert dev_client_manifest.index("Components.characterLobby()") < dev_client_manifest.index("Components.gameplay()")
+assert 'GetAttribute("CharacterReady")' in client_application and "startGameplay()" in client_adapter
 assert "ResponsiveLayout.observe" in lobby and "DeleteConfirmation" in lobby
 assert "IgnoreGuiInset = true" in lobby and "Size = UDim2.fromScale(1, 1)" in lobby
 assert "geometryChanged" in lobby and "previousViewport" in lobby

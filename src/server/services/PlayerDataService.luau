@@ -43,6 +43,9 @@ local function setState(player: Player, session: Session, state: AccountState): 
 	player:SetAttribute("ProfileState", state)
 	player:SetAttribute("AccountReady", state == "AccountReady" or state == "CharacterReady")
 	player:SetAttribute("CharacterReady", state == "CharacterReady")
+	if state ~= "CharacterReady" then
+		player:SetAttribute("ArrivalReady", false)
+	end
 end
 
 local function defaultStore(): ProfileStoreContract.Store
@@ -263,6 +266,15 @@ function PlayerDataService.selectCharacter(player: Player, characterId: string):
 	setState(player, s, "CharacterReady")
 	characterReadyEvent:Fire(player)
 	player:LoadCharacter()
+	return true, nil
+end
+
+function PlayerDataService.confirmArrival(player: Player): (boolean, string?)
+	local session = sessions[player]
+	if session == nil or session.state ~= "CharacterReady" or session.activeCharacterId == nil then
+		return false, "CharacterNotReady"
+	end
+	player:SetAttribute("ArrivalReady", true)
 	return true, nil
 end
 function PlayerDataService.saveNow(player: Player): boolean
