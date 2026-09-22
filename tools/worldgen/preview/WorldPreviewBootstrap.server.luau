@@ -1,8 +1,10 @@
 --!strict
 
--- This Script exists only in world.project.json. Production/default mapping does
--- not include this directory, so runtime world generation cannot auto-run there.
-local WorldBootstrap = require(script.Parent.World.WorldBootstrap)
+local ServerScriptService = game:GetService("ServerScriptService")
+
+-- This Script is mapped only by world.project.json. Production Place projects
+-- never map the Worldgen folder or this auto-running preview entrypoint.
+local WorldBootstrap = require(ServerScriptService.Worldgen.WorldBootstrap)
 
 WorldBootstrap.start()
 game:BindToClose(WorldBootstrap.stop)
