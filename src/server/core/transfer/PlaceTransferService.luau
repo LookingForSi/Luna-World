@@ -55,6 +55,8 @@ function Service:stop(): ()
 		self.removingConnection:Disconnect()
 		self.removingConnection = nil
 	end
+
+	-- Snapshot first: recover()/forget() mutate the pending table.
 	local players = {}
 	for player in self.pending do
 		table.insert(players, player)
@@ -63,9 +65,9 @@ function Service:stop(): ()
 		if self.teleportProtected[player] then
 			-- Once TeleportAsync has been entered, shutdown can no longer know
 			-- whether Roblox accepted the handoff. Preserve the one-shot intent
-			-- and released profile so a destination that is already starting can
-			-- complete admission. A failed handoff will simply expire and the
-			-- player can reclaim the profile on a later Lobby join.
+			-- and released profile so a destination already starting can finish
+			-- admission. If handoff ultimately fails, the intent expires and a
+			-- later Lobby join can reclaim the released profile normally.
 			self:forget(player)
 		else
 			self:recover(player, "ServiceStopping")
@@ -94,11 +96,13 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 
 	local transferId = HttpService:GenerateGUID(false)
 	self.pending[player] = transferId
+
 	local released, releaseReason = self.data:beginTransfer(player)
 	if not released then
 		self.pending[player] = nil
 		return false, releaseReason
 	end
+
 	if self.pending[player] ~= transferId or not self.running or player.Parent ~= Players then
 		if player.Parent == Players then
 			self.data:recoverTransfer(player)
@@ -106,8 +110,9 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 		self.pending[player] = nil
 		return false, "TransferCancelled"
 	end
+
 	local intent = {
-			transferVersion = TransferConfig.Version,
+		transferVersion = TransferConfig.Version,
 		transferId = transferId,
 		userId = player.UserId,
 		characterId = characterId,
@@ -122,6 +127,7 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 		self.pending[player] = nil
 		return false, if recovered then makeReason else recoveryReason
 	end
+
 	if self.pending[player] ~= transferId or not self.running or player.Parent ~= Players then
 		local removed = self.intents:remove(transferId)
 		if removed and player.Parent == Players then
@@ -130,17 +136,21 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 		self.pending[player] = nil
 		return false, "TransferCancelled"
 	end
+
 	-- From this point shutdown must not eagerly reclaim/remove the handoff:
-	-- TeleportAsync may yield after Roblox has accepted the destination.
+	-- TeleportAsync can yield after Roblox has accepted the destination.
 	self.teleportProtected[player] = true
 	local sent, sendReason = self.gateway:teleport(destination.placeId, { player }, Rules.routingPayload(intent))
+
+	-- stop()/PlayerRemoving may have deliberately forgotten the source side
+	-- while the TeleportAsync call yielded. In that case the intent must remain.
 	if self.pending[player] ~= transferId or not self.running then
 		return false, "TransferCancelled"
 	end
+
 	if not sent then
 		self.teleportProtected[player] = nil
-		self.teleportProtected[player] = nil
-	local removed, removeReason = self.intents:remove(transferId)
+		local removed, removeReason = self.intents:remove(transferId)
 		if removed then
 			self.data:recoverTransfer(player)
 		else
@@ -149,6 +159,9 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 		self.pending[player] = nil
 		return false, removeReason or sendReason
 	end
+
+	-- Keep teleportProtected set until PlayerRemoving, TeleportInitFailed or
+	-- service shutdown resolves the source-side ownership ambiguity.
 	return true, nil
 end
 
@@ -157,12 +170,15 @@ function Service:recover(player: Player, _reason: string?): (boolean, string?)
 	if transferId == nil then
 		return false, "NoTransferInProgress"
 	end
+	self.teleportProtected[player] = nil
+
 	local removed, removeReason = self.intents:remove(transferId)
 	if not removed then
 		self.data:failSession(player, removeReason or "IntentCleanupFailed")
 		self.pending[player] = nil
 		return false, removeReason
 	end
+
 	local ok, reason = self.data:recoverTransfer(player)
 	self.pending[player] = nil
 	if self.onRecovery ~= nil then
