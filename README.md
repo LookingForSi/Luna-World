@@ -17,7 +17,7 @@
 - современное перемещение персонажа (WASD / gamepad / touch);
 - классический target-based PvE-бой;
 - 3 стартовых архетипа;
-- уровни 1–10;
+- уровни 1–15, где открытый мир покрывает 1–14, а LV15 зарезервирован под финал Ruins of Selene;
 - skills и cooldowns;
 - mobs, aggro и respawn;
 - XP и level-up;
@@ -68,10 +68,10 @@ Git является source of truth для исходного кода и до�
 
 ## Статус
 
-Текущий development checkpoint: **0.1.0-dev.2 / dev0.1**.
+Текущий release checkpoint: **0.1.0-alpha.1**.
 
-Это первая целостная playable-база проекта. Уже реализованы три архетипа и target-based PvE, уровни 1–10, skills, XP, loot, inventory/equipment, persistence, Luna Village и открытый маршрут Moonfall Valley до Ancient Approach, полноценный Mob Content Pass, open-world elites, а также узкая деревенская экономика с No-Grade крафтом, merchant buy/sell и return scroll.
+Это первая зафиксированная playable alpha на новой multi-place архитектуре. Уже реализованы три архетипа и target-based PvE, открытая progression-зона LV1–14 до Ancient Approach, skills, XP/level-up, loot, inventory/equipment, persistence, Q1–Q7, open-world elites, деревенская экономика с No-Grade крафтом, merchant buy/sell, return scroll, Character Lobby и отдельная mobile-landscape компоновка HUD/UI.
 
-Checkpoint ещё **не является финальным v0.1 Vertical Slice**. До release gate остаются прежде всего quest chain, party, Ruins of Selene как instanced dungeon, финальный boss, последующие balance/UX/art/audio/mobile passes и полный multiplayer acceptance.
+`0.1.0-alpha.1` ещё **не является финальным v0.1 Vertical Slice**. По утверждённому Definition of Done до `0.1.0` обязательны прежде всего party до 4 игроков, Ruins of Selene как instanced dungeon и Selene's Fallen Guardian с полноценным boss encounter. Дополнительно остаются art/audio/balance polish, published multi-place acceptance и дальнейшая mobile UX доводка.
 
-Подробная фиксация состава checkpoint и известных пробелов: [dev0.1 checkpoint](docs/releases/2026-09-20-dev0.1-checkpoint.md).
+Подробности: [release notes 0.1.0-alpha.1](docs/releases/2026-09-22-0.1.0-alpha.1.md).
