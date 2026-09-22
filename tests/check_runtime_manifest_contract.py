@@ -32,7 +32,8 @@ assert "Duplicate runtime component" in runtime
 
 for entrypoint in (server_main, client_main):
     assert "PlaceRuntime.resolve(game.PlaceId, game.GameId" in entrypoint
-    assert "Bootstrap.start(manifest)" in entrypoint
+assert "ServerBootstrap.start(manifest)" in server_main
+assert "ClientApplication.new" in client_main
 
 allowed_place_id_files = {
     "src/server/main.server.luau",
@@ -67,9 +68,9 @@ world_client = read("src/client/bootstrap/manifests/WorldClientManifest.luau")
 dungeon_client = read("src/client/bootstrap/manifests/DungeonClientManifest.luau")
 dev_client = read("src/client/bootstrap/manifests/DevCombinedClientManifest.luau")
 assert "Components.characterLobby()" in lobby_client
-assert "Components.gameplayAfterCharacterReady()" not in lobby_client
+assert "Components.gameplay()" not in lobby_client
 assert "Components.characterLobby()" not in world_client
 assert "Components.characterLobby()" not in dungeon_client
-assert "Components.characterLobby()" in dev_client and "Components.gameplayAfterCharacterReady()" in dev_client
+assert "Components.characterLobby()" in dev_client and "Components.gameplay()" in dev_client
 
 print("Runtime manifest contract: PASS")

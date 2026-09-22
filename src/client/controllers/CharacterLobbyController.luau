@@ -10,6 +10,9 @@ local pending = {}
 local selected: string?
 local roster: any
 local stopObserve: (() -> ())?
+local resultConnection: RBXScriptConnection?
+local accountReadyConnection: RBXScriptConnection?
+local onEnterWorld: ((string) -> ())?
 local layoutMetrics: ResponsiveLayout.Metrics?
 local lastLayoutMode: ResponsiveLayout.Mode?
 local lastViewport: Vector2?
@@ -117,6 +120,10 @@ local function send(action: string, data: any?)
 	p.requestId = id
 	pending[id] = action
 	request:FireServer(p)
+end
+
+function CharacterLobbyController.requestSelect(characterId: string): ()
+	send("Select", { characterId = characterId })
 end
 local function clear(parent: Instance)
 	for _, x in parent:GetChildren() do
@@ -538,7 +545,11 @@ local function render()
 				)
 			end)
 		elseif chosen then
-			send("Select", { characterId = chosen.characterId })
+			if onEnterWorld ~= nil then
+				onEnterWorld(chosen.characterId)
+			else
+				send("Select", { characterId = chosen.characterId })
+			end
 		end
 	end)
 	if chosen then
@@ -581,10 +592,15 @@ local function render()
 
 
 end
-function CharacterLobbyController.start(): ()
+export type StartOptions = {
+	onEnterWorld: ((string) -> ())?,
+}
+
+function CharacterLobbyController.start(options: StartOptions?): ()
 	if screen then
 		return
 	end
+	onEnterWorld = if options ~= nil then options.onEnterWorld else nil
 	screen = new(
 		"ScreenGui",
 		Players.LocalPlayer.PlayerGui,
@@ -616,7 +632,7 @@ function CharacterLobbyController.start(): ()
 			render()
 		end
 	end)
-	result.OnClientEvent:Connect(function(p)
+	resultConnection = result.OnClientEvent:Connect(function(p)
 		if typeof(p) ~= "table" then
 			return
 		end
@@ -653,7 +669,7 @@ function CharacterLobbyController.start(): ()
 	if player:GetAttribute("AccountReady") then
 		send("Roster")
 	else
-		player:GetAttributeChangedSignal("AccountReady"):Connect(function()
+		accountReadyConnection = player:GetAttributeChangedSignal("AccountReady"):Connect(function()
 			if player:GetAttribute("AccountReady") then
 				send("Roster")
 			end
@@ -664,6 +680,15 @@ end
 function CharacterLobbyController.stop(): ()
 	if stopObserve then
 		stopObserve()
+		stopObserve = nil
+	end
+	if resultConnection ~= nil then
+		resultConnection:Disconnect()
+		resultConnection = nil
+	end
+	if accountReadyConnection ~= nil then
+		accountReadyConnection:Disconnect()
+		accountReadyConnection = nil
 	end
 	if screen then
 		screen:Destroy()
@@ -672,5 +697,7 @@ function CharacterLobbyController.stop(): ()
 	layoutMetrics = nil
 	lastLayoutMode = nil
 	lastViewport = nil
+	onEnterWorld = nil
+	table.clear(pending)
 end
 return CharacterLobbyController
