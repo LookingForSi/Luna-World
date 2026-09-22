@@ -10,7 +10,7 @@
 
 - Mobile UI переведён с универсального уменьшенного desktop modal на три семантических поверхности: компактные подтверждения, content-sized menu sheets и полноэкранные рабочие пространства.
 - Lobby, Quest, Economy и Inventory теперь самостоятельно владеют своей touch-геометрией; полноэкранные рабочие пространства координированно скрывают gameplay HUD, а Character Creation использует прокручиваемое тело и отдельный фиксированный footer.
-- Интерактивные экраны используют Roblox Core UI safe insets без повторного ручного смещения, HUD использует device safe insets, а Studio debug panel по умолчанию не создаётся на touch.
+- Интерактивные экраны используют Roblox Core UI safe insets без повторного ручного смещения, а mobile gameplay HUD обрамляет полный физический viewport локально защищёнными anchors; Player Status, Target, Primary Actions, Skill Bar и свёрнутый Combat Log получили отдельную компактную phone-landscape геометрию.
 - Phone-landscape Character Creation и выбор героя уплотнены под активный viewport; удаление перенесено в видимый блокирующий диалог. Исправлено аварийное завершение mobile gameplay startup из-за записи несуществующего свойства `UISizeConstraint.Enabled`, после которого lifecycle cleanup сразу удалял уже созданный HUD.
 
 ### Playtest RC — consolidated build

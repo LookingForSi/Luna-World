@@ -15,6 +15,18 @@ HudLayout.ActionBarSize = Vector2.new(360, 150)
 HudLayout.SkillBarSize = Vector2.new(600, 58)
 HudLayout.CombatLogSize = Vector2.new(500, 190)
 
+-- Phone-landscape gameplay HUD geometry deliberately uses the physical viewport.
+-- Each corner owner applies only the clearance it needs instead of shrinking the
+-- entire HUD behind one global safe rectangle.
+HudLayout.MobileEdgeMargin = 8
+HudLayout.MobilePlayerStatusSize = Vector2.new(216, 116)
+HudLayout.MobileTargetSize = Vector2.new(230, 52)
+HudLayout.MobileActionBarSize = Vector2.new(248, 108)
+HudLayout.MobileSkillBarSize = Vector2.new(288, 48)
+HudLayout.MobileCombatLogCollapsedSize = Vector2.new(92, 44)
+HudLayout.MobileCombatLogExpandedSize = Vector2.new(300, 150)
+HudLayout.MobileCombatLogJoystickClearance = 144
+
 function HudLayout.applyPanelStyle(frame: Frame): ()
 	frame.BackgroundColor3 = HudLayout.PanelBackground
 	frame.BackgroundTransparency = HudLayout.PanelTransparency
