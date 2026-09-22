@@ -37,11 +37,23 @@
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
-      "World": {
-        "$path": "src/server/world"
+      "Server": {
+        "$className": "Folder",
+        "world": {
+          "$path": "src/server/world"
+        }
+      },
+      "Worldgen": {
+        "$className": "Folder",
+        "Moonfall": {
+          "$path": "tools/worldgen/moonfall"
+        },
+        "WorldBootstrap": {
+          "$path": "tools/worldgen/WorldBootstrap.luau"
+        }
       },
       "WorldPreviewBootstrap": {
-        "$path": "src/server-world-preview/WorldPreviewBootstrap.server.luau"
+        "$path": "tools/worldgen/preview/WorldPreviewBootstrap.server.luau"
       }
     },
     "StarterPlayer": {
