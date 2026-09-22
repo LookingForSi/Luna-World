@@ -62,6 +62,7 @@ function ClientApplication._setState(self: Application, nextState: State.State):
 end
 
 function ClientApplication._fail(self: Application, reason: any): ()
+	warn(string.format("[ClientApplication] transition failed in state %s: %s", self.state, tostring(reason)))
 	if self.characterReadyConnection ~= nil then
 		self.characterReadyConnection:Disconnect()
 		self.characterReadyConnection = nil
@@ -139,6 +140,12 @@ function ClientApplication.transition(self: Application, nextState: State.State,
 			return false, "InvalidCharacterId"
 		end
 		self:_setState(State.Transitioning)
+		if self.mode == "DevCombined" and self.gate == nil then
+			-- Subscribe before the local Select request. In Studio the server can
+			-- set CharacterReady + ArrivalReady in the same frame; subscribing
+			-- while still in Lobby can permanently consume the readiness gate.
+			self:_beginReadiness()
+		end
 		local callOk, transitionOk, reason = pcall(self.adapter.enterWorld, context.characterId)
 		if not callOk or not transitionOk then
 			self:_fail(if callOk then reason else transitionOk)
@@ -156,9 +163,6 @@ function ClientApplication.start(self: Application, context: InitialContext): (b
 	self.mode = context.mode
 	if context.mode == "Lobby" or context.mode == "DevCombined" then
 		self:_setState(State.Lobby)
-		if context.mode == "DevCombined" then
-			self:_beginReadiness()
-		end
 		local ok, startError = pcall(function()
 			self.lobby:start(function(characterId: string)
 				if context.mode == "DevCombined" then
