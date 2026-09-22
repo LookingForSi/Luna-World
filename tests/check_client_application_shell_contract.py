@@ -16,7 +16,7 @@ lobby = read("src/client/bootstrap/LobbyClientRuntime.luau")
 gameplay = read("src/client/bootstrap/GameplayClientRuntime.luau")
 local_transition = read("src/client/bootstrap/transport/LocalPlaceTransitionAdapter.luau")
 teleport_transition = read("src/client/bootstrap/transport/TeleportTransitionAdapter.luau")
-controller = read("src/client/controllers/CharacterLobbyController.luau")
+controller = read("src/client/features/lobby/CharacterLobbyController.luau")
 
 assert "ClientApplication.new" in main and "application:start" in main
 assert "LocalPlaceTransitionAdapter.new" in main
