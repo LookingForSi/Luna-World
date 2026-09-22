@@ -88,6 +88,15 @@
     "ServerScriptService": {
       "Server": {
         "$path": "../src/server"
+      },
+      "Worldgen": {
+        "$className": "Folder",
+        "Moonfall": {
+          "$path": "../tools/worldgen/moonfall"
+        },
+        "WorldBootstrap": {
+          "$path": "../tools/worldgen/WorldBootstrap.luau"
+        }
       }
     },
     "StarterPlayer": {
