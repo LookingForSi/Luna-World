@@ -3,14 +3,15 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local WorldLayout = require(ReplicatedStorage.Shared.world.WorldLayout)
+local Contract = require(ReplicatedStorage.Shared.world.MoonfallAuthoringContract)
 local P = require(script.Parent.BlockoutPrimitives)
 local VillageAndMeadowsBlockout = require(script.Parent.VillageAndMeadowsBlockout)
 local NorthernZonesBlockout = require(script.Parent.NorthernZonesBlockout)
 local WorldDressingBlockout = require(script.Parent.WorldDressingBlockout)
 local WorldCompositionBlockout = require(script.Parent.WorldCompositionBlockout)
 
-local ROOT_NAME = "LunaWorldPlayableBlockout"
-local MANAGED_BY = "PlayableWorldBlockout"
+local ROOT_NAME = Contract.RootName
+local MANAGED_BY = Contract.GeneratorManagedBy
 local BOUNDARY_HEIGHT = 320
 local BOUNDARY_THICKNESS = 8
 
@@ -87,7 +88,7 @@ function PlayableWorldBlockout.rebuild(): (Model, SpawnLocation)
 	local root = Instance.new("Model")
 	root.Name = ROOT_NAME
 	root:SetAttribute("ManagedBy", MANAGED_BY)
-	root:SetAttribute("TerrainRevision", "terrain-v11")
+	root:SetAttribute("TerrainRevision", Contract.TerrainRevision)
 	root:SetAttribute("Purpose", "OwnerTraversalBlockout")
 
 	local spawn = VillageAndMeadowsBlockout.build(root)
