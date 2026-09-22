@@ -16,4 +16,15 @@ local PlaceConfig = {
 	Deployments = deployments,
 }
 
+function PlaceConfig.getPlaceId(gameId: number, role: PlaceRole.PlaceRole): number?
+	for _, deployment in deployments do
+		if deployment.gameId == gameId then
+			for placeId, configuredRole in deployment.roles do
+				if configuredRole == role then return placeId end
+			end
+		end
+	end
+	return nil
+end
+
 return table.freeze(PlaceConfig)
