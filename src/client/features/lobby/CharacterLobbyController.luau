@@ -170,7 +170,7 @@ local function render()
 		Text = if roster then "Выберите героя" else "Загрузка аккаунта…",
 		TextColor3 = palette.text,
 		Font = Enum.Font.Gotham,
-		TextSize = 18,
+		TextSize = if smallTouch then 14 else 18,
 	})
 	if not roster then
 		return
@@ -386,8 +386,8 @@ local function render()
 	end
 	new("TextLabel", preview, {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(20, 20),
-		Size = UDim2.new(1, -40, 0, 110),
+		Position = UDim2.fromOffset(if smallTouch then 14 else 20, if smallTouch then 10 else 20),
+		Size = UDim2.new(1, if smallTouch then -28 else -40, 0, if smallTouch then 82 else 110),
 		Text = if chosen
 			then string.format(
 				"%s\n%s • Уровень %d\nXP %d • Luna %d",
@@ -399,13 +399,13 @@ local function render()
 			)
 			else "Выберите карточку героя",
 		TextColor3 = palette.text,
-		TextSize = 20,
+		TextSize = if smallTouch then 14 else 20,
 		Font = Enum.Font.GothamSemibold,
 	})
 	local play = new("TextButton", preview, {
 		Name = "EnterWorld",
-		Position = UDim2.new(0, 24, 1, -78),
-		Size = UDim2.new(1, -48, 0, 54),
+		Position = if smallTouch then UDim2.new(0, 14, 1, -50) else UDim2.new(0, 24, 1, -78),
+		Size = if smallTouch then UDim2.new(1, -28, 0, 40) else UDim2.new(1, -48, 0, 54),
 		BackgroundColor3 = palette.accentBright,
 		TextColor3 = palette.bg,
 		Text = if chosen and chosen.needsIdentity
@@ -484,8 +484,8 @@ local function render()
 	end)
 	if chosen then
 		local del = new("TextButton", preview, {
-			Position = UDim2.fromOffset(24, 150),
-			Size = UDim2.fromOffset(190, 44),
+			Position = UDim2.fromOffset(if smallTouch then 14 else 24, if smallTouch then 96 else 150),
+			Size = UDim2.fromOffset(if smallTouch then 136 else 190, if smallTouch then 36 else 44),
 			BackgroundColor3 = palette.danger,
 			TextColor3 = palette.text,
 			Text = if smallTouch then "Удалить" else "Удалить персонажа",
