@@ -24,7 +24,7 @@ quest_server = read("src/server/services/QuestService.luau")
 player_data = read("src/server/services/PlayerDataService.luau")
 respawn = read("src/server/services/RespawnService.luau")
 hud = read("src/client/ui/CombatHud.luau")
-inventory_ui = read("src/client/ui/InventoryUi.luau")
+inventory_ui = read("src/client/features/inventory/InventoryUi.luau")
 
 assert "DataVersion = 3" in account
 assert "CharacterOrder" in account and "Characters" in account
