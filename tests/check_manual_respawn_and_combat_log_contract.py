@@ -2,6 +2,7 @@
 """Static contract for manual respawn and the toggleable combat log."""
 
 from pathlib import Path
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,7 +20,9 @@ def require(path: str, token: str, message: str) -> None:
 
 
 for project in ("default.project.json", "test.project.json"):
-    require(project, '"RespawnRequest": { "$className": "RemoteEvent" }', f"{project} must expose RespawnRequest")
+    data = json.loads(read(project))
+    remotes = data["tree"]["ReplicatedStorage"]["Remotes"]
+    assert remotes["RespawnRequest"]["$className"] == "RemoteEvent", f"{project} must expose RespawnRequest"
 
 require("src/shared/config/RespawnConfig.luau", 'RespawnPendingAttribute = "RespawnPending"', "respawn pending state must have one stable replicated name")
 require("src/server/services/RespawnService.luau", "RespawnRules.canRequestRespawn", "server must gate explicit respawn requests")
