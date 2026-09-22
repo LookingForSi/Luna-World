@@ -56,6 +56,7 @@ for forbidden in ("Components.combat()", "Components.mobs()", "Components.worldB
     assert forbidden not in lobby_server, f"Lobby server illegally contains {forbidden}"
 assert "Components.character()" not in world_server, "World server must not boot Character Lobby service"
 assert "Components.worldBootstrap()" not in world_server, "production World manifest must not own runtime worldgen"
+assert "Components.moonfallWorldRuntime()" in world_server, "production World manifest must validate authored Moonfall runtime"
 for forbidden in ("Components.character()", "Components.economy()", "Components.economyWorld()", "Components.npcWorld()", "Components.travel()", "Components.quests()", "Components.worldBootstrap()"):
     assert forbidden not in dungeon_server, f"Dungeon server illegally contains {forbidden}"
 assert "Components.worldBootstrap()" in dev_server
