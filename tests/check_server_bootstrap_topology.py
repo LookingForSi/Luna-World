@@ -100,7 +100,7 @@ assert resolved_services == EXPECTED_SERVICES, (
     f"server adapter service set changed: {sorted(resolved_services)}"
 )
 assert "MobAIService.start(MobAbilityService.requestAttack)" in adapters
-assert 'workspace:WaitForChild("LunaWorldPlayableBlockout", 15)' in adapters
+assert "workspace:WaitForChild(MoonfallAuthoringContract.RootName, 15)" in adapters
 
 start_positions = [adapters.index(token) for token in LEGACY_START_ORDER]
 assert start_positions == sorted(start_positions), "DevCombined legacy startup order changed"
