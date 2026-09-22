@@ -19,7 +19,7 @@ def require(path: str, token: str, message: str) -> None:
 
 
 SERVER_DEBUG = "src/server/services/StudioDebugService.luau"
-COMBAT = "src/server/services/CombatService.luau"
+COMBAT = "src/server/features/combat/CombatCoordinator.luau"
 ECONOMY = "src/server/services/EconomyService.luau"
 STARTER = "src/shared/economy/StarterGearRules.luau"
 ITEMS = "src/shared/definitions/ItemDefinitions.luau"
@@ -48,12 +48,12 @@ require(STARTER, 'ranger = "weapon_ash_bow"', "ranger starter weapon mapping is 
 require(STARTER, 'mystic = "weapon_ash_staff"', "mystic starter weapon mapping is missing")
 require(ITEMS, '"Учебный лук"', "ranger starter display name must be Учебный лук")
 require(ITEMS, '"Учебный посох"', "mystic starter display name must be Учебный посох")
-require(COMBAT, "function CombatService._setArchetypeForStudio", "CombatService Studio archetype seam is missing")
+require(COMBAT, "function CombatCoordinator._setArchetypeForStudio", "CombatService Studio archetype seam is missing")
 require(COMBAT, 'assert(RunService:IsStudio()', "Studio archetype seam must hard-fail outside Studio")
 require(COMBAT, "clearPlayerState(player, true)", "class switch must discard the old authoritative combat state before respawn")
 require(COMBAT, "player:SetAttribute(ARCHETYPE_ATTRIBUTE, archetypeId)", "new archetype must be written after old combat state cleanup")
 require(COMBAT, "player:LoadCharacter()", "class switch must rebuild combat state through the existing character lifecycle")
-require(COMBAT, "function CombatService._setMovementMultiplierForStudio", "CombatService Studio movement seam is missing")
+require(COMBAT, "function CombatCoordinator._setMovementMultiplierForStudio", "CombatService Studio movement seam is missing")
 require(COMBAT, 'assert(RunService:IsStudio()', "Studio combat seams must hard-fail outside Studio")
 require(SERVER_MAIN, "StudioDebugService.start()", "DevCombined compatibility lifecycle must start the Studio debug service")
 

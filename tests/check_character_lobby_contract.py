@@ -44,7 +44,7 @@ assert 'CharacterRules.validateCreation(p, looseStudioNicknames())' in service
 combat_config = read("src/shared/config/CombatConfig.luau")
 character_config = read("src/shared/config/CharacterConfig.luau")
 respawn = read("src/server/services/RespawnService.luau")
-combat = read("src/server/services/CombatService.luau")
+combat = read("src/server/features/combat/CombatCoordinator.luau")
 hud = read("src/client/ui/CombatHud.luau")
 assert 'NicknameAttribute = "CharacterNickname"' in character_config
 assert "player:SetAttribute(CombatConfig.ArchetypeAttribute, character.ArchetypeId)" in data

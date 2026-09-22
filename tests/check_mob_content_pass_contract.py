@@ -19,7 +19,7 @@ LAYOUT = text("src/shared/world/WorldLayout.luau")
 MOB_SERVICE = text("src/server/services/MobService.luau")
 MOB_AI = text("src/server/services/MobAIService.luau")
 MOB_ABILITY_SERVICE = text("src/server/services/MobAbilityService.luau")
-COMBAT = text("src/server/services/CombatService.luau")
+COMBAT = text("src/server/features/combat/CombatCoordinator.luau")
 BOOTSTRAP_ADAPTER = text("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 
 for mob_id in (

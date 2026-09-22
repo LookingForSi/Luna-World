@@ -4,13 +4,17 @@ local Players = game:GetService("Players")
 
 local TargetingService = {}
 
-function TargetingService.getPlayerByCanonicalTargetId(targetId: string): Player?
-	for _, candidate in Players:GetPlayers() do
+function TargetingService.findPlayerByCanonicalTargetId(targetId: string, candidates: { Player }): Player?
+	for _, candidate in candidates do
 		if targetId == "player:" .. tostring(candidate.UserId) then
 			return candidate
 		end
 	end
 	return nil
+end
+
+function TargetingService.getPlayerByCanonicalTargetId(targetId: string): Player?
+	return TargetingService.findPlayerByCanonicalTargetId(targetId, Players:GetPlayers())
 end
 
 function TargetingService.facePlayerTowardModel(player: Player, target: Model): ()

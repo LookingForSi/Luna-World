@@ -12,7 +12,7 @@ def read(path: str) -> str:
 
 DATA = read("src/server/services/PlayerDataService.luau")
 PROGRESSION = read("src/server/services/ProgressionService.luau")
-COMBAT = read("src/server/services/CombatService.luau")
+COMBAT = read("src/server/features/combat/CombatCoordinator.luau")
 MAIN = read("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 CONFIG = read("src/shared/config/PersistenceConfig.luau")
 

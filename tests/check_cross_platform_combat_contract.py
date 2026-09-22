@@ -62,16 +62,17 @@ require(HUD, "Enum.VerticalAlignment.Bottom", "chat window must live at the lowe
 require(HUD, "Vector2.new(1, 0)", "player status HUD must anchor from the upper-right")
 require(HUD, "UDim2.new(1, -HudLayout.CornerMargin, 0, HudLayout.CornerMargin)", "player status HUD must use the shared upper-right corner margin")
 
-server = (ROOT / "src/server/services/CombatService.luau").read_text(encoding="utf-8")
+server = (ROOT / "src/server/features/combat/CombatCoordinator.luau").read_text(encoding="utf-8")
+targeting_server = (ROOT / "src/server/features/combat/TargetingService.luau").read_text(encoding="utf-8")
 if 'if entityId == "" then' not in server or 'select("#", ...)' not in server:
     raise AssertionError("server target clear must accept only one exact empty-string request")
-if "local function facePlayerTowardModel" not in server:
+if "function TargetingService.facePlayerTowardModel" not in targeting_server:
     raise AssertionError("accepted player attacks must automatically face their target")
 if "local isFacing = ActionRules.isFacing(" in server:
     raise AssertionError("player attacks must not require manual pre-facing before acceptance")
-if "facePlayerTowardModel(player, initialTarget)" not in server:
+if "TargetingService.facePlayerTowardModel(player, initialTarget)" not in server:
     raise AssertionError("basic attack acceptance must rotate the actor toward its target")
-if "facePlayerTowardModel(player, target.model)" not in server:
+if "TargetingService.facePlayerTowardModel(player, target.model)" not in server:
     raise AssertionError("facing-required skills must rotate the actor toward their accepted target")
 
 for token in (
@@ -82,7 +83,7 @@ for token in (
     "processApproaches(now)",
     "clearApproach(player, true)",
     "CombatConfig.ApproachMoveRefreshSeconds",
-    "function CombatService.selectAttackerIfNoTarget",
+    "function CombatCoordinator.selectAttackerIfNoTarget",
 ):
     if token not in server:
         raise AssertionError(f"approach/retaliation combat contract missing: {token}")

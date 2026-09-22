@@ -4,7 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-combat = (ROOT / "src/server/services/CombatService.luau").read_text(encoding="utf-8")
+combat = (ROOT / "src/server/features/combat/CombatCoordinator.luau").read_text(encoding="utf-8")
 mob_abilities = (ROOT / "src/server/services/MobAbilityService.luau").read_text(encoding="utf-8")
 target = (ROOT / "src/client/controllers/TargetController.luau").read_text(encoding="utf-8")
 config = (ROOT / "src/shared/config/CombatConfig.luau").read_text(encoding="utf-8")
@@ -15,7 +15,7 @@ for token in (
     'type PendingApproach = {',
     'kind: "Attack" | "Skill"',
     'pendingApproachesByPlayer',
-    'beginApproach(player, targetId, "Attack", nil, getBasicAttackDefinition(state).range)',
+    'beginApproach(player, targetId, "Attack", nil, BasicAttackService.getDefinition(state).range)',
     'beginApproach(player, selectedTargetId, "Skill", definition.id, definition.range)',
     'distance <= pending.range + CombatConfig.RangeTolerance',
     'humanoid:MoveTo(targetRoot.Position)',
@@ -42,7 +42,7 @@ if 'CombatService.selectAttackerIfNoTarget(target, mob)' not in mob_abilities:
     raise AssertionError("incoming hostile mob damage must auto-select the attacker")
 
 for token in (
-    'function CombatService.selectAttackerIfNoTarget',
+    'function CombatCoordinator.selectAttackerIfNoTarget',
     'if targetsByPlayer[player] ~= nil',
     'onTargetRequest(player, entityId)',
 ):

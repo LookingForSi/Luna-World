@@ -14,7 +14,6 @@ DEV_MANIFEST = ROOT / "src/server/bootstrap/manifests/DevCombinedServerManifest.
 
 EXPECTED_SERVICES = {
     "CharacterService",
-    "CombatService",
     "EconomyNetworkService",
     "EconomyService",
     "EconomyWorldService",
@@ -96,6 +95,7 @@ adapters = ADAPTERS.read_text(encoding="utf-8")
 resolved_services = set(
     re.findall(r"require\(serverRoot\.services\.([A-Za-z0-9_]+)\)", adapters)
 )
+assert "require(serverRoot.features.combat.CombatCoordinator)" in adapters
 assert resolved_services == EXPECTED_SERVICES, (
     f"server adapter service set changed: {sorted(resolved_services)}"
 )
