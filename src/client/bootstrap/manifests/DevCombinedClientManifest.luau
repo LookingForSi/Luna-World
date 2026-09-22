@@ -7,5 +7,5 @@ local Components = require(script.Parent.Parent.adapters.ExistingClientComponent
 return RuntimeManifest.new("DevCombinedClient", {
 	Components.stockHealthGui(),
 	Components.characterLobby(),
-	Components.gameplayAfterCharacterReady(),
+	Components.gameplay(),
 })

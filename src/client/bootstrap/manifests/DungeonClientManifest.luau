@@ -6,5 +6,5 @@ local Components = require(script.Parent.Parent.adapters.ExistingClientComponent
 
 return RuntimeManifest.new("DungeonClient", {
 	Components.stockHealthGui(),
-	Components.gameplayAfterCharacterReady(),
+	Components.gameplay(),
 })

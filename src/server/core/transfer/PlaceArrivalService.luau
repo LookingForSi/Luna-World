@@ -37,7 +37,12 @@ function Service:_arrive(player: Player): ()
 		self.processing[player] = nil
 		return
 	end
-	local intent, consumeReason = self.intents:consume(payload.transferId)
+	local intent, consumeReason = self.intents:consume(payload.transferId, {
+		userId = player.UserId,
+		characterId = payload.characterId,
+		destinationRole = self.destinationRole,
+		entryPointId = payload.entryPointId,
+	})
 	if intent == nil then
 		self.data:failSession(player, consumeReason or "InvalidTransferIntent")
 		self.processing[player] = nil
@@ -52,6 +57,12 @@ function Service:_arrive(player: Player): ()
 	local selected, selectReason = self.data:selectCharacter(player, intent.characterId)
 	if not selected then
 		self.data:failSession(player, selectReason or "CharacterActivationFailed")
+		self.processing[player] = nil
+		return
+	end
+	local confirmed, confirmReason = self.data:confirmArrival(player)
+	if not confirmed then
+		self.data:failSession(player, confirmReason or "ArrivalConfirmationFailed")
 	end
 	self.processing[player] = nil
 end

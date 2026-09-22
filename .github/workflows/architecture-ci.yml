@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - architecture/multi-place-implementation-v01
+      - "architecture/gate-*"
   pull_request:
     branches:
       - main
+      - "architecture/**"
 
 permissions:
   contents: read
@@ -46,9 +48,14 @@ jobs:
         run: |
           set -euo pipefail
           rojo --version
-          rojo build default.project.json -o /tmp/LunaWorld-default.rbxlx
-          rojo build test.project.json -o /tmp/LunaWorld-tests.rbxlx
-          rojo build world.project.json -o /tmp/LunaWorld-world.rbxlx
+          shopt -s nullglob
+          projects=( default.project.json test.project.json world.project.json projects/*.project.json )
+          for project in "${projects[@]}"; do
+            name="$(basename "$project" .project.json)"
+            echo "::group::rojo build $project"
+            rojo build "$project" -o "/tmp/${name}.rbxlx"
+            echo "::endgroup::"
+          done
 
       - name: Diff whitespace check
         if: always()

@@ -6,6 +6,7 @@ arrival = (root / "src/server/core/transfer/PlaceArrivalService.luau").read_text
 store = (root / "src/server/core/transfer/MemoryStoreTransferIntentStore.luau").read_text()
 rules = (root / "src/shared/core/transfer/TransferIntentRules.luau").read_text()
 data = (root / "src/server/services/PlayerDataService.luau").read_text()
+client = (root / "src/client/main.client.luau").read_text()
 lobby = (root / "src/server/bootstrap/manifests/LobbyServerManifest.luau").read_text()
 world = (root / "src/server/bootstrap/manifests/WorldServerManifest.luau").read_text()
 
@@ -15,9 +16,14 @@ assert "self.pending[player]" in transfer
 assert "Rules.routingPayload(intent)" in transfer
 assert "UpdateAsync" in store and "MemoryStoreService" in store
 assert "intents:consume" in arrival and "intent.userId ~= player.UserId" in arrival
+assert "entryPointId = payload.entryPointId" in arrival and "confirmArrival" in arrival
 assert "failSession" in arrival and "Rules.validateRouting" in arrival
 assert "AUTHORITATIVE_KEYS" in rules and "AuthoritativeStateForbidden" in rules
 assert 'session.state ~= "CharacterReady"' in data
+assert 'setState(player, session, "Transferring")' in data
+assert 'setState(player, session, "AccountReady")' in data
+assert "TeleportTransitionAdapter.new(selectCharacter)" in client
 assert "Components.placeTransfer()" in lobby
 assert 'Components.placeArrival("World")' in world
+assert 'Components.placeArrival("Dungeon")' not in (root / "src/server/bootstrap/manifests/DungeonServerManifest.luau").read_text()
 print("place transfer security contract passed")
