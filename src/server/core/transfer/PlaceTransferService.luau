@@ -20,6 +20,7 @@ function Service.new(deps: any): any
 		sourceRole = deps.sourceRole or "Lobby",
 		onRecovery = deps.onRecovery,
 		pending = {},
+		teleportProtected = {},
 		failureConnection = nil,
 		removingConnection = nil,
 		running = false,
@@ -54,8 +55,21 @@ function Service:stop(): ()
 		self.removingConnection:Disconnect()
 		self.removingConnection = nil
 	end
+	local players = {}
 	for player in self.pending do
-		self:recover(player, "ServiceStopping")
+		table.insert(players, player)
+	end
+	for _, player in players do
+		if self.teleportProtected[player] then
+			-- Once TeleportAsync has been entered, shutdown can no longer know
+			-- whether Roblox accepted the handoff. Preserve the one-shot intent
+			-- and released profile so a destination that is already starting can
+			-- complete admission. A failed handoff will simply expire and the
+			-- player can reclaim the profile on a later Lobby join.
+			self:forget(player)
+		else
+			self:recover(player, "ServiceStopping")
+		end
 	end
 end
 
@@ -116,9 +130,17 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 		self.pending[player] = nil
 		return false, "TransferCancelled"
 	end
+	-- From this point shutdown must not eagerly reclaim/remove the handoff:
+	-- TeleportAsync may yield after Roblox has accepted the destination.
+	self.teleportProtected[player] = true
 	local sent, sendReason = self.gateway:teleport(destination.placeId, { player }, Rules.routingPayload(intent))
+	if self.pending[player] ~= transferId or not self.running then
+		return false, "TransferCancelled"
+	end
 	if not sent then
-		local removed, removeReason = self.intents:remove(transferId)
+		self.teleportProtected[player] = nil
+		self.teleportProtected[player] = nil
+	local removed, removeReason = self.intents:remove(transferId)
 		if removed then
 			self.data:recoverTransfer(player)
 		else
@@ -126,9 +148,6 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 		end
 		self.pending[player] = nil
 		return false, removeReason or sendReason
-	end
-	if self.pending[player] ~= transferId then
-		return false, "TeleportInitFailed"
 	end
 	return true, nil
 end
@@ -154,6 +173,7 @@ end
 
 function Service:forget(player: Player): ()
 	self.pending[player] = nil
+	self.teleportProtected[player] = nil
 end
 
 return Service
