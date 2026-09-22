@@ -4,7 +4,7 @@
     "$className": "DataModel",
     "ReplicatedStorage": {
       "Shared": {
-        "$path": "src/shared"
+        "$path": "../src/shared"
       },
       "Remotes": {
         "$className": "Folder",
@@ -123,19 +123,19 @@
     },
     "ServerScriptService": {
       "Server": {
-        "$path": "src/server"
+        "$path": "../src/server"
       },
       "Tests": {
-        "$path": "tests"
+        "$path": "../tests"
       }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": {
-          "$path": "src/client"
+          "$path": "../src/client"
         },
         "ManualAttackContractTest": {
-          "$path": "tests/client/ManualAttackContract.client.luau"
+          "$path": "../tests/client/ManualAttackContract.client.luau"
         }
       }
     }
