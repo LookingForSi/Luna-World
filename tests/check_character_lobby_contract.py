@@ -12,7 +12,7 @@ client = read("src/client/main.client.luau")
 client_adapter = read("src/client/bootstrap/adapters/ExistingClientComponents.luau")
 client_application = read("src/client/bootstrap/ClientApplication.luau")
 dev_client_manifest = read("src/client/bootstrap/manifests/DevCombinedClientManifest.luau")
-lobby = read("src/client/controllers/CharacterLobbyController.luau")
+lobby = read("src/client/features/lobby/CharacterLobbyController.luau")
 project = json.loads(read("default.project.json"))
 
 assert "DataVersion = 3" in account
