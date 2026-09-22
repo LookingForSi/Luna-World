@@ -40,6 +40,9 @@ assert 'TextWrapped = false' in lobby
 
 assert '"MenuSheet"' in economy and '"FullWorkspace"' in economy
 assert 'mode == "Sell"' in economy and 'mode == "Buy"' in economy
+assert 'Instance.new("UIGridLayout")' in economy
+assert 'grid.FillDirectionMaxCells = 2' in economy
+assert 'mode == "DialogueBlacksmith"' in economy
 assert 'SetAttribute("MobileSurface", "FullWorkspace")' in inventory
 assert 'MobileOverlayCoordinator.setWorkspaceOpen(root, open)' in inventory
 for hud in ("CombatHud", "CombatActionBar", "CombatLog", "StudioTestPanel"):
