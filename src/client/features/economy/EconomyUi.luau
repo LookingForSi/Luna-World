@@ -36,9 +36,38 @@ local function isWorkspaceMode(): boolean
 	return mode == "Sell" or mode == "Buy" or string.sub(mode, 1, 5) == "Craft"
 end
 
+local function configureTopicLayout(useBlacksmithGrid: boolean): ()
+	if list == nil then return end
+
+	local listLayout = list:FindFirstChildOfClass("UIListLayout")
+	local gridLayout = list:FindFirstChildOfClass("UIGridLayout")
+	if useBlacksmithGrid then
+		if listLayout ~= nil then listLayout:Destroy() end
+		if gridLayout == nil then
+			local grid = Instance.new("UIGridLayout")
+			grid.Name = "BlacksmithGrid"
+			grid.CellSize = UDim2.new(0.5, -4, 0, 52)
+			grid.CellPadding = UDim2.fromOffset(8, 8)
+			grid.FillDirectionMaxCells = 2
+			grid.SortOrder = Enum.SortOrder.LayoutOrder
+			grid.Parent = list
+		end
+	elseif listLayout == nil then
+		if gridLayout ~= nil then gridLayout:Destroy() end
+		local layout = Instance.new("UIListLayout")
+		layout.Name = "DialogueList"
+		layout.Padding = UDim.new(0, 4)
+		layout.SortOrder = Enum.SortOrder.LayoutOrder
+		layout.Parent = list
+	elseif gridLayout ~= nil then
+		gridLayout:Destroy()
+	end
+end
+
 local function applyMobileLayout(metrics: ResponsiveLayout.Metrics): ()
 	if panel == nil or list == nil then return end
 	if not metrics.isTouch then
+		configureTopicLayout(false)
 		panel:SetAttribute("MobileSurface", nil)
 		panel.AnchorPoint = Vector2.new(0.5, 0.5)
 		panel.Position = UDim2.fromScale(0.5, 0.5)
@@ -50,9 +79,11 @@ local function applyMobileLayout(metrics: ResponsiveLayout.Metrics): ()
 	end
 
 	local kind = if isWorkspaceMode() then "FullWorkspace" else "MenuSheet"
+	local blacksmithGrid = mode == "DialogueBlacksmith"
+	configureTopicLayout(blacksmithGrid)
 	panel:SetAttribute("MobileSurface", kind)
-	local optionCount = if mode == "DialogueBlacksmith" then 4 else 2
-	MobileSurface.apply(panel, kind :: any, metrics, 68 + optionCount * 52)
+	local optionRows = if blacksmithGrid then 2 else 2
+	MobileSurface.apply(panel, kind :: any, metrics, 68 + optionRows * 52)
 	list.Position = UDim2.fromOffset(12, 56)
 	list.Size = if kind == "FullWorkspace" then UDim2.new(1, -24, 1, -112) else UDim2.new(1, -24, 1, -68)
 	MobileOverlayCoordinator.setWorkspaceOpen(panel, panel.Visible and kind == "FullWorkspace")
@@ -107,7 +138,7 @@ local function clearList(): ()
 	table.clear(rowConnections)
 	if list == nil then return end
 	for _, child in list:GetChildren() do
-		if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+		if not child:IsA("UIListLayout") and not child:IsA("UIGridLayout") and not child:IsA("UIPadding") then
 			child:Destroy()
 		end
 	end
@@ -555,7 +586,9 @@ function EconomyUi.start(actionCallbacks: any): ()
 	scrolling.ScrollBarThickness = 6
 	scrolling.Parent = root
 	local layout = Instance.new("UIListLayout")
+	layout.Name = "DialogueList"
 	layout.Padding = UDim.new(0, 4)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = scrolling
 	list = scrolling
 
