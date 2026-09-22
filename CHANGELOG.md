@@ -6,6 +6,10 @@
 
 ## [Unreleased]
 
+## [0.1.0-alpha.1] - 2026-09-22
+
+Первый зафиксированный playable alpha checkpoint. Архитектура Gates A–F3 и принятый Mobile UX v2 объединены в `main`; версия ещё не заявляет завершённость полного v0.1 Vertical Slice.
+
 ### Mobile UX v2
 
 - Mobile UI переведён с универсального уменьшенного desktop modal на три семантических поверхности: компактные подтверждения, content-sized menu sheets и полноэкранные рабочие пространства.
