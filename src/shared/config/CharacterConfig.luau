@@ -1,5 +1,7 @@
 --!strict
 
+local BuildInfo = require(script.Parent.BuildInfo)
+
 return table.freeze({
 	CharacterSlotLimit = 5,
 	NicknameMinLength = 3,
@@ -7,7 +9,7 @@ return table.freeze({
 	RequestWindowSeconds = 10,
 	RequestsPerWindow = 12,
 	DeleteConfirmationPrefix = "DELETE:",
-	BuildLabel = "dev0.3-playtest-rc1",
+	BuildLabel = BuildInfo.BuildLabel,
 	NicknameAttribute = "CharacterNickname",
 	BodyTypeAttribute = "CharacterBodyType",
 	AppearancePresetAttribute = "CharacterAppearancePreset",
