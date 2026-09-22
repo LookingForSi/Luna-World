@@ -117,6 +117,30 @@ return function(TestRunner)
 		assert(gameplay.stops == 1)
 	end)
 
+
+	TestRunner.run("DevCombined catches same-frame authoritative readiness during Select", function()
+		local player, setReady = fakePlayer()
+		local enterWorld
+		local lobby = runtime(function(callback)
+			enterWorld = callback
+		end)
+		local gameplay = runtime(nil)
+		local app = Application.new(lobby, gameplay, {
+			enterWorld = function(_characterId)
+				-- SessionProfileStore + DevCombined can complete selection and
+				-- arrival synchronously in the same frame as CharacterRequest.
+				setReady("CharacterReady", true)
+				setReady("ArrivalReady", true)
+				return true, nil
+			end,
+		}, player)
+
+		assert(app:start({ mode = "DevCombined" }))
+		enterWorld("hero-fast")
+		assert(gameplay.starts == 1, "same-frame readiness must start gameplay")
+		assert(app:getState() == State.Gameplay)
+	end)
+
 	TestRunner.run("application rolls back runtime and readiness on adapter error", function()
 		local player = fakePlayer()
 		local enterWorld
