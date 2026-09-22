@@ -27,8 +27,16 @@ local ProgressionService = require(serverRoot.services.ProgressionService)
 local PlayerRegenerationService = require(serverRoot.services.PlayerRegenerationService)
 local RespawnService = require(serverRoot.services.RespawnService)
 local StudioDebugService = require(serverRoot.services.StudioDebugService)
+local PlaceTransferService = require(serverRoot.core.transfer.PlaceTransferService)
+local PlaceArrivalService = require(serverRoot.core.transfer.PlaceArrivalService)
+local MemoryStoreTransferIntentStore = require(serverRoot.core.transfer.MemoryStoreTransferIntentStore)
+local TeleportGateway = require(serverRoot.core.transfer.TeleportGateway)
+local PlaceConfig = require(ReplicatedStorage.Shared.config.PlaceConfig)
+local PlaceRole = require(ReplicatedStorage.Shared.core.runtime.PlaceRole)
 
 local ExistingServerComponents = {}
+local transferRuntime = nil
+local arrivalRuntime = nil
 
 local function component(
 	name: string,
@@ -127,6 +135,48 @@ end
 
 function ExistingServerComponents.character(): RuntimeComponent.RuntimeComponent
 	return component("CharacterService", CharacterService.start, CharacterService.stop)
+end
+
+function ExistingServerComponents.placeTransfer(): RuntimeComponent.RuntimeComponent
+	return component("PlaceTransferService", function()
+		local destinationPlaceId = PlaceConfig.getPlaceId(game.GameId, PlaceRole.World)
+		assert(destinationPlaceId ~= nil, "Moonfall destination is not configured for this universe")
+		transferRuntime = PlaceTransferService.new({
+			playerData = PlayerDataService,
+			intentStore = MemoryStoreTransferIntentStore.new(),
+			gateway = TeleportGateway.new(),
+		})
+		transferRuntime:start()
+		CharacterService.setTransferHandler(function(player, characterId)
+			return transferRuntime:begin(player, characterId, {
+				placeId = destinationPlaceId,
+				role = PlaceRole.World,
+				entryPointId = "luna_village",
+			})
+		end)
+	end, function()
+		CharacterService.setTransferHandler(nil)
+		if transferRuntime ~= nil then transferRuntime:stop() end
+		transferRuntime = nil
+	end)
+end
+
+function ExistingServerComponents.placeArrival(role: string): RuntimeComponent.RuntimeComponent
+	return component("PlaceArrivalService", function()
+		arrivalRuntime = PlaceArrivalService.new({
+			playerData = PlayerDataService,
+			intentStore = MemoryStoreTransferIntentStore.new(),
+			destinationRole = role,
+		})
+		PlayerDataService.setPreClaimValidator(function(player)
+			return arrivalRuntime:admit(player)
+		end)
+		arrivalRuntime:start()
+	end, function()
+		PlayerDataService.setPreClaimValidator(nil)
+		if arrivalRuntime ~= nil then arrivalRuntime:stop() end
+		arrivalRuntime = nil
+	end)
 end
 
 function ExistingServerComponents.progression(): RuntimeComponent.RuntimeComponent

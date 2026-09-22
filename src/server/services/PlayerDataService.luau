@@ -22,6 +22,7 @@ type Session = {
 	token: string,
 	account: PersistenceTypes.AccountProfile?,
 	activeCharacterId: string?,
+	transferCharacterId: string?,
 	generation: number,
 }
 
@@ -30,6 +31,7 @@ local started = false
 local serviceGeneration = 0
 local store: ProfileStoreContract.Store? = nil
 local connections: { RBXScriptConnection } = {}
+local preClaimValidator: ((Player) -> (boolean, string?))? = nil
 local accountReadyEvent, characterReadyEvent, profileChangedEvent =
 	Instance.new("BindableEvent"), Instance.new("BindableEvent"), Instance.new("BindableEvent")
 PlayerDataService.AccountReady = accountReadyEvent.Event
@@ -61,10 +63,19 @@ local function loadPlayer(player: Player, generation: number): ()
 		token = HttpService:GenerateGUID(false),
 		account = nil,
 		activeCharacterId = nil,
+		transferCharacterId = nil,
 		generation = generation,
 	}
 	sessions[player] = session
 	setState(player, session, "Loading")
+	if preClaimValidator ~= nil then
+		local admitted, admissionReason = preClaimValidator(player)
+		if not admitted then
+			setState(player, session, "Error")
+			warn("Account admission rejected for " .. player.Name .. ": " .. tostring(admissionReason))
+			return
+		end
+	end
 	local result = (store :: ProfileStoreContract.Store):claim(player.UserId, session.token, os.time())
 	if sessions[player] ~= session or player.Parent ~= Players then
 		return
@@ -178,6 +189,7 @@ end
 function PlayerDataService.beginTransfer(player: Player): (boolean, string?)
 	local session = sessions[player]
 	if session == nil or session.state ~= "CharacterReady" or session.account == nil then return false, "CharacterNotReady" end
+	session.transferCharacterId = session.activeCharacterId
 	setState(player, session, "Transferring")
 	if not save(player, true) then return false, "SaveFailed" end
 	return true, nil
@@ -188,8 +200,38 @@ function PlayerDataService.recoverTransfer(player: Player): (boolean, string?)
 	local result = (store :: ProfileStoreContract.Store):claim(player.UserId, session.token, os.time())
 	if not result.ok then setState(player, session, "Error"); return false, result.reason end
 	session.account = result.profile
+	session.transferCharacterId = nil
 	setState(player, session, "AccountReady")
+	session.activeCharacterId = nil
 	return true, nil
+end
+
+function PlayerDataService.setPreClaimValidator(validator: ((Player) -> (boolean, string?))?): ()
+	preClaimValidator = validator
+end
+
+function PlayerDataService.prepareTransferCharacter(player: Player, characterId: string): (boolean, string?)
+	local session = sessions[player]
+	if session == nil or session.account == nil or session.state ~= "AccountReady" then
+		return false, "AccountNotReady"
+	end
+	local character = session.account.Characters[characterId]
+	if character == nil then return false, "CharacterNotOwned" end
+	if character.NeedsIdentity then return false, "IdentityIncomplete" end
+	session.activeCharacterId = characterId
+	session.account.SelectedCharacterId = characterId
+	setState(player, session, "CharacterReady")
+	return true, nil
+end
+
+function PlayerDataService.failSession(player: Player, reason: string): ()
+	local session = sessions[player]
+	if session == nil then return end
+	warn(string.format("Account session rejected for %s: %s", player.Name, reason))
+	if session.account ~= nil then
+		save(player, true)
+	end
+	setState(player, session, "Error")
 end
 
 function PlayerDataService.getState(player: Player): AccountState?
