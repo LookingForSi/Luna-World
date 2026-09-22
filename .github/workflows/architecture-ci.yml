@@ -49,11 +49,7 @@ jobs:
           set -euo pipefail
           rojo --version
           shopt -s nullglob
-          projects=( *.project.json projects/*.project.json )
-          if [ ${#projects[@]} -eq 0 ]; then
-            echo "No Rojo project files found"
-            exit 1
-          fi
+          projects=( default.project.json test.project.json world.project.json projects/*.project.json )
           for project in "${projects[@]}"; do
             name="$(basename "$project" .project.json)"
             echo "::group::rojo build $project"
