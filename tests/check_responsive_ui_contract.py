@@ -13,7 +13,7 @@ def source(path: str) -> str:
 policy = source("src/client/ui/ResponsiveLayout.luau")
 controller = source("src/client/controllers/ResponsiveUiController.luau")
 actions = source("src/client/ui/ActionBar.luau")
-quest = source("src/client/controllers/QuestController.luau")
+quest = source("src/client/features/quests/QuestController.luau")
 economy = source("src/client/ui/EconomyUi.luau")
 inventory = source("src/client/ui/InventoryUi.luau")
 
