@@ -18,7 +18,7 @@ def require(path: str, token: str, message: str) -> None:
 BOOTSTRAP = "src/server/bootstrap/ServerBootstrap.luau"
 RUNTIME = "src/shared/core/runtime/RuntimeManifest.luau"
 ADAPTERS = "src/server/bootstrap/adapters/ExistingServerComponents.luau"
-WORLD_BOOTSTRAP = "src/server/world/WorldBootstrap.luau"
+WORLD_BOOTSTRAP = "tools/worldgen/WorldBootstrap.luau"
 TRAVERSAL = "src/server/world/TraversalRecovery.luau"
 MOBS = "src/server/services/MobService.luau"
 PROGRESSION = "src/server/services/ProgressionService.luau"
@@ -49,7 +49,7 @@ for token in (
     require(ADAPTERS, token, f"server lifecycle adapter is missing {token}")
 
 require(WORLD_BOOTSTRAP, "function WorldBootstrap.stop()", "world bootstrap must be lifecycle-managed")
-require(WORLD_BOOTSTRAP, "TraversalRecovery.stop()", "world bootstrap stop must stop traversal recovery")
+require(WORLD_BOOTSTRAP, "traversalRecovery().stop()", "dev world bootstrap stop must stop traversal recovery")
 require(TRAVERSAL, "function TraversalRecovery.stop()", "TraversalRecovery must expose cleanup")
 require(TRAVERSAL, "serviceGeneration += 1", "TraversalRecovery async loop must be generation-guarded")
 require(TRAVERSAL, "connection:Disconnect()", "TraversalRecovery must disconnect player lifecycle events")
