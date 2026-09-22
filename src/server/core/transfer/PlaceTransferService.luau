@@ -18,6 +18,7 @@ function Service.new(deps: any): any
 		clock = deps.clock or os.time,
 		ttl = deps.ttl or TransferConfig.IntentTtlSeconds,
 		sourceRole = deps.sourceRole or "Lobby",
+		onRecovery = deps.onRecovery,
 		pending = {},
 		failureConnection = nil,
 		removingConnection = nil,
@@ -30,7 +31,10 @@ function Service:start(): ()
 		return
 	end
 	self.running = true
-	self.failureConnection = self.gateway:onInitFailed(function(player, reason)
+	self.failureConnection = self.gateway:onInitFailed(function(player, reason, payload)
+		if typeof(payload) ~= "table" or payload.transferId ~= self.pending[player] then
+			return
+		end
 		self:recover(player, "TeleportInitFailed:" .. reason)
 	end)
 	self.removingConnection = Players.PlayerRemoving:Connect(function(player)
@@ -142,6 +146,9 @@ function Service:recover(player: Player, _reason: string?): (boolean, string?)
 	end
 	local ok, reason = self.data:recoverTransfer(player)
 	self.pending[player] = nil
+	if self.onRecovery ~= nil then
+		self.onRecovery(player, if ok then (_reason or "TransferRecovered") else (reason or "TransferRecoveryFailed"))
+	end
 	return ok, reason
 end
 

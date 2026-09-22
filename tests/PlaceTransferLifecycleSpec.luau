@@ -157,4 +157,54 @@ return function(TestRunner)
 		service:_arrive(player)
 		assert(failed)
 	end)
+
+	TestRunner.run("TeleportInitFailed removes intent, recovers source, and reports failure", function()
+		local Service = require(game:GetService("ServerScriptService").Server.core.transfer.PlaceTransferService)
+		local initFailed
+		local calls = {}
+		local service = Service.new({
+			playerData = {
+				getActiveCharacterId = function() return "c" end,
+				beginTransfer = function() return true end,
+				recoverTransfer = function() table.insert(calls, "recover"); return true end,
+				failSession = function() table.insert(calls, "fail") end,
+			},
+			intentStore = {
+				create = function() return true end,
+				remove = function() table.insert(calls, "remove"); return true end,
+			},
+			gateway = {
+				onInitFailed = function(_, callback) initFailed = callback; return { Disconnect = function() end } end,
+				teleport = function() return true end,
+			},
+			onRecovery = function(_, reason) table.insert(calls, reason) end,
+		})
+		service:start()
+		local player = { UserId = 7, Parent = game:GetService("Players") }
+		assert(service:begin(player, "c", { placeId = 2, role = "World", entryPointId = "spawn" }))
+		initFailed(player, "Failure", { transferId = service.pending[player] })
+		assert(table.concat(calls, ",") == "remove,recover,TeleportInitFailed:Failure")
+		assert(service.pending[player] == nil)
+		service:stop()
+	end)
+
+	TestRunner.run("destination activation failure enters symmetric cleanup", function()
+		local Arrival = require(game:GetService("ServerScriptService").Server.core.transfer.PlaceArrivalService)
+		local failed = false
+		local payload = { transferVersion = 1, transferId = "t", characterId = "missing", destinationRole = "World", entryPointId = "spawn" }
+		local player = { UserId = 7, GetJoinData = function() return { TeleportData = payload } end }
+		local service = Arrival.new({
+			playerData = {
+				selectCharacter = function() return false, "CharacterNotOwned" end,
+				confirmArrival = function() error("must not confirm") end,
+				failSession = function(_, _, reason) failed = reason == "CharacterNotOwned" end,
+			},
+			intentStore = { consume = function()
+				return { transferVersion = 1, transferId = "t", userId = 7, characterId = "missing", sourceRole = "Lobby", destinationRole = "World", entryPointId = "spawn", expiresAt = 20 }
+			end },
+			destinationRole = "World", clock = function() return 10 end,
+		})
+		service:_arrive(player)
+		assert(failed)
+	end)
 end

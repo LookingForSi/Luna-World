@@ -221,8 +221,10 @@ function PlayerDataService.recoverTransfer(player: Player): (boolean, string?)
 		setState(player, session, "Error")
 		return false, "TransferCharacterMissing"
 	end
-	session.activeCharacterId = characterId
-	setState(player, session, "CharacterReady")
+	-- The failed handoff returns to the source lobby. The selection remains
+	-- persisted, but the player must be able to request Enter World again.
+	session.activeCharacterId = nil
+	setState(player, session, "AccountReady")
 	return true, nil
 end
 

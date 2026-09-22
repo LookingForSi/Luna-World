@@ -21,9 +21,7 @@ end
 local selectCharacter = ExistingClientComponents.requestCharacterSelection
 local adapter = if role == PlaceRole.DevCombined
 	then LocalPlaceTransitionAdapter.new(selectCharacter)
-	else TeleportTransitionAdapter.new(function(_characterId: string)
-		-- Gate C replaces this presentation-only boundary with a server transfer request.
-	end)
+	else TeleportTransitionAdapter.new(selectCharacter)
 local application = ClientApplication.new(LobbyClientRuntime.new(), GameplayClientRuntime.new(), adapter)
 local ok, reason = application:start({ mode = role })
 if not ok then

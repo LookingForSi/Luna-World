@@ -146,6 +146,14 @@ function ExistingServerComponents.placeTransfer(): RuntimeComponent.RuntimeCompo
 			intentStore = MemoryStoreTransferIntentStore.new(),
 			gateway = TeleportGateway.new(),
 			sourceRole = PlaceRole.Lobby,
+			onRecovery = function(player, reason)
+			ReplicatedStorage.Remotes.CharacterResult:FireClient(player, {
+				requestId = "transfer-recovery",
+				action = "Select",
+				ok = false,
+				reason = reason,
+			})
+		end,
 		})
 		transferRuntime:start()
 		CharacterService.setTransferHandler(function(player, characterId)

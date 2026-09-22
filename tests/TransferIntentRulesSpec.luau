@@ -6,4 +6,5 @@ return function(TestRunner)
  TestRunner.run("rejects hostile authoritative state",function() local hostile=table.clone(intent); hostile.Luna=999; local ok,why=Rules.validate(hostile,10,"World"); assert(ok == false); assert(why == "AuthoritativeStateForbidden") end)
 	 TestRunner.run("rejects expired and wrong destinations",function() local ok=Rules.validate(intent,20,"World"); assert(ok == false); local ok2=Rules.validate(intent,10,"Dungeon"); assert(ok2 == false) end)
 	 TestRunner.run("rejects disallowed source transitions",function() local hostile=table.clone(intent); hostile.sourceRole="Dungeon"; local ok,why=Rules.validate(hostile,10,"World"); assert(ok == false); assert(why == "TransitionNotAllowed") end)
+	 TestRunner.run("rejects malformed routing metadata",function() local malformed=table.clone(intent); malformed.entryPointId=nil; assert(Rules.validate(malformed,10,"World") == false); assert(Rules.validateRouting(malformed,"World") == false) end)
 end
