@@ -9,6 +9,7 @@ local Components = require(script.Parent.Parent.adapters.ExistingServerComponent
 return RuntimeManifest.new("WorldServer", {
 	Components.worldSpawnAnchor(),
 	Components.economy(),
+	Components.placeArrival("World"),
 	Components.playerData(),
 	Components.progression(),
 	Components.combat(),

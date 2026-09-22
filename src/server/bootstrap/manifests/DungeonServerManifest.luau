@@ -6,6 +6,7 @@ local Components = require(script.Parent.Parent.adapters.ExistingServerComponent
 
 -- Gate A skeleton only. DungeonSession/arrival components are added in Gate G.
 return RuntimeManifest.new("DungeonServer", {
+	Components.placeArrival("Dungeon"),
 	Components.playerData(),
 	Components.progression(),
 	Components.combat(),
