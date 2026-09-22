@@ -14,6 +14,7 @@ local PersistenceTypes = require(ReplicatedStorage.Shared.types.PersistenceTypes
 local ProfileStoreContract = require(script.Parent.Parent.persistence.ProfileStoreContract)
 local RobloxProfileStore = require(script.Parent.Parent.persistence.RobloxProfileStore)
 local SessionProfileStore = require(script.Parent.Parent.persistence.SessionProfileStore)
+local PlayerDataTransferRules = require(script.Parent.Parent.core.transfer.PlayerDataTransferRules)
 
 local PlayerDataService = {}
 export type AccountState = "Loading" | "AccountReady" | "CharacterReady" | "Transferring" | "Saving" | "Released" | "Error"
@@ -125,13 +126,13 @@ local function save(player: Player, release: boolean): boolean
 		then activeStore:release(player.UserId, session.token, account, os.time())
 		else activeStore:save(player.UserId, session.token, account, os.time())
 	if not result.ok then
-		if sessions[player] == session and session.operationId == operationId then
+		if sessions[player] == session and PlayerDataTransferRules.isCurrentOperation(session.operationId, operationId) then
 			setState(player, session, "Error")
 		end
 		warn("Account save failed for " .. player.Name .. ": " .. result.reason)
 		return false
 	end
-	if release and sessions[player] == session and session.operationId == operationId then
+	if release and sessions[player] == session and PlayerDataTransferRules.isCurrentOperation(session.operationId, operationId) then
 		session.account = nil
 		session.activeCharacterId = nil
 		setState(player, session, "Released")
@@ -170,9 +171,7 @@ function PlayerDataService.start(override: ProfileStoreContract.Store?): ()
 		while started and generation == serviceGeneration do
 			task.wait(PersistenceConfig.AutosaveSeconds)
 			for player, session in sessions do
-				if
-					player.Parent == Players and (session.state == "AccountReady" or session.state == "CharacterReady")
-				then
+					if player.Parent == Players and PlayerDataTransferRules.canAutosave(session.state) then
 					save(player, false)
 				end
 			end
@@ -304,7 +303,7 @@ function PlayerDataService.mutateAccount(
 	callback: (PersistenceTypes.AccountProfile) -> ()
 ): (boolean, string?)
 	local s = sessions[player]
-	if s == nil or s.account == nil or not PlayerDataService.isAccountReady(player) then
+	if s == nil or s.account == nil or not PlayerDataTransferRules.canMutate(s.state) then
 		return false, "AccountNotReady"
 	end
 	local before = AccountSchema.clone(s.account)
