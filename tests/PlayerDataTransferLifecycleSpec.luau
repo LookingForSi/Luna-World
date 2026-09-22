@@ -96,4 +96,36 @@ return function(TestRunner)
 		assert(not service:begin(player, "c", { placeId = 2, role = "World", entryPointId = "spawn" }))
 		assert(removed and not teleported)
 	end)
+	TestRunner.run("BindToClose during TeleportAsync preserves handoff intent and released profile", function()
+		local Service = require(Server.core.transfer.PlaceTransferService)
+		local removed, recovered = false, false
+		local service
+		service = Service.new({
+			playerData = {
+				getActiveCharacterId = function() return "c" end,
+				beginTransfer = function() return true end,
+				recoverTransfer = function() recovered = true; return true end,
+				failSession = function() error("accepted/in-flight handoff must not fail the source session") end,
+			},
+			intentStore = {
+				create = function() return true end,
+				remove = function() removed = true; return true end,
+			},
+			gateway = {
+				onInitFailed = function() return { Disconnect = function() end } end,
+				teleport = function()
+					service:stop()
+					return true
+				end,
+			},
+		})
+		service:start()
+		local player = { UserId = 9, Parent = game:GetService("Players") }
+		local ok, reason = service:begin(player, "c", { placeId = 2, role = "World", entryPointId = "spawn" })
+		assert(not ok and reason == "TransferCancelled")
+		assert(not removed, "shutdown must preserve the one-shot intent once TeleportAsync started")
+		assert(not recovered, "shutdown must not reclaim the released source lease once TeleportAsync started")
+		assert(service.pending[player] == nil)
+	end)
+
 end
