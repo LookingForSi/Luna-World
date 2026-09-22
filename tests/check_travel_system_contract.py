@@ -7,7 +7,7 @@ defs=read("src/shared/definitions/TravelDefinitions.luau")
 rules=read("src/shared/travel/TravelRules.luau")
 service=read("src/server/services/TravelService.luau")
 quest=read("src/server/services/QuestService.luau")
-client=read("src/client/controllers/QuestController.luau")
+client=read("src/client/features/quests/QuestController.luau")
 main=read("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 for token in (
     'id = "travel_farm"',
