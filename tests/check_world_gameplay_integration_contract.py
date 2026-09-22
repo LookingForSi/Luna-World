@@ -15,13 +15,13 @@ MAIN = text("src/server/main.server.luau")
 ADAPTERS = text("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 MOBS = text("src/server/services/MobService.luau")
 LAYOUT = text("src/shared/world/WorldLayout.luau")
-WORLD_BOOTSTRAP = text("src/server/world/WorldBootstrap.luau")
+WORLD_BOOTSTRAP = text("tools/worldgen/WorldBootstrap.luau")
 PROJECT = text("default.project.json")
 
 if "ServerBootstrap.start(manifest)" not in MAIN:
     raise AssertionError("server entrypoint must delegate runtime startup to ServerBootstrap")
-if 'workspace:WaitForChild("LunaWorldPlayableBlockout", 15)' not in ADAPTERS:
-    raise AssertionError("world spawn integration must wait for the managed world bootstrap")
+if "MoonfallAuthoringContract.RootName" not in ADAPTERS:
+    raise AssertionError("world spawn integration must use the shared authored-root contract")
 for token in (
     'CollectionService:AddTag(worldSpawn, RespawnConfig.AnchorTag)',
     'RespawnConfig.LunaVillageSettlementId',
