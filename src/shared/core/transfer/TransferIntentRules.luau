@@ -10,6 +10,14 @@ function TransferIntentRules.validate(value: any, now: number, destinationRole: 
 	for key in AUTHORITATIVE_KEYS do if value[key] ~= nil then return false, "AuthoritativeStateForbidden" end end
 	return true
 end
+function TransferIntentRules.validateRouting(value: any, destinationRole: string): (boolean, string?)
+	if typeof(value) ~= "table" or value.transferVersion ~= 1 then return false, "Malformed" end
+	if typeof(value.transferId) ~= "string" or value.transferId == "" then return false, "Malformed" end
+	if typeof(value.characterId) ~= "string" or value.characterId == "" then return false, "Malformed" end
+	if value.destinationRole ~= destinationRole then return false, "WrongDestination" end
+	for key in AUTHORITATIVE_KEYS do if value[key] ~= nil then return false, "AuthoritativeStateForbidden" end end
+	return true, nil
+end
 function TransferIntentRules.routingPayload(intent: any): any
 	return { transferVersion=1, transferId=intent.transferId, characterId=intent.characterId, destinationRole=intent.destinationRole, entryPointId=intent.entryPointId }
 end

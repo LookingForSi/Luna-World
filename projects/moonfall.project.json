@@ -1,10 +1,10 @@
 {
-  "name": "LunaWorld-moonfall",
+  "name": "LunaWorldWorld",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
       "Shared": {
-        "$path": "src/shared"
+        "$path": "../src/shared"
       },
       "Remotes": {
         "$className": "Folder",
@@ -87,30 +87,13 @@
     },
     "ServerScriptService": {
       "Server": {
-        "Main": {
-          "$path": "src/server/main.server.luau"
-        },
-        "bootstrap": {
-          "$path": "src/server/bootstrap"
-        },
-        "services": {
-          "$path": "src/server/services"
-        },
-        "persistence": {
-          "$path": "src/server/persistence"
-        },
-        "core": {
-          "$path": "src/server/core"
-        },
-        "features": {
-          "$path": "src/server/features"
-        }
+        "$path": "../src/server"
       }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": {
-          "$path": "src/client"
+          "$path": "../src/client"
         }
       }
     }
