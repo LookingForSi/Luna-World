@@ -22,13 +22,13 @@ LAYOUT = "src/client/ui/HudLayout.luau"
 HUD = "src/client/ui/CombatHud.luau"
 ACTIONS = "src/client/ui/ActionBar.luau"
 LOG = "src/client/ui/CombatLog.luau"
-INVENTORY = "src/client/ui/InventoryUi.luau"
-ECONOMY = "src/client/ui/EconomyUi.luau"
-QUEST = "src/client/controllers/QuestController.luau"
+INVENTORY = "src/client/features/inventory/InventoryUi.luau"
+ECONOMY = "src/client/features/economy/EconomyUi.luau"
+QUEST = "src/client/features/quests/QuestController.luau"
 CONFIG = "src/shared/config/CombatConfig.luau"
 PROGRESSION_CONFIG = "src/shared/config/ProgressionConfig.luau"
-CLIENT_MAIN = "src/client/main.client.luau"
-COMBAT = "src/server/services/CombatService.luau"
+CLIENT_MAIN = "src/client/bootstrap/adapters/ExistingClientComponents.luau"
+COMBAT = "src/server/features/combat/CombatCoordinator.luau"
 
 require(LAYOUT, "HudLayout.CornerMargin = 24", "all corner panels must share one visible safe margin")
 require(LAYOUT, "function HudLayout.applyPanelStyle", "corner panels must share one visual panel style")
@@ -62,7 +62,7 @@ require(COMBAT, "restoreCombatPoints(player)", "CP must be restored on respawn")
 
 # PvE mob damage continues to damage Humanoid HP directly; CP is not consumed by the PvE path.
 mob_damage_block = read(COMBAT)
-if "CombatPointsCurrentAttribute" in mob_damage_block[mob_damage_block.find("function CombatService.requestMobBasicAttack"):mob_damage_block.find("function CombatService.handlePlayerDeath")]:
+if "CombatPointsCurrentAttribute" in mob_damage_block[mob_damage_block.find("function CombatCoordinator.requestMobBasicAttack"):mob_damage_block.find("function CombatCoordinator.handlePlayerDeath")]:
     raise AssertionError("PvE mob attacks must not consume PvP-only CP")
 
 print("Corner HUD and PvP CP contract: PASS")

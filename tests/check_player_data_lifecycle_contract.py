@@ -12,8 +12,8 @@ def read(path: str) -> str:
 
 DATA = read("src/server/services/PlayerDataService.luau")
 PROGRESSION = read("src/server/services/ProgressionService.luau")
-COMBAT = read("src/server/services/CombatService.luau")
-MAIN = read("src/server/main.server.luau")
+COMBAT = read("src/server/features/combat/CombatCoordinator.luau")
+MAIN = read("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 CONFIG = read("src/shared/config/PersistenceConfig.luau")
 
 for token in (
@@ -35,7 +35,7 @@ for token in (
 if "UseDataStoreInStudio = false" not in CONFIG:
     raise AssertionError("Studio must stay API-independent until the real DataStore checkpoint")
 
-if "PlayerDataService.start()" not in MAIN or "PlayerDataService.stop()" not in MAIN:
+if "PlayerDataService.start" not in MAIN or "PlayerDataService.stop" not in MAIN:
     raise AssertionError("server bootstrap must own PlayerDataService lifecycle")
 
 for token in (

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Static contract for integrating the accepted world blockout with M2 gameplay."""
+"""Static contract for integrating the accepted world blockout with manifest-owned gameplay."""
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-
 
 def text(path: str) -> str:
     candidate = ROOT / path
@@ -12,21 +11,23 @@ def text(path: str) -> str:
         raise AssertionError(f"missing required integration file: {path}")
     return candidate.read_text(encoding="utf-8")
 
-
 MAIN = text("src/server/main.server.luau")
+ADAPTERS = text("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 MOBS = text("src/server/services/MobService.luau")
 LAYOUT = text("src/shared/world/WorldLayout.luau")
-WORLD_BOOTSTRAP = text("src/server/world/WorldBootstrap.server.luau")
+WORLD_BOOTSTRAP = text("tools/worldgen/WorldBootstrap.luau")
 PROJECT = text("default.project.json")
 
-if 'workspace:WaitForChild("LunaWorldPlayableBlockout", 15)' not in MAIN:
-    raise AssertionError("gameplay services must wait for the world bootstrap")
+if "ServerBootstrap.start(manifest)" not in MAIN:
+    raise AssertionError("server entrypoint must delegate runtime startup to ServerBootstrap")
+if "MoonfallAuthoringContract.RootName" not in ADAPTERS:
+    raise AssertionError("world spawn integration must use the shared authored-root contract")
 for token in (
     'CollectionService:AddTag(worldSpawn, RespawnConfig.AnchorTag)',
     'RespawnConfig.LunaVillageSettlementId',
     '"luna_village_spawn"',
 ):
-    if token not in MAIN:
+    if token not in ADAPTERS:
         raise AssertionError(f"world respawn integration missing {token}")
 
 for token in (
@@ -48,7 +49,12 @@ if '"mob_meadow_spider"' in LAYOUT:
 if '"mob_spider"' not in LAYOUT:
     raise AssertionError("Spider Hollow gameplay marker is missing")
 
-for token in ("PlayableWorldBlockout", "TraversalRecovery"):
+for token in (
+    "PlayableWorldBlockout",
+    "TraversalRecovery",
+    "function WorldBootstrap.start()",
+    "function WorldBootstrap.stop()",
+):
     if token not in WORLD_BOOTSTRAP:
         raise AssertionError(f"world bootstrap missing {token}")
 

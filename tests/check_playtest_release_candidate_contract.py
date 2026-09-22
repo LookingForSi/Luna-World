@@ -6,23 +6,25 @@ ROOT = Path(__file__).resolve().parents[1]
 read = lambda p: (ROOT / p).read_text(encoding="utf-8")
 
 account = read("src/shared/persistence/AccountSchema.luau")
-lobby = read("src/client/controllers/CharacterLobbyController.luau")
+lobby = read("src/client/features/lobby/CharacterLobbyController.luau")
 responsive = read("src/client/ui/ResponsiveLayout.luau")
 craft = read("src/shared/definitions/CraftingDefinitions.luau")
 mobs = read("src/shared/definitions/MobDefinitions.luau")
-world = read("src/server/world/NorthernZonesBlockout.luau")
+world = read("tools/worldgen/moonfall/NorthernZonesBlockout.luau")
 movement = read("src/client/controllers/MovementController.luau")
 progression = read("src/server/services/ProgressionService.luau")
-combat = read("src/server/services/CombatService.luau")
+combat = read("src/server/features/combat/CombatCoordinator.luau")
 server = read("src/server/main.server.luau")
+server_adapter = read("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 client = read("src/client/main.client.luau")
+client_adapter = read("src/client/bootstrap/adapters/ExistingClientComponents.luau")
 target_controller = read("src/client/controllers/TargetController.luau")
-quest_client = read("src/client/controllers/QuestController.luau")
+quest_client = read("src/client/features/quests/QuestController.luau")
 quest_server = read("src/server/services/QuestService.luau")
 player_data = read("src/server/services/PlayerDataService.luau")
 respawn = read("src/server/services/RespawnService.luau")
 hud = read("src/client/ui/CombatHud.luau")
-inventory_ui = read("src/client/ui/InventoryUi.luau")
+inventory_ui = read("src/client/features/inventory/InventoryUi.luau")
 
 assert "DataVersion = 3" in account
 assert "CharacterOrder" in account and "Characters" in account
@@ -56,10 +58,11 @@ assert "CharacterConfig.NicknameAttribute" in hud
 assert "blocker.BackgroundTransparency = 1" in inventory_ui
 assert "panel.BackgroundTransparency = 0.03" in inventory_ui
 
-assert server.index("Players.CharacterAutoLoads = false") < server.index('WaitForChild("LunaWorldPlayableBlockout"')
-assert client.index("TargetController.start") < client.index("EconomyUi.start")
-assert client.index("TargetController.start") < client.index("QuestController.start")
-assert client.index("syncActionBar()") < client.index("EconomyUi.start")
+assert server.index("Players.CharacterAutoLoads = false") < server.index("ServerBootstrap.start(manifest)")
+assert "workspace:WaitForChild(MoonfallAuthoringContract.RootName, 15)" in server_adapter
+assert client_adapter.index("TargetController.start") < client_adapter.index("EconomyUi.start")
+assert client_adapter.index("TargetController.start") < client_adapter.index("QuestController.start")
+assert client_adapter.index("syncActionBar()") < client_adapter.index("EconomyUi.start")
 assert "localGuiBlocksPointer" in target_controller
 assert "firstSnapshotReceived" in quest_client
 assert "0.35, 0.9, 1.8, 3.0" in quest_client

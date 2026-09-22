@@ -6,7 +6,7 @@ read = lambda path: (ROOT / path).read_text()
 craft = read("src/shared/definitions/CraftingDefinitions.luau")
 rules = read("src/shared/economy/EconomyRules.luau")
 service = read("src/server/services/EconomyService.luau")
-ui = read("src/client/ui/EconomyUi.luau")
+ui = read("src/client/features/economy/EconomyUi.luau")
 merchant = read("src/shared/definitions/MerchantDefinitions.luau")
 
 for token in ('"Knight"', '"Ranger"', '"Mystic"', '"Material"', "requiredLevel", "outputQuantity", "sortOrder"):

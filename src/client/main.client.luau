@@ -1,133 +1,33 @@
 --!strict
 
-local clientRoot = script.Parent
-local CombatInputController = require(clientRoot.controllers.CombatInputController)
-local TargetController = require(clientRoot.controllers.TargetController)
-local CombatHud = require(clientRoot.ui.CombatHud)
-local CombatLog = require(clientRoot.ui.CombatLog)
-local RespawnPrompt = require(clientRoot.ui.RespawnPrompt)
-local ActionBar = require(clientRoot.ui.ActionBar)
-local StudioTestPanel = require(clientRoot.ui.StudioTestPanel)
-local MovementController = require(clientRoot.controllers.MovementController)
-local InventoryController = require(clientRoot.controllers.InventoryController)
-local InventoryUi = require(clientRoot.ui.InventoryUi)
-local EconomyController = require(clientRoot.controllers.EconomyController)
-local QuestController = require(clientRoot.controllers.QuestController)
-local EconomyUi = require(clientRoot.ui.EconomyUi)
-local CombatPresentationController = require(clientRoot.controllers.CombatPresentationController)
-local ResponsiveUiController = require(clientRoot.controllers.ResponsiveUiController)
-local CharacterLobbyController = require(clientRoot.controllers.CharacterLobbyController)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local StarterGui = game:GetService("StarterGui")
-local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
-local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombatUiRules)
+local RunService = game:GetService("RunService")
 
-local function disableStockHealthGui(): ()
-	for _ = 1, 5 do
-		local ok = pcall(function()
-			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
-		end)
-		if ok then
-			return
-		end
-		task.wait(0.1)
-	end
+local PlaceRole = require(ReplicatedStorage.Shared.core.runtime.PlaceRole)
+local PlaceRuntime = require(ReplicatedStorage.Shared.core.runtime.PlaceRuntime)
+local ClientApplication = require(script.Parent.bootstrap.ClientApplication)
+local LobbyClientRuntime = require(script.Parent.bootstrap.LobbyClientRuntime)
+local GameplayClientRuntime = require(script.Parent.bootstrap.GameplayClientRuntime)
+local LocalPlaceTransitionAdapter = require(script.Parent.bootstrap.transport.LocalPlaceTransitionAdapter)
+local TeleportTransitionAdapter = require(script.Parent.bootstrap.transport.TeleportTransitionAdapter)
+local ExistingClientComponents = require(script.Parent.bootstrap.adapters.ExistingClientComponents)
+
+local role = PlaceRuntime.resolve(game.PlaceId, game.GameId, RunService:IsStudio(), nil)
+
+if not PlaceRole.isValid(role) then
+	error(string.format("Unsupported client PlaceRole: %s", tostring(role)))
 end
 
-disableStockHealthGui()
-
-local gameplayStarted = false
-local function startGameplay(): ()
-	if gameplayStarted then
-		return
-	end
-	gameplayStarted = true
-	CharacterLobbyController.stop()
-	MovementController.start()
-	CombatPresentationController.start()
-	CombatHud.start()
-	CombatLog.start()
-	RespawnPrompt.start()
-	StudioTestPanel.start()
-	InventoryUi.start({
-		equip = InventoryController.requestEquip,
-		unequip = InventoryController.requestUnequip,
-		consume = InventoryController.requestConsume,
-		discard = InventoryController.requestDiscard,
-		assignQuickSlot = InventoryController.assignQuickSlot,
-	})
-	InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult)
-
-	-- Core combat input must become operational before optional economy/quest/
-	-- responsive UI. A presentation error must never leave the player with HUD
-	-- but without targeting and the action bar.
-	TargetController.start(function(target: Model?)
-		CombatHud.setTarget(target)
-	end)
-	local function syncActionBar(): ()
-		local skillIds =
-			ClientCombatUiRules.getSkills(Players.LocalPlayer:GetAttribute(CombatConfig.ArchetypeAttribute))
-		CombatInputController.start(skillIds)
-		ActionBar.start(
-			skillIds,
-			CombatInputController.requestAttack,
-			CombatInputController.requestAutoToggle,
-			CombatInputController.requestSkill,
-			TargetController.clearTarget,
-			InventoryUi.toggle,
-			QuestController.toggleMap,
-			QuestController.toggleJournal,
-			InventoryController.requestQuickUse,
-			InventoryController.getQuickSlotState
-		)
-	end
-
-	syncActionBar()
-	local archetypeConnection =
-		Players.LocalPlayer:GetAttributeChangedSignal(CombatConfig.ArchetypeAttribute):Connect(syncActionBar)
-
-	EconomyUi.start({
-		buy = EconomyController.buy,
-		sell = EconomyController.sell,
-		sellBatch = EconomyController.sellBatch,
-		craft = EconomyController.craft,
-	})
-	EconomyController.start(EconomyUi.open, EconomyUi.setSnapshot, EconomyUi.showResult)
-	QuestController.start()
-	ResponsiveUiController.start()
-
-	script.Destroying:Connect(function()
-		archetypeConnection:Disconnect()
-		InventoryController.stop()
-		EconomyController.stop()
-		QuestController.stop()
-		ResponsiveUiController.stop()
-		EconomyUi.stop()
-		InventoryUi.stop()
-		StudioTestPanel.stop()
-		MovementController.stop()
-		CombatPresentationController.stop()
-		CombatInputController.stop()
-		ActionBar.stop()
-		TargetController.stop()
-		RespawnPrompt.stop()
-		CombatLog.stop()
-		CombatHud.stop()
-	end)
+local selectCharacter = ExistingClientComponents.requestCharacterSelection
+local adapter = if role == PlaceRole.DevCombined
+	then LocalPlaceTransitionAdapter.new(selectCharacter)
+	else TeleportTransitionAdapter.new(selectCharacter)
+local application = ClientApplication.new(LobbyClientRuntime.new(), GameplayClientRuntime.new(), adapter)
+local ok, reason = application:start({ mode = role })
+if not ok then
+	error(string.format("Client application failed to start for %s: %s", role, tostring(reason)))
 end
 
-CharacterLobbyController.start()
-local localPlayer = Players.LocalPlayer
-if localPlayer:GetAttribute("CharacterReady") then
-	startGameplay()
-end
-local readyConnection = localPlayer:GetAttributeChangedSignal("CharacterReady"):Connect(function()
-	if localPlayer:GetAttribute("CharacterReady") then
-		startGameplay()
-	end
-end)
 script.Destroying:Connect(function()
-	readyConnection:Disconnect()
-	CharacterLobbyController.stop()
+	application:stop()
 end)

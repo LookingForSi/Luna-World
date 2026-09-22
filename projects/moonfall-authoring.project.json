@@ -1,0 +1,22 @@
+{
+  "name": "LunaWorldMoonfallAuthoring",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "../src/shared"
+      }
+    },
+    "ServerStorage": {
+      "MoonfallAuthoring": {
+        "$className": "Folder",
+        "Moonfall": {
+          "$path": "../tools/worldgen/moonfall"
+        },
+        "Bake": {
+          "$path": "../tools/worldgen/bake/MoonfallBake.luau"
+        }
+      }
+    }
+  }
+}

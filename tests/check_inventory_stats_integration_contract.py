@@ -12,7 +12,7 @@ def read(path: str) -> str:
 
 INVENTORY = read("src/server/services/InventoryService.luau")
 STATS = read("src/server/services/StatsService.luau")
-COMBAT = read("src/server/services/CombatService.luau")
+COMBAT = read("src/server/features/combat/CombatCoordinator.luau")
 PROFILE = read("src/shared/persistence/ProfileSchema.luau")
 
 for token in (
@@ -36,7 +36,7 @@ for token in (
 for token in (
     "PlayerDataService.ProfileReady",
     "PlayerDataService.ProfileChanged",
-    "CombatService.refreshPlayerStats",
+    "CombatCoordinator.refreshPlayerStats",
     "CombatEffectService.recomputePlayerModifiers",
     "preserveRatio",
 ):

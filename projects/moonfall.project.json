@@ -1,0 +1,101 @@
+{
+  "name": "LunaWorldWorld",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "../src/shared"
+      },
+      "Remotes": {
+        "$className": "Folder",
+        "TargetRequest": {
+          "$className": "RemoteEvent"
+        },
+        "AttackRequest": {
+          "$className": "RemoteEvent"
+        },
+        "AutoAttackModeRequest": {
+          "$className": "RemoteEvent"
+        },
+        "SkillRequest": {
+          "$className": "RemoteEvent"
+        },
+        "SkillResult": {
+          "$className": "RemoteEvent"
+        },
+        "RespawnRequest": {
+          "$className": "RemoteEvent"
+        },
+        "CombatPresentation": {
+          "$className": "RemoteEvent"
+        },
+        "InventoryActionRequest": {
+          "$className": "RemoteEvent"
+        },
+        "InventorySnapshotRequest": {
+          "$className": "RemoteEvent"
+        },
+        "InventorySnapshot": {
+          "$className": "RemoteEvent"
+        },
+        "InventoryActionResult": {
+          "$className": "RemoteEvent"
+        },
+        "EconomyRequest": {
+          "$className": "RemoteEvent"
+        },
+        "EconomySnapshot": {
+          "$className": "RemoteEvent"
+        },
+        "EconomyOpen": {
+          "$className": "RemoteEvent"
+        },
+        "EconomyResult": {
+          "$className": "RemoteEvent"
+        },
+        "QuestAcceptRequest": {
+          "$className": "RemoteEvent"
+        },
+        "QuestTurnInRequest": {
+          "$className": "RemoteEvent"
+        },
+        "QuestSnapshotRequest": {
+          "$className": "RemoteEvent"
+        },
+        "QuestSnapshot": {
+          "$className": "RemoteEvent"
+        },
+        "QuestActionResult": {
+          "$className": "RemoteEvent"
+        },
+        "DialogueOpen": {
+          "$className": "RemoteEvent"
+        },
+        "TravelRequest": {
+          "$className": "RemoteEvent"
+        },
+        "TravelResult": {
+          "$className": "RemoteEvent"
+        },
+        "CharacterRequest": {
+          "$className": "RemoteEvent"
+        },
+        "CharacterResult": {
+          "$className": "RemoteEvent"
+        }
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "../src/server"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "../src/client"
+        }
+      }
+    }
+  }
+}

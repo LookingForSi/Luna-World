@@ -6,8 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 movement = (ROOT / "src/client/controllers/MovementController.luau").read_text(encoding="utf-8")
 recovery = (ROOT / "src/server/world/TraversalRecovery.luau").read_text(encoding="utf-8")
-south = (ROOT / "src/server/world/VillageAndMeadowsBlockout.luau").read_text(encoding="utf-8")
-north = (ROOT / "src/server/world/NorthernZonesBlockout.luau").read_text(encoding="utf-8")
+south = (ROOT / "tools/worldgen/moonfall/VillageAndMeadowsBlockout.luau").read_text(encoding="utf-8")
+north = (ROOT / "tools/worldgen/moonfall/NorthernZonesBlockout.luau").read_text(encoding="utf-8")
 presentation = (ROOT / "src/client/world-preview/ZonePresentation.client.luau").read_text(encoding="utf-8")
 
 for token in (

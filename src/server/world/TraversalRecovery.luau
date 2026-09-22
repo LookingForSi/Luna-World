@@ -13,6 +13,11 @@ local RECOVERY_OFFSET = Vector3.new(0, 5, 0)
 local SAFE_SAMPLE_MAX_ABOVE_TERRAIN = 28
 local BOUNDS_MARGIN = 10
 
+local started = false
+local serviceGeneration = 0
+local connections: { RBXScriptConnection } = {}
+local lastSafe: { [Player]: CFrame } = {}
+
 local function insidePlayableBounds(position: Vector3): boolean
 	local bounds = WorldLayout.WorldBounds
 	return position.X >= bounds.minX + BOUNDS_MARGIN
@@ -64,7 +69,12 @@ local function clearVelocity(rootPart: BasePart)
 end
 
 function TraversalRecovery.start(worldRoot: Instance, spawn: SpawnLocation)
-	local lastSafe: { [Player]: CFrame } = {}
+	if started then
+		return
+	end
+	started = true
+	serviceGeneration += 1
+	local expectedGeneration = serviceGeneration
 
 	local function spawnCFrame(): CFrame
 		return spawn.CFrame + RECOVERY_OFFSET
@@ -79,14 +89,18 @@ function TraversalRecovery.start(worldRoot: Instance, spawn: SpawnLocation)
 		registerPlayer(player)
 	end
 
-	Players.PlayerAdded:Connect(registerPlayer)
-	Players.PlayerRemoving:Connect(function(player)
+	table.insert(connections, Players.PlayerAdded:Connect(registerPlayer))
+	table.insert(connections, Players.PlayerRemoving:Connect(function(player)
 		lastSafe[player] = nil
-	end)
+	end))
 
 	task.spawn(function()
-		while worldRoot.Parent ~= nil do
+		while started and serviceGeneration == expectedGeneration and worldRoot.Parent ~= nil do
 			task.wait(CHECK_INTERVAL)
+			if not started or serviceGeneration ~= expectedGeneration then
+				break
+			end
+
 			for _, player in ipairs(Players:GetPlayers()) do
 				local character = player.Character
 				if character == nil then
@@ -112,6 +126,19 @@ function TraversalRecovery.start(worldRoot: Instance, spawn: SpawnLocation)
 			end
 		end
 	end)
+end
+
+function TraversalRecovery.stop(): ()
+	if not started then
+		return
+	end
+	started = false
+	serviceGeneration += 1
+	for _, connection in connections do
+		connection:Disconnect()
+	end
+	table.clear(connections)
+	table.clear(lastSafe)
 end
 
 return table.freeze(TraversalRecovery)

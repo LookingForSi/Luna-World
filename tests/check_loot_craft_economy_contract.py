@@ -17,8 +17,8 @@ rules = read("src/shared/economy/EconomyRules.luau")
 network = read("src/server/services/EconomyNetworkService.luau")
 inventory = read("src/server/services/InventoryService.luau")
 world = read("src/server/services/EconomyWorldService.luau")
-client = read("src/client/ui/EconomyUi.luau")
-main = read("src/server/main.server.luau")
+client = read("src/client/features/economy/EconomyUi.luau")
+main = read("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 
 require(loot, "local function resourceEntry", "material drop-rate helper is missing")
 require(loot, "chance * 0.5", "ordinary crafting material drop chances must stay reduced")
@@ -60,8 +60,8 @@ require(inventory, "CollectionService:GetTagged(RespawnConfig.AnchorTag)", "retu
 for token in ('"DialogueMerchant"', '"DialogueBlacksmith"', '"Купить"', '"Продать"', '"Ковать — Рыцарь"', '"Ковать — Следопыт"', '"Ковать — Мистик"', '"Обработать материалы"', '"SellWorkspace"', '"SellInventory"', '"SellCart"', '"Quantity"', 'Итого к получению', '"ПРОДАТЬ ВЫБРАННОЕ"', "callbacks.sellBatch"):
     require(client, token, f"dialogue topic flow missing {token}")
 require(client, "level < 6", "level-six session onboarding is missing")
-require(main, "EconomyNetworkService.start()", "economy networking is not bootstrapped")
-require(main, "EconomyWorldService.stop()", "economy world lifecycle cleanup is missing")
+require(main, "EconomyNetworkService.start", "economy networking is not bootstrapped")
+require(main, "EconomyWorldService.stop", "economy world lifecycle cleanup is missing")
 
 for project in ("default.project.json", "test.project.json"):
     data = read(project)

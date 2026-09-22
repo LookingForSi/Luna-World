@@ -8,45 +8,117 @@
       },
       "Remotes": {
         "$className": "Folder",
-        "TargetRequest": { "$className": "RemoteEvent" },
-        "AttackRequest": { "$className": "RemoteEvent" },
-        "AutoAttackModeRequest": { "$className": "RemoteEvent" },
-        "SkillRequest": { "$className": "RemoteEvent" },
-        "SkillResult": { "$className": "RemoteEvent" },
-        "RespawnRequest": { "$className": "RemoteEvent" },
-        "CombatPresentation": { "$className": "RemoteEvent" },
-        "InventoryActionRequest": { "$className": "RemoteEvent" },
-        "InventorySnapshotRequest": { "$className": "RemoteEvent" },
-        "InventorySnapshot": { "$className": "RemoteEvent" },
-        "InventoryActionResult": { "$className": "RemoteEvent" },
-        "EconomyRequest": { "$className": "RemoteEvent" },
-        "EconomySnapshot": { "$className": "RemoteEvent" },
-        "EconomyOpen": { "$className": "RemoteEvent" },
-        "EconomyResult": { "$className": "RemoteEvent" },
-        "QuestAcceptRequest": { "$className": "RemoteEvent" },
-        "QuestTurnInRequest": { "$className": "RemoteEvent" },
-        "QuestSnapshotRequest": { "$className": "RemoteEvent" },
-        "QuestSnapshot": { "$className": "RemoteEvent" },
-        "QuestActionResult": { "$className": "RemoteEvent" },
-        "DialogueOpen": { "$className": "RemoteEvent" },
-        "TravelRequest": { "$className": "RemoteEvent" },
-        "TravelResult": { "$className": "RemoteEvent" },
-        "CharacterRequest": { "$className": "RemoteEvent" },
-        "CharacterResult": { "$className": "RemoteEvent" }
+        "TargetRequest": {
+          "$className": "RemoteEvent"
+        },
+        "AttackRequest": {
+          "$className": "RemoteEvent"
+        },
+        "AutoAttackModeRequest": {
+          "$className": "RemoteEvent"
+        },
+        "SkillRequest": {
+          "$className": "RemoteEvent"
+        },
+        "SkillResult": {
+          "$className": "RemoteEvent"
+        },
+        "RespawnRequest": {
+          "$className": "RemoteEvent"
+        },
+        "CombatPresentation": {
+          "$className": "RemoteEvent"
+        },
+        "InventoryActionRequest": {
+          "$className": "RemoteEvent"
+        },
+        "InventorySnapshotRequest": {
+          "$className": "RemoteEvent"
+        },
+        "InventorySnapshot": {
+          "$className": "RemoteEvent"
+        },
+        "InventoryActionResult": {
+          "$className": "RemoteEvent"
+        },
+        "EconomyRequest": {
+          "$className": "RemoteEvent"
+        },
+        "EconomySnapshot": {
+          "$className": "RemoteEvent"
+        },
+        "EconomyOpen": {
+          "$className": "RemoteEvent"
+        },
+        "EconomyResult": {
+          "$className": "RemoteEvent"
+        },
+        "QuestAcceptRequest": {
+          "$className": "RemoteEvent"
+        },
+        "QuestTurnInRequest": {
+          "$className": "RemoteEvent"
+        },
+        "QuestSnapshotRequest": {
+          "$className": "RemoteEvent"
+        },
+        "QuestSnapshot": {
+          "$className": "RemoteEvent"
+        },
+        "QuestActionResult": {
+          "$className": "RemoteEvent"
+        },
+        "DialogueOpen": {
+          "$className": "RemoteEvent"
+        },
+        "TravelRequest": {
+          "$className": "RemoteEvent"
+        },
+        "TravelResult": {
+          "$className": "RemoteEvent"
+        },
+        "CharacterRequest": {
+          "$className": "RemoteEvent"
+        },
+        "CharacterResult": {
+          "$className": "RemoteEvent"
+        }
       },
       "TestRemotes": {
         "$className": "Folder",
-        "MilestoneZeroAttackContractReady": { "$className": "RemoteFunction" },
-        "MilestoneZeroAttackContractComplete": { "$className": "RemoteEvent" },
-        "ManualAttackLifecycleStart": { "$className": "RemoteEvent" },
-        "ManualAttackLifecycleCommand": { "$className": "RemoteFunction" },
-        "ManualAttackLifecycleComplete": { "$className": "RemoteEvent" },
-        "SkillRuntimeStart": { "$className": "RemoteEvent" },
-        "SkillRuntimeCommand": { "$className": "RemoteFunction" },
-        "SkillRuntimeComplete": { "$className": "RemoteEvent" },
-        "AutoAttackRuntimeStart": { "$className": "RemoteEvent" },
-        "AutoAttackRuntimeCommand": { "$className": "RemoteFunction" },
-        "AutoAttackRuntimeComplete": { "$className": "RemoteEvent" }
+        "MilestoneZeroAttackContractReady": {
+          "$className": "RemoteFunction"
+        },
+        "MilestoneZeroAttackContractComplete": {
+          "$className": "RemoteEvent"
+        },
+        "ManualAttackLifecycleStart": {
+          "$className": "RemoteEvent"
+        },
+        "ManualAttackLifecycleCommand": {
+          "$className": "RemoteFunction"
+        },
+        "ManualAttackLifecycleComplete": {
+          "$className": "RemoteEvent"
+        },
+        "SkillRuntimeStart": {
+          "$className": "RemoteEvent"
+        },
+        "SkillRuntimeCommand": {
+          "$className": "RemoteFunction"
+        },
+        "SkillRuntimeComplete": {
+          "$className": "RemoteEvent"
+        },
+        "AutoAttackRuntimeStart": {
+          "$className": "RemoteEvent"
+        },
+        "AutoAttackRuntimeCommand": {
+          "$className": "RemoteFunction"
+        },
+        "AutoAttackRuntimeComplete": {
+          "$className": "RemoteEvent"
+        }
       }
     },
     "ServerScriptService": {
@@ -55,6 +127,15 @@
       },
       "Tests": {
         "$path": "tests"
+      },
+      "Worldgen": {
+        "$className": "Folder",
+        "Moonfall": {
+          "$path": "tools/worldgen/moonfall"
+        },
+        "WorldBootstrap": {
+          "$path": "tools/worldgen/WorldBootstrap.luau"
+        }
       }
     },
     "StarterPlayer": {

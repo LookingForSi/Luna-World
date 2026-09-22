@@ -7,7 +7,7 @@ read = lambda path: (ROOT / path).read_text(encoding="utf-8")
 
 starter = read("src/shared/economy/StarterGearRules.luau")
 items = read("src/shared/definitions/ItemDefinitions.luau")
-ui = read("src/client/ui/EconomyUi.luau")
+ui = read("src/client/features/economy/EconomyUi.luau")
 rules = read("src/shared/economy/EconomyRules.luau")
 balance = read("src/shared/economy/EconomyBalance.luau")
 craft = read("src/shared/definitions/CraftingDefinitions.luau")

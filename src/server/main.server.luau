@@ -1,81 +1,34 @@
 --!strict
 
-local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
--- Character Lobby owns the first spawn. Disable Roblox auto-spawn before any
--- world/service waits so a player can never briefly enter gameplay first.
+-- Character Lobby owns the first spawn in DevCombined/Lobby flows.
 Players.CharacterAutoLoads = false
 
-local CombatService = require(script.Parent.services.CombatService)
-local MobService = require(script.Parent.services.MobService)
-local MobAIService = require(script.Parent.services.MobAIService)
-local MobAbilityService = require(script.Parent.services.MobAbilityService)
-local LootService = require(script.Parent.services.LootService)
-local InventoryNetworkService = require(script.Parent.services.InventoryNetworkService)
-local WorldDropService = require(script.Parent.services.WorldDropService)
-local EconomyService = require(script.Parent.services.EconomyService)
-local EconomyNetworkService = require(script.Parent.services.EconomyNetworkService)
-local EconomyWorldService = require(script.Parent.services.EconomyWorldService)
-local NpcWorldService = require(script.Parent.services.NpcWorldService)
-local QuestService = require(script.Parent.services.QuestService)
-local TravelService = require(script.Parent.services.TravelService)
-local PlayerDataService = require(script.Parent.services.PlayerDataService)
-local CharacterService = require(script.Parent.services.CharacterService)
-local ProgressionService = require(script.Parent.services.ProgressionService)
-local PlayerRegenerationService = require(script.Parent.services.PlayerRegenerationService)
-local RespawnService = require(script.Parent.services.RespawnService)
-local StudioDebugService = require(script.Parent.services.StudioDebugService)
-local RespawnConfig = require(game:GetService("ReplicatedStorage").Shared.config.RespawnConfig)
+local PlaceRole = require(ReplicatedStorage.Shared.core.runtime.PlaceRole)
+local PlaceRuntime = require(ReplicatedStorage.Shared.core.runtime.PlaceRuntime)
+local ServerBootstrap = require(script.Parent.bootstrap.ServerBootstrap)
 
-local worldRoot = workspace:WaitForChild("LunaWorldPlayableBlockout", 15)
-assert(worldRoot ~= nil, "Luna World blockout failed to initialize before gameplay services")
+local LobbyServerManifest = require(script.Parent.bootstrap.manifests.LobbyServerManifest)
+local WorldServerManifest = require(script.Parent.bootstrap.manifests.WorldServerManifest)
+local DungeonServerManifest = require(script.Parent.bootstrap.manifests.DungeonServerManifest)
+local DevCombinedServerManifest = require(script.Parent.bootstrap.manifests.DevCombinedServerManifest)
 
-local worldSpawn = worldRoot:FindFirstChild("LunaVillageSpawn", true)
-if worldSpawn ~= nil and worldSpawn:IsA("SpawnLocation") then
-	worldSpawn:SetAttribute(RespawnConfig.SettlementIdAttribute, RespawnConfig.LunaVillageSettlementId)
-	worldSpawn:SetAttribute(RespawnConfig.AnchorIdAttribute, "luna_village_spawn")
-	CollectionService:AddTag(worldSpawn, RespawnConfig.AnchorTag)
+local role = PlaceRuntime.resolve(game.PlaceId, game.GameId, RunService:IsStudio(), nil)
+
+local manifest
+if role == PlaceRole.Lobby then
+	manifest = LobbyServerManifest
+elseif role == PlaceRole.World then
+	manifest = WorldServerManifest
+elseif role == PlaceRole.Dungeon then
+	manifest = DungeonServerManifest
+elseif role == PlaceRole.DevCombined then
+	manifest = DevCombinedServerManifest
+else
+	error(string.format("Unsupported server PlaceRole: %s", tostring(role)))
 end
 
-EconomyService.start()
-PlayerDataService.start()
-CharacterService.start()
-ProgressionService.start()
-CombatService.start()
-PlayerRegenerationService.start()
-RespawnService.start()
-StudioDebugService.start()
-MobAbilityService.start()
-MobAIService.start(MobAbilityService.requestAttack)
-MobService.start()
-LootService.start()
-WorldDropService.start()
-InventoryNetworkService.start()
-EconomyNetworkService.start()
-EconomyWorldService.start()
-QuestService.start()
-TravelService.start()
-NpcWorldService.start()
-
-game:BindToClose(function()
-	StudioDebugService.stop()
-	RespawnService.stop()
-	PlayerRegenerationService.stop()
-	InventoryNetworkService.stop()
-	WorldDropService.stop()
-	NpcWorldService.stop()
-	EconomyWorldService.stop()
-	TravelService.stop()
-	QuestService.stop()
-	EconomyNetworkService.stop()
-	EconomyService.stop()
-	LootService.stop()
-	MobAIService.stop()
-	MobAbilityService.stop()
-	MobService.stop()
-	CombatService.stop()
-	ProgressionService.stop()
-	CharacterService.stop()
-	PlayerDataService.stop()
-end)
+ServerBootstrap.start(manifest)

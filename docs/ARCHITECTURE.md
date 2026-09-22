@@ -322,3 +322,22 @@ Persistent запись пользователя теперь является `
 Сессия имеет два явных рубежа. `AccountReady` разрешает только работу roster/lobby API. `CharacterReady` появляется после проверки принадлежности `CharacterId`, назначает активный профиль и только затем разрешает spawn и gameplay services. Совместимое событие `ProfileReady` означает именно `CharacterReady`.
 
 Character API принимает только узкие команды roster/check/create/select/delete, применяет rate limit и возвращает DTO без inventory, quest state и иных изменяемых authoritative структур. Nickname нормализуется pure-правилами, проходит Roblox TextService filtering и резервируется в отдельном индексе через атомарный `UpdateAsync`. При неудачном создании reservation откатывается; при удалении имя освобождается только после успешной записи account.
+
+## 16. Multi-Place runtime и authored Moonfall (Gates A–E)
+
+Experience разделяется на роли `Lobby`, `World`, `Dungeon` и Studio-only `DevCombined`. Роль определяется через fail-closed `PlaceRuntime`; production Place без явного deployment mapping не запускает все подсистемы как fallback. Server/client entrypoints выбирают role-specific manifests, а `RuntimeManifest` владеет ordered startup, rollback и cleanup.
+
+Переход Lobby → Moonfall выполняется server-authoritative transfer lifecycle. Source сохраняет и освобождает profile lease, создаёт одноразовый transfer intent в `MemoryStoreService` и передаёт через `TeleportData` только routing/correlation metadata. Destination сначала валидирует routing shape, claim-ит authoritative profile, атомарно consume-ит intent, проверяет ownership/destination и только затем активирует character. Inventory, Luna, XP, equipment, quests и другие authoritative данные через `TeleportData` не передаются.
+
+Production Moonfall после Gate E считается **authored Place**, а не runtime-generated world:
+
+- `projects/moonfall.project.json` не маппит `tools/worldgen`;
+- production `src/server/world` содержит только gameplay/runtime helpers, а blockout generator вынесен в `tools/worldgen`;
+- `MoonfallWorldRuntime` принимает только root с `ManagedBy=MoonfallAuthoredWorld`, совпадающим terrain revision и обязательным `LunaVillageSpawn`;
+- `MoonfallWorldRuntime` отдельно владеет `TraversalRecovery`; эта gameplay-обязанность больше не зависит от generator bootstrap;
+- `default.project.json`, test mappings и `projects/dev-combined.project.json` могут маппить dev-only `Worldgen` для локального полного flow;
+- `world.project.json` остаётся generator preview;
+- `projects/moonfall-authoring.project.json` предоставляет Studio-only one-shot bake module с явной confirmation string;
+- `MoonfallRegionManifest` оборачивает canonical `WorldLayout` и реальные `TravelDefinitions`, сохраняя stable zone/POI/spawn/travel IDs.
+
+Физическое сохранение generated Terrain/static environment в реальный Moonfall Place остаётся отдельным owner checkpoint. До выполнения bake + visual/runtime acceptance нельзя считать опубликованный production Moonfall принятым, даже если repo-side contracts и Rojo builds зелёные.

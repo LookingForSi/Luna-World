@@ -1,0 +1,65 @@
+name: Architecture CI
+
+on:
+  push:
+    branches:
+      - architecture/multi-place-implementation-v01
+      - "architecture/gate-*"
+  pull_request:
+    branches:
+      - main
+      - "architecture/**"
+
+permissions:
+  contents: read
+
+jobs:
+  contracts-and-builds:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python contract checks
+        shell: bash
+        run: |
+          set -uo pipefail
+          status=0
+          for f in tests/check_*.py; do
+            echo "::group::$f"
+            if ! python3 "$f"; then
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit "$status"
+
+      - name: Setup Rokit
+        if: always()
+        uses: paradoxum-games/setup-rokit@v3
+        with:
+          cache: true
+
+      - name: Rojo builds
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rojo --version
+          shopt -s nullglob
+          projects=( default.project.json test.project.json world.project.json projects/*.project.json )
+          for project in "${projects[@]}"; do
+            name="$(basename "$project" .project.json)"
+            echo "::group::rojo build $project"
+            rojo build "$project" -o "/tmp/${name}.rbxlx"
+            echo "::endgroup::"
+          done
+
+      - name: Diff whitespace check
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check origin/main...HEAD

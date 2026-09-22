@@ -4,18 +4,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-combat = (ROOT / "src/server/services/CombatService.luau").read_text(encoding="utf-8")
+combat = (ROOT / "src/server/features/combat/CombatCoordinator.luau").read_text(encoding="utf-8")
 mob_abilities = (ROOT / "src/server/services/MobAbilityService.luau").read_text(encoding="utf-8")
 target = (ROOT / "src/client/controllers/TargetController.luau").read_text(encoding="utf-8")
 config = (ROOT / "src/shared/config/CombatConfig.luau").read_text(encoding="utf-8")
 log_rules = (ROOT / "src/shared/combat/ClientCombatLogRules.luau").read_text(encoding="utf-8")
-north = (ROOT / "src/server/world/NorthernZonesBlockout.luau").read_text(encoding="utf-8")
+north = (ROOT / "tools/worldgen/moonfall/NorthernZonesBlockout.luau").read_text(encoding="utf-8")
 
 for token in (
     'type PendingApproach = {',
     'kind: "Attack" | "Skill"',
     'pendingApproachesByPlayer',
-    'beginApproach(player, targetId, "Attack", nil, getBasicAttackDefinition(state).range)',
+    'beginApproach(player, targetId, "Attack", nil, BasicAttackService.getDefinition(state).range)',
     'beginApproach(player, selectedTargetId, "Skill", definition.id, definition.range)',
     'distance <= pending.range + CombatConfig.RangeTolerance',
     'humanoid:MoveTo(targetRoot.Position)',
@@ -42,15 +42,21 @@ if 'CombatService.selectAttackerIfNoTarget(target, mob)' not in mob_abilities:
     raise AssertionError("incoming hostile mob damage must auto-select the attacker")
 
 for token in (
-    'function CombatService.selectAttackerIfNoTarget',
+    'function CombatCoordinator.selectAttackerIfNoTarget',
     'if targetsByPlayer[player] ~= nil',
     'onTargetRequest(player, entityId)',
 ):
     if token not in combat:
         raise AssertionError(f"attacker auto-target authority missing: {token}")
 
-for forbidden in ('createPalisadeLine', 'fenceSegments', '"Palisade%02d"'):
-    if forbidden in north:
-        raise AssertionError(f"goblin camp fence must be removed: {forbidden}")
+for required in (
+    "createCampPalisadeLine",
+    "fenceSegments",
+    '"CampPalisade%02d"',
+    "gateHalfWidth = 32",
+    "PalisadeCollision = true",
+):
+    if required not in north:
+        raise AssertionError(f"accepted collision-sealed goblin palisade contract missing: {required}")
 
 print("Click-to-range combat + retaliation targeting contract: PASS")

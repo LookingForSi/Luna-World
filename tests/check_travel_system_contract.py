@@ -7,8 +7,8 @@ defs=read("src/shared/definitions/TravelDefinitions.luau")
 rules=read("src/shared/travel/TravelRules.luau")
 service=read("src/server/services/TravelService.luau")
 quest=read("src/server/services/QuestService.luau")
-client=read("src/client/controllers/QuestController.luau")
-main=read("src/server/main.server.luau")
+client=read("src/client/features/quests/QuestController.luau")
+main=read("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 for token in (
     'id = "travel_farm"',
     'unlockQuestId = "quest_young_wolf_problem"',
@@ -58,6 +58,6 @@ for token in (
     '"Отмена"',
 ):
     if token not in client: raise AssertionError(f"travel client surface missing: {token}")
-for token in ("TravelService.start()", "TravelService.stop()"):
+for token in ("TravelService.start", "TravelService.stop"):
     if token not in main: raise AssertionError(f"travel lifecycle missing: {token}")
 print("Quest-unlocked travel contract: PASS")

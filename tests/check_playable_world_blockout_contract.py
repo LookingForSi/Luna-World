@@ -1,17 +1,19 @@
 from pathlib import Path
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_FILES = [
     ROOT / "src/server/world/TerrainGrounding.luau",
-    ROOT / "src/server/world/BlockoutPrimitives.luau",
-    ROOT / "src/server/world/VillageAndMeadowsBlockout.luau",
-    ROOT / "src/server/world/NorthernZonesBlockout.luau",
-    ROOT / "src/server/world/WorldDressingBlockout.luau",
-    ROOT / "src/server/world/WorldCompositionBlockout.luau",
-    ROOT / "src/server/world/PlayableWorldBlockout.luau",
-    ROOT / "src/server/world/WorldBootstrap.server.luau",
+    ROOT / "tools/worldgen/moonfall/BlockoutPrimitives.luau",
+    ROOT / "tools/worldgen/moonfall/VillageAndMeadowsBlockout.luau",
+    ROOT / "tools/worldgen/moonfall/NorthernZonesBlockout.luau",
+    ROOT / "tools/worldgen/moonfall/WorldDressingBlockout.luau",
+    ROOT / "tools/worldgen/moonfall/WorldCompositionBlockout.luau",
+    ROOT / "tools/worldgen/moonfall/PlayableWorldBlockout.luau",
+    ROOT / "tools/worldgen/WorldBootstrap.luau",
     ROOT / "src/server/world/TraversalRecovery.luau",
+    ROOT / "tools/worldgen/preview/WorldPreviewBootstrap.server.luau",
     ROOT / "src/client/world-preview/ZonePresentation.client.luau",
 ]
 
@@ -25,11 +27,27 @@ def main() -> None:
     for path in REQUIRED_FILES:
         read(path)
 
-    project = read(ROOT / "world.project.json")
-    assert '"$path": "src/server/world"' in project
-    assert '"$path": "src/client/world-preview"' in project
+    project = json.loads(read(ROOT / "world.project.json"))
+    server_scripts = project["tree"]["ServerScriptService"]
+    assert server_scripts["Server"]["world"]["$path"] == "src/server/world"
+    assert server_scripts["Worldgen"]["Moonfall"]["$path"] == "tools/worldgen/moonfall"
+    assert server_scripts["Worldgen"]["WorldBootstrap"]["$path"] == "tools/worldgen/WorldBootstrap.luau"
+    assert server_scripts["WorldPreviewBootstrap"]["$path"] == "tools/worldgen/preview/WorldPreviewBootstrap.server.luau"
+    assert project["tree"]["StarterPlayer"]["StarterPlayerScripts"]["WorldPreview"]["$path"] == "src/client/world-preview"
 
-    primitives = read(ROOT / "src/server/world/BlockoutPrimitives.luau")
+    preview_bootstrap = read(ROOT / "tools/worldgen/preview/WorldPreviewBootstrap.server.luau")
+    assert "Worldgen.WorldBootstrap" in preview_bootstrap
+    assert "WorldBootstrap.start()" in preview_bootstrap
+    assert "game:BindToClose(WorldBootstrap.stop)" in preview_bootstrap
+
+    default_project = json.loads(read(ROOT / "default.project.json"))
+    assert "Worldgen" in default_project["tree"]["ServerScriptService"]
+    assert "WorldPreviewBootstrap" not in default_project["tree"]["ServerScriptService"]
+
+    production_project = json.loads(read(ROOT / "projects/moonfall.project.json"))
+    assert "Worldgen" not in production_project["tree"]["ServerScriptService"]
+
+    primitives = read(ROOT / "tools/worldgen/moonfall/BlockoutPrimitives.luau")
     for token in (
         "embedDepth",
         "paintTerrainStrip",
@@ -38,7 +56,7 @@ def main() -> None:
     ):
         assert token in primitives
 
-    grounding = read(ROOT / "src/server/world/TerrainGrounding.luau")
+    grounding = read(ROOT / "tools/worldgen/moonfall/TerrainGrounding.luau")
     assert "Workspace.Terrain" in grounding
     assert "workspace:Raycast" not in grounding  # use explicit Workspace service consistently
     assert "Workspace:Raycast" in grounding
@@ -52,21 +70,21 @@ def main() -> None:
     ):
         assert token in grounding
 
-    bootstrap = read(ROOT / "src/server/world/WorldBootstrap.server.luau")
+    bootstrap = read(ROOT / "tools/worldgen/WorldBootstrap.luau")
     assert "PlayableWorldBlockout" in bootstrap
     assert "WorldGreyboxBuilder" not in bootstrap
     assert "TraversalRecovery" in bootstrap
     assert "suppressTemplateBaseplate" in bootstrap
     assert "baseplate.CanCollide = false" in bootstrap
 
-    builder = read(ROOT / "src/server/world/PlayableWorldBlockout.luau")
-    assert 'TerrainRevision", "terrain-v11"' in builder
+    builder = read(ROOT / "tools/worldgen/moonfall/PlayableWorldBlockout.luau")
+    assert "root:SetAttribute(\"TerrainRevision\", Contract.TerrainRevision)" in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
     assert "WorldDressingBlockout" in builder
     assert "WorldCompositionBlockout" in builder
 
-    south = read(ROOT / "src/server/world/VillageAndMeadowsBlockout.luau")
+    south = read(ROOT / "tools/worldgen/moonfall/VillageAndMeadowsBlockout.luau")
     for token in (
         "LunaVillage",
         "VillagePalisadeNorthWest",
@@ -111,7 +129,7 @@ def main() -> None:
     ):
         assert token in recovery
 
-    north = read(ROOT / "src/server/world/NorthernZonesBlockout.luau")
+    north = read(ROOT / "tools/worldgen/moonfall/NorthernZonesBlockout.luau")
     for token in (
         "MoonfallRoad",
         "GoblinCamp",
@@ -160,7 +178,7 @@ def main() -> None:
         assert removed_square_rim not in north
 
 
-    dressing = read(ROOT / "src/server/world/WorldDressingBlockout.luau")
+    dressing = read(ROOT / "tools/worldgen/moonfall/WorldDressingBlockout.luau")
     for token in (
         "EnvironmentDressing",
         "VillageRetainingWallWest",
@@ -179,7 +197,7 @@ def main() -> None:
     assert "spawn_spider_meadow_pocket" not in dressing
     assert "Grounding.treeSurfaceAt(position)" in dressing
 
-    composition = read(ROOT / "src/server/world/WorldCompositionBlockout.luau")
+    composition = read(ROOT / "tools/worldgen/moonfall/WorldCompositionBlockout.luau")
     assert "GoblinShelfEdge" in composition
     for token in (
         "MacroComposition",

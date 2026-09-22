@@ -17,6 +17,11 @@ local connections = {}
 local started = false
 local nicknameStore: any
 local rate = {}
+local transferHandler: ((Player, string) -> (boolean, string?))? = nil
+
+function CharacterService.setTransferHandler(handler: ((Player, string) -> (boolean, string?))?): ()
+	transferHandler = handler
+end
 
 local function looseStudioNicknames(): boolean
 	return RunService:IsStudio() and not PersistenceConfig.UseDataStoreInStudio
@@ -155,7 +160,20 @@ function CharacterService.start(storeOverride: any?): ()
 					response(result, player, id, action, false, "InvalidCharacterId")
 					return
 				end
-				local ok, reason = PlayerDataService.selectCharacter(player, p.characterId)
+				local ok, reason
+				if transferHandler ~= nil then
+					ok, reason = PlayerDataService.prepareTransferCharacter(player, p.characterId)
+					if ok then
+						ok, reason = (transferHandler :: any)(player, p.characterId)
+					end
+				else
+					ok, reason = PlayerDataService.selectCharacter(player, p.characterId)
+					if ok and RunService:IsStudio() then
+						-- DevCombined has no destination server. Keep arrival as a separate
+						-- authoritative seam so production confirms it only after intent validation.
+						ok, reason = PlayerDataService.confirmArrival(player)
+					end
+				end
 				response(result, player, id, action, ok, reason)
 				return
 			end
@@ -346,6 +364,7 @@ function CharacterService.stop(): ()
 	table.clear(connections)
 	table.clear(rate)
 	nicknameStore = nil
+	transferHandler = nil
 	started = false
 end
 return CharacterService

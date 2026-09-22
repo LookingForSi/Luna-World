@@ -19,8 +19,8 @@ LAYOUT = text("src/shared/world/WorldLayout.luau")
 MOB_SERVICE = text("src/server/services/MobService.luau")
 MOB_AI = text("src/server/services/MobAIService.luau")
 MOB_ABILITY_SERVICE = text("src/server/services/MobAbilityService.luau")
-COMBAT = text("src/server/services/CombatService.luau")
-MAIN = text("src/server/main.server.luau")
+COMBAT = text("src/server/features/combat/CombatCoordinator.luau")
+BOOTSTRAP_ADAPTER = text("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 
 for mob_id in (
     "mob_young_wolf",
@@ -252,18 +252,21 @@ for token in (
     if token not in COMBAT:
         raise AssertionError(f"CombatService hostile-effect boundary missing {token}")
 
-if "MobAbilityService.start()" not in MAIN or "MobAIService.start(MobAbilityService.requestAttack)" not in MAIN:
-    raise AssertionError("server bootstrap must route mob attacks through MobAbilityService")
+if "MobAbilityService.start" not in BOOTSTRAP_ADAPTER or "MobAIService.start(MobAbilityService.requestAttack)" not in BOOTSTRAP_ADAPTER:
+    raise AssertionError("server bootstrap adapter must route mob attacks through MobAbilityService")
 
 # dev0.2 goblin tuning: wider local social response, stronger aggro and real perimeter roaming.
 for token in (
-    "detectionRadius = 52, aggroRadius = 46, reacquireRadius = 64, leashDistance = 120",
+    "detectionRadius = 90, aggroRadius = 82, reacquireRadius = 120, leashDistance = 120",
     "socialAssistRadius = 72",
-    "detectionRadius = 60, aggroRadius = 54, reacquireRadius = 72, leashDistance = 125",
+    "detectionRadius = 94, aggroRadius = 86, reacquireRadius = 124, leashDistance = 125",
+    "socialAssistRadius = 74",
+    "detectionRadius = 100, aggroRadius = 92, reacquireRadius = 132, leashDistance = 125",
     "socialAssistRadius = 78",
+    "detectionRadius = 110, aggroRadius = 100, reacquireRadius = 145, leashDistance = 140",
 ):
     if token not in MOBS:
-        raise AssertionError(f"dev0.2 goblin aggro/social tuning missing: {token}")
+        raise AssertionError(f"accepted goblin aggro/social tuning missing: {token}")
 
 for marker_id in ("spawn_goblin_patrol_south", "spawn_goblin_patrol_east", "spawn_goblin_patrol_north", "spawn_goblin_patrol_west"):
     body = LAYOUT.split(f'id = "{marker_id}"', 1)[1].split("}", 1)[0]

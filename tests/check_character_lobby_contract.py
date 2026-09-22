@@ -9,7 +9,10 @@ migration = read("src/shared/persistence/MigrationRules.luau")
 service = read("src/server/services/CharacterService.luau")
 data = read("src/server/services/PlayerDataService.luau")
 client = read("src/client/main.client.luau")
-lobby = read("src/client/controllers/CharacterLobbyController.luau")
+client_adapter = read("src/client/bootstrap/adapters/ExistingClientComponents.luau")
+client_application = read("src/client/bootstrap/ClientApplication.luau")
+dev_client_manifest = read("src/client/bootstrap/manifests/DevCombinedClientManifest.luau")
+lobby = read("src/client/features/lobby/CharacterLobbyController.luau")
 project = json.loads(read("default.project.json"))
 
 assert "DataVersion = 3" in account
@@ -23,7 +26,9 @@ assert "UseDataStoreInStudio" in nickname_store and "studioIndex" in nickname_st
 assert "FilterStringAsync" in service and "CharacterNotOwned" in service
 assert "Players.CharacterAutoLoads = false" in data
 assert "AccountReady" in data and "CharacterReady" in data
-assert client.index("CharacterLobbyController.start()") < client.index('GetAttribute("CharacterReady")')
+assert "ClientApplication.new" in client
+assert dev_client_manifest.index("Components.characterLobby()") < dev_client_manifest.index("Components.gameplay()")
+assert 'GetAttribute("CharacterReady")' in client_application and "startGameplay()" in client_adapter
 assert "ResponsiveLayout.observe" in lobby and "DeleteConfirmation" in lobby
 assert "IgnoreGuiInset = true" in lobby and "Size = UDim2.fromScale(1, 1)" in lobby
 assert "geometryChanged" in lobby and "previousViewport" in lobby
@@ -39,7 +44,7 @@ assert 'CharacterRules.validateCreation(p, looseStudioNicknames())' in service
 combat_config = read("src/shared/config/CombatConfig.luau")
 character_config = read("src/shared/config/CharacterConfig.luau")
 respawn = read("src/server/services/RespawnService.luau")
-combat = read("src/server/services/CombatService.luau")
+combat = read("src/server/features/combat/CombatCoordinator.luau")
 hud = read("src/client/ui/CombatHud.luau")
 assert 'NicknameAttribute = "CharacterNickname"' in character_config
 assert "player:SetAttribute(CombatConfig.ArchetypeAttribute, character.ArchetypeId)" in data
@@ -52,5 +57,7 @@ assert "initializeReadyPlayer" in combat
 assert "CharacterConfig.NicknameAttribute" in hud and "updatePlayerName" in hud
 assert "CharacterRequest" in project["tree"]["ReplicatedStorage"]["Remotes"]
 server_bootstrap = read("src/server/main.server.luau")
-assert server_bootstrap.index("Players.CharacterAutoLoads = false") < server_bootstrap.index('WaitForChild("LunaWorldPlayableBlockout"')
+server_adapter = read("src/server/bootstrap/adapters/ExistingServerComponents.luau")
+assert server_bootstrap.index("Players.CharacterAutoLoads = false") < server_bootstrap.index("ServerBootstrap.start(manifest)")
+assert "MoonfallAuthoringContract.RootName" in server_adapter
 print("character lobby contract: PASS")

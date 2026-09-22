@@ -9,20 +9,51 @@
       },
       "Remotes": {
         "$className": "Folder",
-        "QuestAcceptRequest": { "$className": "RemoteEvent" },
-        "QuestTurnInRequest": { "$className": "RemoteEvent" },
-        "QuestSnapshotRequest": { "$className": "RemoteEvent" },
-        "QuestSnapshot": { "$className": "RemoteEvent" },
-        "QuestActionResult": { "$className": "RemoteEvent" },
-        "DialogueOpen": { "$className": "RemoteEvent" },
-        "TravelRequest": { "$className": "RemoteEvent" },
-        "TravelResult": { "$className": "RemoteEvent" }
+        "QuestAcceptRequest": {
+          "$className": "RemoteEvent"
+        },
+        "QuestTurnInRequest": {
+          "$className": "RemoteEvent"
+        },
+        "QuestSnapshotRequest": {
+          "$className": "RemoteEvent"
+        },
+        "QuestSnapshot": {
+          "$className": "RemoteEvent"
+        },
+        "QuestActionResult": {
+          "$className": "RemoteEvent"
+        },
+        "DialogueOpen": {
+          "$className": "RemoteEvent"
+        },
+        "TravelRequest": {
+          "$className": "RemoteEvent"
+        },
+        "TravelResult": {
+          "$className": "RemoteEvent"
+        }
       }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
-      "World": {
-        "$path": "src/server/world"
+      "Server": {
+        "$className": "Folder",
+        "world": {
+          "$path": "src/server/world"
+        }
+      },
+      "Worldgen": {
+        "$className": "Folder",
+        "Moonfall": {
+          "$path": "tools/worldgen/moonfall"
+        },
+        "WorldBootstrap": {
+          "$path": "tools/worldgen/WorldBootstrap.luau"
+        }
+      },
+      "WorldPreviewBootstrap": {
+        "$path": "tools/worldgen/preview/WorldPreviewBootstrap.server.luau"
       }
     },
     "StarterPlayer": {
