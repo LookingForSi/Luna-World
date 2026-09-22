@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 read = lambda p: (ROOT / p).read_text(encoding="utf-8")
 
 account = read("src/shared/persistence/AccountSchema.luau")
-lobby = read("src/client/controllers/CharacterLobbyController.luau")
+lobby = read("src/client/features/lobby/CharacterLobbyController.luau")
 responsive = read("src/client/ui/ResponsiveLayout.luau")
 craft = read("src/shared/definitions/CraftingDefinitions.luau")
 mobs = read("src/shared/definitions/MobDefinitions.luau")
@@ -19,7 +19,7 @@ server_adapter = read("src/server/bootstrap/adapters/ExistingServerComponents.lu
 client = read("src/client/main.client.luau")
 client_adapter = read("src/client/bootstrap/adapters/ExistingClientComponents.luau")
 target_controller = read("src/client/controllers/TargetController.luau")
-quest_client = read("src/client/controllers/QuestController.luau")
+quest_client = read("src/client/features/quests/QuestController.luau")
 quest_server = read("src/server/services/QuestService.luau")
 player_data = read("src/server/services/PlayerDataService.luau")
 respawn = read("src/server/services/RespawnService.luau")
