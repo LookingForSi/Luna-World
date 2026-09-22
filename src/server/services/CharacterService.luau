@@ -163,9 +163,16 @@ function CharacterService.start(storeOverride: any?): ()
 				local ok, reason
 				if transferHandler ~= nil then
 					ok, reason = PlayerDataService.prepareTransferCharacter(player, p.characterId)
-					if ok then ok, reason = (transferHandler :: any)(player, p.characterId) end
+					if ok then
+						ok, reason = (transferHandler :: any)(player, p.characterId)
+					end
 				else
 					ok, reason = PlayerDataService.selectCharacter(player, p.characterId)
+					if ok and RunService:IsStudio() then
+						-- DevCombined has no destination server. Keep arrival as a separate
+						-- authoritative seam so production confirms it only after intent validation.
+						ok, reason = PlayerDataService.confirmArrival(player)
+					end
 				end
 				response(result, player, id, action, ok, reason)
 				return

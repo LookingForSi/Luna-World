@@ -18,9 +18,13 @@ function Gateway:teleport(placeId: number, players: { Player }, payload: any): (
 	return ok, if ok then nil else tostring(reason)
 end
 
-function Gateway:onInitFailed(callback: (Player, string) -> ()): RBXScriptConnection
-	return TeleportService.TeleportInitFailed:Connect(function(player, result, message)
-		callback(player, string.format("%s:%s", result.Name, message))
+function Gateway:onInitFailed(callback: (Player, string, any?) -> ()): RBXScriptConnection
+	return TeleportService.TeleportInitFailed:Connect(function(player, result, message, _placeId, options)
+		local payload = nil
+		if options ~= nil then
+			pcall(function() payload = options:GetTeleportData() end)
+		end
+		callback(player, string.format("%s:%s", result.Name, message), payload)
 	end)
 end
 

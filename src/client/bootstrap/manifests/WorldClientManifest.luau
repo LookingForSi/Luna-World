@@ -6,5 +6,5 @@ local Components = require(script.Parent.Parent.adapters.ExistingClientComponent
 
 return RuntimeManifest.new("WorldClient", {
 	Components.stockHealthGui(),
-	Components.gameplayAfterCharacterReady(),
+	Components.gameplay(),
 })

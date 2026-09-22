@@ -10,20 +10,20 @@ def read(path: str) -> str:
 
 main = read("src/client/main.client.luau")
 adapter = read("src/client/bootstrap/adapters/ExistingClientComponents.luau")
-dev = read("src/client/bootstrap/manifests/DevCombinedClientManifest.luau")
+application = read("src/client/bootstrap/ClientApplication.luau")
 
-assert "ClientBootstrap.start(manifest)" in main
+assert "ClientApplication.new" in main
 assert ".controllers." not in main and ".ui." not in main, "thin client entrypoint must not require feature controllers/UI"
-assert 'script.Destroying:Connect(stop)' in main
+assert "script.Destroying:Connect" in main
 
-assert dev.index("Components.characterLobby()") < dev.index("Components.gameplayAfterCharacterReady()")
-assert 'GetAttribute("CharacterReady")' in adapter
+assert 'GetAttribute("CharacterReady")' in application
 assert "CharacterLobbyController.stop()" in adapter
 assert adapter.index("MovementController.start()") < adapter.index("TargetController.start")
 assert adapter.index("TargetController.start") < adapter.index("EconomyUi.start")
 assert adapter.index("TargetController.start") < adapter.index("QuestController.start")
 assert adapter.index("syncActionBar()") < adapter.index("EconomyUi.start")
-assert "readyConnection:Disconnect()" in adapter
+assert "characterReadyConnection:Disconnect()" in application
+assert "arrivalReadyConnection:Disconnect()" in application
 assert "archetypeConnection:Disconnect()" in adapter
 
 for token in (
