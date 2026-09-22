@@ -69,17 +69,18 @@ function AutoAttackService.evaluateTick(
 		return { kind = "Stop", nextAttemptAt = 0 }
 	end
 
+	local retryAt = AutoAttackRules.nextAttemptAt(
+		now,
+		readyAt,
+		CombatConfig.AutoAttackRetryIntervalSeconds
+	)
 	if AutoAttackRules.shouldAttempt(now, currentNextAttemptAt, actionState) then
-		return { kind = "Attempt", nextAttemptAt = nil }
+		return { kind = "Attempt", nextAttemptAt = retryAt }
 	end
 
 	return {
 		kind = "Wait",
-		nextAttemptAt = AutoAttackRules.nextAttemptAt(
-			now,
-			readyAt,
-			CombatConfig.AutoAttackRetryIntervalSeconds
-		),
+		nextAttemptAt = retryAt,
 	}
 end
 
