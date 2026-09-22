@@ -12,8 +12,8 @@ local clientRoot = script.Parent.Parent.Parent
 local CombatInputController = require(clientRoot.controllers.CombatInputController)
 local TargetController = require(clientRoot.controllers.TargetController)
 local MovementController = require(clientRoot.controllers.MovementController)
-local InventoryController = require(clientRoot.controllers.InventoryController)
-local EconomyController = require(clientRoot.controllers.EconomyController)
+local InventoryController = require(clientRoot.features.inventory.InventoryController)
+local EconomyController = require(clientRoot.features.economy.EconomyController)
 local QuestController = require(clientRoot.features.quests.QuestController)
 local CombatPresentationController = require(clientRoot.controllers.CombatPresentationController)
 local ResponsiveUiController = require(clientRoot.controllers.ResponsiveUiController)
@@ -24,8 +24,8 @@ local CombatLog = require(clientRoot.ui.CombatLog)
 local RespawnPrompt = require(clientRoot.ui.RespawnPrompt)
 local ActionBar = require(clientRoot.ui.ActionBar)
 local StudioTestPanel = require(clientRoot.ui.StudioTestPanel)
-local InventoryUi = require(clientRoot.ui.InventoryUi)
-local EconomyUi = require(clientRoot.ui.EconomyUi)
+local InventoryUi = require(clientRoot.features.inventory.InventoryUi)
+local EconomyUi = require(clientRoot.features.economy.EconomyUi)
 
 local ExistingClientComponents = {}
 
