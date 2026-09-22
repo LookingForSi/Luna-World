@@ -240,23 +240,23 @@ local function render()
 				Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(modalSize.X, modalSize.Y),
 				BackgroundColor3 = palette.panel, BorderSizePixel = 0, ZIndex = 5,
 			})
-			if smallTouch then modal.Size = UDim2.fromScale(1, 1) end
+			if smallTouch then modal.Size = UDim2.new(1, -20, 1, -8) end
 			modal:SetAttribute("MobileSurface", "FullWorkspace")
 			stylePanel(modal, 14)
-			local headerHeight = if smallTouch then 42 else 56
-			local footerHeight = if smallTouch then 50 else 64
+			local headerHeight = if smallTouch then 38 else 56
+			local footerHeight = if smallTouch then 46 else 64
 			local bodyPaddingX = if smallTouch then 16 else 24
 			local rowGap = if smallTouch then 4 else 8
 			new("TextLabel", modal, {
 				Name = "CreationHeader",
 				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(if smallTouch then 16 else 20, 0),
-				Size = UDim2.new(1, if smallTouch then -62 else -76, 0, headerHeight),
+				Position = UDim2.fromOffset(if smallTouch then 48 else 20, 0),
+				Size = UDim2.new(1, if smallTouch then -96 else -76, 0, headerHeight),
 				Text = "СОЗДАНИЕ ГЕРОЯ",
 				TextColor3 = palette.moon,
 				TextSize = if smallTouch then 17 else 20,
 				Font = Enum.Font.GothamBold,
-				TextXAlignment = Enum.TextXAlignment.Left,
+				TextXAlignment = if smallTouch then Enum.TextXAlignment.Center else Enum.TextXAlignment.Left,
 				ZIndex = 6,
 			})
 			local close = new("TextButton", modal, {
@@ -273,16 +273,17 @@ local function render()
 				Name = "CreationBody",
 				Position = UDim2.fromOffset(0, headerHeight),
 				Size = UDim2.new(1, 0, 1, -(headerHeight + footerHeight)),
-				AutomaticCanvasSize = Enum.AutomaticSize.Y,
+				AutomaticCanvasSize = if smallTouch then Enum.AutomaticSize.None else Enum.AutomaticSize.Y,
 				CanvasSize = UDim2.fromOffset(0, 0),
-				ScrollBarThickness = if smallTouch then 3 else 5,
+				ScrollingEnabled = not smallTouch or metrics.usableHeight < 330,
+				ScrollBarThickness = if smallTouch and metrics.usableHeight >= 330 then 0 else 5,
 				BackgroundTransparency = 1,
 				BorderSizePixel = 0,
 				ZIndex = 6,
 			})
 			new("UIPadding", bodyScroll, {
-				PaddingLeft = UDim.new(0, bodyPaddingX),
-				PaddingRight = UDim.new(0, bodyPaddingX),
+				PaddingLeft = UDim.new(0, if smallTouch then math.max(16, metrics.usableWidth * 0.09) else bodyPaddingX),
+				PaddingRight = UDim.new(0, if smallTouch then math.max(16, metrics.usableWidth * 0.09) else bodyPaddingX),
 				PaddingTop = UDim.new(0, if smallTouch then 2 else 4),
 				PaddingBottom = UDim.new(0, if smallTouch then 4 else 12),
 			})
@@ -299,7 +300,7 @@ local function render()
 			close.Activated:Connect(dismiss); shade.Activated:Connect(dismiss)
 			local function heading(textValue: string): TextLabel
 				return new("TextLabel", bodyScroll, {
-					Size = UDim2.new(1, 0, 0, if smallTouch then 14 else 20),
+					Size = UDim2.new(1, 0, 0, if smallTouch then 10 else 20),
 					BackgroundTransparency = 1,
 					Text = textValue,
 					TextColor3 = palette.muted,
@@ -312,7 +313,7 @@ local function render()
 			heading("ИМЯ")
 			local name = new("TextBox", bodyScroll, {
 				Name = "Nickname",
-				Size = UDim2.new(1, 0, 0, if smallTouch then 36 else 46),
+				Size = UDim2.new(1, 0, 0, if smallTouch then 30 else 46),
 				BackgroundColor3 = palette.bgDeep,
 				TextColor3 = palette.text,
 				PlaceholderColor3 = palette.muted,
@@ -325,7 +326,7 @@ local function render()
 			rounded(name, 8); outlined(name)
 			heading("КЛАСС")
 			local class = "knight"
-			local classRow = new("Frame", bodyScroll, { Name = "ClassOptions", Size = UDim2.new(1, 0, 0, if smallTouch then 40 else 58), BackgroundTransparency = 1, ZIndex = 6 })
+			local classRow = new("Frame", bodyScroll, { Name = "ClassOptions", Size = UDim2.new(1, 0, 0, if smallTouch then 34 else 58), BackgroundTransparency = 1, ZIndex = 6 })
 			new("UIGridLayout", classRow, { CellSize = UDim2.new(1 / 3, -6, 1, 0), CellPadding = UDim2.fromOffset(8, 0), FillDirectionMaxCells = 3 })
 			local classButtons = {}
 			local classNames = { knight = "РЫЦАРЬ", ranger = "СЛЕДОПЫТ", mystic = "МИСТИК" }
@@ -334,27 +335,28 @@ local function render()
 			refreshClassButtons()
 			heading("ПОЛ")
 			local bodyType = "male"
-			local genderRow = new("Frame", bodyScroll, { Name = "GenderOptions", Size = UDim2.new(1, 0, 0, if smallTouch then 36 else 48), BackgroundTransparency = 1, ZIndex = 6 })
+			local genderRow = new("Frame", bodyScroll, { Name = "GenderOptions", Size = UDim2.new(1, 0, 0, if smallTouch then 30 else 48), BackgroundTransparency = 1, ZIndex = 6 })
 			new("UIGridLayout", genderRow, { CellSize = UDim2.new(0.5, -4, 1, 0), CellPadding = UDim2.fromOffset(8, 0), FillDirectionMaxCells = 2 })
 			local genderButtons = {}
 			local function refreshBodyButtons(): () for id, button in genderButtons do styleButton(button, id == bodyType); button.Text = (if id == bodyType then "✓ " else "") .. (if id == "male" then "МУЖСКОЙ" else "ЖЕНСКИЙ") end end
 			for _, id in { "male", "female" } do local b = new("TextButton", genderRow, { Name = "Body_" .. id, TextSize = 13, ZIndex = 6 }); genderButtons[id] = b; b.Activated:Connect(function() bodyType = id; refreshBodyButtons() end) end
 			refreshBodyButtons()
 			heading("БЫСТРОЕ ИМЯ")
-			local quick = new("Frame", bodyScroll, { Name = "QuickName", Size = UDim2.new(1, 0, 0, if smallTouch then 34 else 44), BackgroundTransparency = 1, ZIndex = 6 })
+			local quick = new("Frame", bodyScroll, { Name = "QuickName", Size = UDim2.new(1, 0, 0, if smallTouch then 30 else 44), BackgroundTransparency = 1, ZIndex = 6 })
 			new("UIGridLayout", quick, { CellSize = UDim2.new(1 / 3, -6, 1, 0), CellPadding = UDim2.fromOffset(8, 0), FillDirectionMaxCells = 3 })
 			local mine = new("TextButton", quick, { Text = "Мой Roblox ник", TextSize = 11, TextWrapped = true, ZIndex = 6 }); styleButton(mine, false)
 			local random = new("TextButton", quick, { Text = "Случайное", TextSize = 12, ZIndex = 6 }); styleButton(random, false)
 			local check = new("TextButton", quick, { Text = "Проверить", TextSize = 12, ZIndex = 6 }); styleButton(check, false)
-			local nameStatus = new("TextLabel", bodyScroll, { Name = "NicknameStatus", Size = UDim2.new(1, 0, 0, if smallTouch then 18 else 24), BackgroundTransparency = 1, Text = if RunService:IsStudio() then "Studio: строгая проверка имени отключена" else "", TextColor3 = palette.muted, TextSize = if smallTouch then 10 else 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 6 })
+			local nameStatus = new("TextLabel", bodyScroll, { Name = "NicknameStatus", Size = UDim2.new(1, 0, 0, if smallTouch then 12 else 24), BackgroundTransparency = 1, Text = if RunService:IsStudio() then "Studio: строгая проверка имени отключена" else "", TextColor3 = palette.muted, TextSize = if smallTouch then 9 else 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 6 })
 			local function checkName(): () send("CheckNickname", { nickname = name.Text }); nameStatus.Text = "Проверяем имя…" end
 			mine.Activated:Connect(function() name.Text = Players.LocalPlayer.Name; checkName() end)
 			random.Activated:Connect(function() local a = { "Astra", "Luna", "Mira", "Selene", "Vela", "Nyx", "Orion" }; local z = { "dor", "wyn", "ris", "fox", "riel", "moon", "star" }; name.Text = a[math.random(#a)] .. z[math.random(#z)]; checkName() end)
 			check.Activated:Connect(checkName)
 			local create = new("TextButton", footer, {
 				Name = "CreateCharacter",
-				Position = UDim2.fromOffset(if smallTouch then 16 else 24, if smallTouch then 5 else 8),
-				Size = UDim2.new(1, if smallTouch then -32 else -48, 0, if smallTouch then 40 else 48),
+				AnchorPoint = if smallTouch then Vector2.new(0.5, 0) else Vector2.zero,
+				Position = if smallTouch then UDim2.new(0.5, 0, 0, 3) else UDim2.fromOffset(24, 8),
+				Size = if smallTouch then UDim2.fromOffset(280, 40) else UDim2.new(1, -48, 0, 48),
 				BackgroundColor3 = palette.accent,
 				TextColor3 = palette.text,
 				Text = "СОЗДАТЬ ПЕРСОНАЖА",
@@ -484,8 +486,8 @@ local function render()
 	end)
 	if chosen then
 		local del = new("TextButton", preview, {
-			Position = UDim2.fromOffset(if smallTouch then 14 else 24, if smallTouch then 96 else 150),
-			Size = UDim2.fromOffset(if smallTouch then 136 else 190, if smallTouch then 36 else 44),
+			Position = UDim2.fromOffset(if smallTouch then 14 else 24, if smallTouch then 92 else 150),
+			Size = UDim2.fromOffset(if smallTouch then 104 else 190, if smallTouch then 32 else 44),
 			BackgroundColor3 = palette.danger,
 			TextColor3 = palette.text,
 			Text = if smallTouch then "Удалить" else "Удалить персонажа",
@@ -496,19 +498,51 @@ local function render()
 		rounded(del, 8)
 		outlined(del, palette.danger, 0.15)
 		del.Activated:Connect(function()
-			local confirm = new("TextBox", preview, {
+			local blocker = createModalShade(root)
+			blocker.Name = "DeleteBlocker"
+			blocker.ZIndex = 20
+			local dialog = new("Frame", root, {
+				Name = "DeleteDialog", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.fromOffset(if smallTouch then 390 else 460, if smallTouch then 176 else 190),
+				BackgroundColor3 = palette.panel, BorderSizePixel = 0, ZIndex = 21,
+			})
+			dialog:SetAttribute("MobileSurface", "CompactDialog")
+			stylePanel(dialog, 12)
+			new("TextLabel", dialog, {
+				BackgroundTransparency = 1, Position = UDim2.fromOffset(16, 10), Size = UDim2.new(1, -56, 0, 34),
+				Text = "Удалить " .. tostring(chosen.nickname) .. "?", TextColor3 = palette.text, Font = Enum.Font.GothamBold,
+				TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22,
+			})
+			local cancel = new("TextButton", dialog, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(34, 34), Text = "×", TextSize = 20, ZIndex = 22 })
+			styleButton(cancel, false)
+			local confirm = new("TextBox", dialog, {
 				Name = "DeleteConfirmation",
-				Position = UDim2.fromOffset(24, 205),
-				Size = UDim2.new(1, -48, 0, 48),
+				Position = UDim2.fromOffset(16, 52),
+				Size = UDim2.new(1, -32, 0, 42),
 				PlaceholderText = "Введите DELETE:" .. tostring(chosen.nickname),
 				Text = "",
-				TextSize = 15,
+				TextSize = 14,
+				ZIndex = 22,
 			})
+			local submit = new("TextButton", dialog, {
+				Name = "ConfirmDelete", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 102),
+				Size = UDim2.fromOffset(180, 38), BackgroundColor3 = palette.danger, TextColor3 = palette.text,
+				Text = "ПОДТВЕРДИТЬ УДАЛЕНИЕ", TextSize = 12, Font = Enum.Font.GothamBold, ZIndex = 22,
+			})
+			rounded(submit, 8); outlined(submit, palette.danger, 0.1)
+			local deleteStatus = new("TextLabel", dialog, {
+				Name = "DeleteStatus", Position = UDim2.fromOffset(12, 142), Size = UDim2.new(1, -24, 0, 24),
+				BackgroundTransparency = 1, Text = "", TextColor3 = palette.muted, TextSize = 11,
+				TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 22,
+			})
+			local function dismissDelete(): () blocker:Destroy(); dialog:Destroy() end
+			cancel.Activated:Connect(dismissDelete)
+			blocker.Activated:Connect(dismissDelete)
+			local function confirmDelete(): () deleteStatus.Text = "Проверяем подтверждение…"; send("Delete", { characterId = chosen.characterId, confirmation = confirm.Text }) end
 			confirm.FocusLost:Connect(function(enter)
-				if enter then
-					send("Delete", { characterId = chosen.characterId, confirmation = confirm.Text })
-				end
+				if enter then confirmDelete() end
 			end)
+			submit.Activated:Connect(confirmDelete)
 		end)
 	end
 	new("TextLabel", root, {
@@ -574,7 +608,7 @@ function CharacterLobbyController.start(options: StartOptions?): ()
 		if p.action == "CheckNickname" then
 			local rootNow = screen and screen:FindFirstChild("LobbyRoot")
 			local modal = rootNow and rootNow:FindFirstChild("CreationModal")
-			local modalStatus = modal and modal:FindFirstChild("NicknameStatus")
+			local modalStatus = modal and modal:FindFirstChild("NicknameStatus", true)
 			local s = modalStatus or (rootNow and rootNow:FindFirstChild("Status"))
 			if s and s:IsA("TextLabel") then
 				s.Text = if p.ok then (if RunService:IsStudio() then "Имя доступно в Studio" else "Имя свободно") else friendlyReason(p.reason)
@@ -591,8 +625,11 @@ function CharacterLobbyController.start(options: StartOptions?): ()
 		elseif not p.ok then
 			local rootNow = screen and screen:FindFirstChild("LobbyRoot")
 			local modal = rootNow and rootNow:FindFirstChild("CreationModal")
-			local modalStatus = modal and modal:FindFirstChild("NicknameStatus")
-			local s = modalStatus or (rootNow and rootNow:FindFirstChild("Status"))
+			local modalStatus = modal and modal:FindFirstChild("NicknameStatus", true)
+			local deleteDialog = rootNow and rootNow:FindFirstChild("DeleteDialog")
+			local deleteStatus = deleteDialog and deleteDialog:FindFirstChild("DeleteStatus")
+			local actionStatus = if p.action == "Delete" then deleteStatus else modalStatus
+			local s = actionStatus or (rootNow and rootNow:FindFirstChild("Status"))
 			if s and s:IsA("TextLabel") then
 				s.Text = friendlyReason(p.reason)
 				s.TextColor3 = palette.danger

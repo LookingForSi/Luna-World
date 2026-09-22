@@ -67,7 +67,10 @@ local function applyMobileLayout(metrics: ResponsiveLayout.Metrics): ()
 			workspaceFrame:SetAttribute("MobileSurface", "FullWorkspace")
 			MobileSurface.apply(workspaceFrame, "FullWorkspace", metrics)
 			local constraint = workspaceFrame:FindFirstChildOfClass("UISizeConstraint")
-			if constraint ~= nil then constraint.Enabled = false end
+			if constraint ~= nil then
+				constraint.MinSize = Vector2.zero
+				constraint.MaxSize = Vector2.new(10000, 10000)
+			end
 		end
 	end
 end

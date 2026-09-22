@@ -41,8 +41,8 @@ local function applyHud(playerGui: PlayerGui, metrics: ResponsiveLayout.Metrics)
 		local target = frame(hud, "TargetFrame")
 		if ResponsiveLayout.isSmallTouch(metrics) then
 			if playerPanel ~= nil then
-				playerPanel.AnchorPoint = Vector2.zero
-				playerPanel.Position = UDim2.fromOffset(metrics.margin, metrics.margin)
+				playerPanel.AnchorPoint = Vector2.new(1, 0)
+				playerPanel.Position = UDim2.new(1, -metrics.margin, 0, metrics.margin)
 				playerPanel.Size = UDim2.fromOffset(math.min(220, metrics.contentSize.X * 0.48), 160)
 			end
 			if target ~= nil then
@@ -76,7 +76,13 @@ local function applyHud(playerGui: PlayerGui, metrics: ResponsiveLayout.Metrics)
 				actions.Position = UDim2.new(1, -metrics.margin, 1, -120)
 				actions.Size = UDim2.fromOffset(math.min(300, metrics.contentSize.X * 0.48), 142)
 				local constraint = actions:FindFirstChildOfClass("UISizeConstraint")
-				if constraint ~= nil then constraint.Enabled = false end
+				if constraint ~= nil then
+					-- UISizeConstraint has no Enabled property. Writing it used to throw
+					-- during touch startup, aborting GameplayClientRuntime after the HUD
+					-- had mounted; ClientApplication then correctly cleaned the HUD up.
+					constraint.MinSize = Vector2.zero
+					constraint.MaxSize = Vector2.new(10000, 10000)
+				end
 			end
 			if skills ~= nil then
 				skills.Position = UDim2.new(0.5, 0, 1, -metrics.margin)

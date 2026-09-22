@@ -32,11 +32,15 @@ assert "Enum.ScreenInsets.DeviceSafeInsets" in source("src/client/ui/CombatHud.l
 assert "applyModals" not in global_controller
 
 assert "UserInputService.TouchEnabled then return" in studio
-assert 'Name = "CreationBody"' in lobby and "AutomaticCanvasSize = Enum.AutomaticSize.Y" in lobby
+assert 'Name = "CreationBody"' in lobby and "ScrollingEnabled = not smallTouch or metrics.usableHeight < 330" in lobby
 assert 'Name = "CreationFooter"' in lobby and 'Name = "CreateCharacter"' in lobby
 assert 'new("UIListLayout", bodyScroll' in lobby
+assert "TextXAlignment = if smallTouch then Enum.TextXAlignment.Center" in lobby
+assert 'Size = if smallTouch then UDim2.fromOffset(280, 40)' in lobby
 assert 'Text = if smallTouch then "Удалить"' in lobby
 assert 'TextWrapped = false' in lobby
+assert 'Name = "DeleteDialog"' in lobby and '"CompactDialog"' in lobby
+assert 'Name = "DeleteBlocker"' in lobby and 'Name = "ConfirmDelete"' in lobby
 
 assert '"MenuSheet"' in economy and '"FullWorkspace"' in economy
 assert 'mode == "Sell"' in economy and 'mode == "Buy"' in economy
@@ -47,6 +51,11 @@ assert 'SetAttribute("MobileSurface", "FullWorkspace")' in inventory
 assert 'MobileOverlayCoordinator.setWorkspaceOpen(root, open)' in inventory
 for hud in ("CombatHud", "CombatActionBar", "CombatLog", "StudioTestPanel"):
     assert hud in coordinator
+assert "function MobileOverlayCoordinator.reset()" in coordinator
+assert "constraint.Enabled" not in quest
+assert "constraint.Enabled" not in global_controller
+assert "slotCount = if UserInputService.TouchEnabled then 6 else 10" in actions
+assert 'playerPanel.AnchorPoint = Vector2.new(1, 0)' in global_controller
 
 assert 'SetAttribute("MobileSurface", "MenuSheet")' in quest
 assert 'SetAttribute("MobileSurface", "CompactDialog")' in quest

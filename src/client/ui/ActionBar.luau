@@ -168,6 +168,7 @@ end
 
 local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (string) -> ()): ()
 	local width = if UserInputService.TouchEnabled then 350 else HudLayout.SkillBarSize.X
+	local slotCount = if UserInputService.TouchEnabled then 6 else 10
 	local skillFrame = Instance.new("Frame")
 	skillFrame.Name = "SkillBar"
 	skillFrame.AnchorPoint = Vector2.new(1, 1)
@@ -188,18 +189,18 @@ local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (str
 	content.BackgroundTransparency = 1
 	content.Parent = skillFrame
 
-	for index = 1, 10 do
+	for index = 1, slotCount do
 		local skillId = skillIds[index]
 		local button = makeButton(
 			content,
 			"SkillSlot" .. tostring(index),
 			"",
-			UDim2.new(0.1, -4, 1, 0)
+			UDim2.new(1 / slotCount, -4, 1, 0)
 		)
-		button.Position = UDim2.new((index - 1) * 0.1, 2, 0, 0)
+		button.Position = UDim2.new((index - 1) / slotCount, 2, 0, 0)
 		button.TextSize = if UserInputService.TouchEnabled then 8 else 10
 
-		if index == 10 then
+		if index == slotCount then
 			quickSlotButton = button
 			button.Text = if UserInputService.TouchEnabled then "БЫСТРО" else "[0]"
 			table.insert(buttonConnections, button.Activated:Connect(function()

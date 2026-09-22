@@ -26,6 +26,7 @@ local ActionBar = require(clientRoot.ui.ActionBar)
 local StudioTestPanel = require(clientRoot.ui.StudioTestPanel)
 local InventoryUi = require(clientRoot.features.inventory.InventoryUi)
 local EconomyUi = require(clientRoot.features.economy.EconomyUi)
+local RunService = game:GetService("RunService")
 
 local ExistingClientComponents = {}
 
@@ -105,21 +106,41 @@ function ExistingClientComponents.gameplay(): RuntimeComponent.RuntimeComponent
 		end
 		gameplayStarted = true
 
-		CharacterLobbyController.stop()
-		MovementController.start()
-		CombatPresentationController.start()
-		CombatHud.start()
-		CombatLog.start()
-		RespawnPrompt.start()
-		StudioTestPanel.start()
-		InventoryUi.start({
+		local function startComponent(name: string, callback: () -> ()): ()
+			if RunService:IsStudio() then print("[GameplayClientRuntime] component start " .. name) end
+			local ok, reason = pcall(callback)
+			if not ok then error(string.format("component %s failed: %s", name, tostring(reason)), 0) end
+			if RunService:IsStudio() then
+				local playerGui = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
+				if playerGui ~= nil then
+					for _, hudName in { "CombatHud", "CombatActionBar", "CombatLog", "QuestUi", "InventoryUi" } do
+						local hud = playerGui:FindFirstChild(hudName)
+						if hud ~= nil and hud:IsA("ScreenGui") then
+							local visible = false
+							for _, descendant in hud:GetDescendants() do
+								if descendant:IsA("GuiObject") and descendant.Visible then visible = true; break end
+							end
+							print(string.format("[GameplayClientRuntime] %s parent=%s Enabled=%s anyVisible=%s", hudName, hud.Parent:GetFullName(), tostring(hud.Enabled), tostring(visible)))
+						end
+					end
+				end
+			end
+		end
+		startComponent("CharacterLobby.stop", function() CharacterLobbyController.stop() end)
+		startComponent("MovementController", function() MovementController.start() end)
+		startComponent("CombatPresentationController", function() CombatPresentationController.start() end)
+		startComponent("CombatHud", function() CombatHud.start() end)
+		startComponent("CombatLog", function() CombatLog.start() end)
+		startComponent("RespawnPrompt", function() RespawnPrompt.start() end)
+		startComponent("StudioTestPanel", function() StudioTestPanel.start() end)
+		startComponent("InventoryUi", function() InventoryUi.start({
 			equip = InventoryController.requestEquip,
 			unequip = InventoryController.requestUnequip,
 			consume = InventoryController.requestConsume,
 			discard = InventoryController.requestDiscard,
 			assignQuickSlot = InventoryController.assignQuickSlot,
-		})
-		InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult)
+		}) end)
+		startComponent("InventoryController", function() InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult) end)
 
 		-- Preserve the accepted order: core combat input becomes operational before
 		-- optional economy/quest/responsive presentation.
@@ -145,19 +166,19 @@ function ExistingClientComponents.gameplay(): RuntimeComponent.RuntimeComponent
 			)
 		end
 
-		syncActionBar()
+		startComponent("CombatInputController+ActionBar", syncActionBar)
 		archetypeConnection =
 			Players.LocalPlayer:GetAttributeChangedSignal(CombatConfig.ArchetypeAttribute):Connect(syncActionBar)
 
-		EconomyUi.start({
+		startComponent("EconomyUi", function() EconomyUi.start({
 			buy = EconomyController.buy,
 			sell = EconomyController.sell,
 			sellBatch = EconomyController.sellBatch,
 			craft = EconomyController.craft,
-		})
-		EconomyController.start(EconomyUi.open, EconomyUi.setSnapshot, EconomyUi.showResult)
-		QuestController.start()
-		ResponsiveUiController.start()
+		}) end)
+		startComponent("EconomyController", function() EconomyController.start(EconomyUi.open, EconomyUi.setSnapshot, EconomyUi.showResult) end)
+		startComponent("QuestController", function() QuestController.start() end)
+		startComponent("ResponsiveUiController", function() ResponsiveUiController.start() end)
 	end
 
 	return component("Gameplay", startGameplay, stopGameplay)
