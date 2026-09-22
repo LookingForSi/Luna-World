@@ -341,4 +341,3 @@ Production Moonfall после Gate E считается **authored Place**, а 
 - `MoonfallRegionManifest` оборачивает canonical `WorldLayout` и реальные `TravelDefinitions`, сохраняя stable zone/POI/spawn/travel IDs.
 
 Физическое сохранение generated Terrain/static environment в реальный Moonfall Place остаётся отдельным owner checkpoint. До выполнения bake + visual/runtime acceptance нельзя считать опубликованный production Moonfall принятым, даже если repo-side contracts и Rojo builds зелёные.
-
