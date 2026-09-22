@@ -9,7 +9,7 @@ mob_abilities = (ROOT / "src/server/services/MobAbilityService.luau").read_text(
 target = (ROOT / "src/client/controllers/TargetController.luau").read_text(encoding="utf-8")
 config = (ROOT / "src/shared/config/CombatConfig.luau").read_text(encoding="utf-8")
 log_rules = (ROOT / "src/shared/combat/ClientCombatLogRules.luau").read_text(encoding="utf-8")
-north = (ROOT / "src/server/world/NorthernZonesBlockout.luau").read_text(encoding="utf-8")
+north = (ROOT / "tools/worldgen/moonfall/NorthernZonesBlockout.luau").read_text(encoding="utf-8")
 
 for token in (
     'type PendingApproach = {',
