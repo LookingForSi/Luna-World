@@ -17,7 +17,7 @@ rules = read("src/shared/economy/EconomyRules.luau")
 network = read("src/server/services/EconomyNetworkService.luau")
 inventory = read("src/server/services/InventoryService.luau")
 world = read("src/server/services/EconomyWorldService.luau")
-client = read("src/client/ui/EconomyUi.luau")
+client = read("src/client/features/economy/EconomyUi.luau")
 main = read("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 
 require(loot, "local function resourceEntry", "material drop-rate helper is missing")
