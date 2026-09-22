@@ -15,15 +15,23 @@ function Store:create(intent: any, _ttlSeconds: number?): (boolean, string?)
 	return true, nil
 end
 
-function Store:consume(id: string): (any?, string?)
+function Store:consume(id: string, expected: any?): (any?, string?)
 	local value = self.intents[id]
 	if value == nil then
 		return nil, "MissingOrConsumed"
 	end
-	self.intents[id] = nil
 	if value.expiresAt <= self.clock() then
+		self.intents[id] = nil
 		return nil, "Expired"
 	end
+	if expected ~= nil then
+		for key, expectedValue in expected do
+			if value[key] ~= expectedValue then
+				return nil, "Mismatch"
+			end
+		end
+	end
+	self.intents[id] = nil
 	return value, nil
 end
 

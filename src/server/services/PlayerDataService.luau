@@ -24,6 +24,7 @@ type Session = {
 	activeCharacterId: string?,
 	transferCharacterId: string?,
 	generation: number,
+	operationId: number,
 }
 
 local sessions: { [Player]: Session } = {}
@@ -68,6 +69,7 @@ local function loadPlayer(player: Player, generation: number): ()
 		activeCharacterId = nil,
 		transferCharacterId = nil,
 		generation = generation,
+		operationId = 0,
 	}
 	sessions[player] = session
 	setState(player, session, "Loading")
@@ -81,6 +83,9 @@ local function loadPlayer(player: Player, generation: number): ()
 	end
 	local result = (store :: ProfileStoreContract.Store):claim(player.UserId, session.token, os.time())
 	if sessions[player] ~= session or player.Parent ~= Players then
+		if result.ok then
+			(store :: ProfileStoreContract.Store):release(player.UserId, session.token, result.profile, os.time())
+		end
 		return
 	end
 	if not result.ok then
@@ -90,8 +95,10 @@ local function loadPlayer(player: Player, generation: number): ()
 	end
 	local valid, reason = AccountSchema.validateCurrent(result.profile)
 	if not valid then
+		local cleanup = (store :: ProfileStoreContract.Store):release(player.UserId, session.token, result.profile, os.time())
 		setState(player, session, "Error")
-		warn("Account validation failed for " .. player.Name .. ": " .. tostring(reason))
+		warn("Account validation failed for " .. player.Name .. ": " .. tostring(reason)
+			.. (if cleanup.ok then "" else "; claim cleanup failed: " .. cleanup.reason))
 		return
 	end
 	session.account = result.profile
@@ -109,6 +116,8 @@ local function save(player: Player, release: boolean): boolean
 		return false
 	end
 	local account = snapshot(session) :: PersistenceTypes.AccountProfile
+	session.operationId += 1
+	local operationId = session.operationId
 	if release then
 		setState(player, session, "Saving")
 	end
@@ -116,11 +125,13 @@ local function save(player: Player, release: boolean): boolean
 		then activeStore:release(player.UserId, session.token, account, os.time())
 		else activeStore:save(player.UserId, session.token, account, os.time())
 	if not result.ok then
-		setState(player, session, "Error")
+		if sessions[player] == session and session.operationId == operationId then
+			setState(player, session, "Error")
+		end
 		warn("Account save failed for " .. player.Name .. ": " .. result.reason)
 		return false
 	end
-	if release then
+	if release and sessions[player] == session and session.operationId == operationId then
 		session.account = nil
 		session.activeCharacterId = nil
 		setState(player, session, "Released")
@@ -203,9 +214,15 @@ function PlayerDataService.recoverTransfer(player: Player): (boolean, string?)
 	local result = (store :: ProfileStoreContract.Store):claim(player.UserId, session.token, os.time())
 	if not result.ok then setState(player, session, "Error"); return false, result.reason end
 	session.account = result.profile
+	local characterId = session.transferCharacterId
 	session.transferCharacterId = nil
-	setState(player, session, "AccountReady")
-	session.activeCharacterId = nil
+	if characterId == nil or session.account.Characters[characterId] == nil then
+		save(player, true)
+		setState(player, session, "Error")
+		return false, "TransferCharacterMissing"
+	end
+	session.activeCharacterId = characterId
+	setState(player, session, "CharacterReady")
 	return true, nil
 end
 

@@ -145,6 +145,7 @@ function ExistingServerComponents.placeTransfer(): RuntimeComponent.RuntimeCompo
 			playerData = PlayerDataService,
 			intentStore = MemoryStoreTransferIntentStore.new(),
 			gateway = TeleportGateway.new(),
+			sourceRole = PlaceRole.Lobby,
 		})
 		transferRuntime:start()
 		CharacterService.setTransferHandler(function(player, characterId)

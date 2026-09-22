@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Rules = require(ReplicatedStorage.Shared.core.transfer.TransferIntentRules)
+local TransferConfig = require(ReplicatedStorage.Shared.config.TransferConfig)
 
 local Service = {}
 Service.__index = Service
@@ -15,10 +16,12 @@ function Service.new(deps: any): any
 		intents = deps.intentStore,
 		gateway = deps.gateway,
 		clock = deps.clock or os.time,
-		ttl = deps.ttl or 60,
+		ttl = deps.ttl or TransferConfig.IntentTtlSeconds,
+		sourceRole = deps.sourceRole or "Lobby",
 		pending = {},
 		failureConnection = nil,
 		removingConnection = nil,
+		running = false,
 	}, Service)
 end
 
@@ -26,6 +29,7 @@ function Service:start(): ()
 	if self.failureConnection ~= nil then
 		return
 	end
+	self.running = true
 	self.failureConnection = self.gateway:onInitFailed(function(player, reason)
 		self:recover(player, "TeleportInitFailed:" .. reason)
 	end)
@@ -37,6 +41,7 @@ function Service:start(): ()
 end
 
 function Service:stop(): ()
+	self.running = false
 	if self.failureConnection ~= nil then
 		self.failureConnection:Disconnect()
 		self.failureConnection = nil
@@ -51,6 +56,9 @@ function Service:stop(): ()
 end
 
 function Service:begin(player: Player, characterId: string, destination: any): (boolean, string?)
+	if not self.running then
+		return false, "ServiceNotRunning"
+	end
 	if self.pending[player] ~= nil then
 		return false, "TransferInProgress"
 	end
@@ -73,20 +81,36 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 		self.pending[player] = nil
 		return false, releaseReason
 	end
+	if self.pending[player] ~= transferId or not self.running or player.Parent ~= Players then
+		if player.Parent == Players then
+			self.data:recoverTransfer(player)
+		end
+		self.pending[player] = nil
+		return false, "TransferCancelled"
+	end
 	local intent = {
-		transferVersion = 1,
+			transferVersion = TransferConfig.Version,
 		transferId = transferId,
 		userId = player.UserId,
 		characterId = characterId,
+		sourceRole = self.sourceRole,
 		destinationRole = destination.role,
 		entryPointId = destination.entryPointId,
 		expiresAt = self.clock() + self.ttl,
 	}
 	local made, makeReason = self.intents:create(intent, self.ttl)
 	if not made then
-		self.data:recoverTransfer(player)
+		local recovered, recoveryReason = self.data:recoverTransfer(player)
 		self.pending[player] = nil
-		return false, makeReason
+		return false, if recovered then makeReason else recoveryReason
+	end
+	if self.pending[player] ~= transferId or not self.running or player.Parent ~= Players then
+		local removed = self.intents:remove(transferId)
+		if removed and player.Parent == Players then
+			self.data:recoverTransfer(player)
+		end
+		self.pending[player] = nil
+		return false, "TransferCancelled"
 	end
 	local sent, sendReason = self.gateway:teleport(destination.placeId, { player }, Rules.routingPayload(intent))
 	if not sent then

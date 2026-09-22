@@ -174,7 +174,6 @@ function CharacterService.start(storeOverride: any?): ()
 						ok, reason = PlayerDataService.confirmArrival(player)
 					end
 				end
-				end
 				response(result, player, id, action, ok, reason)
 				return
 			end
