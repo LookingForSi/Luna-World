@@ -5,7 +5,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Contract = require(ReplicatedStorage.Shared.world.MoonfallAuthoringContract)
-local Builder = require(script.Parent.Parent.Moonfall.PlayableWorldBlockout)
+local Builder = require(script.Parent.Moonfall.PlayableWorldBlockout)
 
 local MoonfallBake = {}
 
