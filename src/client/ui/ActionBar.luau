@@ -53,6 +53,7 @@ local function autoBindingHint(): string
 end
 
 local function inventoryBindingText(): string
+	if UserInputService.TouchEnabled then return "СУМКА" end
 	local inputType = UserInputService:GetLastInputType()
 	if inputType == Enum.UserInputType.Touch then
 		return "ИНВЕНТАРЬ"
@@ -64,6 +65,7 @@ local function inventoryBindingText(): string
 end
 
 local function mapBindingText(): string
+	if UserInputService.TouchEnabled then return "КАРТА" end
 	local inputType = UserInputService:GetLastInputType()
 	if inputType == Enum.UserInputType.Touch or string.find(inputType.Name, "Gamepad") ~= nil then
 		return "КАРТА"
@@ -72,6 +74,7 @@ local function mapBindingText(): string
 end
 
 local function questBindingText(): string
+	if UserInputService.TouchEnabled then return "КВЕСТЫ" end
 	local inputType = UserInputService:GetLastInputType()
 	if inputType == Enum.UserInputType.Touch or string.find(inputType.Name, "Gamepad") ~= nil then
 		return "ЗАДАНИЯ"
@@ -241,6 +244,7 @@ function ActionBar.start(
 	gui.Name = "CombatActionBar"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = false
+	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	local actionHeight = if UserInputService.TouchEnabled then HudLayout.ActionBarSize.Y + 12 else HudLayout.ActionBarSize.Y

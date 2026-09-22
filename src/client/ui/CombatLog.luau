@@ -256,6 +256,7 @@ function CombatLog.start(): ()
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CombatLog"
+	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 	gui.ResetOnSpawn = false
 	gui.DisplayOrder = 4
 	gui.Parent = player:WaitForChild("PlayerGui")

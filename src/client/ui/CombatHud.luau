@@ -273,6 +273,7 @@ function CombatHud.start(): ()
 	gui.Name = "CombatHud"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
+	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	TextChatService.ChatWindowConfiguration.HorizontalAlignment = Enum.HorizontalAlignment.Left

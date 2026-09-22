@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+### Mobile UX v2
+
+- Mobile UI переведён с универсального уменьшенного desktop modal на три семантических поверхности: компактные подтверждения, content-sized menu sheets и полноэкранные рабочие пространства.
+- Lobby, Quest, Economy и Inventory теперь самостоятельно владеют своей touch-геометрией; полноэкранные рабочие пространства координированно скрывают gameplay HUD, а Character Creation использует прокручиваемое тело и отдельный фиксированный footer.
+- Интерактивные экраны используют Roblox Core UI safe insets без повторного ручного смещения, HUD использует device safe insets, а Studio debug panel по умолчанию не создаётся на touch.
+
 ### Playtest RC — consolidated build
 
 - Для dev0.3 playtest генерация Goblin/Cemetery lake временно полностью отключена: NorthernZonesBlockout больше не вызывает createGoblinCemeteryLake(), поэтому релиз не изменяет terrain этой зоны. Код прежнего озера оставлен архивно для последующей переработки; остальные world/gameplay/UI изменения dev0.3 продолжают собираться.
