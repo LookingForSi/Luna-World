@@ -2,12 +2,14 @@
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local RuntimeComponent = require(ReplicatedStorage.Shared.core.runtime.RuntimeComponent)
 local RespawnConfig = require(ReplicatedStorage.Shared.config.RespawnConfig)
+local MoonfallAuthoringContract = require(ReplicatedStorage.Shared.world.MoonfallAuthoringContract)
 
 local serverRoot = script.Parent.Parent.Parent
-local WorldBootstrap = require(serverRoot.world.WorldBootstrap)
+local MoonfallWorldRuntime = require(serverRoot.features.world.MoonfallWorldRuntime)
 local CombatService = require(serverRoot.services.CombatService)
 local MobService = require(serverRoot.services.MobService)
 local MobAIService = require(serverRoot.services.MobAIService)
@@ -48,6 +50,14 @@ local function component(
 		start = startFn,
 		stop = stopFn,
 	}
+end
+
+local function loadDevWorldBootstrap(): any
+	local worldgen = ServerScriptService:FindFirstChild("Worldgen")
+	assert(worldgen ~= nil, "DevCombined Worldgen mapping is missing")
+	local bootstrap = worldgen:FindFirstChild("WorldBootstrap")
+	assert(bootstrap ~= nil and bootstrap:IsA("ModuleScript"), "DevCombined WorldBootstrap module is missing")
+	return require(bootstrap)
 end
 
 local function stopDevCombinedGameplay(): ()
@@ -108,15 +118,28 @@ function ExistingServerComponents.devCombinedGameplay(): RuntimeComponent.Runtim
 end
 
 function ExistingServerComponents.worldBootstrap(): RuntimeComponent.RuntimeComponent
-	return component("WorldBootstrap", WorldBootstrap.start, WorldBootstrap.stop)
+	local runtime = nil
+	return component("WorldBootstrap", function()
+		runtime = loadDevWorldBootstrap()
+		runtime.start()
+	end, function()
+		if runtime ~= nil then
+			runtime.stop()
+			runtime = nil
+		end
+	end)
+end
+
+function ExistingServerComponents.moonfallWorldRuntime(): RuntimeComponent.RuntimeComponent
+	return component("MoonfallWorldRuntime", MoonfallWorldRuntime.start, MoonfallWorldRuntime.stop)
 end
 
 function ExistingServerComponents.worldSpawnAnchor(): RuntimeComponent.RuntimeComponent
 	return component("WorldSpawnAnchor", function()
-		local worldRoot = workspace:WaitForChild("LunaWorldPlayableBlockout", 15)
-		assert(worldRoot ~= nil, "Luna World blockout failed to initialize before gameplay services")
+		local worldRoot = workspace:WaitForChild(MoonfallAuthoringContract.RootName, 15)
+		assert(worldRoot ~= nil, "Moonfall world root is missing before gameplay services")
 
-		local worldSpawn = worldRoot:FindFirstChild("LunaVillageSpawn", true)
+		local worldSpawn = worldRoot:FindFirstChild(MoonfallAuthoringContract.RequiredSpawnName, true)
 		if worldSpawn ~= nil and worldSpawn:IsA("SpawnLocation") then
 			worldSpawn:SetAttribute(RespawnConfig.SettlementIdAttribute, RespawnConfig.LunaVillageSettlementId)
 			worldSpawn:SetAttribute(RespawnConfig.AnchorIdAttribute, "luna_village_spawn")
