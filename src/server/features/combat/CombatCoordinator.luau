@@ -6,7 +6,6 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
 local ActionRules = require(ReplicatedStorage.Shared.combat.ActionRules)
-local AutoAttackRules = require(ReplicatedStorage.Shared.combat.AutoAttackRules)
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local ProgressionRules = require(ReplicatedStorage.Shared.progression.ProgressionRules)
@@ -26,6 +25,12 @@ local CombatPresentationService = require(script.Parent.Parent.Parent.services.C
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local PlayerDataService = require(script.Parent.Parent.Parent.services.PlayerDataService)
 local StatsService = require(script.Parent.Parent.Parent.services.StatsService)
+
+local PlayerCombatStateFactory = require(script.Parent.PlayerCombatState)
+local TargetingService = require(script.Parent.TargetingService)
+local BasicAttackService = require(script.Parent.BasicAttackService)
+local SkillExecutionService = require(script.Parent.SkillExecutionService)
+local AutoAttackService = require(script.Parent.AutoAttackService)
 
 local CombatCoordinator = {}
 
@@ -189,20 +194,11 @@ local function getState(player: Player): PlayerCombatState
 	if state == nil then
 		local archetypeId = getArchetypeId(player)
 		local snapshot = createStatSnapshot(player, archetypeId)
-		state = {
-			readyAt = 0,
-			actionState = "Ready",
-			bufferedTargetId = nil,
-			generation = 0,
-			archetypeId = archetypeId,
-			stats = snapshot.combat,
-			regenerationElapsed = 0,
-			cooldowns = cooldownsByPlayer[player] or {},
-			skillSlot = SkillActionLifecycle.createSlot(),
-			autoAttackEnabled = false,
-			autoAttackNextAttemptAt = 0,
-			pendingBasicActionId = nil,
-		}
+		state = PlayerCombatStateFactory.new(
+			archetypeId,
+			snapshot.combat,
+			cooldownsByPlayer[player] or {}
+		)
 		cooldownsByPlayer[player] = state.cooldowns
 		statesByPlayer[player] = state
 		applyMaximumHealth(player, snapshot.maxHealth, true)
@@ -274,24 +270,6 @@ function CombatCoordinator.restorePlayerVitalsAfterLevelUp(player: Player): bool
 	return true
 end
 
-local function getPlayerByCanonicalTargetId(targetId: string): Player?
-	for _, candidate in Players:GetPlayers() do
-		if targetId == "player:" .. tostring(candidate.UserId) then return candidate end
-	end
-	return nil
-end
-
-local function facePlayerTowardModel(player: Player, target: Model): ()
-	local character = player.Character
-	local root = if character ~= nil then character:FindFirstChild("HumanoidRootPart") else nil
-	local targetRoot = target:FindFirstChild("HumanoidRootPart")
-	if root == nil or not root:IsA("BasePart") or targetRoot == nil or not targetRoot:IsA("BasePart") then return end
-	local origin = root.Position
-	local horizontalTarget = Vector3.new(targetRoot.Position.X, origin.Y, targetRoot.Position.Z)
-	if (horizontalTarget - origin).Magnitude <= 0.001 then return end
-	root.CFrame = CFrame.lookAt(origin, horizontalTarget)
-end
-
 local function resolveSkillTarget(
 	player: Player,
 	definition: CombatTypes.SkillDefinition,
@@ -312,7 +290,7 @@ local function resolveSkillTarget(
 		local selectedRoot: BasePart? = nil
 		local selectedIsInRange = false
 		if selectedTargetId ~= nil then
-			selectedPlayer = getPlayerByCanonicalTargetId(selectedTargetId)
+			selectedPlayer = TargetingService.getPlayerByCanonicalTargetId(selectedTargetId)
 			selectedRoot = if selectedPlayer ~= nil then getLivingCharacterRoot(selectedPlayer) else nil
 			selectedIsInRange = selectedRoot ~= nil and ActionRules.isWithinRange(
 				playerRoot.Position,
@@ -361,19 +339,13 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 		replicateState(player, state)
 	end
 	local target = resolveSkillTarget(player, definition, nil)
-	local resourceAfterCost = ResourceRules.spend(state.stats.resource, definition.resourceType, definition.resourceCost)
-	local cooldownReady = CooldownRules.isReady(state.cooldowns, definition.cooldownGroup, now)
-	if not SkillRules.canAccept(
-		state.actionState,
-		cooldownReady,
-		resourceAfterCost ~= nil,
-		target ~= nil
-	) then
+	local evaluation = SkillExecutionService.evaluate(state, definition, now, target ~= nil)
+	if not evaluation.accepted then
 		local targetReason: CombatPresentationRules.ReasonCode = "InvalidTarget"
 		if target == nil then
 			local selectedTargetId = targetsByPlayer[player]
 			local selectedMob = if selectedTargetId ~= nil then MobService.getByEntityId(selectedTargetId) else nil
-			local selectedPlayer = if selectedTargetId ~= nil then getPlayerByCanonicalTargetId(selectedTargetId) else nil
+			local selectedPlayer = if selectedTargetId ~= nil then TargetingService.getPlayerByCanonicalTargetId(selectedTargetId) else nil
 			local actorRoot = getLivingCharacterRoot(player)
 			local selectedRoot = if selectedMob ~= nil
 				then getLivingMobRoot(selectedMob)
@@ -387,8 +359,8 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 		end
 		local reasonCode: CombatPresentationRules.ReasonCode = if state.actionState ~= "Ready"
 			then "ForbiddenState"
-			elseif not cooldownReady then "Cooldown"
-			elseif resourceAfterCost == nil then "InsufficientResource"
+			elseif not evaluation.cooldownReady then "Cooldown"
+			elseif evaluation.resourceAfterCost == nil then "InsufficientResource"
 			else targetReason
 		reject(player, { skillId = definition.id, outcome = "Rejected", reasonCode = reasonCode })
 		if reasonCode == "OutOfRange" and definition.targetType == "Enemy" then
@@ -405,7 +377,7 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 	end
 
 	if definition.requiresFacing and target.kind == "Mob" then
-		facePlayerTowardModel(player, target.model)
+		TargetingService.facePlayerTowardModel(player, target.model)
 	end
 
 	local pendingAction = SkillActionLifecycle.begin(
@@ -420,7 +392,7 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 		return
 	end
 	local acceptedCharacter = player.Character
-	state.stats.resource = resourceAfterCost :: CombatTypes.CombatResource
+	state.stats.resource = evaluation.resourceAfterCost :: CombatTypes.CombatResource
 	state.cooldowns = CooldownRules.start(state.cooldowns, definition.cooldownGroup, now, definition.cooldownSeconds)
 	cooldownsByPlayer[player] = state.cooldowns
 	replicateCooldowns(player, state)
@@ -450,7 +422,7 @@ local function acceptSkill(player: Player, definition: CombatTypes.SkillDefiniti
 			resolvedTarget.model
 		) then
 			if definition.requiresFacing and resolvedTarget.kind == "Mob" then
-				facePlayerTowardModel(player, resolvedTarget.model)
+				TargetingService.facePlayerTowardModel(player, resolvedTarget.model)
 			end
 			local executionSucceeded, executedResult = pcall(
 				CombatEffectService.execute,
@@ -560,24 +532,6 @@ local function onSkillRequest(player: Player, ...: unknown): ()
 		return
 	end
 	acceptSkill(player, definition, now)
-end
-
-local function getBasicAttackDefinition(state: PlayerCombatState): CombatTypes.SkillDefinition
-	local archetype = ArchetypeDefinitions[state.archetypeId]
-	assert(archetype ~= nil, "combat state has an unknown archetype")
-	local definition = SkillDefinitions[archetype.basicAttackId]
-	assert(definition ~= nil, "archetype has an unknown basic attack")
-	return definition
-end
-
-local function getBasicAttackInterval(state: PlayerCombatState): number
-	local definition = getBasicAttackDefinition(state)
-	return DamageRules.getBasicAttackInterval(
-		definition.cooldownSeconds,
-		state.stats.attackSpeedMultiplier,
-		CombatConfig.MinAttackSpeedMultiplier,
-		CombatConfig.MaxAttackSpeedMultiplier
-	)
 end
 
 local function setReplicatedTarget(player: Player, entityId: string?): ()
@@ -720,7 +674,7 @@ end
 
 local function getValidAttackTarget(player: Player, expectedTargetId: string, expectedCharacter: Model?): Model?
 	local state = getState(player)
-	local definition = getBasicAttackDefinition(state)
+	local definition = BasicAttackService.getDefinition(state)
 	local character = player.Character
 	local playerRoot = getLivingCharacterRoot(player)
 	local target = MobService.getByEntityId(expectedTargetId)
@@ -744,9 +698,9 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 	local state = getState(player)
 	local initialTarget = getValidAttackTarget(player, expectedTargetId, nil)
 	if state.actionState ~= "Ready" or initialTarget == nil then return end
-	facePlayerTowardModel(player, initialTarget)
-	local definition = getBasicAttackDefinition(state)
-	local attackInterval = getBasicAttackInterval(state)
+	TargetingService.facePlayerTowardModel(player, initialTarget)
+	local definition = BasicAttackService.getDefinition(state)
+	local attackInterval = BasicAttackService.getInterval(state)
 	-- Basic attacks are always free, but still pass through the authoritative resource boundary.
 	local resourceAfterCost = ResourceRules.spend(state.stats.resource, definition.resourceType, definition.resourceCost)
 	if resourceAfterCost == nil then return end
@@ -778,7 +732,7 @@ local function acceptAttack(player: Player, expectedTargetId: string): ()
 		local amount: number? = nil
 		local isCritical: boolean? = nil
 		if target ~= nil then
-			facePlayerTowardModel(player, target)
+			TargetingService.facePlayerTowardModel(player, target)
 			local attackPower = if definition.powerSource == "MagicAttack" then state.stats.magicAttack else state.stats.physicalAttack
 			local damage = DamageRules.resolve(
 				DamageRules.getBaseAmount(attackPower, definition.effect.magnitude),
@@ -849,7 +803,7 @@ local function onTargetRequest(player: Player, ...: unknown): ()
 	local playerRoot = getLivingCharacterRoot(player)
 	if string.sub(entityId, 1, 7) == "player:" then
 		-- Task 15 will expose cross-platform player selection; this is its server-authoritative boundary.
-		local selectedPlayer = getPlayerByCanonicalTargetId(entityId)
+		local selectedPlayer = TargetingService.getPlayerByCanonicalTargetId(entityId)
 		local targetRoot = if selectedPlayer ~= nil then getLivingCharacterRoot(selectedPlayer) else nil
 		if playerRoot == nil or selectedPlayer == nil or selectedPlayer == player or targetRoot == nil then return end
 		if not CombatRules.canSelectTarget(playerRoot.Position, targetRoot.Position, true, CombatConfig.TargetSelectionRange) then return end
@@ -918,14 +872,14 @@ local function onAttackRequest(player: Player, ...: unknown): ()
 				playerRoot.Position,
 				targetRoot.Position,
 				true,
-				getBasicAttackDefinition(getState(player)).range + CombatConfig.RangeTolerance
+				BasicAttackService.getDefinition(getState(player)).range + CombatConfig.RangeTolerance
 			)
 			then "OutOfRange"
 			else "InvalidTarget"
 		reject(player, { outcome = "Rejected", reasonCode = reasonCode })
 		if reasonCode == "OutOfRange" and targetId ~= nil then
 			local state = getState(player)
-			beginApproach(player, targetId, "Attack", nil, getBasicAttackDefinition(state).range)
+			beginApproach(player, targetId, "Attack", nil, BasicAttackService.getDefinition(state).range)
 		end
 		return
 	end
@@ -1010,17 +964,21 @@ local function onAutoAttackModeRequest(player: Player, ...: unknown): ()
 	if not PlayerDataService.isReady(player) then return end
 
 	local now = workspace:GetServerTimeNow()
-	if ActionRules.isRequestRateLimited(
-		now,
-		lastAutoAttackRequestAtByPlayer[player],
-		CombatConfig.AutoAttackRequestMinIntervalSeconds
-	) then return end
-	lastAutoAttackRequestAtByPlayer[player] = now
 	local targetId = targetsByPlayer[player]
 	local actorAlive = getLivingCharacterRoot(player) ~= nil
 	local target = if targetId ~= nil then MobService.getByEntityId(targetId) else nil
 	local hasLivingMobTarget = target ~= nil and getLivingMobRoot(target) ~= nil
-	local decision = AutoAttackRules.validateRequest(argumentCount, requestedEnabled, actorAlive, hasLivingMobTarget)
+	local decision = AutoAttackService.evaluateEnable(
+		argumentCount,
+		requestedEnabled,
+		now,
+		lastAutoAttackRequestAtByPlayer[player],
+		actorAlive,
+		hasLivingMobTarget
+	)
+	if decision.stampRequestAt then
+		lastAutoAttackRequestAtByPlayer[player] = now
+	end
 	if not decision.accepted then return end
 	local state = statesByPlayer[player]
 	if state == nil then
@@ -1242,21 +1200,27 @@ function CombatCoordinator.start(): ()
 				local actorAlive = getLivingCharacterRoot(player) ~= nil
 				local target = if targetId ~= nil then MobService.getByEntityId(targetId) else nil
 				local hasLivingMobTarget = target ~= nil and getLivingMobRoot(target) ~= nil
-				if AutoAttackRules.shouldStop(player.Parent == Players, actorAlive, player.Character ~= nil, hasLivingMobTarget) then
+				local autoDecision = AutoAttackService.evaluateTick(
+					now,
+					state.autoAttackNextAttemptAt,
+					state.readyAt,
+					state.actionState,
+					player.Parent == Players,
+					actorAlive,
+					player.Character ~= nil,
+					hasLivingMobTarget
+				)
+				if autoDecision.kind == "Stop" then
 					state.autoAttackEnabled = false
 					state.autoAttackNextAttemptAt = 0
 					replicateState(player, state)
-				elseif AutoAttackRules.shouldAttempt(now, state.autoAttackNextAttemptAt, state.actionState)
+				elseif autoDecision.kind == "Attempt"
 					and targetId ~= nil
 					and getValidAttackTarget(player, targetId, nil) ~= nil
 				then
 					acceptAttack(player, targetId)
 				else
-					state.autoAttackNextAttemptAt = AutoAttackRules.nextAttemptAt(
-						now,
-						state.readyAt,
-						CombatConfig.AutoAttackRetryIntervalSeconds
-					)
+					state.autoAttackNextAttemptAt = autoDecision.nextAttemptAt or state.autoAttackNextAttemptAt
 				end
 			end
 		end
