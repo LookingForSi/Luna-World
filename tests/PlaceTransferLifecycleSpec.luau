@@ -1,7 +1,7 @@
 --!strict
 
 return function(TestRunner)
-	TestRunner.test("transfer routing payload excludes authoritative state", function()
+	TestRunner.run("transfer routing payload excludes authoritative state", function()
 		local Rules = require(game:GetService("ReplicatedStorage").Shared.core.transfer.TransferIntentRules)
 		local payload = Rules.routingPayload({
 			transferId = "transfer-1", characterId = "character-1", destinationRole = "World",
@@ -12,7 +12,7 @@ return function(TestRunner)
 		assert(not Rules.validateRouting(payload, "Dungeon"))
 	end)
 
-	TestRunner.test("transfer intent is consumed once and expires", function()
+	TestRunner.run("transfer intent is consumed once and expires", function()
 		local Store = require(game:GetService("ServerScriptService").Server.core.transfer.InMemoryTransferIntentStore)
 		local now = 10
 		local store = Store.new(function() return now end)
@@ -24,7 +24,7 @@ return function(TestRunner)
 		assert(store:consume("expired") == nil)
 	end)
 
-	TestRunner.test("mismatched consume does not destroy a valid intent", function()
+	TestRunner.run("mismatched consume does not destroy a valid intent", function()
 		local Store = require(game:GetService("ServerScriptService").Server.core.transfer.InMemoryTransferIntentStore)
 		local store = Store.new(function() return 10 end)
 		assert(store:create({ transferId = "one", userId = 7, characterId = "owned", expiresAt = 20 }, 10))
@@ -34,7 +34,7 @@ return function(TestRunner)
 		assert(valid ~= nil)
 	end)
 
-	TestRunner.test("source orders release, intent, gateway and rejects concurrent entry", function()
+	TestRunner.run("source orders release, intent, gateway and rejects concurrent entry", function()
 		local Service = require(game:GetService("ServerScriptService").Server.core.transfer.PlaceTransferService)
 		local calls = {}
 		local data = {
@@ -57,7 +57,7 @@ return function(TestRunner)
 		assert(not duplicate and reason == "TransferInProgress")
 	end)
 
-	TestRunner.test("synchronous gateway failure removes intent before safe recovery", function()
+	TestRunner.run("synchronous gateway failure removes intent before safe recovery", function()
 		local Service = require(game:GetService("ServerScriptService").Server.core.transfer.PlaceTransferService)
 		local calls = {}
 		local service = Service.new({
@@ -78,7 +78,7 @@ return function(TestRunner)
 		assert(not ok and table.concat(calls, ",") == "remove,recover")
 	end)
 
-	TestRunner.test("cleanup failure is fail closed", function()
+	TestRunner.run("cleanup failure is fail closed", function()
 		local Service = require(game:GetService("ServerScriptService").Server.core.transfer.PlaceTransferService)
 		local failed = false
 		local service = Service.new({
@@ -95,7 +95,7 @@ return function(TestRunner)
 		assert(failed)
 	end)
 
-	TestRunner.test("shutdown during release cancels before intent creation", function()
+	TestRunner.run("shutdown during release cancels before intent creation", function()
 		local Service = require(game:GetService("ServerScriptService").Server.core.transfer.PlaceTransferService)
 		local created, teleported = false, false
 		local service
@@ -119,7 +119,7 @@ return function(TestRunner)
 		assert(not ok and reason == "TransferCancelled" and not created and not teleported)
 	end)
 
-	TestRunner.test("destination confirms arrival only after matched intent and activation", function()
+	TestRunner.run("destination confirms arrival only after matched intent and activation", function()
 		local Arrival = require(game:GetService("ServerScriptService").Server.core.transfer.PlaceArrivalService)
 		local calls = {}
 		local payload = { transferVersion = 1, transferId = "t", characterId = "c", destinationRole = "World", entryPointId = "spawn" }
@@ -140,7 +140,7 @@ return function(TestRunner)
 		assert(table.concat(calls, ",") == "select:c,confirm")
 	end)
 
-	TestRunner.test("destination releases its claim after post-claim validation failure", function()
+	TestRunner.run("destination releases its claim after post-claim validation failure", function()
 		local Arrival = require(game:GetService("ServerScriptService").Server.core.transfer.PlaceArrivalService)
 		local failed = false
 		local payload = { transferVersion = 1, transferId = "t", characterId = "forged", destinationRole = "World", entryPointId = "spawn" }
