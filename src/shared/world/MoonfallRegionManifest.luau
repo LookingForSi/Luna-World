@@ -1,10 +1,11 @@
 --!strict
 
 local Contract = require(script.Parent.MoonfallAuthoringContract)
+local RegionManifestTypes = require(script.Parent.RegionManifestTypes)
 local WorldLayout = require(script.Parent.WorldLayout)
 local TravelDefinitions = require(script.Parent.Parent.definitions.TravelDefinitions)
 
-local manifest = {
+local manifest: RegionManifestTypes.RegionManifest = {
 	id = "moonfall",
 	rootName = Contract.RootName,
 	managedBy = Contract.AuthoredManagedBy,
