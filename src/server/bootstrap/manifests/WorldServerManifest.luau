@@ -4,9 +4,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RuntimeManifest = require(ReplicatedStorage.Shared.core.runtime.RuntimeManifest)
 local Components = require(script.Parent.Parent.adapters.ExistingServerComponents)
 
--- Gate A skeleton. Production arrival/activation replaces CharacterService in
--- later gates. Runtime world generation is intentionally absent here.
+-- Production Moonfall consumes authored Workspace content. Runtime world
+-- generation is intentionally absent; MoonfallWorldRuntime validates and owns
+-- traversal recovery for the baked world.
 return RuntimeManifest.new("WorldServer", {
+	Components.moonfallWorldRuntime(),
 	Components.worldSpawnAnchor(),
 	Components.economy(),
 	Components.placeArrival("World"),
