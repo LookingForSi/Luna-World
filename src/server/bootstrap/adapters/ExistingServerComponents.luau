@@ -10,7 +10,7 @@ local MoonfallAuthoringContract = require(ReplicatedStorage.Shared.world.Moonfal
 
 local serverRoot = script.Parent.Parent.Parent
 local MoonfallWorldRuntime = require(serverRoot.features.world.MoonfallWorldRuntime)
-local CombatService = require(serverRoot.services.CombatService)
+local CombatService = require(serverRoot.features.combat.CombatCoordinator)
 local MobService = require(serverRoot.services.MobService)
 local MobAIService = require(serverRoot.services.MobAIService)
 local MobAbilityService = require(serverRoot.services.MobAbilityService)
