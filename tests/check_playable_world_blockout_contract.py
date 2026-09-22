@@ -78,7 +78,7 @@ def main() -> None:
     assert "baseplate.CanCollide = false" in bootstrap
 
     builder = read(ROOT / "tools/worldgen/moonfall/PlayableWorldBlockout.luau")
-    assert 'TerrainRevision", "terrain-v11"' in builder
+    assert "root:SetAttribute(\"TerrainRevision\", Contract.TerrainRevision)" in builder
     for boundary in ("WestBoundary", "EastBoundary", "SouthBoundary", "NorthBoundary"):
         assert boundary in builder
     assert "WorldDressingBlockout" in builder
