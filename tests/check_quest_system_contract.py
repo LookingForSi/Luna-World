@@ -9,7 +9,7 @@ quest=read('src/server/services/QuestService.luau')
 rules=read('src/shared/quests/QuestRules.luau')
 profile=read('src/shared/persistence/ProfileSchema.luau')
 migration=read('src/shared/persistence/MigrationRules.luau')
-client=read('src/client/controllers/QuestController.luau')
+client=read('src/client/features/quests/QuestController.luau')
 action=read('src/client/ui/ActionBar.luau')
 for project in ('default.project.json','test.project.json'):
     value=read(project)
