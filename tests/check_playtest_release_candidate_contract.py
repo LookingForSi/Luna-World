@@ -59,7 +59,7 @@ assert "blocker.BackgroundTransparency = 1" in inventory_ui
 assert "panel.BackgroundTransparency = 0.03" in inventory_ui
 
 assert server.index("Players.CharacterAutoLoads = false") < server.index("ServerBootstrap.start(manifest)")
-assert 'WaitForChild("LunaWorldPlayableBlockout", 15)' in server_adapter
+assert "workspace:WaitForChild(MoonfallAuthoringContract.RootName, 15)" in server_adapter
 assert client_adapter.index("TargetController.start") < client_adapter.index("EconomyUi.start")
 assert client_adapter.index("TargetController.start") < client_adapter.index("QuestController.start")
 assert client_adapter.index("syncActionBar()") < client_adapter.index("EconomyUi.start")
