@@ -341,3 +341,9 @@ Production Moonfall после Gate E считается **authored Place**, а 
 - `MoonfallRegionManifest` оборачивает canonical `WorldLayout` и реальные `TravelDefinitions`, сохраняя stable zone/POI/spawn/travel IDs.
 
 Физическое сохранение generated Terrain/static environment в реальный Moonfall Place остаётся отдельным owner checkpoint. До выполнения bake + visual/runtime acceptance нельзя считать опубликованный production Moonfall принятым, даже если repo-side contracts и Rojo builds зелёные.
+
+## 17. Mobile UI surfaces
+
+Touch-интерфейс использует три явных типа поверхности: `CompactDialog` для коротких подтверждений, `MenuSheet` для небольших наборов вариантов и `FullWorkspace` для Inventory, Sell, Journal, Map и длинных каталогов. `ResponsiveLayout` предоставляет только usable dimensions, layout class, общий gap и минимальную touch-цель; выбор структуры и внутренняя геометрия остаются у владельца feature.
+
+Интерактивные workspace/dialog `ScreenGui` используют `CoreUISafeInsets`. Mobile gameplay HUD, напротив, работает в полном физическом viewport (`ScreenInsets.None`): защита от CoreUI, вырезов и виртуальных controls задаётся локальными anchor offsets только для соответствующих панелей, без общего уменьшающего canvas и без второго глобального margin. `GetGuiInset` разрешён только в этом локальном anchor-расчёте поверх `ScreenInsets.None`; поверх уже inset canvas ручное смещение запрещено. Desktop сохраняет `DeviceSafeInsets`. Единый `MobileOverlayCoordinator` скрывает HUD на touch, пока открыт хотя бы один `FullWorkspace`, и восстанавливает прежнее состояние после закрытия последнего workspace.

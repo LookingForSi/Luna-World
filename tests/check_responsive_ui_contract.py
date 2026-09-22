@@ -20,7 +20,9 @@ inventory = source("src/client/features/inventory/InventoryUi.luau")
 for mode in ("Desktop", "TouchLarge", "MobilePortrait", "MobileLandscape"):
     assert f'"{mode}"' in policy, f"нет режима {mode}"
 
-assert "GuiService:GetGuiInset()" in policy, "safe-area inset должен входить в метрики"
+assert "GuiService:GetGuiInset()" not in policy, "ScreenInsets нельзя дублировать ручными inset offsets"
+for field in ("usableWidth", "usableHeight", "layoutClass", "touchTarget", "gap"):
+    assert field in policy, f"responsive metrics не содержат {field}"
 assert 'GetPropertyChangedSignal("ViewportSize")' in policy, "resize viewport должен обновлять layout"
 assert 'GetPropertyChangedSignal("CurrentCamera")' in policy, "смена камеры должна перепривязывать resize"
 assert "math.min(desktopSize.X, metrics.contentSize.X)" in policy
@@ -29,9 +31,6 @@ assert "MinimumTouchTarget = 44" in policy, "touch targets не должны б�
 
 assert 'UserInputType.Touch then "БЫСТРО"' in actions
 assert 'then "AUTO"' in actions, "touch UI не должен показывать desktop hotkey AUTO"
-assert 'inventory.Position = UDim2.fromOffset(0, 28)' in controller
-assert 'cart.Position = UDim2.fromOffset(0, 270)' in controller
-assert 'cart.Position = UDim2.new(0.51, 0, 0, 28)' in controller
 assert 'Name = "SellConfirm"' in economy
 
 assert 'Name = "DescriptionScroll"' in quest, "описание quest offer должно прокручиваться"
@@ -43,5 +42,6 @@ assert "blocker.BackgroundTransparency = 1" in quest
 assert "blocker.BackgroundTransparency = 1" in economy
 assert "blocker.BackgroundTransparency = 1" in inventory
 assert "screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling" in economy
+assert "applyModals" not in controller, "feature geometry не должна возвращаться в global controller"
 
 print("Responsive UI contract: PASS")

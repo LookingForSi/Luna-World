@@ -6,6 +6,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local InventoryConfig = require(ReplicatedStorage.Shared.config.InventoryConfig)
 local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local HudLayout = require(script.Parent.Parent.Parent.ui.HudLayout)
+local MobileOverlayCoordinator = require(script.Parent.Parent.Parent.ui.MobileOverlayCoordinator)
+local MobileSurface = require(script.Parent.Parent.Parent.ui.MobileSurface)
+local ResponsiveLayout = require(script.Parent.Parent.Parent.ui.ResponsiveLayout)
 
 local InventoryUi = {}
 
@@ -32,6 +35,29 @@ local currentSnapshot: any = nil
 local selectedKind: "Inventory" | "Equipment"? = nil
 local selectedIdentifier: string? = nil
 local callbacks: any = nil
+local stopObserving: (() -> ())? = nil
+
+local function applyMobileLayout(metrics: ResponsiveLayout.Metrics): ()
+	if root == nil or inventoryList == nil or equipmentList == nil then return end
+	if not metrics.isTouch then return end
+	root:SetAttribute("MobileSurface", "FullWorkspace")
+	MobileSurface.apply(root, "FullWorkspace", metrics)
+	inventoryList.Position = UDim2.fromOffset(16, 104)
+	inventoryList.Size = UDim2.new(0.54, -20, 1, -164)
+	equipmentList.Position = UDim2.new(0.56, 0, 0, 70)
+	equipmentList.Size = UDim2.new(0.44, -16, 0, math.min(190, metrics.usableHeight - 180))
+	if detailsLabel ~= nil then
+		detailsLabel.Position = UDim2.new(0.56, 0, 0, math.min(264, metrics.usableHeight - 112))
+		detailsLabel.Size = UDim2.new(0.44, -16, 0, 54)
+	end
+	local actions = { equipButton, unequipButton, useButton, quickSlotButton, discardButton }
+	for index, action in actions do
+		if action ~= nil then
+			action.Position = UDim2.new((index - 1) * 0.2, 8, 1, -52)
+			action.Size = UDim2.new(0.2, -10, 0, metrics.touchTarget)
+		end
+	end
+end
 
 local SLOT_LABELS = {
 	Weapon = "Оружие",
@@ -359,6 +385,7 @@ end
 local function setPanelOpen(open: boolean): ()
 	if root ~= nil then root.Visible = open end
 	if modalBlocker ~= nil then modalBlocker.Visible = open end
+	if root ~= nil then MobileOverlayCoordinator.setWorkspaceOpen(root, open) end
 end
 
 function InventoryUi.toggle(): ()
@@ -372,7 +399,8 @@ function InventoryUi.start(actionCallbacks: any): ()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "InventoryUi"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
+	gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 	gui.DisplayOrder = 8
 	-- The full-screen input blocker is a sibling of InventoryPanel. In Sibling
 	-- mode the panel's whole subtree stays above that blocker instead of child
@@ -407,6 +435,7 @@ function InventoryUi.start(actionCallbacks: any): ()
 	panel.ZIndex = 2
 	panel.Parent = gui
 	root = panel
+	panel:SetAttribute("MobileSurface", "FullWorkspace")
 
 	makeLabel(panel, "ИНВЕНТАРЬ", UDim2.fromOffset(16, 8), UDim2.fromOffset(220, 28), 17)
 	lunaLabel = makeLabel(panel, "Luna: 0", UDim2.fromOffset(250, 8), UDim2.fromOffset(170, 28), 13)
@@ -527,11 +556,14 @@ function InventoryUi.start(actionCallbacks: any): ()
 	end))
 
 	screenGui = gui
+	stopObserving = ResponsiveLayout.observe(applyMobileLayout)
 	setPanelOpen(false)
 	rebuild()
 end
 
 function InventoryUi.stop(): ()
+	if stopObserving ~= nil then stopObserving(); stopObserving = nil end
+	if root ~= nil then MobileOverlayCoordinator.release(root) end
 	if closeConnection ~= nil then closeConnection:Disconnect(); closeConnection = nil end
 	for _, connection in actionConnections do connection:Disconnect() end
 	table.clear(actionConnections)

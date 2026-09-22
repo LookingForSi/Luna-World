@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
@@ -54,6 +55,9 @@ end
 
 function StudioTestPanel.start(): ()
 	StudioTestPanel.stop()
+	-- The developer panel is intentionally absent from touch emulation: it must
+	-- never cover the phone HUD or participate in mobile layout acceptance.
+	if UserInputService.TouchEnabled then return end
 	if not RunService:IsStudio() then return end
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	local candidate = remotes:WaitForChild("StudioSetArchetype", 5)

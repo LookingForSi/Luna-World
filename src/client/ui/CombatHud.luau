@@ -11,6 +11,7 @@ local ProgressionRules = require(ReplicatedStorage.Shared.progression.Progressio
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local ClientCombatUiRules = require(ReplicatedStorage.Shared.combat.ClientCombatUiRules)
 local HudLayout = require(script.Parent.HudLayout)
+local ResponsiveLayout = require(script.Parent.ResponsiveLayout)
 
 local CombatHud = {}
 
@@ -40,6 +41,7 @@ local statusConnections: { RBXScriptConnection } = {}
 local presentationConnection: RBXScriptConnection? = nil
 local feedbackGeneration = 0
 local currentTarget: Model? = nil
+local compactMobile = false
 
 
 local RESOURCE_NAMES = {
@@ -47,6 +49,13 @@ local RESOURCE_NAMES = {
 	Focus = "FCS",
 	Mana = "MP",
 }
+
+local function shouldUseCompactMobile(): boolean
+	while workspace.CurrentCamera == nil do
+		workspace:GetPropertyChangedSignal("CurrentCamera"):Wait()
+	end
+	return ResponsiveLayout.isSmallTouch(ResponsiveLayout.metrics(workspace.CurrentCamera))
+end
 
 local function disconnectTarget(): ()
 	if targetHealthConnection ~= nil then
@@ -216,6 +225,28 @@ local function makePlayerStatusRow(
 	fillName: string,
 	fillColor: Color3
 ): (TextLabel, TextLabel, Frame)
+	if compactMobile then
+		local y = 28 + (row - 1) * 21
+		local fill = makeStatusBar(parent, name .. "Bar", UDim2.fromOffset(6, y), fillName, fillColor, 0)
+		local background = fill.Parent :: Frame
+		background.Size = UDim2.new(1, -12, 0, 18)
+
+		local label = makeTextLabel(background, name .. "Label", UDim2.fromOffset(5, 0))
+		label.Size = UDim2.new(0.35, 0, 1, 0)
+		label.Text = labelText
+		label.TextSize = 10
+		label.ZIndex = 3
+
+		local valueLabel = makeTextLabel(background, name .. "Value", UDim2.fromOffset(0, 0))
+		valueLabel.Size = UDim2.new(1, -8, 1, 0)
+		valueLabel.Text = "0 / 0"
+		valueLabel.TextSize = 10
+		valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+		valueLabel.ZIndex = 3
+		valueLabel.Parent = background
+		return label, valueLabel, fill
+	end
+
 	local y = 34 + (row - 1) * 37
 	local label = makeTextLabel(parent, name .. "Label", UDim2.fromOffset(8, y))
 	label.Size = UDim2.new(1, -16, 0, 15)
@@ -268,11 +299,19 @@ end
 
 function CombatHud.start(): ()
 	CombatHud.stop()
+	compactMobile = shouldUseCompactMobile()
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CombatHud"
+	gui:SetAttribute("CompactMobile", compactMobile)
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	if compactMobile then
+		gui.IgnoreGuiInset = true
+		gui.ScreenInsets = Enum.ScreenInsets.None
+	else
+		gui.IgnoreGuiInset = false
+		gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+	end
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	TextChatService.ChatWindowConfiguration.HorizontalAlignment = Enum.HorizontalAlignment.Left
@@ -281,20 +320,43 @@ function CombatHud.start(): ()
 	local targetPanel = Instance.new("Frame")
 	targetPanel.Name = "TargetFrame"
 	targetPanel.AnchorPoint = Vector2.new(0.5, 0)
-	targetPanel.Position = UDim2.new(0.5, 0, 0, HudLayout.CornerMargin)
-	targetPanel.Size = UDim2.fromOffset(280, 86)
+	targetPanel.Position = if compactMobile
+		then UDim2.new(0.5, 0, 0, HudLayout.MobileEdgeMargin)
+		else UDim2.new(0.5, 0, 0, HudLayout.CornerMargin)
+	targetPanel.Size = if compactMobile
+		then UDim2.fromOffset(HudLayout.MobileTargetSize.X, HudLayout.MobileTargetSize.Y)
+		else UDim2.fromOffset(280, 86)
 	HudLayout.applyPanelStyle(targetPanel)
 	targetPanel.Parent = gui
 
-	targetNameLabel = makeTextLabel(targetPanel, "TargetName", UDim2.fromOffset(8, 4))
-	targetHealthTextLabel = makeTextLabel(targetPanel, "HealthText", UDim2.fromOffset(8, 28))
-	targetHealthFill = makeStatusBar(targetPanel, "HealthBar", UDim2.fromOffset(8, 60), "Fill", Color3.fromRGB(159, 52, 62), 0)
+	targetNameLabel = makeTextLabel(targetPanel, "TargetName", UDim2.fromOffset(8, if compactMobile then 2 else 4))
+	targetNameLabel.Size = UDim2.new(1, -16, 0, if compactMobile then 20 else 24)
+	targetNameLabel.TextSize = if compactMobile then 13 else 16
+	if compactMobile then
+		local targetFill = makeStatusBar(targetPanel, "HealthBar", UDim2.fromOffset(8, 26), "Fill", Color3.fromRGB(159, 52, 62), 0)
+		targetHealthFill = targetFill
+		local targetBar = targetFill.Parent :: Frame
+		targetBar.Size = UDim2.new(1, -16, 0, 18)
+		targetHealthTextLabel = makeTextLabel(targetBar, "HealthText", UDim2.fromOffset(0, 0))
+		targetHealthTextLabel.Size = UDim2.fromScale(1, 1)
+		targetHealthTextLabel.TextSize = 10
+		targetHealthTextLabel.TextXAlignment = Enum.TextXAlignment.Center
+		targetHealthTextLabel.ZIndex = 3
+		targetHealthTextLabel.Parent = targetBar
+	else
+		targetHealthTextLabel = makeTextLabel(targetPanel, "HealthText", UDim2.fromOffset(8, 28))
+		targetHealthFill = makeStatusBar(targetPanel, "HealthBar", UDim2.fromOffset(8, 60), "Fill", Color3.fromRGB(159, 52, 62), 0)
+	end
 
 	local playerPanel = Instance.new("Frame")
 	playerPanel.Name = "PlayerStatusFrame"
 	playerPanel.AnchorPoint = Vector2.new(1, 0)
-	playerPanel.Position = UDim2.new(1, -HudLayout.CornerMargin, 0, HudLayout.CornerMargin)
-	playerPanel.Size = UDim2.fromOffset(HudLayout.PlayerStatusSize.X, HudLayout.PlayerStatusSize.Y)
+	playerPanel.Position = if compactMobile
+		then UDim2.new(1, -HudLayout.MobileEdgeMargin, 0, HudLayout.MobileEdgeMargin)
+		else UDim2.new(1, -HudLayout.CornerMargin, 0, HudLayout.CornerMargin)
+	playerPanel.Size = if compactMobile
+		then UDim2.fromOffset(HudLayout.MobilePlayerStatusSize.X, HudLayout.MobilePlayerStatusSize.Y)
+		else UDim2.fromOffset(HudLayout.PlayerStatusSize.X, HudLayout.PlayerStatusSize.Y)
 	HudLayout.applyPanelStyle(playerPanel)
 	playerPanel.Parent = gui
 
@@ -450,6 +512,7 @@ function CombatHud.stop(): ()
 	levelLabel = nil
 	playerNameLabel = nil
 	feedbackLabel = nil
+	compactMobile = false
 end
 
 return CombatHud

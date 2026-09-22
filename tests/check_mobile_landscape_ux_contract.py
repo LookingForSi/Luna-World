@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""Semantic mobile landscape contract for GitHub Issue #37."""
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def source(path: str) -> str:
+    return (ROOT / path).read_text(encoding="utf-8")
+
+
+responsive = source("src/client/ui/ResponsiveLayout.luau")
+surfaces = source("src/client/ui/MobileSurface.luau")
+coordinator = source("src/client/ui/MobileOverlayCoordinator.luau")
+lobby = source("src/client/features/lobby/CharacterLobbyController.luau")
+economy = source("src/client/features/economy/EconomyUi.luau")
+inventory = source("src/client/features/inventory/InventoryUi.luau")
+quest = source("src/client/features/quests/QuestController.luau")
+actions = source("src/client/ui/ActionBar.luau")
+hud = source("src/client/ui/CombatHud.luau")
+layout = source("src/client/ui/HudLayout.luau")
+combat_log = source("src/client/ui/CombatLog.luau")
+studio = source("src/client/ui/StudioTestPanel.luau")
+global_controller = source("src/client/controllers/ResponsiveUiController.luau")
+
+for semantic in ("CompactDialog", "MenuSheet", "FullWorkspace"):
+    assert semantic in surfaces, f"missing semantic surface {semantic}"
+assert "GuiService:GetGuiInset()" not in responsive
+for field in ("usableWidth", "usableHeight", "layoutClass", "touchTarget", "gap"):
+    assert field in responsive
+for feature in (lobby, economy, inventory, quest):
+    assert "Enum.ScreenInsets.CoreUISafeInsets" in feature
+for gameplay_hud in (hud, actions, combat_log):
+    assert "Enum.ScreenInsets.None" in gameplay_hud
+assert "applyModals" not in global_controller
+
+assert "UserInputService.TouchEnabled then return" in studio
+assert 'Name = "CreationBody"' in lobby and "ScrollingEnabled = not smallTouch or metrics.usableHeight < 330" in lobby
+assert 'Name = "CreationFooter"' in lobby and 'Name = "CreateCharacter"' in lobby
+assert 'new("UIListLayout", bodyScroll' in lobby
+assert "TextXAlignment = if smallTouch then Enum.TextXAlignment.Center" in lobby
+assert 'Size = if smallTouch then UDim2.fromOffset(280, 40)' in lobby
+assert 'Text = if smallTouch then "Удалить"' in lobby
+assert 'TextWrapped = false' in lobby
+assert 'Name = "DeleteDialog"' in lobby and '"CompactDialog"' in lobby
+assert 'Name = "DeleteBlocker"' in lobby and 'Name = "ConfirmDelete"' in lobby
+
+assert '"MenuSheet"' in economy and '"FullWorkspace"' in economy
+assert 'mode == "Sell"' in economy and 'mode == "Buy"' in economy
+assert 'Instance.new("UIGridLayout")' in economy
+assert 'grid.FillDirectionMaxCells = 2' in economy
+assert 'mode == "DialogueBlacksmith"' in economy
+assert 'SetAttribute("MobileSurface", "FullWorkspace")' in inventory
+assert 'MobileOverlayCoordinator.setWorkspaceOpen(root, open)' in inventory
+for hud_name in ("CombatHud", "CombatActionBar", "CombatLog", "StudioTestPanel"):
+    assert hud_name in coordinator
+assert "function MobileOverlayCoordinator.reset()" in coordinator
+assert "constraint.Enabled" not in quest
+assert "constraint.Enabled" not in global_controller
+assert "slotCount = if compactMobile then 6 else 10" in actions
+assert 'playerPanel.AnchorPoint = Vector2.new(1, 0)' in global_controller
+
+for token in (
+    "HudLayout.MobilePlayerStatusSize = Vector2.new(216, 116)",
+    "HudLayout.MobileTargetSize = Vector2.new(230, 52)",
+    "HudLayout.MobileActionBarSize = Vector2.new(248, 108)",
+    "HudLayout.MobileSkillBarSize = Vector2.new(288, 48)",
+    "HudLayout.MobileCombatLogCollapsedSize = Vector2.new(92, 44)",
+):
+    assert token in layout, f"missing compact mobile geometry: {token}"
+assert 'valueLabel.Parent = background' in hud
+assert 'valueLabel.Size = UDim2.new(1, -8, 1, 0)' in hud
+assert 'targetHealthTextLabel.Parent = targetBar' in hud
+assert "HudLayout.MobileTargetSize" in global_controller
+assert "HudLayout.MobileActionBarSize" in global_controller
+assert "HudLayout.MobileSkillBarSize" in global_controller
+assert "HudLayout.MobileCombatLogCollapsedSize" in combat_log
+assert "GuiService:GetGuiInset()" in global_controller
+assert "bottomRightInset.X + HudLayout.MobileEdgeMargin" in global_controller
+for gameplay_hud in (hud, actions, combat_log):
+    assert "if compactMobile then" in gameplay_hud
+    assert "Enum.ScreenInsets.DeviceSafeInsets" in gameplay_hud
+    assert 'SetAttribute("CompactMobile", compactMobile)' in gameplay_hud
+    assert 'GetPropertyChangedSignal("CurrentCamera"):Wait()' in gameplay_hud
+assert 'GetAttribute("CompactMobile") == true' in global_controller
+
+assert 'SetAttribute("MobileSurface", "MenuSheet")' in quest
+assert 'SetAttribute("MobileSurface", "CompactDialog")' in quest
+assert 'SetAttribute("MobileSurface", "FullWorkspace")' in quest
+
+for label in ("СУМКА", "КАРТА", "КВЕСТЫ"):
+    assert label in actions
+for hotkey in ('then "КАРТА [M]"', 'then "ЗАДАНИЯ [Y]"', 'then "ИНВЕНТАРЬ [T]"'):
+    assert hotkey not in actions
+
+print("Mobile landscape UX semantic contract: PASS")

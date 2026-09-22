@@ -1,6 +1,5 @@
 --!strict
 
-local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 
 local ResponsiveLayout = {}
@@ -9,8 +8,11 @@ export type Mode = "Desktop" | "TouchLarge" | "MobilePortrait" | "MobileLandscap
 export type Metrics = {
 	mode: Mode,
 	viewport: Vector2,
-	safeTopLeft: Vector2,
-	safeBottomRight: Vector2,
+	usableWidth: number,
+	usableHeight: number,
+	layoutClass: Mode,
+	touchTarget: number,
+	gap: number,
 	margin: number,
 	contentSize: Vector2,
 	isTouch: boolean,
@@ -32,19 +34,21 @@ end
 
 function ResponsiveLayout.metrics(camera: Camera?): Metrics
 	local viewport = if camera ~= nil then camera.ViewportSize else Vector2.new(1280, 720)
-	local topLeft, bottomRight = GuiService:GetGuiInset()
 	local isTouch = UserInputService.TouchEnabled
 	local mode = ResponsiveLayout.resolve(viewport, isTouch)
 	local margin = if mode == "Desktop" then ResponsiveLayout.DesktopMargin else ResponsiveLayout.TouchMargin
 	return {
 		mode = mode,
 		viewport = viewport,
-		safeTopLeft = topLeft,
-		safeBottomRight = bottomRight,
+		usableWidth = viewport.X,
+		usableHeight = viewport.Y,
+		layoutClass = mode,
+		touchTarget = ResponsiveLayout.MinimumTouchTarget,
+		gap = margin,
 		margin = margin,
 		contentSize = Vector2.new(
-			math.max(0, viewport.X - topLeft.X - bottomRight.X - margin * 2),
-			math.max(0, viewport.Y - topLeft.Y - bottomRight.Y - margin * 2)
+			math.max(0, viewport.X - margin * 2),
+			math.max(0, viewport.Y - margin * 2)
 		),
 		isTouch = isTouch,
 	}

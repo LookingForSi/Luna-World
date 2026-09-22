@@ -29,6 +29,14 @@ local entrySequence = 0
 local observedLevel: number? = nil
 local stopObserving: (() -> ())? = nil
 local currentMetrics: ResponsiveLayout.Metrics? = nil
+local compactMobile = false
+
+local function shouldUseCompactMobile(): boolean
+	while workspace.CurrentCamera == nil do
+		workspace:GetPropertyChangedSignal("CurrentCamera"):Wait()
+	end
+	return ResponsiveLayout.isSmallTouch(ResponsiveLayout.metrics(workspace.CurrentCamera))
+end
 
 local MAX_ENTRIES = 200
 local ENTRY_HEIGHT = 18
@@ -106,9 +114,11 @@ local function setExpanded(value: boolean): ()
 	if frame ~= nil then
 		frame.Size = if expanded
 			then if currentMetrics ~= nil and ResponsiveLayout.isSmallTouch(currentMetrics :: ResponsiveLayout.Metrics)
-				then UDim2.fromOffset(math.min(300, (currentMetrics :: ResponsiveLayout.Metrics).contentSize.X), 150)
+				then UDim2.fromOffset(HudLayout.MobileCombatLogExpandedSize.X, HudLayout.MobileCombatLogExpandedSize.Y)
 				else UDim2.fromOffset(HudLayout.CombatLogSize.X, HudLayout.CombatLogSize.Y)
-			else UDim2.fromOffset(128, 30)
+			else if currentMetrics ~= nil and ResponsiveLayout.isSmallTouch(currentMetrics :: ResponsiveLayout.Metrics)
+				then UDim2.fromOffset(HudLayout.MobileCombatLogCollapsedSize.X, HudLayout.MobileCombatLogCollapsedSize.Y)
+				else UDim2.fromOffset(128, 30)
 	end
 	if toggleButton ~= nil then toggleButton.Text = if expanded then "Лог  ▲" else "Лог  ▼" end
 end
@@ -253,9 +263,18 @@ end
 
 function CombatLog.start(): ()
 	CombatLog.stop()
+	compactMobile = shouldUseCompactMobile()
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CombatLog"
+	gui:SetAttribute("CompactMobile", compactMobile)
+	if compactMobile then
+		gui.IgnoreGuiInset = true
+		gui.ScreenInsets = Enum.ScreenInsets.None
+	else
+		gui.IgnoreGuiInset = false
+		gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+	end
 	gui.ResetOnSpawn = false
 	gui.DisplayOrder = 4
 	gui.Parent = player:WaitForChild("PlayerGui")
@@ -263,7 +282,11 @@ function CombatLog.start(): ()
 	local root = Instance.new("Frame")
 	root.Name = "CombatLogFrame"
 	root.AnchorPoint = Vector2.new(0, 1)
-	root.Position = UDim2.new(0, HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)
+	if compactMobile then
+		root.Position = UDim2.new(0, HudLayout.MobileCombatLogJoystickClearance, 1, -HudLayout.MobileEdgeMargin)
+	else
+		root.Position = UDim2.new(0, HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)
+	end
 	root.Size = UDim2.fromOffset(HudLayout.CombatLogSize.X, HudLayout.CombatLogSize.Y)
 	HudLayout.applyPanelStyle(root)
 	root.Parent = gui
@@ -271,7 +294,9 @@ function CombatLog.start(): ()
 	local toggle = Instance.new("TextButton")
 	toggle.Name = "Toggle"
 	toggle.Position = UDim2.fromOffset(0, 0)
-	toggle.Size = UDim2.fromOffset(128, 30)
+	toggle.Size = if compactMobile
+		then UDim2.fromOffset(HudLayout.MobileCombatLogCollapsedSize.X, HudLayout.MobileCombatLogCollapsedSize.Y)
+		else UDim2.fromOffset(128, 30)
 	toggle.BackgroundColor3 = Color3.fromRGB(33, 36, 45)
 	toggle.BorderSizePixel = 0
 	toggle.Font = Enum.Font.GothamBold
@@ -341,6 +366,7 @@ function CombatLog.stop(): ()
 	observedLevel = nil
 	expanded = true
 	currentMetrics = nil
+	compactMobile = false
 end
 
 return CombatLog

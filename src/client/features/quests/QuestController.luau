@@ -8,6 +8,9 @@ local UserInputService = game:GetService("UserInputService")
 local WorldLayout = require(ReplicatedStorage.Shared.world.WorldLayout)
 local NpcDefinitions = require(ReplicatedStorage.Shared.definitions.NpcDefinitions)
 local HudLayout = require(script.Parent.Parent.Parent.ui.HudLayout)
+local MobileOverlayCoordinator = require(script.Parent.Parent.Parent.ui.MobileOverlayCoordinator)
+local MobileSurface = require(script.Parent.Parent.Parent.ui.MobileSurface)
+local ResponsiveLayout = require(script.Parent.Parent.Parent.ui.ResponsiveLayout)
 
 local QuestController = {}
 
@@ -43,6 +46,39 @@ local waypointLabels: { [string]: TextLabel } = {}
 local mapQuestDots: { [string]: TextLabel } = {}
 local activeQuestIds: { [string]: boolean } = {}
 local seenQuestIds: { [string]: boolean } = {}
+local stopObserving: (() -> ())? = nil
+
+local function applyMobileLayout(metrics: ResponsiveLayout.Metrics): ()
+	if not metrics.isTouch then return end
+	if dialogue ~= nil then
+		dialogue:SetAttribute("MobileSurface", "MenuSheet")
+		MobileSurface.apply(dialogue, "MenuSheet", metrics, math.min(300, metrics.usableHeight * 0.7))
+	end
+	if questOffer ~= nil then
+		questOffer:SetAttribute("MobileSurface", "CompactDialog")
+		MobileSurface.apply(questOffer, "CompactDialog", metrics, math.min(340, metrics.usableHeight * 0.65))
+	end
+	if travelConfirm ~= nil then
+		travelConfirm:SetAttribute("MobileSurface", "CompactDialog")
+		MobileSurface.apply(travelConfirm, "CompactDialog", metrics, 220)
+	end
+	for _, workspaceFrame in { journal, mapFrame } do
+		if workspaceFrame ~= nil then
+			workspaceFrame:SetAttribute("MobileSurface", "FullWorkspace")
+			MobileSurface.apply(workspaceFrame, "FullWorkspace", metrics)
+			local constraint = workspaceFrame:FindFirstChildOfClass("UISizeConstraint")
+			if constraint ~= nil then
+				constraint.MinSize = Vector2.zero
+				constraint.MaxSize = Vector2.new(10000, 10000)
+			end
+		end
+	end
+end
+
+local function syncWorkspaceHud(): ()
+	if gui == nil then return end
+	MobileOverlayCoordinator.setWorkspaceOpen(gui, (journal ~= nil and journal.Visible) or (mapFrame ~= nil and mapFrame.Visible))
+end
 
 local MAP_POIS = {
 	{ id = "poi_moonfall_farm", label = "Farm" },
@@ -837,6 +873,7 @@ end
 function QuestController.toggleMap(): ()
 	if mapFrame ~= nil then
 		mapFrame.Visible = not mapFrame.Visible
+		syncWorkspaceHud()
 	end
 end
 
@@ -844,6 +881,7 @@ function QuestController.toggleJournal(): ()
 	if journal ~= nil then
 		journal.Visible = not journal.Visible
 		if journal.Visible then buildJournal() end
+		syncWorkspaceHud()
 	end
 end
 
@@ -854,6 +892,7 @@ function QuestController.start(): ()
 	rootGui.Name = "QuestUi"
 	rootGui.ResetOnSpawn = false
 	rootGui.IgnoreGuiInset = false
+	rootGui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 	rootGui.DisplayOrder = 8
 	rootGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	rootGui.Parent = player:WaitForChild("PlayerGui")
@@ -911,6 +950,7 @@ function QuestController.start(): ()
 
 	journal = buildJournalFrame(rootGui)
 	mapFrame = buildMap(rootGui)
+	stopObserving = ResponsiveLayout.observe(applyMobileLayout)
 	local function syncModalBlocker(): ()
 		if modalBlocker == nil then return end
 		modalBlocker.Visible = (dialogue ~= nil and dialogue.Visible)
@@ -981,6 +1021,8 @@ function QuestController.start(): ()
 end
 
 function QuestController.stop(): ()
+	if stopObserving ~= nil then stopObserving(); stopObserving = nil end
+	if gui ~= nil then MobileOverlayCoordinator.release(gui) end
 	firstSnapshotReceived = false
 	for _, connection in connections do connection:Disconnect() end
 	table.clear(connections)

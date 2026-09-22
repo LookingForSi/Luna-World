@@ -11,6 +11,7 @@ local ProgressionRules = require(ReplicatedStorage.Shared.progression.Progressio
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local HudLayout = require(script.Parent.HudLayout)
+local ResponsiveLayout = require(script.Parent.ResponsiveLayout)
 
 local ActionBar = {}
 local player = Players.LocalPlayer
@@ -29,6 +30,14 @@ local inputTypeConnection: RBXScriptConnection? = nil
 local buttonConnections: { RBXScriptConnection } = {}
 local skillButtons: { [string]: TextButton } = {}
 local skillResourceTypes: { [string]: string } = {}
+local compactMobile = false
+
+local function shouldUseCompactMobile(): boolean
+	while workspace.CurrentCamera == nil do
+		workspace:GetPropertyChangedSignal("CurrentCamera"):Wait()
+	end
+	return ResponsiveLayout.isSmallTouch(ResponsiveLayout.metrics(workspace.CurrentCamera))
+end
 
 local function makeButton(parent: Instance, name: string, text: string, size: UDim2): TextButton
 	local button = Instance.new("TextButton")
@@ -53,6 +62,7 @@ local function autoBindingHint(): string
 end
 
 local function inventoryBindingText(): string
+	if UserInputService.TouchEnabled then return "СУМКА" end
 	local inputType = UserInputService:GetLastInputType()
 	if inputType == Enum.UserInputType.Touch then
 		return "ИНВЕНТАРЬ"
@@ -64,6 +74,7 @@ local function inventoryBindingText(): string
 end
 
 local function mapBindingText(): string
+	if UserInputService.TouchEnabled then return "КАРТА" end
 	local inputType = UserInputService:GetLastInputType()
 	if inputType == Enum.UserInputType.Touch or string.find(inputType.Name, "Gamepad") ~= nil then
 		return "КАРТА"
@@ -72,6 +83,7 @@ local function mapBindingText(): string
 end
 
 local function questBindingText(): string
+	if UserInputService.TouchEnabled then return "КВЕСТЫ" end
 	local inputType = UserInputService:GetLastInputType()
 	if inputType == Enum.UserInputType.Touch or string.find(inputType.Name, "Gamepad") ~= nil then
 		return "ЗАДАНИЯ"
@@ -164,17 +176,16 @@ local function updateCooldowns(): ()
 end
 
 local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (string) -> ()): ()
-	local width = if UserInputService.TouchEnabled then 350 else HudLayout.SkillBarSize.X
+	local width = if compactMobile then HudLayout.MobileSkillBarSize.X else HudLayout.SkillBarSize.X
+	local slotCount = if compactMobile then 6 else 10
 	local skillFrame = Instance.new("Frame")
 	skillFrame.Name = "SkillBar"
-	skillFrame.AnchorPoint = Vector2.new(1, 1)
-	skillFrame.Position = UDim2.new(
-		1,
-		-(HudLayout.ActionBarSize.X + HudLayout.CornerMargin + 12),
-		1,
-		-HudLayout.CornerMargin
-	)
-	skillFrame.Size = UDim2.fromOffset(width, HudLayout.SkillBarSize.Y)
+	skillFrame.AnchorPoint = if compactMobile then Vector2.new(0.5, 1) else Vector2.new(1, 1)
+	skillFrame.Position = if compactMobile
+		then UDim2.new(0.5, 0, 1, -HudLayout.MobileEdgeMargin)
+		else UDim2.new(1, -(HudLayout.ActionBarSize.X + HudLayout.CornerMargin + 12), 1, -HudLayout.CornerMargin)
+	local height = if compactMobile then HudLayout.MobileSkillBarSize.Y else HudLayout.SkillBarSize.Y
+	skillFrame.Size = UDim2.fromOffset(width, height)
 	HudLayout.applyPanelStyle(skillFrame)
 	skillFrame.Parent = gui
 
@@ -185,18 +196,18 @@ local function buildSkillBar(gui: ScreenGui, skillIds: { string }, onSkill: (str
 	content.BackgroundTransparency = 1
 	content.Parent = skillFrame
 
-	for index = 1, 10 do
+	for index = 1, slotCount do
 		local skillId = skillIds[index]
 		local button = makeButton(
 			content,
 			"SkillSlot" .. tostring(index),
 			"",
-			UDim2.new(0.1, -4, 1, 0)
+			UDim2.new(1 / slotCount, -4, 1, 0)
 		)
-		button.Position = UDim2.new((index - 1) * 0.1, 2, 0, 0)
-		button.TextSize = if UserInputService.TouchEnabled then 8 else 10
+		button.Position = UDim2.new((index - 1) / slotCount, 2, 0, 0)
+		button.TextSize = if compactMobile then 8 else 10
 
-		if index == 10 then
+		if index == slotCount then
 			quickSlotButton = button
 			button.Text = if UserInputService.TouchEnabled then "БЫСТРО" else "[0]"
 			table.insert(buttonConnections, button.Activated:Connect(function()
@@ -234,24 +245,35 @@ function ActionBar.start(
 	getQuickState: () -> any
 ): ()
 	ActionBar.stop()
+	compactMobile = shouldUseCompactMobile()
 	quickUseCallback = onQuickUse
 	quickStateCallback = getQuickState
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CombatActionBar"
+	gui:SetAttribute("CompactMobile", compactMobile)
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = false
+	if compactMobile then
+		gui.IgnoreGuiInset = true
+		gui.ScreenInsets = Enum.ScreenInsets.None
+	else
+		gui.IgnoreGuiInset = false
+		gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+	end
 	gui.Parent = player:WaitForChild("PlayerGui")
 
-	local actionHeight = if UserInputService.TouchEnabled then HudLayout.ActionBarSize.Y + 12 else HudLayout.ActionBarSize.Y
+	local actionSize = if compactMobile then HudLayout.MobileActionBarSize else HudLayout.ActionBarSize
+	local actionHeight = actionSize.Y
 	local frame = Instance.new("Frame")
 	frame.Name = "PrimaryActions"
 	frame.AnchorPoint = Vector2.new(1, 1)
-	frame.Position = UDim2.new(1, -HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)
-	frame.Size = UDim2.fromOffset(HudLayout.ActionBarSize.X, actionHeight)
+	frame.Position = if compactMobile
+		then UDim2.new(1, -HudLayout.MobileEdgeMargin, 1, -HudLayout.MobileEdgeMargin)
+		else UDim2.new(1, -HudLayout.CornerMargin, 1, -HudLayout.CornerMargin)
+	frame.Size = UDim2.fromOffset(actionSize.X, actionHeight)
 	local sizeConstraint = Instance.new("UISizeConstraint")
-	sizeConstraint.MaxSize = Vector2.new(HudLayout.ActionBarSize.X, actionHeight)
-	sizeConstraint.MinSize = Vector2.new(300, actionHeight)
+	sizeConstraint.MaxSize = Vector2.new(actionSize.X, actionHeight)
+	sizeConstraint.MinSize = actionSize
 	sizeConstraint.Parent = frame
 	HudLayout.applyPanelStyle(frame)
 	frame.Parent = gui
@@ -263,31 +285,36 @@ function ActionBar.start(
 	content.BackgroundTransparency = 1
 	content.Parent = frame
 
-	mapButton = makeButton(content, "Map", mapBindingText(), UDim2.new(0.31, -2, 0, 36))
+	local topHeight = if compactMobile then 44 else 36
+	mapButton = makeButton(content, "Map", mapBindingText(), UDim2.new(0.31, -2, 0, topHeight))
 	local mapToggle = mapButton :: TextButton
 
-	questButton = makeButton(content, "Quests", questBindingText(), UDim2.new(0.31, -2, 0, 36))
+	questButton = makeButton(content, "Quests", questBindingText(), UDim2.new(0.31, -2, 0, topHeight))
 	local quests = questButton :: TextButton
 	quests.Position = UDim2.new(0.345, 0, 0, 0)
 
-	inventoryButton = makeButton(content, "Inventory", inventoryBindingText(), UDim2.new(0.31, -2, 0, 36))
+	inventoryButton = makeButton(content, "Inventory", inventoryBindingText(), UDim2.new(0.31, -2, 0, topHeight))
 	local inventory = inventoryButton :: TextButton
 	inventory.Position = UDim2.new(0.69, 0, 0, 0)
 
-	local lowerRowHeight = if UserInputService.TouchEnabled then 104 else 92
-	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", UDim2.new(0.31, -2, 0, lowerRowHeight))
+	local lowerRowY = topHeight + 4
+	local lowerRowHeight = if compactMobile then 44 else 92
+	local utilityWidth = if compactMobile then 68 else 0
+	autoButton = makeButton(content, "Auto", "AUTO [G]\nВЫКЛ", if compactMobile then UDim2.fromOffset(utilityWidth, lowerRowHeight) else UDim2.new(0.31, -2, 0, lowerRowHeight))
 	local auto = autoButton :: TextButton
-	auto.Position = UDim2.new(0, 0, 0, 42)
+	auto.Position = UDim2.new(0, 0, 0, lowerRowY)
+	if compactMobile then auto.TextSize = 11 end
 
-	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", UDim2.new(0.31, -2, 0, lowerRowHeight))
-	clearButton.Position = UDim2.new(0.345, 0, 0, 42)
+	local clearButton = makeButton(content, "ClearTarget", "СБРОС\nЦЕЛИ", if compactMobile then UDim2.fromOffset(utilityWidth, lowerRowHeight) else UDim2.new(0.31, -2, 0, lowerRowHeight))
+	clearButton.Position = if compactMobile then UDim2.fromOffset(utilityWidth + 4, lowerRowY) else UDim2.new(0.345, 0, 0, lowerRowY)
+	if compactMobile then clearButton.TextSize = 10 end
 
-	local attackDiameter = lowerRowHeight
+	local attackDiameter = if compactMobile then 48 else lowerRowHeight
 	attackButton = makeButton(content, "Attack", "АТАКА", UDim2.fromOffset(attackDiameter, attackDiameter))
 	local attack = attackButton :: TextButton
 	attack.AnchorPoint = Vector2.new(1, 0)
-	attack.Position = UDim2.new(1, 0, 0, 42)
-	attack.TextSize = 19
+	attack.Position = UDim2.new(1, 0, 0, lowerRowY - (if compactMobile then 4 else 0))
+	attack.TextSize = if compactMobile then 14 else 19
 
 	local attackCorner = Instance.new("UICorner")
 	attackCorner.CornerRadius = UDim.new(1, 0)
@@ -324,6 +351,7 @@ function ActionBar.stop(): ()
 	screenGui, autoButton, attackButton, inventoryButton, mapButton, questButton, quickSlotButton = nil, nil, nil, nil, nil, nil, nil
 	quickUseCallback = nil
 	quickStateCallback = nil
+	compactMobile = false
 end
 
 return ActionBar

@@ -2,12 +2,16 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
 local CraftingDefinitions = require(ReplicatedStorage.Shared.definitions.CraftingDefinitions)
 local EconomyRules = require(ReplicatedStorage.Shared.economy.EconomyRules)
 local ItemDefinitions = require(ReplicatedStorage.Shared.definitions.ItemDefinitions)
 local ProgressionConfig = require(ReplicatedStorage.Shared.config.ProgressionConfig)
 local HudLayout = require(script.Parent.Parent.Parent.ui.HudLayout)
+local MobileOverlayCoordinator = require(script.Parent.Parent.Parent.ui.MobileOverlayCoordinator)
+local MobileSurface = require(script.Parent.Parent.Parent.ui.MobileSurface)
+local ResponsiveLayout = require(script.Parent.Parent.Parent.ui.ResponsiveLayout)
 
 local EconomyUi = {}
 
@@ -26,6 +30,64 @@ local connections: { RBXScriptConnection } = {}
 local rowConnections: { RBXScriptConnection } = {}
 local sellCart: { [string]: number } = {}
 local onboarded = false
+local stopObserving: (() -> ())? = nil
+
+local function isWorkspaceMode(): boolean
+	return mode == "Sell" or mode == "Buy" or string.sub(mode, 1, 5) == "Craft"
+end
+
+local function configureTopicLayout(useBlacksmithGrid: boolean): ()
+	if list == nil then return end
+
+	local listLayout = list:FindFirstChildOfClass("UIListLayout")
+	local gridLayout = list:FindFirstChildOfClass("UIGridLayout")
+	if useBlacksmithGrid then
+		if listLayout ~= nil then listLayout:Destroy() end
+		if gridLayout == nil then
+			local grid = Instance.new("UIGridLayout")
+			grid.Name = "BlacksmithGrid"
+			grid.CellSize = UDim2.new(0.5, -4, 0, 52)
+			grid.CellPadding = UDim2.fromOffset(8, 8)
+			grid.FillDirectionMaxCells = 2
+			grid.SortOrder = Enum.SortOrder.LayoutOrder
+			grid.Parent = list
+		end
+	elseif listLayout == nil then
+		if gridLayout ~= nil then gridLayout:Destroy() end
+		local layout = Instance.new("UIListLayout")
+		layout.Name = "DialogueList"
+		layout.Padding = UDim.new(0, 4)
+		layout.SortOrder = Enum.SortOrder.LayoutOrder
+		layout.Parent = list
+	elseif gridLayout ~= nil then
+		gridLayout:Destroy()
+	end
+end
+
+local function applyMobileLayout(metrics: ResponsiveLayout.Metrics): ()
+	if panel == nil or list == nil then return end
+	if not metrics.isTouch then
+		configureTopicLayout(false)
+		panel:SetAttribute("MobileSurface", nil)
+		panel.AnchorPoint = Vector2.new(0.5, 0.5)
+		panel.Position = UDim2.fromScale(0.5, 0.5)
+		panel.Size = UDim2.fromOffset(680, 500)
+		list.Position = UDim2.fromOffset(16, 52)
+		list.Size = UDim2.new(1, -32, 1, -100)
+		MobileOverlayCoordinator.setWorkspaceOpen(panel, false)
+		return
+	end
+
+	local kind = if isWorkspaceMode() then "FullWorkspace" else "MenuSheet"
+	local blacksmithGrid = mode == "DialogueBlacksmith"
+	configureTopicLayout(blacksmithGrid)
+	panel:SetAttribute("MobileSurface", kind)
+	local optionRows = if blacksmithGrid then 2 else 2
+	MobileSurface.apply(panel, kind :: any, metrics, 68 + optionRows * 52)
+	list.Position = UDim2.fromOffset(12, 56)
+	list.Size = if kind == "FullWorkspace" then UDim2.new(1, -24, 1, -112) else UDim2.new(1, -24, 1, -68)
+	MobileOverlayCoordinator.setWorkspaceOpen(panel, panel.Visible and kind == "FullWorkspace")
+end
 
 local function updateOnboarding(): ()
 	local level = Players.LocalPlayer:GetAttribute(ProgressionConfig.LevelAttribute)
@@ -76,7 +138,7 @@ local function clearList(): ()
 	table.clear(rowConnections)
 	if list == nil then return end
 	for _, child in list:GetChildren() do
-		if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+		if not child:IsA("UIListLayout") and not child:IsA("UIGridLayout") and not child:IsA("UIPadding") then
 			child:Destroy()
 		end
 	end
@@ -213,7 +275,7 @@ local function rebuildSell(): ()
 
 	local workspace = Instance.new("Frame")
 	workspace.Name = "SellWorkspace"
-	workspace.Size = UDim2.new(1, -12, 0, 350)
+	workspace.Size = if UserInputService.TouchEnabled then UDim2.new(1, -12, 1, -44) else UDim2.new(1, -12, 0, 350)
 	workspace.BackgroundTransparency = 1
 	workspace.Parent = list
 
@@ -236,7 +298,7 @@ local function rebuildSell(): ()
 		local quantity = Instance.new("TextBox")
 		quantity.Name = "Quantity"
 		quantity.Position = UDim2.new(1, -98, 0, 8)
-		quantity.Size = UDim2.fromOffset(42, 28)
+		quantity.Size = UDim2.fromOffset(if UserInputService.TouchEnabled then 44 else 42, if UserInputService.TouchEnabled then 44 else 28)
 		quantity.BackgroundColor3 = Color3.fromRGB(31, 34, 41)
 		quantity.BorderSizePixel = 0
 		quantity.TextColor3 = Color3.fromRGB(238, 235, 224)
@@ -249,7 +311,7 @@ local function rebuildSell(): ()
 
 		local add = button(row, "→")
 		add.Position = UDim2.new(1, -50, 0, 8)
-		add.Size = UDim2.fromOffset(42, 28)
+		add.Size = UDim2.fromOffset(44, if UserInputService.TouchEnabled then 44 else 28)
 		add.TextSize = 16
 		add.Active = price ~= nil
 		add.AutoButtonColor = price ~= nil
@@ -276,6 +338,11 @@ local function rebuildSell(): ()
 			end))
 		end
 	end
+	if #snapshot.inventory == 0 then
+		local empty = label(inventoryPane, "В сумке нет предметов для продажи.", UDim2.fromOffset(8, 8), UDim2.new(1, -16, 0, 48), 12)
+		empty.Name = "EmptyInventory"
+		empty.TextWrapped = true
+	end
 
 	for _, entry in snapshot.inventory do
 		local selectedQuantity = sellCart[entry.instanceId]
@@ -294,12 +361,17 @@ local function rebuildSell(): ()
 		name.TextWrapped = true
 		local remove = button(row, "←")
 		remove.Position = UDim2.new(1, -50, 0, 10)
-		remove.Size = UDim2.fromOffset(42, 28)
+		remove.Size = UDim2.fromOffset(44, if UserInputService.TouchEnabled then 44 else 28)
 		remove.TextSize = 16
 		table.insert(rowConnections, remove.Activated:Connect(function()
 			sellCart[entry.instanceId] = nil
 			rebuild()
 		end))
+	end
+	if next(sellCart) == nil then
+		local empty = label(cartPane, "Корзина пуста. Добавьте предметы слева.", UDim2.fromOffset(8, 8), UDim2.new(1, -16, 0, 48), 12)
+		empty.Name = "EmptyCart"
+		empty.TextWrapped = true
 	end
 
 	local total = sellCartTotal()
@@ -419,6 +491,7 @@ function EconomyUi.open(nextMode: string): ()
 	if panel ~= nil then panel.Visible = true end
 	if modalBlocker ~= nil then modalBlocker.Visible = true end
 	rebuild()
+	applyMobileLayout(ResponsiveLayout.metrics(workspace.CurrentCamera))
 end
 
 function EconomyUi.setSnapshot(value: any): ()
@@ -461,7 +534,8 @@ function EconomyUi.start(actionCallbacks: any): ()
 	local screen = Instance.new("ScreenGui")
 	screen.Name = "VillageEconomyUi"
 	screen.ResetOnSpawn = false
-	screen.IgnoreGuiInset = true
+	screen.IgnoreGuiInset = false
+	screen.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 	screen.DisplayOrder = 9
 	screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screen.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -487,6 +561,7 @@ function EconomyUi.start(actionCallbacks: any): ()
 	root.BackgroundTransparency = 0.03
 	root.Visible = false
 	root.Name = "EconomyPanel"
+	root:SetAttribute("MobileSurface", "MenuSheet")
 	root.ZIndex = 2
 	root.Parent = screen
 
@@ -496,6 +571,7 @@ function EconomyUi.start(actionCallbacks: any): ()
 	local close = HudLayout.makeCloseButton(root, 12)
 	table.insert(connections, close.Activated:Connect(function()
 		root.Visible = false
+		MobileOverlayCoordinator.setWorkspaceOpen(root, false)
 		if modalBlocker ~= nil then modalBlocker.Visible = false end
 	end))
 
@@ -510,7 +586,9 @@ function EconomyUi.start(actionCallbacks: any): ()
 	scrolling.ScrollBarThickness = 6
 	scrolling.Parent = root
 	local layout = Instance.new("UIListLayout")
+	layout.Name = "DialogueList"
 	layout.Padding = UDim.new(0, 4)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = scrolling
 	list = scrolling
 
@@ -531,10 +609,13 @@ function EconomyUi.start(actionCallbacks: any): ()
 	table.insert(connections, Players.LocalPlayer:GetAttributeChangedSignal(ProgressionConfig.LevelAttribute):Connect(updateOnboarding))
 	gui = screen
 	panel = root
+	stopObserving = ResponsiveLayout.observe(applyMobileLayout)
 	updateOnboarding()
 end
 
 function EconomyUi.stop(): ()
+	if stopObserving ~= nil then stopObserving(); stopObserving = nil end
+	if panel ~= nil then MobileOverlayCoordinator.release(panel) end
 	for _, connection in connections do connection:Disconnect() end
 	table.clear(connections)
 	clearList()
