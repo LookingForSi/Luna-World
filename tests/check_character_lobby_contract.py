@@ -59,5 +59,5 @@ assert "CharacterRequest" in project["tree"]["ReplicatedStorage"]["Remotes"]
 server_bootstrap = read("src/server/main.server.luau")
 server_adapter = read("src/server/bootstrap/adapters/ExistingServerComponents.luau")
 assert server_bootstrap.index("Players.CharacterAutoLoads = false") < server_bootstrap.index("ServerBootstrap.start(manifest)")
-assert 'WaitForChild("LunaWorldPlayableBlockout", 15)' in server_adapter
+assert "MoonfallAuthoringContract.RootName" in server_adapter
 print("character lobby contract: PASS")
