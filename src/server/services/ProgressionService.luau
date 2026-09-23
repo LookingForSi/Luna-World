@@ -20,7 +20,8 @@ local profileReadyConnection: RBXScriptConnection? = nil
 local function replicateProgression(player: Player, level: number, xp: number): ()
 	player:SetAttribute(ProgressionConfig.LevelAttribute, level)
 	player:SetAttribute(ProgressionConfig.ExperienceAttribute, xp)
-	-- Compatibility for old M1 characterization. Removed at the M2 stabilization gate.
+	-- Test-observable mirror retained for runtime characterization fixtures.
+	-- Authoritative XP remains the active Character profile and ProgressionConfig attribute.
 	player:SetAttribute("SessionXP", xp)
 end
 
