@@ -3,7 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local CombatService = require(script.Parent.CombatService)
+local CombatCoordinator = require(script.Parent.Parent.features.combat.CombatCoordinator)
 local EconomyService = require(script.Parent.EconomyService)
 local InventoryService = require(script.Parent.InventoryService)
 local ProgressionService = require(script.Parent.ProgressionService)
@@ -46,7 +46,7 @@ function StudioDebugService.start(): ()
 		if select("#", ...) ~= 0 or typeof(archetypeId) ~= "string" then return end
 		local starterOk = EconomyService._switchArchetypeForStudio(player, archetypeId)
 		if starterOk then
-			CombatService._setArchetypeForStudio(player, archetypeId)
+			CombatCoordinator._setArchetypeForStudio(player, archetypeId)
 		end
 	end)
 	levelConnection = (levelRemote :: RemoteEvent).OnServerEvent:Connect(function(player: Player, level: unknown, ...)
@@ -69,7 +69,7 @@ function StudioDebugService.start(): ()
 	speedConnection = (speedRemote :: RemoteEvent).OnServerEvent:Connect(function(player: Player, ...)
 		if select("#", ...) ~= 0 then return end
 		local current = player:GetAttribute("StudioMovementMultiplier")
-		CombatService._setMovementMultiplierForStudio(player, if current == 5 then 1 else 5)
+		CombatCoordinator._setMovementMultiplierForStudio(player, if current == 5 then 1 else 5)
 	end)
 end
 
