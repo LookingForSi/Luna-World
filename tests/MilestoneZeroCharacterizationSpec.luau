@@ -13,7 +13,7 @@ local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local MobDefinitions = require(ReplicatedStorage.Shared.definitions.MobDefinitions)
 local SkillDefinitions = require(ReplicatedStorage.Shared.definitions.SkillDefinitions)
 local CombatEffectService = require(ServerScriptService.Server.services.CombatEffectService)
-local CombatService = require(ServerScriptService.Server.services.CombatService)
+local CombatCoordinator = require(ServerScriptService.Server.features.combat.CombatCoordinator)
 local MobService = require(ServerScriptService.Server.services.MobService)
 local attackContractReady = ReplicatedStorage
 	:WaitForChild("TestRemotes")
@@ -385,12 +385,12 @@ return function(TestRunner)
 					actorHumanoid.Health = math.max(1, actorHumanoid.MaxHealth - 40)
 					return actorHumanoid.Health
 				elseif command == "SetResourceEmpty" then
-					CombatService._setResourceForTest(player, 0)
+					CombatCoordinator._setResourceForTest(player, 0)
 					return true
 				elseif command == "SetResourceFull" then
 					local maximum = player:GetAttribute(CombatConfig.ResourceMaximumAttribute)
 					assert(typeof(maximum) == "number")
-					CombatService._setResourceForTest(player, maximum)
+					CombatCoordinator._setResourceForTest(player, maximum)
 					return true
 				elseif command == "RemoveTarget" then
 					return temporarilyRemoveLifecycleTarget()
