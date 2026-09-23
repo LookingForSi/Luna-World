@@ -16,7 +16,7 @@ local WorldServerManifest = require(script.Parent.bootstrap.manifests.WorldServe
 local DungeonServerManifest = require(script.Parent.bootstrap.manifests.DungeonServerManifest)
 local DevCombinedServerManifest = require(script.Parent.bootstrap.manifests.DevCombinedServerManifest)
 
-local role = PlaceRuntime.resolve(game.PlaceId, game.GameId, RunService:IsStudio(), nil)
+local isStudio = RunService:IsStudio()\nlocal studioRole = if isStudio then StudioPlaceRole.read(ReplicatedStorage) else nil\nlocal role = PlaceRuntime.resolve(game.PlaceId, game.GameId, isStudio, studioRole)
 
 local manifest
 if role == PlaceRole.Lobby then
