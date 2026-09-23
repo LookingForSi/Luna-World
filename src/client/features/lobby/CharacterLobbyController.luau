@@ -114,6 +114,9 @@ local function friendlyReason(reason: any): string
 		AccountNotReady = "Аккаунт ещё не готов. Попробуйте ещё раз",
 		TransferInProgress = "Переход в мир уже выполняется",
 		CharacterNotOwned = "Персонаж больше недоступен. Обновите список",
+		CharacterNotOwnedOrActive = "Не удалось активировать персонажа. Попробуйте ещё раз",
+		ServiceNotRunning = "Переход в мир временно недоступен",
+		SaveFailed = "Не удалось сохранить персонажа перед переходом",
 	}
 	return map[tostring(reason)] or tostring(reason)
 end
