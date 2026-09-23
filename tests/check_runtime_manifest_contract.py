@@ -38,6 +38,8 @@ assert "pcall(component.stop)" in runtime
 assert "Duplicate runtime component" in runtime
 
 for entrypoint in (server_main, client_main):
+    assert r"\\n" not in entrypoint, "entrypoint contains literal \\n text instead of real newlines"
+    assert "local StudioPlaceRole = require(ReplicatedStorage.Shared.core.runtime.StudioPlaceRole)" in entrypoint
     assert "StudioPlaceRole.read(ReplicatedStorage)" in entrypoint
     assert "PlaceRuntime.resolve(game.PlaceId, game.GameId, isStudio, studioRole)" in entrypoint
 assert "ServerBootstrap.start(manifest)" in server_main

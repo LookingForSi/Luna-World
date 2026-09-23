@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 
 local PlaceRole = require(ReplicatedStorage.Shared.core.runtime.PlaceRole)
 local PlaceRuntime = require(ReplicatedStorage.Shared.core.runtime.PlaceRuntime)
+local StudioPlaceRole = require(ReplicatedStorage.Shared.core.runtime.StudioPlaceRole)
 local ClientApplication = require(script.Parent.bootstrap.ClientApplication)
 local LobbyClientRuntime = require(script.Parent.bootstrap.LobbyClientRuntime)
 local GameplayClientRuntime = require(script.Parent.bootstrap.GameplayClientRuntime)
@@ -12,7 +13,9 @@ local LocalPlaceTransitionAdapter = require(script.Parent.bootstrap.transport.Lo
 local TeleportTransitionAdapter = require(script.Parent.bootstrap.transport.TeleportTransitionAdapter)
 local ExistingClientComponents = require(script.Parent.bootstrap.adapters.ExistingClientComponents)
 
-local isStudio = RunService:IsStudio()\nlocal studioRole = if isStudio then StudioPlaceRole.read(ReplicatedStorage) else nil\nlocal role = PlaceRuntime.resolve(game.PlaceId, game.GameId, isStudio, studioRole)
+local isStudio = RunService:IsStudio()
+local studioRole = if isStudio then StudioPlaceRole.read(ReplicatedStorage) else nil
+local role = PlaceRuntime.resolve(game.PlaceId, game.GameId, isStudio, studioRole)
 
 if not PlaceRole.isValid(role) then
 	error(string.format("Unsupported client PlaceRole: %s", tostring(role)))
