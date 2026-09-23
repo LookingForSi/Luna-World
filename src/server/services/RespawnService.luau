@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RespawnRules = require(ReplicatedStorage.Shared.combat.RespawnRules)
 local RespawnConfig = require(ReplicatedStorage.Shared.config.RespawnConfig)
 local CharacterConfig = require(ReplicatedStorage.Shared.config.CharacterConfig)
-local CombatService = require(script.Parent.CombatService)
+local CombatCoordinator = require(script.Parent.Parent.features.combat.CombatCoordinator)
 
 type PlayerRecord = {
 	generation: number,
@@ -97,7 +97,7 @@ local function onDied(player: Player, character: Model, deathPosition: Vector3):
 	record.generation = generation
 	record.anchor = nearestAnchor(deathPosition)
 	setPending(player, true)
-	CombatService.handlePlayerDeath(player)
+	CombatCoordinator.handlePlayerDeath(player)
 	if record.anchor == nil then
 		warn(string.format("Respawn unavailable for %s: no registered RespawnAnchor or SpawnLocation", player.Name))
 	end
@@ -131,7 +131,7 @@ local function bindCharacter(player: Player, character: Model): ()
 	record.respawning = false
 	record.anchor = nil
 	setPending(player, false)
-	CombatService.handlePlayerRespawn(player, character)
+	CombatCoordinator.handlePlayerRespawn(player, character)
 	record.deathConnection = humanoid.Died:Connect(function()
 		local currentRoot = character:FindFirstChild("HumanoidRootPart")
 		local position = if currentRoot ~= nil and currentRoot:IsA("BasePart") then currentRoot.Position else character:GetPivot().Position
