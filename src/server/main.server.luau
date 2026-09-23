@@ -9,6 +9,7 @@ Players.CharacterAutoLoads = false
 
 local PlaceRole = require(ReplicatedStorage.Shared.core.runtime.PlaceRole)
 local PlaceRuntime = require(ReplicatedStorage.Shared.core.runtime.PlaceRuntime)
+local StudioPlaceRole = require(ReplicatedStorage.Shared.core.runtime.StudioPlaceRole)
 local ServerBootstrap = require(script.Parent.bootstrap.ServerBootstrap)
 
 local LobbyServerManifest = require(script.Parent.bootstrap.manifests.LobbyServerManifest)
@@ -16,7 +17,9 @@ local WorldServerManifest = require(script.Parent.bootstrap.manifests.WorldServe
 local DungeonServerManifest = require(script.Parent.bootstrap.manifests.DungeonServerManifest)
 local DevCombinedServerManifest = require(script.Parent.bootstrap.manifests.DevCombinedServerManifest)
 
-local isStudio = RunService:IsStudio()\nlocal studioRole = if isStudio then StudioPlaceRole.read(ReplicatedStorage) else nil\nlocal role = PlaceRuntime.resolve(game.PlaceId, game.GameId, isStudio, studioRole)
+local isStudio = RunService:IsStudio()
+local studioRole = if isStudio then StudioPlaceRole.read(ReplicatedStorage) else nil
+local role = PlaceRuntime.resolve(game.PlaceId, game.GameId, isStudio, studioRole)
 
 local manifest
 if role == PlaceRole.Lobby then
