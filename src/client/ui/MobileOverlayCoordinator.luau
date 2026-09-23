@@ -2,7 +2,6 @@
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
 local MobileOverlayCoordinator = {}
 local openWorkspaces: { [Instance]: boolean } = {}
@@ -11,9 +10,6 @@ local HUD_NAMES = { CombatHud = true, CombatActionBar = true, CombatLog = true, 
 local childAddedConnection: RBXScriptConnection? = nil
 local touchConnection: RBXScriptConnection? = nil
 
-local function diagnostic(message: string): ()
-	if RunService:IsStudio() then print("[MobileOverlayCoordinator] " .. message) end
-end
 
 local function workspaceDepth(): number
 	local depth = 0
@@ -25,7 +21,6 @@ local refresh: () -> ()
 
 refresh = function(): ()
 	local hidden = UserInputService.TouchEnabled and next(openWorkspaces) ~= nil
-	diagnostic(string.format("refresh depth=%d hidden=%s", workspaceDepth(), tostring(hidden)))
 	local playerGui = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
 	if playerGui == nil then return end
 	for _, child in playerGui:GetChildren() do
@@ -37,7 +32,6 @@ refresh = function(): ()
 				child.Enabled = savedEnabled[child]
 				savedEnabled[child] = nil
 			end
-			diagnostic(string.format("%s Enabled=%s", child.Name, tostring(child.Enabled)))
 		end
 	end
 end
@@ -59,20 +53,17 @@ end
 function MobileOverlayCoordinator.setWorkspaceOpen(owner: Instance, isOpen: boolean): ()
 	ensureObservation()
 	if isOpen then openWorkspaces[owner] = true else openWorkspaces[owner] = nil end
-	diagnostic(string.format("%s owner=%s depth=%d", if isOpen then "acquire" else "release", owner:GetFullName(), workspaceDepth()))
 	refresh()
 end
 
 function MobileOverlayCoordinator.release(owner: Instance): ()
 	ensureObservation()
 	openWorkspaces[owner] = nil
-	diagnostic(string.format("release owner=%s depth=%d", owner:GetFullName(), workspaceDepth()))
 	refresh()
 end
 
 function MobileOverlayCoordinator.reset(): ()
 	table.clear(openWorkspaces)
-	diagnostic("reset depth=0")
 	refresh()
 end
 
