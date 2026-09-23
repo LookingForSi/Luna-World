@@ -26,7 +26,6 @@ local ActionBar = require(clientRoot.ui.ActionBar)
 local StudioTestPanel = require(clientRoot.ui.StudioTestPanel)
 local InventoryUi = require(clientRoot.features.inventory.InventoryUi)
 local EconomyUi = require(clientRoot.features.economy.EconomyUi)
-local RunService = game:GetService("RunService")
 
 local ExistingClientComponents = {}
 
@@ -107,23 +106,9 @@ function ExistingClientComponents.gameplay(): RuntimeComponent.RuntimeComponent
 		gameplayStarted = true
 
 		local function startComponent(name: string, callback: () -> ()): ()
-			if RunService:IsStudio() then print("[GameplayClientRuntime] component start " .. name) end
 			local ok, reason = pcall(callback)
-			if not ok then error(string.format("component %s failed: %s", name, tostring(reason)), 0) end
-			if RunService:IsStudio() then
-				local playerGui = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
-				if playerGui ~= nil then
-					for _, hudName in { "CombatHud", "CombatActionBar", "CombatLog", "QuestUi", "InventoryUi" } do
-						local hud = playerGui:FindFirstChild(hudName)
-						if hud ~= nil and hud:IsA("ScreenGui") then
-							local visible = false
-							for _, descendant in hud:GetDescendants() do
-								if descendant:IsA("GuiObject") and descendant.Visible then visible = true; break end
-							end
-							print(string.format("[GameplayClientRuntime] %s parent=%s Enabled=%s anyVisible=%s", hudName, hud.Parent:GetFullName(), tostring(hud.Enabled), tostring(visible)))
-						end
-					end
-				end
+			if not ok then
+				error(string.format("component %s failed: %s", name, tostring(reason)), 0)
 			end
 		end
 		startComponent("CharacterLobby.stop", function() CharacterLobbyController.stop() end)
