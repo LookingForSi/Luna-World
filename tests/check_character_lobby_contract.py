@@ -24,12 +24,19 @@ nickname_store = read("src/server/persistence/NicknameStore.luau")
 assert "UpdateAsync" in nickname_store
 assert "UseDataStoreInStudio" in nickname_store and "studioIndex" in nickname_store
 assert "FilterStringAsync" in service and "CharacterNotOwned" in service
+assert 'DeleteConfirmationPrefix .. "UNFINISHED"' in service
+assert "deleteConfirmation = deleteConfirmation(c)" in service
+assert "mutateAccountAndSave" in service and "mutateAccountAndSave" in data
+assert "Account transactional save failed" in data
 assert "Players.CharacterAutoLoads = false" in data
 assert "AccountReady" in data and "CharacterReady" in data
 assert "ClientApplication.new" in client
 assert dev_client_manifest.index("Components.characterLobby()") < dev_client_manifest.index("Components.gameplay()")
 assert 'GetAttribute("CharacterReady")' in client_application and "startGameplay()" in client_adapter
 assert "ResponsiveLayout.observe" in lobby and "DeleteConfirmation" in lobby
+assert "enterWorldPending" in lobby and "ПЕРЕХОД В МИР…" in lobby
+assert 'chosen.deleteConfirmation or "DELETE:UNFINISHED"' in lobby
+assert 'AccountNotReady = "Аккаунт ещё не готов. Попробуйте ещё раз"' in lobby
 assert "IgnoreGuiInset = true" in lobby and "Size = UDim2.fromScale(1, 1)" in lobby
 assert "geometryChanged" in lobby and "previousViewport" in lobby
 assert "LastInputTypeChanged" in read("src/client/ui/ResponsiveLayout.luau")

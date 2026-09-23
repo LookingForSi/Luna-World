@@ -38,7 +38,7 @@ assert "self.gate:destroy()" in application
 assert "local lobbyStopped, lobbyStopError = pcall" in application
 assert "if nextState == self.state" in application
 
-assert "onEnterWorld(chosen.characterId)" in controller
+assert "onEnterWorld(characterId)" in controller and "enterWorldPending" in controller
 assert "resultConnection:Disconnect()" in controller
 assert "accountReadyConnection:Disconnect()" in controller
 assert 'selectCharacter(characterId)' in local_transition
