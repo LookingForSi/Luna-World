@@ -7,15 +7,15 @@ progression = (ROOT / "src/server/services/ProgressionService.luau").read_text(e
 combat = (ROOT / "src/server/features/combat/CombatCoordinator.luau").read_text(encoding="utf-8")
 
 for token in (
-    "local CombatService = require(script.Parent.CombatService)",
+    "local CombatCoordinator = require(script.Parent.Parent.features.combat.CombatCoordinator)",
     "levelsGained = result.levelsGained",
     "if levelsGained > 0 then",
-    "CombatService.restorePlayerVitalsAfterLevelUp(player)",
+    "CombatCoordinator.restorePlayerVitalsAfterLevelUp(player)",
 ):
     if token not in progression:
         raise AssertionError(f"level-up trigger contract missing: {token}")
 
-if progression.count("CombatService.restorePlayerVitalsAfterLevelUp(player)") != 2:
+if progression.count("CombatCoordinator.restorePlayerVitalsAfterLevelUp(player)") != 2:
     raise AssertionError("level-up refill must be wired for real XP gain and Studio upward level changes only")
 
 for token in (
