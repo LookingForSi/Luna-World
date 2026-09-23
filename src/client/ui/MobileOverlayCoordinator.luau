@@ -11,12 +11,6 @@ local childAddedConnection: RBXScriptConnection? = nil
 local touchConnection: RBXScriptConnection? = nil
 
 
-local function workspaceDepth(): number
-	local depth = 0
-	for _ in openWorkspaces do depth += 1 end
-	return depth
-end
-
 local refresh: () -> ()
 
 refresh = function(): ()
@@ -65,10 +59,6 @@ end
 function MobileOverlayCoordinator.reset(): ()
 	table.clear(openWorkspaces)
 	refresh()
-end
-
-function MobileOverlayCoordinator.getWorkspaceDepth(): number
-	return workspaceDepth()
 end
 
 return MobileOverlayCoordinator
