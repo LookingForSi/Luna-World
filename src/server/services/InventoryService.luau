@@ -14,7 +14,7 @@ local InventoryRules = require(ReplicatedStorage.Shared.inventory.InventoryRules
 local ItemTypes = require(ReplicatedStorage.Shared.types.ItemTypes)
 local PersistenceTypes = require(ReplicatedStorage.Shared.types.PersistenceTypes)
 local PlayerDataService = require(script.Parent.PlayerDataService)
-local CombatService = require(script.Parent.CombatService)
+local CombatCoordinator = require(script.Parent.Parent.features.combat.CombatCoordinator)
 
 local InventoryService = {}
 
@@ -191,7 +191,7 @@ function InventoryService.consume(player: Player, instanceId: string): (boolean,
 		humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + effect.amount)
 		restored = humanoid.Health - before
 	elseif effect.kind == "RestoreResource" then
-		restored = CombatService.restorePlayerResource(player, effect.amount)
+		restored = CombatCoordinator.restorePlayerResource(player, effect.amount)
 	elseif effect.kind == "ReturnToSettlement" then
 		if character == nil or character.Parent == nil or humanoid.Health <= 0 or returnAnchor == nil or returnAnchor.Parent == nil then
 			InventoryService.grantItem(player, record.ItemId, 1)
