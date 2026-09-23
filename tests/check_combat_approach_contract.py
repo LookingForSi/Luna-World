@@ -38,7 +38,7 @@ if 'OutOfRange = "цель слишком далеко"' not in log_rules:
 if 'Enum.UserInputType.MouseButton2' not in target or 'TargetController.clearTarget()' not in target:
     raise AssertionError("right mouse must clear target on desktop")
 
-if 'CombatService.selectAttackerIfNoTarget(target, mob)' not in mob_abilities:
+if 'CombatCoordinator.selectAttackerIfNoTarget(target, mob)' not in mob_abilities:
     raise AssertionError("incoming hostile mob damage must auto-select the attacker")
 
 for token in (
