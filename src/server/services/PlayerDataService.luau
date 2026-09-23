@@ -315,6 +315,41 @@ function PlayerDataService.mutateAccount(
 	end
 	return true, nil
 end
+
+function PlayerDataService.mutateAccountAndSave(
+	player: Player,
+	callback: (PersistenceTypes.AccountProfile) -> ()
+): (boolean, string?)
+	local s, activeStore = sessions[player], store
+	if s == nil or s.account == nil or activeStore == nil or not PlayerDataTransferRules.canMutate(s.state) then
+		return false, "AccountNotReady"
+	end
+
+	local before = AccountSchema.clone(s.account)
+	local ok = pcall(callback, s.account)
+	local valid, reason = AccountSchema.validateCurrent(s.account)
+	if not ok or not valid then
+		s.account = before
+		return false, if not ok then "MutationFailed" else reason
+	end
+
+	s.operationId += 1
+	local operationId = s.operationId
+	local account = AccountSchema.clone(s.account)
+	local result = activeStore:save(player.UserId, s.token, account, os.time())
+
+	if sessions[player] ~= s or not PlayerDataTransferRules.isCurrentOperation(s.operationId, operationId) then
+		return false, "SessionChanged"
+	end
+
+	if not result.ok then
+		s.account = before
+		warn("Account transactional save failed for " .. player.Name .. ": " .. result.reason)
+		return false, result.reason or "StoreError"
+	end
+
+	return true, nil
+end
 function PlayerDataService.selectCharacter(player: Player, characterId: string): (boolean, string?)
 	local s = sessions[player]
 	if s == nil or s.account == nil or s.state ~= "AccountReady" then
