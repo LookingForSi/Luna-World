@@ -16,6 +16,7 @@ local onEnterWorld: ((string) -> ())?
 local layoutMetrics: ResponsiveLayout.Metrics?
 local lastLayoutMode: ResponsiveLayout.Mode?
 local lastViewport: Vector2?
+local enterWorldPending = false
 local result = ReplicatedStorage.Remotes.CharacterResult
 local request = ReplicatedStorage.Remotes.CharacterRequest
 local palette = {
@@ -109,7 +110,10 @@ local function friendlyReason(reason: any): string
 		NicknameTaken = "Это имя уже занято",
 		Filtered = "Имя не прошло фильтрацию Roblox",
 		SlotLimit = "Все слоты персонажей заняты",
-		StoreError = "Сервис имён временно недоступен",
+		StoreError = "Не удалось сохранить данные. Попробуйте ещё раз",
+		AccountNotReady = "Аккаунт ещё не готов. Попробуйте ещё раз",
+		TransferInProgress = "Переход в мир уже выполняется",
+		CharacterNotOwned = "Персонаж больше недоступен. Обновите список",
 	}
 	return map[tostring(reason)] or tostring(reason)
 end
@@ -410,19 +414,24 @@ local function render()
 		Size = if smallTouch then UDim2.new(1, -28, 0, 40) else UDim2.new(1, -48, 0, 54),
 		BackgroundColor3 = palette.accentBright,
 		TextColor3 = palette.bg,
-		Text = if chosen and chosen.needsIdentity
+		Text = if enterWorldPending
+			then "ПЕРЕХОД В МИР…"
+			elseif chosen and chosen.needsIdentity
 			then "ЗАВЕРШИТЬ СОЗДАНИЕ"
 			else "ВОЙТИ В МИР",
 		TextSize = 18,
 		Font = Enum.Font.GothamBold,
-		Active = chosen ~= nil,
+		Active = chosen ~= nil and not enterWorldPending,
 		AutoButtonColor = false,
 	})
 	rounded(play, 9)
 	outlined(play, if chosen then palette.accentBright else palette.line, if chosen then 0 else 0.3)
-	play.BackgroundColor3 = if chosen then palette.accent else palette.panelSoft
-	play.TextColor3 = if chosen then palette.text else palette.muted
+	play.BackgroundColor3 = if chosen and not enterWorldPending then palette.accent else palette.panelSoft
+	play.TextColor3 = if chosen and not enterWorldPending then palette.text else palette.muted
 	play.Activated:Connect(function()
+		if enterWorldPending then
+			return
+		end
 		if chosen and chosen.needsIdentity then
 			local name = new(
 				"TextBox",
@@ -477,10 +486,13 @@ local function render()
 				)
 			end)
 		elseif chosen then
+			local characterId = chosen.characterId
+			enterWorldPending = true
+			render()
 			if onEnterWorld ~= nil then
-				onEnterWorld(chosen.characterId)
+				onEnterWorld(characterId)
 			else
-				send("Select", { characterId = chosen.characterId })
+				send("Select", { characterId = characterId })
 			end
 		end
 	end)
@@ -508,9 +520,11 @@ local function render()
 			})
 			dialog:SetAttribute("MobileSurface", "CompactDialog")
 			stylePanel(dialog, 12)
+			local deleteName = chosen.nickname or "незавершённого персонажа"
+			local deleteConfirmation = chosen.deleteConfirmation or "DELETE:UNFINISHED"
 			new("TextLabel", dialog, {
 				BackgroundTransparency = 1, Position = UDim2.fromOffset(16, 10), Size = UDim2.new(1, -56, 0, 34),
-				Text = "Удалить " .. tostring(chosen.nickname) .. "?", TextColor3 = palette.text, Font = Enum.Font.GothamBold,
+				Text = "Удалить " .. deleteName .. "?", TextColor3 = palette.text, Font = Enum.Font.GothamBold,
 				TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22,
 			})
 			local cancel = new("TextButton", dialog, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(34, 34), Text = "×", TextSize = 20, ZIndex = 22 })
@@ -519,7 +533,7 @@ local function render()
 				Name = "DeleteConfirmation",
 				Position = UDim2.fromOffset(16, 52),
 				Size = UDim2.new(1, -32, 0, 42),
-				PlaceholderText = "Введите DELETE:" .. tostring(chosen.nickname),
+				PlaceholderText = "Введите " .. deleteConfirmation,
 				Text = "",
 				TextSize = 14,
 				ZIndex = 22,
@@ -566,6 +580,7 @@ function CharacterLobbyController.start(options: StartOptions?): ()
 	if screen then
 		return
 	end
+	enterWorldPending = false
 	onEnterWorld = if options ~= nil then options.onEnterWorld else nil
 	screen = new(
 		"ScreenGui",
@@ -605,6 +620,10 @@ function CharacterLobbyController.start(options: StartOptions?): ()
 			return
 		end
 		pending[p.requestId] = nil
+		if p.action == "Select" and not p.ok then
+			enterWorldPending = false
+			render()
+		end
 		if p.action == "CheckNickname" then
 			local rootNow = screen and screen:FindFirstChild("LobbyRoot")
 			local modal = rootNow and rootNow:FindFirstChild("CreationModal")
@@ -669,6 +688,7 @@ function CharacterLobbyController.stop(): ()
 	lastLayoutMode = nil
 	lastViewport = nil
 	onEnterWorld = nil
+	enterWorldPending = false
 	table.clear(pending)
 end
 return CharacterLobbyController
