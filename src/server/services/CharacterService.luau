@@ -52,6 +52,14 @@ local function displayNickname(raw: unknown): (string?, string?)
 	return NicknameRules.display(raw), nil
 end
 
+local function deleteConfirmation(character: any): string
+	local nickname = character.Nickname
+	if typeof(nickname) == "string" and nickname ~= "" then
+		return CharacterConfig.DeleteConfirmationPrefix .. nickname
+	end
+	return CharacterConfig.DeleteConfirmationPrefix .. "UNFINISHED"
+end
+
 local function allowed(player: Player): boolean
 	local now = os.clock()
 	local state = rate[player]
@@ -82,6 +90,7 @@ local function roster(player: Player): any
 			lastPlayedAt = c.LastPlayedAt,
 			lastZoneId = c.LastZoneId,
 			needsIdentity = c.NeedsIdentity,
+			deleteConfirmation = deleteConfirmation(c),
 			equipment = { Weapon = c.Equipment.Weapon, Head = c.Equipment.Head, Chest = c.Equipment.Chest },
 		})
 	end
@@ -319,12 +328,15 @@ function CharacterService.start(storeOverride: any?): ()
 					response(result, player, id, action, false, "CharacterNotOwned")
 					return
 				end
-				if p.confirmation ~= CharacterConfig.DeleteConfirmationPrefix .. tostring(c.Nickname) then
+				if p.confirmation ~= deleteConfirmation(c) then
 					response(result, player, id, action, false, "ConfirmationMismatch")
 					return
 				end
-				local canonical = normalizeNickname(c.Nickname)
-				local ok, why = PlayerDataService.mutateAccount(player, function(value)
+				local canonical = nil
+				if typeof(c.Nickname) == "string" and c.Nickname ~= "" then
+					canonical = normalizeNickname(c.Nickname)
+				end
+				local ok, why = PlayerDataService.mutateAccountAndSave(player, function(value)
 					value.Characters[p.characterId] = nil
 					local i = table.find(value.CharacterOrder, p.characterId)
 					if i then
@@ -335,16 +347,21 @@ function CharacterService.start(storeOverride: any?): ()
 					end
 				end)
 				if not ok then
-					response(result, player, id, action, false, why)
+					response(result, player, id, action, false, why or "StoreError")
 					return
 				end
-				if not PlayerDataService.saveNow(player) then
-					response(result, player, id, action, false, "StoreError")
-					return
+				if canonical ~= nil then
+					local released, releaseReason =
+						nicknameStore:release(canonical, { userId = player.UserId, characterId = p.characterId })
+					if not released then
+						warn(string.format(
+							"Character %s deleted but nickname cleanup failed: %s",
+							p.characterId,
+							tostring(releaseReason)
+						))
+					end
 				end
-				local released, releaseReason =
-					nicknameStore:release(canonical, { userId = player.UserId, characterId = p.characterId })
-				response(result, player, id, action, released, releaseReason, roster(player))
+				response(result, player, id, action, true, nil, roster(player))
 				return
 			end
 			response(result, player, id, tostring(action), false, "UnknownAction")
