@@ -10,12 +10,17 @@ At the start of a new worktree / feature branch, or after a context reset, read:
 2. `docs/PRODUCT_VISION.md`
 3. `docs/GAME_DESIGN_V0.1.md`
 4. `docs/ARCHITECTURE.md`
-5. `docs/DEVELOPMENT_RULES.md`
-6. `docs/REFACTORING_POLICY.md`
-7. `docs/TESTING_STRATEGY.md`
-8. `docs/VERSIONING.md`
+5. `docs/ROADMAP.md`
+6. `docs/DEVELOPMENT_RULES.md`
+7. `docs/REFACTORING_POLICY.md`
+8. `docs/TESTING_STRATEGY.md`
+9. `docs/VERSIONING.md`
 
 Then read the active specification / implementation plan for the task, if one exists.
+
+For Place topology, publishing, teleport, or Moonfall authoring tasks, also read `docs/MULTI_PLACE_DEPLOYMENT.md` and, when world baking is involved, `tools/worldgen/README.md`.
+
+Files under `docs/superpowers/` and older `docs/releases/` entries are historical design/implementation records. They do not override current standing docs, current code/contracts, or the active release gate.
 
 Within the same uninterrupted implementation batch, do not repeatedly re-read unchanged standing documents just to satisfy process. Re-open only the documents or sections that are relevant to the current task, changed since the previous read, or are needed to resolve an ambiguity.
 
@@ -132,6 +137,24 @@ Examples currently out of scope:
 The narrow village economy approved for v0.1 (merchant buy/sell, materials, No-Grade blacksmith crafting without recipe items, consumables and return scroll) is explicitly in scope.
 
 When a requested change implies one of these systems, call it out instead of silently expanding the project.
+
+## 9.1 Current architecture baseline
+
+The accepted application topology is:
+
+`Lobby Place → Moonfall World Place → separate future Dungeon/Region Places`.
+
+Studio development keeps an explicit `DevCombined` role. Production must never infer or fall back to `DevCombined`; unknown universe/place mappings fail closed.
+
+Canonical ownership after Gates A–F3:
+
+- Lobby / Quest / Economy / Inventory client code lives under `src/client/features`;
+- authoritative combat orchestration lives under `src/server/features/combat`;
+- production Moonfall does not include runtime worldgen;
+- `tools/worldgen` is dev/authoring tooling only;
+- obsolete pre-feature compatibility facades must not be reintroduced.
+
+Game version comes from root `VERSION` and runtime metadata from `src/shared/config/BuildInfo.luau`; their synchronization is test-enforced. Persistent `DataVersion` is separate.
 
 ## 10. Language and code style
 
