@@ -13,6 +13,7 @@ def read(path: str) -> str:
 place_role = read("src/shared/core/runtime/PlaceRole.luau")
 place_runtime = read("src/shared/core/runtime/PlaceRuntime.luau")
 place_config = read("src/shared/config/PlaceConfig.luau")
+studio_place_role = read("src/shared/core/runtime/StudioPlaceRole.luau")
 runtime = read("src/shared/core/runtime/RuntimeManifest.luau")
 server_main = read("src/server/main.server.luau")
 client_main = read("src/client/main.client.luau")
@@ -27,6 +28,9 @@ assert "local deployments: { Deployment } = {}" not in place_config
 assert "PlaceRole override is allowed only in Studio" in place_runtime
 assert "No production PlaceRole configured" in place_runtime
 assert "currentRole" not in place_runtime, "PlaceRuntime must stay pure/stateless"
+assert 'FindFirstChild("StudioPlaceRole")' in studio_place_role
+assert 'marker:IsA("StringValue")' in studio_place_role
+assert "PlaceRole.assertValid(marker.Value)" in studio_place_role
 
 assert "for index = #started, 1, -1 do" in runtime
 assert "pcall(component.start)" in runtime
@@ -34,7 +38,8 @@ assert "pcall(component.stop)" in runtime
 assert "Duplicate runtime component" in runtime
 
 for entrypoint in (server_main, client_main):
-    assert "PlaceRuntime.resolve(game.PlaceId, game.GameId" in entrypoint
+    assert "StudioPlaceRole.read(ReplicatedStorage)" in entrypoint
+    assert "PlaceRuntime.resolve(game.PlaceId, game.GameId, isStudio, studioRole)" in entrypoint
 assert "ServerBootstrap.start(manifest)" in server_main
 assert "ClientApplication.new" in client_main
 
@@ -77,4 +82,4 @@ assert "Components.characterLobby()" not in world_client
 assert "Components.characterLobby()" not in dungeon_client
 assert "Components.characterLobby()" in dev_client and "Components.gameplay()" in dev_client
 
-print("Runtime manifest and deployment routing contract: PASS")
+print("Runtime manifest, Studio role, and deployment routing contract: PASS")

@@ -38,6 +38,18 @@ for name in ROLE_PROJECTS:
     data = json.loads((ROOT / "projects" / f"{name}.project.json").read_text())
     assert data["tree"]["ReplicatedStorage"]["Shared"]["$path"] == "../src/shared"
 
+studio_roles = {
+    "dev-combined": "DevCombined",
+    "lobby": "Lobby",
+    "moonfall": "World",
+    "dungeon-selene": "Dungeon",
+}
+for name, expected_role in studio_roles.items():
+    data = json.loads((ROOT / "projects" / f"{name}.project.json").read_text())
+    marker = data["tree"]["ReplicatedStorage"]["StudioPlaceRole"]
+    assert marker["$className"] == "StringValue"
+    assert marker["$properties"]["Value"] == expected_role
+
 lobby_manifest = (ROOT / "src/server/bootstrap/manifests/LobbyServerManifest.luau").read_text()
 assert "Components.character()" in lobby_manifest
 assert "Components.combat()" not in lobby_manifest
@@ -63,4 +75,4 @@ assert "[81197415020315] = PlaceRole.Lobby" in config
 assert "[133570003635782] = PlaceRole.World" in config
 assert "local deployments: { Deployment } = {}" not in config
 assert "StudioDefaultRole = PlaceRole.DevCombined" in config
-print("Place project mappings, role boundaries, and fail-closed test deployment config: PASS")
+print("Place project mappings, Studio roles, role boundaries, and fail-closed test deployment config: PASS")

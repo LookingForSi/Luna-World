@@ -12,7 +12,7 @@ local LocalPlaceTransitionAdapter = require(script.Parent.bootstrap.transport.Lo
 local TeleportTransitionAdapter = require(script.Parent.bootstrap.transport.TeleportTransitionAdapter)
 local ExistingClientComponents = require(script.Parent.bootstrap.adapters.ExistingClientComponents)
 
-local role = PlaceRuntime.resolve(game.PlaceId, game.GameId, RunService:IsStudio(), nil)
+local isStudio = RunService:IsStudio()\nlocal studioRole = if isStudio then StudioPlaceRole.read(ReplicatedStorage) else nil\nlocal role = PlaceRuntime.resolve(game.PlaceId, game.GameId, isStudio, studioRole)
 
 if not PlaceRole.isValid(role) then
 	error(string.format("Unsupported client PlaceRole: %s", tostring(role)))
