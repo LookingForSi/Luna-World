@@ -33,7 +33,7 @@ function Service:_arrive(player: Player): ()
 	local payload = joinData.TeleportData
 	local valid, reason = Rules.validateRouting(payload, self.destinationRole)
 	if not valid then
-		self.data:failSession(player, reason or "InvalidTransferPayload")
+		self.data.failSession(player, reason or "InvalidTransferPayload")
 		self.processing[player] = nil
 		return
 	end
@@ -44,25 +44,25 @@ function Service:_arrive(player: Player): ()
 		entryPointId = payload.entryPointId,
 	})
 	if intent == nil then
-		self.data:failSession(player, consumeReason or "InvalidTransferIntent")
+		self.data.failSession(player, consumeReason or "InvalidTransferIntent")
 		self.processing[player] = nil
 		return
 	end
 	local intentValid, intentReason = Rules.validate(intent, self.clock(), self.destinationRole)
 	if not intentValid or intent.userId ~= player.UserId or intent.characterId ~= payload.characterId then
-		self.data:failSession(player, intentReason or "TransferOwnershipMismatch")
+		self.data.failSession(player, intentReason or "TransferOwnershipMismatch")
 		self.processing[player] = nil
 		return
 	end
-	local selected, selectReason = self.data:selectCharacter(player, intent.characterId)
+	local selected, selectReason = self.data.selectCharacter(player, intent.characterId)
 	if not selected then
-		self.data:failSession(player, selectReason or "CharacterActivationFailed")
+		self.data.failSession(player, selectReason or "CharacterActivationFailed")
 		self.processing[player] = nil
 		return
 	end
-	local confirmed, confirmReason = self.data:confirmArrival(player)
+	local confirmed, confirmReason = self.data.confirmArrival(player)
 	if not confirmed then
-		self.data:failSession(player, confirmReason or "ArrivalConfirmationFailed")
+		self.data.failSession(player, confirmReason or "ArrivalConfirmationFailed")
 	end
 	self.processing[player] = nil
 end
@@ -72,7 +72,7 @@ function Service:start(): ()
 		self:_arrive(player)
 	end))
 	for _, player in Players:GetPlayers() do
-		if self.data:isAccountReady(player) then
+		if self.data.isAccountReady(player) then
 			task.spawn(function() self:_arrive(player) end)
 		end
 	end
