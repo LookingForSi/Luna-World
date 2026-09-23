@@ -245,6 +245,21 @@ function PlayerDataService.prepareTransferCharacter(player: Player, characterId:
 	return true, nil
 end
 
+function PlayerDataService.cancelPreparedTransfer(player: Player, characterId: string): boolean
+	local session = sessions[player]
+	if session == nil
+		or session.account == nil
+		or session.state ~= "CharacterReady"
+		or session.activeCharacterId ~= characterId
+		or session.transferCharacterId ~= nil
+	then
+		return false
+	end
+	session.activeCharacterId = nil
+	setState(player, session, "AccountReady")
+	return true
+end
+
 function PlayerDataService.failSession(player: Player, reason: string): ()
 	local session = sessions[player]
 	if session == nil then return end
