@@ -174,6 +174,9 @@ function CharacterService.start(storeOverride: any?): ()
 					ok, reason = PlayerDataService.prepareTransferCharacter(player, p.characterId)
 					if ok then
 						ok, reason = (transferHandler :: any)(player, p.characterId)
+						if not ok then
+							PlayerDataService.cancelPreparedTransfer(player, p.characterId)
+						end
 					end
 				else
 					ok, reason = PlayerDataService.selectCharacter(player, p.characterId)
