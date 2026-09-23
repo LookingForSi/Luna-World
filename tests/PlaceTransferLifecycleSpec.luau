@@ -37,11 +37,12 @@ return function(TestRunner)
 	TestRunner.run("source orders release, intent, gateway and rejects concurrent entry", function()
 		local Service = require(game:GetService("ServerScriptService").Server.core.transfer.PlaceTransferService)
 		local calls = {}
+		local player = { UserId = 42 }
 		local data = {
-			getActiveCharacterId = function() return "character-1" end,
-			beginTransfer = function() table.insert(calls, "release"); return true end,
-			recoverTransfer = function() table.insert(calls, "recover"); return true end,
-			failSession = function() table.insert(calls, "error") end,
+			getActiveCharacterId = function(receivedPlayer) assert(receivedPlayer == player); return "character-1" end,
+			beginTransfer = function(receivedPlayer) assert(receivedPlayer == player); table.insert(calls, "release"); return true end,
+			recoverTransfer = function(receivedPlayer) assert(receivedPlayer == player); table.insert(calls, "recover"); return true end,
+			failSession = function(receivedPlayer) assert(receivedPlayer == player); table.insert(calls, "error") end,
 		}
 		local intents = {
 			create = function() table.insert(calls, "intent"); return true end,
@@ -50,7 +51,6 @@ return function(TestRunner)
 		local gateway = { teleport = function() table.insert(calls, "teleport"); return true end }
 		local service = Service.new({ playerData = data, intentStore = intents, gateway = gateway, clock = function() return 1 end })
 		service.running = true
-		local player = { UserId = 42 }
 		assert(service:begin(player, "character-1", { placeId = 2, role = "World", entryPointId = "luna_village" }))
 		assert(table.concat(calls, ",") == "release,intent,teleport")
 		local duplicate, reason = service:begin(player, "character-1", { placeId = 2, role = "World", entryPointId = "luna_village" })
@@ -126,9 +126,9 @@ return function(TestRunner)
 		local player = { UserId = 7, GetJoinData = function() return { TeleportData = payload } end }
 		local service = Arrival.new({
 			playerData = {
-				selectCharacter = function(_, _, id) table.insert(calls, "select:" .. id); return true end,
-				confirmArrival = function() table.insert(calls, "confirm"); return true end,
-				failSession = function() table.insert(calls, "fail") end,
+				selectCharacter = function(receivedPlayer, id) assert(receivedPlayer == player); table.insert(calls, "select:" .. id); return true end,
+				confirmArrival = function(receivedPlayer) assert(receivedPlayer == player); table.insert(calls, "confirm"); return true end,
+				failSession = function(receivedPlayer) assert(receivedPlayer == player); table.insert(calls, "fail") end,
 			},
 			intentStore = { consume = function(_, _, expected)
 				assert(expected.userId == 7 and expected.characterId == "c" and expected.entryPointId == "spawn")
@@ -149,7 +149,7 @@ return function(TestRunner)
 			playerData = {
 				selectCharacter = function() error("must not activate") end,
 				confirmArrival = function() error("must not confirm") end,
-				failSession = function() failed = true end,
+				failSession = function(receivedPlayer) assert(receivedPlayer == player); failed = true end,
 			},
 			intentStore = { consume = function() return nil, "Mismatch" end },
 			destinationRole = "World", clock = function() return 10 end,
@@ -195,9 +195,9 @@ return function(TestRunner)
 		local player = { UserId = 7, GetJoinData = function() return { TeleportData = payload } end }
 		local service = Arrival.new({
 			playerData = {
-				selectCharacter = function() return false, "CharacterNotOwned" end,
+				selectCharacter = function(receivedPlayer, id) assert(receivedPlayer == player and id == "missing"); return false, "CharacterNotOwned" end,
 				confirmArrival = function() error("must not confirm") end,
-				failSession = function(_, _, reason) failed = reason == "CharacterNotOwned" end,
+				failSession = function(receivedPlayer, reason) assert(receivedPlayer == player); failed = reason == "CharacterNotOwned" end,
 			},
 			intentStore = { consume = function()
 				return { transferVersion = 1, transferId = "t", userId = 7, characterId = "missing", sourceRole = "Lobby", destinationRole = "World", entryPointId = "spawn", expiresAt = 20 }
