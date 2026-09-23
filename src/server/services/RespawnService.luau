@@ -72,9 +72,9 @@ local function nearestSpawnLocation(origin: Vector3): SpawnLocation?
 end
 
 local function nearestAnchor(origin: Vector3): BasePart?
-	-- Production worlds should provide explicit settlement/teleport anchors. A SpawnLocation
-	-- is a compatibility fallback for the current playground and protects Reset Character
-	-- from leaving a player permanently dead before the world branch is integrated.
+	-- Production worlds should provide explicit settlement/teleport anchors. SpawnLocation
+	-- remains a development/test fallback and protects Reset Character if authored anchors
+	-- are temporarily unavailable.
 	return nearestRegisteredAnchor(origin) or nearestSpawnLocation(origin)
 end
 
@@ -153,8 +153,8 @@ local function addPlayer(player: Player): ()
 	setPending(player, false)
 	record.characterConnection = player.CharacterAdded:Connect(function(character) bindCharacter(player, character) end)
 	-- Character Lobby owns the first spawn. Before CharacterReady there must be
-	-- no compatibility LoadCharacter() here, otherwise the default knight can
-	-- appear before the selected profile identity is projected.
+	-- no LoadCharacter() here, otherwise a default avatar can appear before the
+	-- selected profile identity is projected.
 	if player.Character ~= nil then
 		bindCharacter(player, player.Character)
 	end
