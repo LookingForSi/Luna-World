@@ -35,7 +35,8 @@ for token in (
     "function CharacterLobbyController.stop",
     "DeleteConfirmation",
     "CreationModal",
-    "onEnterWorld(chosen.characterId)",
+    "onEnterWorld(characterId)",
+    "enterWorldPending",
 ):
     assert token in lobby_feature, f"feature-owned Lobby implementation missing {token}"
 
