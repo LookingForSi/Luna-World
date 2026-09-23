@@ -10,30 +10,9 @@ local ResponsiveUiController = {}
 local stopObserving: (() -> ())? = nil
 local descendantConnection: RBXScriptConnection? = nil
 
-local DESKTOP_MODAL_SIZES = {
-	InventoryPanel = Vector2.new(720, 500),
-	EconomyPanel = Vector2.new(680, 500),
-	QuestOffer = Vector2.new(560, 360),
-	TravelConfirm = Vector2.new(520, 250),
-	RespawnDialog = Vector2.new(430, 170),
-}
-
 local function frame(gui: Instance, name: string): Frame?
 	local value = gui:FindFirstChild(name, true)
 	return if value ~= nil and value:IsA("Frame") then value else nil
-end
-
-local function setModal(panel: Frame?, metrics: ResponsiveLayout.Metrics, desktopSize: Vector2): ()
-	if panel == nil then return end
-	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	panel.Position = UDim2.fromScale(0.5, 0.5)
-	local size = ResponsiveLayout.modalSize(metrics, desktopSize)
-	panel.Size = UDim2.fromOffset(size.X, size.Y)
-	for _, child in panel:GetChildren() do
-		if child:IsA("UISizeConstraint") then
-			child.Enabled = metrics.mode == "Desktop"
-		end
-	end
 end
 
 local function applyHud(playerGui: PlayerGui, metrics: ResponsiveLayout.Metrics): ()
