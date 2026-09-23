@@ -90,14 +90,14 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 	then
 		return false, "InvalidDestination"
 	end
-	if self.data:getActiveCharacterId(player) ~= characterId then
+	if self.data.getActiveCharacterId(player) ~= characterId then
 		return false, "CharacterNotOwnedOrActive"
 	end
 
 	local transferId = HttpService:GenerateGUID(false)
 	self.pending[player] = transferId
 
-	local released, releaseReason = self.data:beginTransfer(player)
+	local released, releaseReason = self.data.beginTransfer(player)
 	if not released then
 		self.pending[player] = nil
 		return false, releaseReason
@@ -105,7 +105,7 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 
 	if self.pending[player] ~= transferId or not self.running or player.Parent ~= Players then
 		if player.Parent == Players then
-			self.data:recoverTransfer(player)
+			self.data.recoverTransfer(player)
 		end
 		self.pending[player] = nil
 		return false, "TransferCancelled"
@@ -123,7 +123,7 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 	}
 	local made, makeReason = self.intents:create(intent, self.ttl)
 	if not made then
-		local recovered, recoveryReason = self.data:recoverTransfer(player)
+		local recovered, recoveryReason = self.data.recoverTransfer(player)
 		self.pending[player] = nil
 		return false, if recovered then makeReason else recoveryReason
 	end
@@ -131,7 +131,7 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 	if self.pending[player] ~= transferId or not self.running or player.Parent ~= Players then
 		local removed = self.intents:remove(transferId)
 		if removed and player.Parent == Players then
-			self.data:recoverTransfer(player)
+			self.data.recoverTransfer(player)
 		end
 		self.pending[player] = nil
 		return false, "TransferCancelled"
@@ -152,9 +152,9 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 		self.teleportProtected[player] = nil
 		local removed, removeReason = self.intents:remove(transferId)
 		if removed then
-			self.data:recoverTransfer(player)
+			self.data.recoverTransfer(player)
 		else
-			self.data:failSession(player, removeReason or "IntentCleanupFailed")
+			self.data.failSession(player, removeReason or "IntentCleanupFailed")
 		end
 		self.pending[player] = nil
 		return false, removeReason or sendReason
@@ -174,12 +174,12 @@ function Service:recover(player: Player, _reason: string?): (boolean, string?)
 
 	local removed, removeReason = self.intents:remove(transferId)
 	if not removed then
-		self.data:failSession(player, removeReason or "IntentCleanupFailed")
+		self.data.failSession(player, removeReason or "IntentCleanupFailed")
 		self.pending[player] = nil
 		return false, removeReason
 	end
 
-	local ok, reason = self.data:recoverTransfer(player)
+	local ok, reason = self.data.recoverTransfer(player)
 	self.pending[player] = nil
 	if self.onRecovery ~= nil then
 		self.onRecovery(player, if ok then (_reason or "TransferRecovered") else (reason or "TransferRecoveryFailed"))
