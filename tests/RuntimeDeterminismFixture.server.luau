@@ -8,7 +8,7 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
-local CombatService = require(ServerScriptService.Server.services.CombatService)
+local CombatCoordinator = require(ServerScriptService.Server.features.combat.CombatCoordinator)
 
 local FAST_TEST_RESPAWN_SECONDS = 1
 
@@ -98,7 +98,7 @@ RunService.Heartbeat:Connect(function()
 		elseif current > 0 then
 			-- SetResourceEmpty is testing insufficient-resource rejection, not regeneration.
 			-- Hold the authoritative test seam at zero until SetResourceFull restores max.
-			CombatService._setResourceForTest(player, 0)
+			CombatCoordinator._setResourceForTest(player, 0)
 		end
 	end
 end)

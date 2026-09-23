@@ -37,7 +37,7 @@ for token in ('"xp"', '"luna"', '"loot_item"', '"loot_item_full"'):
 for token in (
     "function InventoryService.consume",
     "InventoryRules.discard",
-    "CombatService.restorePlayerResource",
+    "CombatCoordinator.restorePlayerResource",
     "humanoid.Health",
 ):
     if token not in INVENTORY:

@@ -159,7 +159,8 @@ Milestone не принимается только по визуальному �
 - multiplayer test `1 server + 2 clients` — pass;
 - негативные remote cases для новых network endpoints — проверены;
 - persistence migration tests — pass, если schema затронута;
-- known issues задокументированы.
+- known issues задокументированы;
+- для изменений production Place topology/transfer — опубликованный клиент проверяет реальный teleport между соответствующими Places; обычный Studio Play не засчитывается как доказательство TeleportService flow.
 
 ## 8. Performance checks
 
@@ -176,6 +177,12 @@ Milestone не принимается только по визуальному �
 
 ## 9. Test framework
 
-Конкретный Luau test runner выбирается на этапе implementation plan. Выбор не должен менять требования этой стратегии.
+Текущий контур состоит из:
+
+- Luau specs в `tests/*.luau` и `tests/client|world` с repository-local `TestRunner`;
+- Python contract/regression checks `tests/check_*.py`;
+- canonical Rojo builds для default/test/world и role-specific project mappings;
+- GitHub Architecture CI как обязательный автоматический gate для PR;
+- Roblox Studio/runtime acceptance для поведения, которое нельзя доказать статически.
 
 Tests хранятся в Git и должны быть воспроизводимы другим разработчиком/агентом без ручного редактирования исходного кода.

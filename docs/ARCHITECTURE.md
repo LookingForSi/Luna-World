@@ -1,349 +1,290 @@
 # Luna World — Architecture
 
-## 1. Цель архитектуры
+## 1. Текущий architectural baseline
 
-Архитектура v0.1 должна поддерживать vertical slice без преждевременного усложнения, но не создавать тупиков для multiplayer, persistence и дальнейшего роста.
+Архитектура `0.1.0-alpha.1` построена вокруг server-authoritative gameplay и multi-place Experience.
 
-Главный принцип: **server authoritative gameplay**.
-
-## 2. Toolchain
-
-Рабочий контур:
-
-- Roblox Studio — world authoring, runtime, multiplayer testing;
-- Luau — игровой код;
-- Git / GitHub — source of truth для кода и документации;
-- VS Code — основной редактор исходников;
-- Rokit — версии dev-tools;
-- Rojo — синхронизация файловой структуры с Roblox Studio;
-- Luau Language Server — типы, diagnostics, navigation.
-
-## 3. Планируемая файловая структура
+Production topology:
 
 ```text
-Luna-World/
-├─ src/
-│  ├─ client/
-│  │  ├─ controllers/
-│  │  └─ ui/
-│  ├─ server/
-│  │  ├─ services/
-│  │  └─ systems/
-│  └─ shared/
-│     ├─ config/
-│     ├─ definitions/
-│     ├─ types/
-│     └─ util/
-├─ tests/
-├─ docs/
-├─ default.project.json
-├─ rokit.toml
-├─ README.md
-└─ AGENTS.md
+Luna Experience
+├─ Lobby [Start Place]
+│    └─ server-authoritative transfer
+├─ Moonfall World
+│    └─ future region/dungeon transitions
+└─ Ruins of Selene [reserved Dungeon Place]
 ```
 
-Фактическая детализация каталогов создаётся по мере появления кода. Пустые абстрактные слои заранее не добавляются.
-
-## 4. Rojo mapping
-
-Предполагаемая логика:
+Development topology:
 
 ```text
-src/shared  -> ReplicatedStorage/Shared
-src/server  -> ServerScriptService/Server
-src/client  -> StarterPlayer/StarterPlayerScripts/Client
+DevCombined
+= Lobby + Moonfall gameplay + local transition adapter + dev-only worldgen
 ```
 
-UI может быть организован через Rojo отдельно после выбора конкретного подхода.
+`DevCombined` существует только для Studio/development. Неизвестный production `GameId/PlaceId` fail-closed и не получает DevCombined fallback.
 
-## 5. Что является source of truth
+## 2. Source of truth
 
-### В Git
+### Git
 
-- Luau-код;
-- конфигурация;
-- definitions;
-- тесты;
-- документация;
-- toolchain config;
-- Rojo mapping.
+Authoritative для:
 
-### В Roblox Studio
+- Luau source;
+- shared definitions/config;
+- tests;
+- persistence schema/migrations;
+- runtime manifests;
+- Rojo mappings;
+- world layout contracts;
+- worldgen/authoring tooling;
+- документации.
 
-На ранней стадии v0.1 допускается authoring:
+### Roblox Place
+
+Authoritative только для сохранённого authored environment, который по природе является Studio asset state:
 
 - Terrain;
-- world geometry;
+- static world geometry;
 - Lighting;
-- placement environment assets;
-- animation / asset references;
-- scene composition.
+- asset/animation references и composition.
 
-Не следует поддерживать две независимые версии одного script одновременно в Studio и Git. Rojo-managed source в Git является authoritative.
+Rojo-managed scripts не редактируются как независимая копия внутри Studio.
 
-## 6. Основные подсистемы v0.1
-
-### Shared definitions
-
-Данные, которые допустимо видеть клиенту:
-
-- item definitions;
-- mob presentation definitions;
-- skill presentation/config subset;
-- quest display definitions;
-- class display definitions;
-- shared types.
-
-Секретная или exploitable серверная логика не должна попадать сюда без необходимости.
-
-### PlayerDataService
-
-Ответственность:
-
-- загрузка профиля;
-- default schema;
-- DataVersion;
-- migrations;
-- безопасное сохранение;
-- session lifecycle.
-
-Не должен содержать combat/business logic других систем.
-
-### CombatService
-
-Ответственность:
-
-- target/action validation;
-- skill eligibility;
-- range checks;
-- cooldowns;
-- damage/healing calculation;
-- death notification.
-
-CombatService не выдаёт loot напрямую — он сообщает о валидном результате соответствующим системам.
-
-### MobService / AI system
-
-Ответственность:
-
-- spawn/respawn;
-- state machine;
-- aggro;
-- chase/leash;
-- attacks;
-- death lifecycle.
-
-### ProgressionService
-
-Ответственность:
-
-- XP;
-- level-up;
-- stat progression;
-- skill unlock conditions.
-
-### InventoryService
-
-Ответственность:
-
-- add/remove items;
-- stack rules;
-- capacity;
-- equip/unequip validation;
-- item ownership.
-
-### LootService
-
-Ответственность:
-
-- loot tables;
-- server-side rolls;
-- reward creation;
-- eligibility.
-
-### QuestService
-
-Ответственность:
-
-- quest state;
-- objective credit;
-- completion validation;
-- rewards through authoritative services.
-
-### PartyService
-
-Ответственность:
-
-- invite/accept/leave;
-- party membership;
-- eligibility helpers for shared XP/credit.
-
-### DungeonService
-
-Ответственность:
-
-- dungeon session lifecycle;
-- party entry;
-- encounter state;
-- completion/reward eligibility.
-
-Не проектировать общий MMO orchestration layer до реальной необходимости.
-
-## 7. Client responsibilities
-
-Клиент отвечает за:
-
-- input;
-- camera;
-- target selection intent;
-- HUD;
-- inventory/character presentation;
-- local animation/FX feedback;
-- отправку action requests;
-- отображение подтверждённого сервером состояния.
-
-Клиент не определяет authoritative damage, XP, loot, currency или quest completion.
-
-## 8. Remote contract
-
-Каждый remote request должен иметь:
-
-- минимальный набор аргументов;
-- server-side type/shape validation;
-- ownership / eligibility validation;
-- range/state validation, если применимо;
-- rate limiting или anti-spam protection там, где это необходимо.
-
-Предпочтительно отправлять intent, а не готовый результат.
-
-Плохо:
+## 3. Фактическая структура
 
 ```text
-DealDamage(targetId, 5000)
+src/
+├─ client/
+│  ├─ bootstrap/          # application/runtime lifecycle
+│  ├─ controllers/        # cross-feature input/presentation controllers
+│  ├─ features/
+│  │  ├─ lobby/
+│  │  ├─ quests/
+│  │  ├─ economy/
+│  │  └─ inventory/
+│  └─ ui/                 # shared/gameplay HUD primitives
+├─ server/
+│  ├─ bootstrap/          # role-specific manifests
+│  ├─ core/transfer/      # cross-Place handoff
+│  ├─ features/
+│  │  ├─ combat/
+│  │  └─ world/
+│  └─ services/           # bounded gameplay/domain services
+└─ shared/
+   ├─ config/
+   ├─ core/
+   ├─ definitions/
+   ├─ persistence/
+   ├─ combat/
+   ├─ economy/
+   ├─ inventory/
+   ├─ loot/
+   ├─ progression/
+   ├─ quests/
+   ├─ travel/
+   ├─ types/
+   └─ world/
+
+projects/
+├─ dev-combined.project.json
+├─ lobby.project.json
+├─ moonfall.project.json
+├─ moonfall-authoring.project.json
+└─ dungeon-selene.project.json
+
+tools/worldgen/              # dev/authoring only
 ```
 
-Лучше:
+Compatibility facades от pre-Gate-F путей удалены после alpha stabilization. Bootstrap должен импортировать feature-owned modules напрямую.
 
-```text
-UseSkill(skillId, targetId)
-```
+## 4. Runtime roles и bootstrap
 
-Сервер сам вычисляет результат.
+`PlaceRuntime` определяет одну из ролей:
 
-## 9. IDs и definitions
+- `Lobby`;
+- `World`;
+- `Dungeon`;
+- `DevCombined` — только explicit Studio path.
 
-Persistent entities используют стабильные IDs, например:
+Server/client entrypoints выбирают role-specific `RuntimeManifest`. Manifest отвечает за ordered startup, rollback при частичном failure и reverse cleanup.
 
-```text
-weapon_rusty_sword
-mob_grey_wolf
-skill_knight_power_strike
-quest_valley_wolves_01
-```
+Production role определяется только deployment mapping из `PlaceConfig`. Неизвестный universe/place является ошибкой.
 
-DisplayName не является persistent identifier.
+## 5. Client application lifecycle
 
-## 10. Persistence schema
+Клиент использует состояния:
 
-Пример концептуальной структуры:
+`Boot → Lobby → Transitioning → Gameplay`
 
-```text
-PlayerData
-├─ DataVersion
-├─ Archetype
-├─ Level
-├─ XP
-├─ Currency
-├─ Inventory
-├─ Equipment
-├─ Skills
-└─ Quests
-```
+и terminal/error состояния:
 
-Реальная Luau schema определяется при реализации persistence milestone.
+- `Error`;
+- `Disconnected`.
 
-## 11. Ошибки и восстановление
+`LobbyClientRuntime` и `GameplayClientRuntime` разделены. Gameplay не запускается до authoritative readiness.
 
-Gameplay request с некорректными данными:
+Для DevCombined используется `LocalPlaceTransitionAdapter`; production использует teleport boundary, но domain contract CharacterId/readiness остаётся тем же.
 
-- не должен падать весь server script;
-- отклоняется сервером;
-- логируется при необходимости;
-- не изменяет authoritative state.
+## 6. Account, Character и persistence
 
-Persistence failure:
+Persistent schema: `DataVersion = 3`.
 
-- нельзя молча заменять существующий профиль пустым;
-- ошибка должна быть различима от «новый игрок»;
-- destructive fallback без явной стратегии запрещён.
+Модель:
 
-## 12. Производительность
+`Account → up to 5 Characters → Active Character`.
 
-v0.1 проектируется для небольшого server population и ограниченного контента, но базовые правила действуют сразу:
+Рубежы:
 
-- избегать per-frame server loops без необходимости;
-- не сканировать весь Workspace для каждого combat action;
-- не создавать бесконтрольные connections/tasks;
-- cleanup должен быть частью lifecycle объектов;
-- AI tick frequency должна соответствовать задаче, а не обязательно Heartbeat.
+- `AccountReady` — roster/lobby API;
+- `CharacterReady` — выбран и активирован принадлежащий аккаунту Character;
+- legacy `ProfileReady` означает `CharacterReady`.
 
-Конкретные performance budgets вводятся после появления репрезентативного vertical slice.
+Каждый Character владеет своими progression, Luna, inventory, equipment и quest state.
 
-## 13. YAGNI
+Migration `v2 → v3` сохраняет прежний профиль в legacy Character и не должна терять progression.
 
-Не добавлять заранее:
+Game release version и persistent `DataVersion` независимы.
 
-- microservices;
-- внешний backend;
-- PostgreSQL;
-- Redis;
-- custom auth;
-- cross-game economy;
-- generic ECS/framework только ради архитектурной красоты.
+## 7. Place transfer
 
-Roblox platform services используются до тех пор, пока реальное ограничение не требует внешней системы.
+Lobby → World — server-authoritative lifecycle:
 
-## 14. Деревенская экономика v0.1
+1. validate selection/concurrency;
+2. freeze gameplay mutations;
+3. save/release source profile lease;
+4. create one-shot transfer intent в `MemoryStoreService`;
+5. вызвать teleport;
+6. destination валидирует routing metadata;
+7. claim authoritative profile;
+8. atomарно consume transfer intent;
+9. проверить ownership/destination/entry point;
+10. активировать Character и readiness.
 
-`CraftingDefinitions`, `MerchantDefinitions` и `ItemDefinitions` являются единственным shared источником рецептов, stock, grade и reference retail. `EconomyRules` выполняет чистые clone-based buy/sell/craft переходы, а `EconomyService` применяет готовый результат одной validated mutation профиля. Клиент никогда не передаёт цену, fee, состав рецепта или output.
+`TeleportData` содержит только routing/correlation metadata. Inventory, Luna, XP, equipment, quests и иное authoritative state через него не передаются.
 
-Рецепт дополнительно задаёт stable `id`, дисциплину (`Knight`, `Ranger`, `Mystic`, `Material`), требуемый уровень, количество результата и стабильный порядок. `EconomyRules` проверяет уровень, Luna и материалы на сервере и атомарно выдаёт `outputQuantity`; snapshot передаёт эти metadata клиенту. Обработанные материалы и готовые No-Grade классовые наборы исключены из обычного stock торговца: их основной источник — кузнец.
+Failure paths обязаны cleanup/recover lease/intent безопасно и не позволять старой session перезаписать новую ownership.
 
-`EconomyNetworkService` владеет schema/rate/profile/distance validation для `EconomyRequest`; `EconomyWorldService` владеет только lifecycle village prompts. `InventoryService` обрабатывает data-driven return effect через тот же tagged settlement anchor, что и respawn.
+## 8. Server-authoritative gameplay
 
-## 15. Quest vertical slice dev0.2
+Клиент отправляет intent. Сервер валидирует и рассчитывает:
 
-`QuestDefinitions` и `QuestRules` задают Q1–Q7 и чистые переходы состояния. `QuestService` потребляет только authoritative `MobService.MobDied`, проверяет talk/proximity и ReachLocation на сервере и применяет reward вместе с `Completed` одной profile mutation. Клиент получает display snapshot для dialogue, tracker, карты, waypoint и NPC markers, но не может отправить objective progress или reward. Persistent schema использует `DataVersion = 2`; migration v1→v2 добавляет изолированную таблицу `Quests` без изменения данных dev0.1.
+- target;
+- range;
+- cooldown;
+- skill/resource eligibility;
+- damage/heal/crit;
+- death/respawn;
+- XP/level;
+- loot;
+- inventory/equipment mutation;
+- Luna/economy;
+- crafting;
+- quests;
+- travel;
+- persistence.
 
-## Account → Characters → Active Character (dev0.3)
+Remote payload никогда не принимается как готовый authoritative результат.
 
-Persistent запись пользователя теперь является `AccountProfile` версии 3. Она содержит порядок и словарь не более чем из `CharacterConfig.CharacterSlotLimit` персонажей, account-настройки и последний выбранный идентификатор. Каждый `CharacterProfile` владеет собственными progression, Luna, inventory, equipment и quests. Migration `v2 → v3` сохраняет прежний профиль внутри legacy-персонажа; до задания nickname и типа тела такой персонаж не может войти в мир.
+## 9. Combat ownership
 
-Сессия имеет два явных рубежа. `AccountReady` разрешает только работу roster/lobby API. `CharacterReady` появляется после проверки принадлежности `CharacterId`, назначает активный профиль и только затем разрешает spawn и gameplay services. Совместимое событие `ProfileReady` означает именно `CharacterReady`.
+Authoritative orchestration находится в:
 
-Character API принимает только узкие команды roster/check/create/select/delete, применяет rate limit и возвращает DTO без inventory, quest state и иных изменяемых authoritative структур. Nickname нормализуется pure-правилами, проходит Roblox TextService filtering и резервируется в отдельном индексе через атомарный `UpdateAsync`. При неудачном создании reservation откатывается; при удалении имя освобождается только после успешной записи account.
+`src/server/features/combat/CombatCoordinator.luau`.
 
-## 16. Multi-Place runtime и authored Moonfall (Gates A–E)
+Внутренние seams:
 
-Experience разделяется на роли `Lobby`, `World`, `Dungeon` и Studio-only `DevCombined`. Роль определяется через fail-closed `PlaceRuntime`; production Place без явного deployment mapping не запускает все подсистемы как fallback. Server/client entrypoints выбирают role-specific manifests, а `RuntimeManifest` владеет ordered startup, rollback и cleanup.
+- `PlayerCombatState`;
+- `TargetingService`;
+- `BasicAttackService`;
+- `SkillExecutionService`;
+- `AutoAttackService`.
 
-Переход Lobby → Moonfall выполняется server-authoritative transfer lifecycle. Source сохраняет и освобождает profile lease, создаёт одноразовый transfer intent в `MemoryStoreService` и передаёт через `TeleportData` только routing/correlation metadata. Destination сначала валидирует routing shape, claim-ит authoritative profile, атомарно consume-ит intent, проверяет ownership/destination и только затем активирует character. Inventory, Luna, XP, equipment, quests и другие authoritative данные через `TeleportData` не передаются.
+Старый `src/server/services/CombatService.luau` compatibility facade после stabilization удалён.
 
-Production Moonfall после Gate E считается **authored Place**, а не runtime-generated world:
+## 10. Client feature ownership
 
-- `projects/moonfall.project.json` не маппит `tools/worldgen`;
-- production `src/server/world` содержит только gameplay/runtime helpers, а blockout generator вынесен в `tools/worldgen`;
-- `MoonfallWorldRuntime` принимает только root с `ManagedBy=MoonfallAuthoredWorld`, совпадающим terrain revision и обязательным `LunaVillageSpawn`;
-- `MoonfallWorldRuntime` отдельно владеет `TraversalRecovery`; эта gameplay-обязанность больше не зависит от generator bootstrap;
-- `default.project.json`, test mappings и `projects/dev-combined.project.json` могут маппить dev-only `Worldgen` для локального полного flow;
-- `world.project.json` остаётся generator preview;
-- `projects/moonfall-authoring.project.json` предоставляет Studio-only one-shot bake module с явной confirmation string;
-- `MoonfallRegionManifest` оборачивает canonical `WorldLayout` и реальные `TravelDefinitions`, сохраняя stable zone/POI/spawn/travel IDs.
+Feature-owned UI/network state:
 
-Физическое сохранение generated Terrain/static environment в реальный Moonfall Place остаётся отдельным owner checkpoint. До выполнения bake + visual/runtime acceptance нельзя считать опубликованный production Moonfall принятым, даже если repo-side contracts и Rojo builds зелёные.
+- Character Lobby → `src/client/features/lobby`;
+- Quests → `src/client/features/quests`;
+- Economy → `src/client/features/economy`;
+- Inventory → `src/client/features/inventory`.
 
-## 17. Mobile UI surfaces
+`src/client/controllers` оставлен для действительно cross-feature controllers: combat input/presentation, targeting, movement и responsive coordination.
 
-Touch-интерфейс использует три явных типа поверхности: `CompactDialog` для коротких подтверждений, `MenuSheet` для небольших наборов вариантов и `FullWorkspace` для Inventory, Sell, Journal, Map и длинных каталогов. `ResponsiveLayout` предоставляет только usable dimensions, layout class, общий gap и минимальную touch-цель; выбор структуры и внутренняя геометрия остаются у владельца feature.
+`src/client/ui` содержит shared/gameplay HUD primitives, а не дубли feature UI.
 
-Интерактивные workspace/dialog `ScreenGui` используют `CoreUISafeInsets`. Mobile gameplay HUD, напротив, работает в полном физическом viewport (`ScreenInsets.None`): защита от CoreUI, вырезов и виртуальных controls задаётся локальными anchor offsets только для соответствующих панелей, без общего уменьшающего canvas и без второго глобального margin. `GetGuiInset` разрешён только в этом локальном anchor-расчёте поверх `ScreenInsets.None`; поверх уже inset canvas ручное смещение запрещено. Desktop сохраняет `DeviceSafeInsets`. Единый `MobileOverlayCoordinator` скрывает HUD на touch, пока открыт хотя бы один `FullWorkspace`, и восстанавливает прежнее состояние после закрытия последнего workspace.
+## 11. Mob/world gameplay
+
+`WorldLayout.SpawnMarkers` — authoritative integration seam для размещения mobs.
+
+Gameplay entity принадлежит MobService; world blockout placeholder не должен сосуществовать с реальной authoritative entity.
+
+AI базируется на server-side state/lifecycle. World geometry не должна содержать void traps или требовать свободного jump для основного маршрута.
+
+## 12. Authored Moonfall
+
+Production Moonfall — authored Place, не runtime-generated map.
+
+`projects/moonfall.project.json` не маппит `tools/worldgen`.
+
+Dev/authoring paths:
+
+- `default.project.json` / `projects/dev-combined.project.json` — локальный full flow;
+- `world.project.json` — generator preview;
+- `projects/moonfall-authoring.project.json` — one-shot bake.
+
+Production `MoonfallWorldRuntime` принимает authored root с ожидаемыми authoring attributes/revision и обязательным `LunaVillageSpawn`.
+
+Отключённый Goblin/Cemetery lake не является частью accepted alpha world и не должен случайно возвращаться при bake.
+
+Физический bake и visual/runtime acceptance реального Moonfall Place — owner-side deployment checkpoint.
+
+## 13. Mobile UI architecture
+
+Touch UI использует три semantic surfaces:
+
+- `CompactDialog`;
+- `MenuSheet`;
+- `FullWorkspace`.
+
+Feature сам владеет своей внутренней геометрией.
+
+Gameplay HUD на телефоне использует полный physical viewport и локальные edge offsets для CoreUI/notch/virtual controls, а не один глобальный shrinking safe rectangle.
+
+`MobileOverlayCoordinator` скрывает gameplay HUD только пока реально открыт `FullWorkspace`, затем восстанавливает состояние.
+
+## 14. Version/build metadata
+
+Game version хранится в корневом `VERSION`.
+
+Runtime label берётся из `src/shared/config/BuildInfo.luau`.
+
+Contract test требует синхронности этих значений.
+
+Persistent `DataVersion` изменяется отдельно только при изменении save schema.
+
+## 15. Что ещё не реализовано для 0.1.0
+
+Текущая архитектура уже подготовлена, но продуктовые feature-модули ещё нужны для:
+
+- Party до 4 игроков;
+- party kill/XP/drop eligibility;
+- Ruins of Selene runtime/content;
+- dungeon session/reward lifecycle;
+- Selene's Fallen Guardian.
+
+Они должны встраиваться в существующие role/manifests и server-authoritative boundaries, а не возвращать монолитный manager.
+
+## 16. Deployment state
+
+Repo-side architecture готова для test deployment, но numeric deployment mapping пока намеренно не заполнен до создания физических Roblox test Places.
+
+Актуальная процедура: `docs/MULTI_PLACE_DEPLOYMENT.md`.
+
+До published acceptance нельзя считать проверенными:
+
+- реальный Lobby → Moonfall teleport;
+- physical authored Moonfall bake;
+- multi-client published rejoin/transfer.

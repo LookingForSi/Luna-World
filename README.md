@@ -43,13 +43,16 @@
 - [Game Design v0.1](docs/GAME_DESIGN_V0.1.md)
 - [Мир и арт-направление](docs/WORLD_AND_ART_DIRECTION.md)
 - [Архитектура](docs/ARCHITECTURE.md)
+- [Multi-Place deployment](docs/MULTI_PLACE_DEPLOYMENT.md)
+- [Roadmap до v0.1](docs/ROADMAP.md)
 - [Правила разработки](docs/DEVELOPMENT_RULES.md)
 - [Политика межэтапного рефакторинга](docs/REFACTORING_POLICY.md)
 - [Стратегия тестирования](docs/TESTING_STRATEGY.md)
 - [Версионирование](docs/VERSIONING.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Design specification v0.1](docs/superpowers/specs/2026-09-13-luna-world-v0.1-design.md)
-- [Dev0.1 checkpoint](docs/releases/2026-09-20-dev0.1-checkpoint.md)
+- [Release 0.1.0-alpha.1](docs/releases/2026-09-22-0.1.0-alpha.1.md)
+- [Исторический dev0.1 checkpoint](docs/releases/2026-09-20-dev0.1-checkpoint.md)
 - [Правила для AI-агентов](AGENTS.md)
 
 ## Toolchain

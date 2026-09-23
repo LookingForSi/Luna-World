@@ -1,7 +1,7 @@
 --!strict
 
 -- Test-project-only bridge for the runtime contract's archetype swaps.
--- CombatService owns the replicated archetype attribute, so changing that attribute
+-- CombatCoordinator owns the replicated archetype attribute, so changing that attribute
 -- while an old combat snapshot still exists is overwritten by cleanup. The runtime
 -- contract deliberately swaps archetypes in one Studio session, so make that server-
 -- authoritative transition deterministic without changing production gameplay APIs.
@@ -10,7 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
-local CombatService = require(ServerScriptService.Server.services.CombatService)
+local CombatCoordinator = require(ServerScriptService.Server.features.combat.CombatCoordinator)
 
 local transitioning: { [Player]: boolean } = {}
 local connections: { [Player]: RBXScriptConnection } = {}
@@ -26,10 +26,10 @@ local function onArchetypeChanged(player: Player): ()
 	-- Clear the old authoritative snapshot before restoring the requested archetype.
 	-- Re-initialize the current character as well: the attribute signal may run either
 	-- just before or just after the runtime contract's immediately following LoadCharacter().
-	CombatService.handlePlayerDeath(player)
+	CombatCoordinator.handlePlayerDeath(player)
 	player:SetAttribute(CombatConfig.ArchetypeAttribute, requested)
 	if character ~= nil and player.Character == character then
-		CombatService.handlePlayerRespawn(player, character)
+		CombatCoordinator.handlePlayerRespawn(player, character)
 	end
 
 	transitioning[player] = nil

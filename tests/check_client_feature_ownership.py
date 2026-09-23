@@ -1,30 +1,31 @@
 #!/usr/bin/env python3
-"""Gate F1 contract: Lobby and Quest client controllers have real feature ownership."""
+"""Client feature ownership contract for Lobby and Quest."""
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+
 def read(path: str) -> str:
     candidate = ROOT / path
-    assert candidate.exists(), f"missing F1 file: {path}"
+    assert candidate.exists(), f"missing client feature file: {path}"
     return candidate.read_text(encoding="utf-8")
+
 
 adapter = read("src/client/bootstrap/adapters/ExistingClientComponents.luau")
 lobby_feature = read("src/client/features/lobby/CharacterLobbyController.luau")
 quest_feature = read("src/client/features/quests/QuestController.luau")
-lobby_facade = read("src/client/controllers/CharacterLobbyController.luau")
-quest_facade = read("src/client/controllers/QuestController.luau")
 
 assert "clientRoot.features.lobby.CharacterLobbyController" in adapter
 assert "clientRoot.features.quests.QuestController" in adapter
 assert "clientRoot.controllers.CharacterLobbyController" not in adapter
 assert "clientRoot.controllers.QuestController" not in adapter
 
-assert "return require(script.Parent.Parent.features.lobby.CharacterLobbyController)" in lobby_facade
-assert "return require(script.Parent.Parent.features.quests.QuestController)" in quest_facade
-assert len(lobby_facade.splitlines()) <= 5, "legacy Lobby controller must remain a thin compatibility facade"
-assert len(quest_facade.splitlines()) <= 5, "legacy Quest controller must remain a thin compatibility facade"
+for legacy_path in (
+    "src/client/controllers/CharacterLobbyController.luau",
+    "src/client/controllers/QuestController.luau",
+):
+    assert not (ROOT / legacy_path).exists(), f"obsolete compatibility facade returned: {legacy_path}"
 
 for token in (
     "ResponsiveLayout.observe",
@@ -54,4 +55,4 @@ for token in (
 assert "script.Parent.Parent.Parent.ui.ResponsiveLayout" in lobby_feature
 assert "script.Parent.Parent.Parent.ui.HudLayout" in quest_feature
 
-print("Gate F1 client feature ownership: PASS")
+print("Client Lobby/Quest feature ownership: PASS")

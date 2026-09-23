@@ -61,9 +61,9 @@ local function loadDevWorldBootstrap(): any
 end
 
 local function stopDevCombinedGameplay(): ()
-	-- Compatibility shutdown order from the accepted dev0.3 RC1 bootstrap.
-	-- Gate A deliberately preserves this ordering instead of assuming that
-	-- reverse startup order is safe across the legacy service graph.
+	-- Preserve the accepted deterministic shutdown order for the DevCombined
+	-- gameplay service graph. Do not assume generic reverse-start order is safe
+	-- until these services expose explicit dependency ordering.
 	StudioDebugService.stop()
 	RespawnService.stop()
 	PlayerRegenerationService.stop()
@@ -88,7 +88,7 @@ end
 function ExistingServerComponents.devCombinedGameplay(): RuntimeComponent.RuntimeComponent
 	return component("DevCombinedGameplay", function()
 		local ok, startError = pcall(function()
-			-- Exact accepted dev0.3 RC1 startup order.
+			-- Accepted deterministic DevCombined gameplay startup order.
 			EconomyService.start()
 			PlayerDataService.start()
 			CharacterService.start()

@@ -8,7 +8,7 @@ local CombatConfig = require(ReplicatedStorage.Shared.config.CombatConfig)
 local CombatTypes = require(ReplicatedStorage.Shared.types.CombatTypes)
 local MobAbilityDefinitions = require(ReplicatedStorage.Shared.definitions.MobAbilityDefinitions)
 local MobService = require(script.Parent.MobService)
-local CombatService = require(script.Parent.CombatService)
+local CombatCoordinator = require(script.Parent.Parent.features.combat.CombatCoordinator)
 local CombatPresentationService = require(script.Parent.CombatPresentationService)
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local DamageRules = require(ReplicatedStorage.Shared.combat.DamageRules)
@@ -67,7 +67,7 @@ local function resolveIncomingDamage(
 	rawDamage: number,
 	damageType: CombatTypes.MobDamageType
 ): number?
-	local stats = CombatService.getPlayerCombatStats(target)
+	local stats = CombatCoordinator.getPlayerCombatStats(target)
 	if stats == nil then return nil end
 	local defense = if damageType == "Physical" then stats.physicalDefense else 0
 	if damageType == "Physical" then
@@ -125,7 +125,7 @@ local function applyDamage(
 	)
 	local damage = resolveIncomingDamage(target, rolled.amount, damageType)
 	if damage == nil then return nil end
-	CombatService.selectAttackerIfNoTarget(target, mob)
+	CombatCoordinator.selectAttackerIfNoTarget(target, mob)
 	humanoid:TakeDamage(damage)
 	publishToTarget(target, "Result", actionId, actorEntityId(mob, definition), {
 		targetEntityId = targetEntityId(target),
@@ -336,7 +336,7 @@ local function beginAction(
 			if amount ~= nil then
 				local movement = ability.movementMultiplier or 1
 				local attackSpeed = ability.attackSpeedMultiplier or 1
-				CombatService.applyMobDebuff(target, movement, attackSpeed, ability.durationSeconds or 0)
+				CombatCoordinator.applyMobDebuff(target, movement, attackSpeed, ability.durationSeconds or 0)
 			end
 		elseif ability.kind == "AllyDamageBuff" then
 			applyAllyDamageBuff(mob, target, definition, ability)

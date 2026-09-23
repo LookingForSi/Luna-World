@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RespawnRules = require(ReplicatedStorage.Shared.combat.RespawnRules)
 local RespawnConfig = require(ReplicatedStorage.Shared.config.RespawnConfig)
 local CharacterConfig = require(ReplicatedStorage.Shared.config.CharacterConfig)
-local CombatService = require(script.Parent.CombatService)
+local CombatCoordinator = require(script.Parent.Parent.features.combat.CombatCoordinator)
 
 type PlayerRecord = {
 	generation: number,
@@ -72,9 +72,9 @@ local function nearestSpawnLocation(origin: Vector3): SpawnLocation?
 end
 
 local function nearestAnchor(origin: Vector3): BasePart?
-	-- Production worlds should provide explicit settlement/teleport anchors. A SpawnLocation
-	-- is a compatibility fallback for the current playground and protects Reset Character
-	-- from leaving a player permanently dead before the world branch is integrated.
+	-- Production worlds should provide explicit settlement/teleport anchors. SpawnLocation
+	-- remains a development/test fallback and protects Reset Character if authored anchors
+	-- are temporarily unavailable.
 	return nearestRegisteredAnchor(origin) or nearestSpawnLocation(origin)
 end
 
@@ -97,7 +97,7 @@ local function onDied(player: Player, character: Model, deathPosition: Vector3):
 	record.generation = generation
 	record.anchor = nearestAnchor(deathPosition)
 	setPending(player, true)
-	CombatService.handlePlayerDeath(player)
+	CombatCoordinator.handlePlayerDeath(player)
 	if record.anchor == nil then
 		warn(string.format("Respawn unavailable for %s: no registered RespawnAnchor or SpawnLocation", player.Name))
 	end
@@ -131,7 +131,7 @@ local function bindCharacter(player: Player, character: Model): ()
 	record.respawning = false
 	record.anchor = nil
 	setPending(player, false)
-	CombatService.handlePlayerRespawn(player, character)
+	CombatCoordinator.handlePlayerRespawn(player, character)
 	record.deathConnection = humanoid.Died:Connect(function()
 		local currentRoot = character:FindFirstChild("HumanoidRootPart")
 		local position = if currentRoot ~= nil and currentRoot:IsA("BasePart") then currentRoot.Position else character:GetPivot().Position
@@ -153,8 +153,8 @@ local function addPlayer(player: Player): ()
 	setPending(player, false)
 	record.characterConnection = player.CharacterAdded:Connect(function(character) bindCharacter(player, character) end)
 	-- Character Lobby owns the first spawn. Before CharacterReady there must be
-	-- no compatibility LoadCharacter() here, otherwise the default knight can
-	-- appear before the selected profile identity is projected.
+	-- no LoadCharacter() here, otherwise a default avatar can appear before the
+	-- selected profile identity is projected.
 	if player.Character ~= nil then
 		bindCharacter(player, player.Character)
 	end
