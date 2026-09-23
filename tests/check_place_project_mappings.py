@@ -58,6 +58,9 @@ for name in ("lobby", "moonfall", "dungeon-selene"):
     assert "world-preview" not in production_mapping
 
 config = (ROOT / "src/shared/config/PlaceConfig.luau").read_text()
-assert "local deployments: { Deployment } = {}" in config
+assert "gameId = 10767283011" in config
+assert "[81197415020315] = PlaceRole.Lobby" in config
+assert "[133570003635782] = PlaceRole.World" in config
+assert "local deployments: { Deployment } = {}" not in config
 assert "StudioDefaultRole = PlaceRole.DevCombined" in config
-print("Place project mappings, role boundaries, and fail-closed config: PASS")
+print("Place project mappings, role boundaries, and fail-closed test deployment config: PASS")
