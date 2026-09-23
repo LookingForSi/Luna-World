@@ -83,6 +83,12 @@
         "CharacterResult": {
           "$className": "RemoteEvent"
         }
+      },
+      "StudioPlaceRole": {
+        "$className": "StringValue",
+        "$properties": {
+          "Value": "Dungeon"
+        }
       }
     },
     "ServerScriptService": {
