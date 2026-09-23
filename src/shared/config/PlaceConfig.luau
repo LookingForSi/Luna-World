@@ -7,10 +7,16 @@ export type Deployment = {
 	roles: { [number]: PlaceRole.PlaceRole },
 }
 
-local deployments: { Deployment } = {}
+local deployments: { Deployment } = {
+	{
+		gameId = 10767283011,
+		roles = {
+			[81197415020315] = PlaceRole.Lobby,
+			[133570003635782] = PlaceRole.World,
+		},
+	},
+}
 
--- Deployment IDs intentionally remain empty until physical test/production
--- Places are created in Gate D. Studio uses the explicit DevCombined default.
 local PlaceConfig = {
 	StudioDefaultRole = PlaceRole.DevCombined,
 	Deployments = deployments,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static contract for Gate A place roles and runtime manifests."""
+"""Static contract for place roles, runtime manifests, and deployment routing."""
 
 from pathlib import Path
 
@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def read(path: str) -> str:
     candidate = ROOT / path
-    assert candidate.exists(), f"missing Gate A file: {path}"
+    assert candidate.exists(), f"missing runtime file: {path}"
     return candidate.read_text(encoding="utf-8")
 
 place_role = read("src/shared/core/runtime/PlaceRole.luau")
@@ -20,7 +20,10 @@ client_main = read("src/client/main.client.luau")
 for role in ("Lobby", "World", "Dungeon", "DevCombined"):
     assert f'"{role}"' in place_role
 assert 'StudioDefaultRole = PlaceRole.DevCombined' in place_config
-assert "local deployments: { Deployment } = {}" in place_config, "Gate A must not invent production Place IDs"
+assert "gameId = 10767283011" in place_config
+assert "[81197415020315] = PlaceRole.Lobby" in place_config
+assert "[133570003635782] = PlaceRole.World" in place_config
+assert "local deployments: { Deployment } = {}" not in place_config
 assert "PlaceRole override is allowed only in Studio" in place_runtime
 assert "No production PlaceRole configured" in place_runtime
 assert "currentRole" not in place_runtime, "PlaceRuntime must stay pure/stateless"
@@ -74,4 +77,4 @@ assert "Components.characterLobby()" not in world_client
 assert "Components.characterLobby()" not in dungeon_client
 assert "Components.characterLobby()" in dev_client and "Components.gameplay()" in dev_client
 
-print("Runtime manifest contract: PASS")
+print("Runtime manifest and deployment routing contract: PASS")
