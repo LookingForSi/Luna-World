@@ -10,7 +10,7 @@ local ProgressionRules = require(ReplicatedStorage.Shared.progression.Progressio
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local CombatPresentationService = require(script.Parent.CombatPresentationService)
 local PlayerDataService = require(script.Parent.PlayerDataService)
-local CombatService = require(script.Parent.CombatService)
+local CombatCoordinator = require(script.Parent.Parent.features.combat.CombatCoordinator)
 
 local ProgressionService = {}
 
@@ -67,7 +67,7 @@ function ProgressionService.awardXP(player: Player, amount: number): boolean
 
 	replicateProgression(player, appliedLevel, appliedXP)
 	if levelsGained > 0 then
-		CombatService.restorePlayerVitalsAfterLevelUp(player)
+		CombatCoordinator.restorePlayerVitalsAfterLevelUp(player)
 	end
 	return true
 end
@@ -90,7 +90,7 @@ function ProgressionService._setLevelForStudio(player: Player, level: number): b
 	if not ok then return false end
 	replicateProgression(player, level, 0)
 	if previousLevel ~= nil and level > previousLevel then
-		CombatService.restorePlayerVitalsAfterLevelUp(player)
+		CombatCoordinator.restorePlayerVitalsAfterLevelUp(player)
 	end
 	return true
 end
