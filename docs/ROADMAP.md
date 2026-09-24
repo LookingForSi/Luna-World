@@ -2,9 +2,9 @@
 
 Roadmap фиксирует текущий продуктовый baseline и оставшиеся gates до первого Vertical Slice. Это не календарный план.
 
-## Текущий checkpoint — 0.1.0-alpha.1 — 2026-09-22
+## Текущий checkpoint — 0.1.0-alpha.3 — 2026-09-24
 
-`0.1.0-alpha.1` — первая зафиксированная playable alpha.
+`0.1.0-alpha.3` — принятый playable checkpoint после физического multi-place deployment и мобильной проверки.
 
 Уже приняты и находятся в `main`:
 
@@ -15,9 +15,12 @@ Roadmap фиксирует текущий продуктовый baseline и о�
 - open-world progression LV1–14 до Ancient Approach;
 - текущий Mob Content Pass и open-world elites;
 - merchant buy/sell, No-Grade blacksmith crafting и return scroll;
-- mobile landscape gameplay HUD/UI baseline;
-- multi-place application architecture `Lobby → World → Dungeon` с Studio-only `DevCombined`;
-- authored-Moonfall production boundary и one-shot world bake tooling.
+- mobile landscape gameplay HUD/UI baseline — принят как достаточный для v0.1;
+- production multi-place architecture `Lobby → Moonfall World → отдельные Dungeon/Region Places` с Studio-only `DevCombined`;
+- authored-Moonfall production boundary и one-shot world bake tooling;
+- опубликованный Lobby → Moonfall transfer проверен на реальном мобильном Roblox-клиенте.
+
+Текущая multi-place архитектура считается принятой. Дальнейшая разработка v0.1 идёт поверх этого baseline без возврата к combined-production topology.
 
 Alpha checkpoint не означает завершение `0.1.0`. Финальный release gate отслеживается в GitHub Issue #63.
 
@@ -57,9 +60,10 @@ Alpha checkpoint не означает завершение `0.1.0`. Финал�
 - отдельные Rojo projects для Lobby, Moonfall, Dungeon и DevCombined;
 - runtime worldgen исключён из production Moonfall;
 - client feature ownership вынесен в `src/client/features`;
-- combat orchestration вынесена в `src/server/features/combat`.
+- combat orchestration вынесен в `src/server/features/combat`;
+- физический Lobby → Moonfall deployment и published-client teleport acceptance пройдены на мобильном устройстве.
 
-Физический test deployment и published teleport acceptance остаются отдельным owner-side deployment checkpoint.
+Архитектурный baseline закрыт и считается целевым для дальнейшей разработки.
 
 ## M5 — Party & Multiplayer Hardening
 
@@ -110,14 +114,16 @@ Boss LV15 минимум:
 
 Перед RC:
 
-- UX cleanup;
-- balance pass;
-- art consistency;
+- UX cleanup только по реальным blockers/usability-проблемам;
+- release-sanity balance pass, необходимый для проходимости vertical slice;
+- минимальный art consistency pass без полной замены placeholder-графики;
 - sound/music first pass;
 - persistence migration verification;
 - multiplayer regression;
 - known issues;
 - внешние playtests без объяснений разработчика.
+
+Текущая неудовлетворительная визуальная детализация мира и системная балансировка мобов сознательно не раздувают scope v0.1: они вынесены в отдельный post-v0.1 блок.
 
 ## 0.1.0 release gate
 
@@ -136,19 +142,38 @@ Boss LV15 минимум:
 
 ## Отдельные follow-up задачи alpha
 
-- Issue #62 — Mobile Lobby full-width landscape polish.
-- Physical Moonfall bake + published multi-place test deployment.
-- Art/audio/balance polish по результатам внешних playtests.
+- широкое external mobile playtest нескольких тестировщиков — собрать в M7, не блокируя M5/M6;
+- карта мира на mobile визуально неудовлетворительна, но текущий вариант принят для v0.1; полноценная переработка UI карты — post-v0.1 UX/art backlog;
+- точечные bugs и usability regressions, найденные при прохождении M5/M6.
 
-## После v0.1
+## После v0.1 — v0.2 baseline
 
-v0.2 не проектируется детально до результатов playtest v0.1.
+До результатов полного v0.1 playtest дальнейшие системы не детализируются, но два направления уже зафиксированы как обязательные для v0.2:
 
-Возможные направления, не являющиеся commitments:
+### Visual World Pass — Issue #74
 
-- расширение мира;
-- class advancement;
-- более глубокая social/party игра;
-- PvP;
-- расширенный crafting/economy;
-- cosmetics/convenience monetization.
+Навести визуальную цельность мира и уйти от текущих blockout/placeholder форм:
+
+- персонажи игроков;
+- мобы;
+- NPC;
+- здания и окружение;
+- пропсы и landmarks;
+- единый art direction Luna Village / Moonfall;
+- при необходимости Blender → Roblox asset pipeline;
+- без разрушения gameplay hitboxes, читаемости боя и mobile performance.
+
+### Systematic Mob Balance Pass — Issue #75
+
+Провести системную балансировку мобов LV1–15 по данным реального playtest:
+
+- HP / damage / defense / attack speed;
+- aggro / social behavior / chase;
+- XP и pace прокачки;
+- drops и экономика фарма;
+- обычные / elite / miniboss / dungeon mobs;
+- solo vs party difficulty;
+- boss tuning;
+- устранение резких скачков сложности между соседними зонами.
+
+После этих двух блоков можно решать, что именно войдёт в дальнейшие v0.2.x / v0.3 направления: расширение мира, class advancement, PvP, более глубокая social/party игра, расширенный crafting/economy и monetization.
