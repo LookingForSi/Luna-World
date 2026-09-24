@@ -17,8 +17,8 @@ LOG = read("src/client/ui/CombatLog.luau")
 CONFIG = read("src/shared/config/InventoryConfig.luau")
 
 for token in (
-    "rewardedEntityIds",
-    "markRewarded(entityId)",
+    "RewardLedger.new",
+    "rewardLedger:mark(entityId)",
     "ProgressionService.awardMobXP",
     "PlayerDataService.mutate",
     "InventoryService.grantItem",
@@ -26,6 +26,9 @@ for token in (
 ):
     if token not in LOOT:
         raise AssertionError(f"LootService contract missing {token}")
+
+if "KillCreditService.KillResolved:Connect" not in LOOT:
+    raise AssertionError("loot must consume the canonical resolved kill context")
 
 if "LootService.start" not in MAIN or "LootService.stop" not in MAIN:
     raise AssertionError("server bootstrap must own LootService lifecycle")

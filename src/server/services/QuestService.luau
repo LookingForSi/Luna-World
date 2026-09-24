@@ -7,7 +7,7 @@ local TravelDefinitions = require(ReplicatedStorage.Shared.definitions.TravelDef
 local QuestRules = require(ReplicatedStorage.Shared.quests.QuestRules)
 local TravelRules = require(ReplicatedStorage.Shared.travel.TravelRules)
 local WorldLayout = require(ReplicatedStorage.Shared.world.WorldLayout)
-local MobService = require(script.Parent.MobService)
+local KillCreditService = require(script.Parent.Parent.features.party.KillCreditService)
 local PlayerDataService = require(script.Parent.PlayerDataService)
 local ProgressionService = require(script.Parent.ProgressionService)
 
@@ -199,7 +199,9 @@ function QuestService.start(): ()
 	table.insert(connections,acceptRemote.OnServerEvent:Connect(function(player,...) handle(player,"Accept",...) end))
 	table.insert(connections,turnInRemote.OnServerEvent:Connect(function(player,...) handle(player,"TurnIn",...) end))
 	table.insert(connections,snapshotRequest.OnServerEvent:Connect(function(player,...) if select("#",...)==0 and PlayerDataService.isReady(player) then QuestService.push(player) end end))
-	table.insert(connections,MobService.MobDied:Connect(function(killer,mobId) if killer then mutateCredit(killer,"KillMob",mobId) end end))
+	table.insert(connections,KillCreditService.KillResolved:Connect(function(context)
+		for _, player in context.eligiblePlayers do mutateCredit(player,"KillMob",context.mobId) end
+	end))
 	table.insert(connections,PlayerDataService.ProfileReady:Connect(function(player) QuestService.push(player) end))
 	table.insert(connections,Players.PlayerRemoving:Connect(function(player) lastRequest[player]=nil end))
 
