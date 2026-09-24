@@ -6,6 +6,30 @@
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3] - 2026-09-23
+
+Published-client transfer repair checkpoint.
+
+### Fixed
+
+- Исправлены вызовы PlayerData transfer/arrival API в live multi-place path: module semantics больше не путаются с method/colon semantics.
+- Добавлен безопасный rollback подготовленного source transfer при неудачном handoff.
+- Lobby больше не показывает игроку внутренние transfer errors.
+- Добавлены contract tests, запрещающие ошибочный colon-call в `PlayerDataService`.
+- Published Lobby → Moonfall переход подтверждён на реальном мобильном Roblox-клиенте 24.09.2026; архитектурный baseline принят.
+
+## [0.1.0-alpha.2] - 2026-09-23
+
+Published-client blocker fixes после первого внешнего запуска.
+
+### Fixed
+
+- Удаление legacy-персонажей переведено на безопасную account mutation.
+- Добавлена атомарная account mutation + save операция для чувствительных lobby действий.
+- Укреплён mobile lobby delete/transfer lifecycle.
+- Добавлены проверки published lobby transition ownership и locked transition flow.
+
+
 ## [0.1.0-alpha.1] - 2026-09-22
 
 Первый зафиксированный playable alpha checkpoint. Архитектура Gates A–F3 и принятый Mobile UX v2 объединены в `main`; версия ещё не заявляет завершённость полного v0.1 Vertical Slice.
