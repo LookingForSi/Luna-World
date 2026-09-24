@@ -38,6 +38,7 @@ local invitePairCooldown: { [string]: number } = {}
 local connections: { RBXScriptConnection } = {}
 local started = false
 local generation = 0
+local restoredSessions: { [string]: string } = {}
 
 local function now(): number return workspace:GetServerTimeNow() end
 local function playerByUserId(userId: number): Player? return Players:GetPlayerByUserId(userId) end
@@ -124,6 +125,7 @@ function PartyService.stop(): ()
 	for _, connection in connections do connection:Disconnect() end
 	table.clear(connections); table.clear(partiesById); table.clear(partyIdByUserId)
 	table.clear(pendingInvitesById); table.clear(invitePairCooldown)
+	table.clear(restoredSessions)
 end
 
 function PartyService.invite(inviter: Player, target: Player): (boolean, string?, any?)
@@ -207,6 +209,27 @@ end
 function PartyService.getOrderedMembers(player: Player): { number }
 	local id = partyIdByUserId[player.UserId]
 	return if id and partiesById[id] then copyMembers(partiesById[id].memberUserIds) else { player.UserId }
+end
+
+-- Trusted server-only import used by cross-Place dungeon return. Callers must
+-- validate the MemoryStore handoff before invoking this API.
+function PartyService.restoreTrusted(sessionId: string, leaderUserId: number, orderedUserIds: { number }): (boolean, string?)
+	if restoredSessions[sessionId] ~= nil then return true, nil end
+	local present = {}
+	for _, userId in orderedUserIds do
+		local player = playerByUserId(userId)
+		if player ~= nil and PlayerDataService.isReady(player) and partyIdByUserId[userId] == nil then table.insert(present, userId) end
+	end
+	if #present < 2 then return false, "InsufficientReturnedMembers" end
+	local leader = leaderUserId
+	local found = false; for _, userId in present do found = found or userId == leader end
+	if not found then leader = present[1] end
+	local id = "return:" .. sessionId
+	local record: PartyRecord = { id=id, revision=1, leaderUserId=leader, memberUserIds=present, nextLootCursor=1 }
+	partiesById[id] = record; restoredSessions[sessionId] = id
+	for _, userId in present do partyIdByUserId[userId] = id end
+	emit(record, present)
+	return true, nil
 end
 
 function PartyService.resolveEligibleMembers(killer: Player, deathPosition: Vector3): { Player }

@@ -17,6 +17,7 @@ local EconomyController = require(clientRoot.features.economy.EconomyController)
 local QuestController = require(clientRoot.features.quests.QuestController)
 local PartyController = require(clientRoot.features.party.PartyController)
 local PartyUi = require(clientRoot.features.party.PartyUi)
+local DungeonController = require(clientRoot.features.dungeon.DungeonController)
 local CombatPresentationController = require(clientRoot.controllers.CombatPresentationController)
 local ResponsiveUiController = require(clientRoot.controllers.ResponsiveUiController)
 local CharacterLobbyController = require(clientRoot.features.lobby.CharacterLobbyController)
@@ -85,6 +86,7 @@ function ExistingClientComponents.gameplay(): RuntimeComponent.RuntimeComponent
 		end
 
 		InventoryController.stop()
+		DungeonController.stop()
 		CombatHud.setPartyInviteHandler(nil)
 		PartyController.stop()
 		PartyUi.stop()
@@ -139,6 +141,7 @@ function ExistingClientComponents.gameplay(): RuntimeComponent.RuntimeComponent
 			kick = PartyController.kick,
 		}) end)
 		startComponent("PartyController", function() PartyController.start(PartyUi) end)
+		startComponent("DungeonController", function() DungeonController.start() end)
 		CombatHud.setPartyInviteHandler(PartyController.invite)
 
 		-- Preserve the accepted order: core combat input becomes operational before

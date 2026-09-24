@@ -6,6 +6,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Добавлен runtime-complete candidate первого instanced dungeon Ruins of Selene: profile-safe party transfer, authoritative encounters/wipe/reset, Fallen Guardian, exactly-once rewards, return в Moonfall, scoped rejoin и Studio-only DevCombined flow.
+- Добавлен минимальный dungeon UX для подтверждения входа, objective status, wipe/enrage feedback и completion/return.
+
+### Security
+
+- Dungeon entry/return/rejoin используют короткоживущие server-issued MemoryStore contracts; membership, profile ownership, completion и rewards не принимаются из client payload.
+
 ## [0.1.0-alpha.3] - 2026-09-23
 
 Published-client transfer repair checkpoint.

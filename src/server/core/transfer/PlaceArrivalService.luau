@@ -16,6 +16,7 @@ function Service.new(deps: any): any
 		clock = deps.clock or os.time,
 		connections = {},
 		processing = {},
+		shouldHandle = deps.shouldHandle,
 	}, Service)
 end
 
@@ -25,6 +26,7 @@ function Service:admit(player: Player): (boolean, string?)
 end
 
 function Service:_arrive(player: Player): ()
+	if self.shouldHandle ~= nil and not self.shouldHandle(player) then return end
 	if self.processing[player] then
 		return
 	end

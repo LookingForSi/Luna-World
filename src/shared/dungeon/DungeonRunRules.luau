@@ -20,4 +20,6 @@ end
 function Rules.claim(claimed:{[number]:boolean},userId:number):(boolean,{[number]:boolean})
 	if claimed[userId] then return false,claimed end; local copy=table.clone(claimed); copy[userId]=true; return true,copy
 end
+function Rules.checkpointForEncounter(completedEncounter:number):number return math.clamp(completedEncounter,0,3) end
+function Rules.canReset(state:string,completed:boolean):boolean return not completed and (state=="ACTIVE" or state=="BOSS") end
 return table.freeze(Rules)

@@ -19,6 +19,9 @@ local DungeonTransferService = require(serverRoot.features.dungeon.DungeonTransf
 local DungeonAdmissionService = require(serverRoot.features.dungeon.DungeonAdmissionService)
 local DungeonWorldService = require(serverRoot.features.dungeon.DungeonWorldService)
 local DungeonEncounterService = require(serverRoot.features.dungeon.DungeonEncounterService)
+local DungeonReturnService = require(serverRoot.features.dungeon.DungeonReturnService)
+local DungeonWorldArrivalService = require(serverRoot.features.dungeon.DungeonWorldArrivalService)
+local DevCombinedDungeonAdapter = require(serverRoot.features.dungeon.DevCombinedDungeonAdapter)
 local MobService = require(serverRoot.services.MobService)
 local MobAIService = require(serverRoot.services.MobAIService)
 local MobAbilityService = require(serverRoot.services.MobAbilityService)
@@ -47,6 +50,7 @@ local PlaceRole = require(ReplicatedStorage.Shared.core.runtime.PlaceRole)
 local ExistingServerComponents = {}
 local transferRuntime = nil
 local arrivalRuntime = nil
+local dungeonWorldArrivalRuntime = nil
 
 local function component(
 	name: string,
@@ -73,6 +77,8 @@ local function stopDevCombinedGameplay(): ()
 	-- gameplay service graph. Do not assume generic reverse-start order is safe
 	-- until these services expose explicit dependency ordering.
 	StudioDebugService.stop()
+	DevCombinedDungeonAdapter.stop()
+	DungeonTransferService.stop()
 	RespawnService.stop()
 	PlayerRegenerationService.stop()
 	InventoryNetworkService.stop()
@@ -104,6 +110,8 @@ function ExistingServerComponents.devCombinedGameplay(): RuntimeComponent.Runtim
 			PlayerDataService.start()
 			PartyService.start()
 			PartyNetworkService.start()
+			DungeonTransferService.start()
+			DevCombinedDungeonAdapter.start()
 			CharacterService.start()
 			ProgressionService.start()
 			CombatService.start()
@@ -213,15 +221,24 @@ function ExistingServerComponents.placeArrival(role: string): RuntimeComponent.R
 			playerData = PlayerDataService,
 			intentStore = MemoryStoreTransferIntentStore.new(),
 			destinationRole = role,
+			shouldHandle = function(player)
+				return role ~= PlaceRole.World or not DungeonWorldArrivalService.isPayload(player)
+			end,
 		})
 		PlayerDataService.setPreClaimValidator(function(player)
+			if role == PlaceRole.World and DungeonWorldArrivalService.isPayload(player) then
+				return DungeonWorldArrivalService.admit(player)
+			end
 			return arrivalRuntime:admit(player)
 		end)
+		if role == PlaceRole.World then dungeonWorldArrivalRuntime = DungeonWorldArrivalService; dungeonWorldArrivalRuntime.start() end
 		arrivalRuntime:start()
 	end, function()
 		PlayerDataService.setPreClaimValidator(nil)
 		if arrivalRuntime ~= nil then arrivalRuntime:stop() end
+		if dungeonWorldArrivalRuntime ~= nil then dungeonWorldArrivalRuntime.stop() end
 		arrivalRuntime = nil
+		dungeonWorldArrivalRuntime = nil
 	end)
 end
 
@@ -277,6 +294,10 @@ end
 
 function ExistingServerComponents.dungeonEncounters(): RuntimeComponent.RuntimeComponent
 	return component("DungeonEncounterService", DungeonEncounterService.start, DungeonEncounterService.stop)
+end
+
+function ExistingServerComponents.dungeonReturn(): RuntimeComponent.RuntimeComponent
+	return component("DungeonReturnService", DungeonReturnService.start, DungeonReturnService.stop)
 end
 
 function ExistingServerComponents.party(): RuntimeComponent.RuntimeComponent

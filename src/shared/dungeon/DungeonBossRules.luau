@@ -12,4 +12,7 @@ end
 function Rules.selectTarget(ordered:{number},alive:{[number]:boolean},present:{[number]:boolean}):number?
 	for _,id in ordered do if alive[id] and present[id] then return id end end; return nil
 end
+function Rules.acceptTelegraph(eventGeneration:number,currentGeneration:number,bossAlive:boolean):boolean
+	return bossAlive and eventGeneration==currentGeneration
+end
 return table.freeze(Rules)

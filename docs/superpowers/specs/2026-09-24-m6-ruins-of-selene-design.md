@@ -88,3 +88,39 @@ Boss обычный loot roll не дублирует completion reward: его 
 ## 11. Acceptance status
 
 Automated checks и canonical builds являются обязательным gate. Studio/published teleport, solo и `1 server + 2 clients` проверки имеют статус **DEFERRED — pending owner runtime acceptance**. До owner acceptance M6 описывается только как «готов к owner review», но не как завершённый milestone.
+
+## 12. Runtime lifecycle после integration pass
+
+```text
+MOONFALL
+→ PREPARE (leader + immutable M5 snapshot)
+→ PROFILE RELEASE (save/release lease каждого участника)
+→ HANDOFF (MemoryStore contract + reserved server)
+→ DUNGEON ADMISSION (contract до profile claim)
+→ PROFILE ACQUIRE / CHARACTER READY
+→ ACTIVE RUN
+→ COMPLETION + EXACTLY-ONCE REWARD
+→ RETURN HANDOFF
+→ MOONFALL PROFILE ACQUIRE
+→ TRUSTED M5 PARTY RECONSTRUCTION
+```
+
+Временные records имеют явные namespaces и TTL: entry/return handoff — 120 секунд, rejoin ticket — 300 секунд, active run — 1800 секунд, consumed marker — 180 секунд. TeleportData содержит только routing token; authoritative membership и profile intent читаются из MemoryStore. Profile lease освобождается до `TeleportAsync`, а при `TeleportInitFailed` source удаляет intent и восстанавливает CharacterReady session.
+
+Return использует такой же profile-safe contract в направлении `Dungeon → World`. Moonfall собирает только реально прибывших CharacterReady игроков через trusted `PartyService.restoreTrusted`; исходный order определяет leader независимо от arrival order. При одном вернувшемся игроке сохраняется обычное solo-состояние M5.
+
+## 13. Wipe, checkpoints и reset
+
+Humanoid death отмечается один раз на текущий Character. Когда все подключённые участники мертвы, run публикует `PARTY_WIPE`, текущая encounter generation инвалидируется, её entities удаляются и deterministic roster создаётся заново. Завершённые encounters и reward latch не откатываются.
+
+Checkpoints: entrance (`0`), после pack 1 (`1`), после miniboss (`2`), перед final arena (`3`). Respawn переносит Character к checkpoint, соответствующему последнему завершённому encounter. Boss reset создаёт новый EntityId, base phase и новую telegraph generation; stale entity death/telegraph не принимаются.
+
+## 14. Rejoin и failure recovery
+
+Disconnect в `ACTIVE/BOSS` создаёт one-user ticket на 300 секунд с `runId`, reserved access code, состоянием и authoritative participant list. После обычного Moonfall profile acquisition ticket запускает новый profile-safe transfer в тот же reserved server. Tickets завершённых runs не принимаются; reward claim остаётся привязан к исходному run.
+
+Transfer UI проходит состояния `PREPARING/TELEPORTING/FAILED/RETRY_AVAILABLE`. Повторный prompt и return защищены pending latch; raw reason codes остаются только в structured server diagnostics. Невозможные и stale состояния fail-closed.
+
+## 15. DevCombined
+
+Только при одновременных условиях `RunService:IsStudio()` и явной роли `DevCombined` adapter подменяет transport, но не dungeon logic: создаёт тот же contract, запускает те же `DungeonWorldService`, `DungeonRunService` и `DungeonEncounterService`, а exit закрывает локальную session и возвращает к Moonfall iteration. Production roles не имеют fallback в этот adapter.

@@ -94,6 +94,12 @@
         },
         "PartyResult": {
           "$className": "RemoteEvent"
+        },
+        "DungeonAction": {
+          "$className": "RemoteEvent"
+        },
+        "DungeonEvent": {
+          "$className": "RemoteEvent"
         }
       },
       "TestRemotes": {
