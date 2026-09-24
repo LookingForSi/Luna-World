@@ -9,17 +9,18 @@ local LootRules = require(ReplicatedStorage.Shared.loot.LootRules)
 local CombatPresentationRules = require(ReplicatedStorage.Shared.combat.CombatPresentationRules)
 local CombatPresentationService = require(script.Parent.CombatPresentationService)
 local InventoryService = require(script.Parent.InventoryService)
-local MobService = require(script.Parent.MobService)
 local PlayerDataService = require(script.Parent.PlayerDataService)
 local ProgressionService = require(script.Parent.ProgressionService)
+local PartyRules = require(ReplicatedStorage.Shared.party.PartyRules)
+local KillCreditService = require(script.Parent.Parent.features.party.KillCreditService)
+local RewardLedger = require(script.Parent.Parent.features.party.RewardLedger)
 
 local LootService = {}
 
 local started = false
-local mobDiedConnection: RBXScriptConnection? = nil
-local rewardedEntityIds: { [string]: boolean } = {}
-local rewardedOrder: { string } = {}
+local killResolvedConnection: RBXScriptConnection? = nil
 local MAX_REWARD_LEDGER = 4096
+local rewardLedger = RewardLedger.new(MAX_REWARD_LEDGER)
 local random = Random.new()
 
 local function findMobDefinitionById(mobId: string)
@@ -30,14 +31,7 @@ local function findMobDefinitionById(mobId: string)
 end
 
 local function markRewarded(entityId: string): boolean
-	if rewardedEntityIds[entityId] then return false end
-	rewardedEntityIds[entityId] = true
-	table.insert(rewardedOrder, entityId)
-	if #rewardedOrder > MAX_REWARD_LEDGER then
-		local oldest = table.remove(rewardedOrder, 1)
-		rewardedEntityIds[oldest] = nil
-	end
-	return true
+	return rewardLedger:mark(entityId)
 end
 
 local function publishReward(
@@ -70,31 +64,37 @@ local function grantLuna(player: Player, amount: number): boolean
 	return ok
 end
 
-local function onMobDied(killer: Player?, mobId: string, entityId: string): ()
-	if killer == nil or not PlayerDataService.isReady(killer) then return end
-	local definition = findMobDefinitionById(mobId)
+local function onKillResolved(context: any): ()
+	local definition = findMobDefinitionById(context.mobId)
 	if definition == nil then return end
 	local lootTable = LootTableDefinitions[definition.lootTableId]
 	if lootTable == nil then return end
-	if not markRewarded(entityId) then return end
+	if not markRewarded(context.entityId) then return end
+	if #context.eligiblePlayers == 0 then return end
 
-	ProgressionService.awardMobXP(killer, definition.rewardXP, definition.level)
+	local userIds = {}; for _, player in context.eligiblePlayers do table.insert(userIds, player.UserId) end
+	local xpShares = PartyRules.splitXP(definition.rewardXP, userIds)
+	for _, player in context.eligiblePlayers do
+		ProgressionService.awardMobXP(player, xpShares[player.UserId], definition.level)
+	end
 
+	local recipient = context.lootRecipient
+	if recipient == nil or not PlayerDataService.isReady(recipient) then return end
 	local result = LootRules.roll(lootTable, function()
 		return random:NextNumber()
 	end)
-	if not grantLuna(killer, result.luna) then
-		warn(string.format("Failed to grant Luna reward to %s", killer.Name))
+	if not grantLuna(recipient, result.luna) then
+		warn(string.format("Failed to grant Luna reward to %s", recipient.Name))
 	end
 
 	for _, reward in result.items do
-		local granted, reason = InventoryService.grantItem(killer, reward.itemId, reward.quantity)
+		local granted, reason = InventoryService.grantItem(recipient, reward.itemId, reward.quantity)
 		if granted then
-			publishReward(killer, "loot_item", reward.quantity, reward.itemId, "Granted")
+			publishReward(recipient, "loot_item", reward.quantity, reward.itemId, "Granted")
 		elseif reason == "InventoryFull" then
-			publishReward(killer, "loot_item_full", reward.quantity, reward.itemId, "Rejected")
+			publishReward(recipient, "loot_item_full", reward.quantity, reward.itemId, "Rejected")
 		else
-			warn(string.format("Failed to grant item %s to %s: %s", reward.itemId, killer.Name, tostring(reason)))
+			warn(string.format("Failed to grant item %s to %s: %s", reward.itemId, recipient.Name, tostring(reason)))
 		end
 	end
 end
@@ -102,15 +102,14 @@ end
 function LootService.start(): ()
 	if started then return end
 	started = true
-	mobDiedConnection = MobService.MobDied:Connect(onMobDied)
+	killResolvedConnection = KillCreditService.KillResolved:Connect(onKillResolved)
 end
 
 function LootService.stop(): ()
 	if not started then return end
 	started = false
-	if mobDiedConnection ~= nil then mobDiedConnection:Disconnect(); mobDiedConnection = nil end
-	table.clear(rewardedEntityIds)
-	table.clear(rewardedOrder)
+	if killResolvedConnection ~= nil then killResolvedConnection:Disconnect(); killResolvedConnection = nil end
+	rewardLedger:clear()
 end
 
 return LootService

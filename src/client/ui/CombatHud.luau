@@ -20,6 +20,7 @@ local screenGui: ScreenGui? = nil
 local targetNameLabel: TextLabel? = nil
 local targetHealthTextLabel: TextLabel? = nil
 local targetHealthFill: Frame? = nil
+local targetInviteButton: TextButton? = nil
 local playerCombatPointsFill: Frame? = nil
 local playerCombatPointsValueLabel: TextLabel? = nil
 local playerHealthFill: Frame? = nil
@@ -41,6 +42,8 @@ local statusConnections: { RBXScriptConnection } = {}
 local presentationConnection: RBXScriptConnection? = nil
 local feedbackGeneration = 0
 local currentTarget: Model? = nil
+local currentTargetPlayer: Player? = nil
+local partyInviteHandler: ((number) -> ())? = nil
 local compactMobile = false
 
 
@@ -67,6 +70,8 @@ local function disconnectTarget(): ()
 		targetAncestryConnection = nil
 	end
 	currentTarget = nil
+	currentTargetPlayer = nil
+	if targetInviteButton ~= nil then targetInviteButton.Visible = false end
 end
 
 local function disconnectPlayerHealth(): ()
@@ -141,7 +146,7 @@ local function updateTargetHealth(humanoid: Humanoid): ()
 	local maxHealth = math.max(0, humanoid.MaxHealth)
 	local ratio = if maxHealth > 0 then math.clamp(health / maxHealth, 0, 1) else 0
 	if targetHealthTextLabel ~= nil then
-		targetHealthTextLabel.Text = string.format(
+		targetHealthTextLabel.Text = if currentTargetPlayer ~= nil and health <= 0 then "DEAD" else string.format(
 			"HP: %s / %s",
 			formatStatusNumber(health),
 			formatStatusNumber(maxHealth)
@@ -332,6 +337,29 @@ function CombatHud.start(): ()
 	targetNameLabel = makeTextLabel(targetPanel, "TargetName", UDim2.fromOffset(8, if compactMobile then 2 else 4))
 	targetNameLabel.Size = UDim2.new(1, -16, 0, if compactMobile then 20 else 24)
 	targetNameLabel.TextSize = if compactMobile then 13 else 16
+	local inviteButton = Instance.new("TextButton")
+	inviteButton.Name = "InviteTargetButton"
+	inviteButton.AnchorPoint = Vector2.new(1, 0)
+	inviteButton.Position = UDim2.new(1, -6, 0, if compactMobile then 3 else 6)
+	inviteButton.Size = if compactMobile then UDim2.fromOffset(42, 20) else UDim2.fromOffset(86, 24)
+	inviteButton.BackgroundColor3 = Color3.fromRGB(62, 77, 91)
+	inviteButton.BorderSizePixel = 0
+	inviteButton.Font = Enum.Font.GothamBold
+	inviteButton.Text = "👤+"
+	inviteButton.TextColor3 = Color3.fromRGB(235, 235, 240)
+	inviteButton.TextSize = if compactMobile then 13 else 12
+	inviteButton.Visible = false
+	inviteButton:SetAttribute("ActionLabel", "Пригласить в группу")
+	inviteButton.Parent = targetPanel
+	local inviteCorner = Instance.new("UICorner")
+	inviteCorner.CornerRadius = UDim.new(0, 4)
+	inviteCorner.Parent = inviteButton
+	inviteButton.Activated:Connect(function()
+		if currentTargetPlayer ~= nil and currentTargetPlayer ~= player and partyInviteHandler ~= nil then
+			partyInviteHandler(currentTargetPlayer.UserId)
+		end
+	end)
+	targetInviteButton = inviteButton
 	if compactMobile then
 		local targetFill = makeStatusBar(targetPanel, "HealthBar", UDim2.fromOffset(8, 26), "Fill", Color3.fromRGB(159, 52, 62), 0)
 		targetHealthFill = targetFill
@@ -474,10 +502,19 @@ function CombatHud.setTarget(target: Model?): ()
 	if humanoid == nil then return end
 
 	currentTarget = target
-	local targetLevel = target:GetAttribute("Level")
-	targetNameLabel.Text = if typeof(targetLevel) == "number"
-		then string.format("LV %d · %s", math.floor(targetLevel), target.Name)
+	local selectedPlayer = Players:GetPlayerFromCharacter(target)
+	currentTargetPlayer = if selectedPlayer ~= player then selectedPlayer else nil
+	local targetLevel = if selectedPlayer then selectedPlayer:GetAttribute(ProgressionConfig.LevelAttribute) else target:GetAttribute("Level")
+	local displayName = if selectedPlayer
+		then selectedPlayer:GetAttribute(CharacterConfig.NicknameAttribute) or selectedPlayer.DisplayName
 		else target.Name
+	targetNameLabel.Text = if typeof(targetLevel) == "number"
+		then string.format("LV %d · %s", math.floor(targetLevel), displayName)
+		else tostring(displayName)
+	if targetInviteButton ~= nil then
+		targetInviteButton.Visible = currentTargetPlayer ~= nil
+		targetNameLabel.Size = UDim2.new(1, if currentTargetPlayer then (if compactMobile then -56 else -102) else -16, 0, if compactMobile then 20 else 24)
+	end
 	updateTargetHealth(humanoid)
 	targetHealthConnection = humanoid.HealthChanged:Connect(function()
 		if currentTarget == target then updateTargetHealth(humanoid) end
@@ -485,6 +522,10 @@ function CombatHud.setTarget(target: Model?): ()
 	targetAncestryConnection = target.AncestryChanged:Connect(function(_, parent: Instance?)
 		if parent == nil and currentTarget == target then CombatHud.setTarget(nil) end
 	end)
+end
+
+function CombatHud.setPartyInviteHandler(handler: ((number) -> ())?): ()
+	partyInviteHandler = handler
 end
 
 function CombatHud.stop(): ()
@@ -500,6 +541,7 @@ function CombatHud.stop(): ()
 	targetNameLabel = nil
 	targetHealthTextLabel = nil
 	targetHealthFill = nil
+	targetInviteButton = nil
 	playerCombatPointsFill = nil
 	playerCombatPointsValueLabel = nil
 	playerHealthFill = nil
@@ -513,6 +555,7 @@ function CombatHud.stop(): ()
 	playerNameLabel = nil
 	feedbackLabel = nil
 	compactMobile = false
+	partyInviteHandler = nil
 end
 
 return CombatHud
