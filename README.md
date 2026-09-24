@@ -51,6 +51,8 @@
 - [Версионирование](docs/VERSIONING.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Design specification v0.1](docs/superpowers/specs/2026-09-13-luna-world-v0.1-design.md)
+- [M5 Party & Multiplayer Hardening — design](docs/superpowers/specs/2026-09-24-m5-party-multiplayer-hardening-design.md)
+- [M5 Party & Multiplayer Hardening — implementation plan](docs/superpowers/plans/2026-09-24-m5-party-multiplayer-hardening.md)
 - [Release 0.1.0-alpha.1](docs/releases/2026-09-22-0.1.0-alpha.1.md)
 - [Исторический dev0.1 checkpoint](docs/releases/2026-09-20-dev0.1-checkpoint.md)
 - [Правила для AI-агентов](AGENTS.md)
@@ -71,10 +73,12 @@ Git является source of truth для исходного кода и до�
 
 ## Статус
 
-Текущий release checkpoint: **0.1.0-alpha.1**.
+Текущий release checkpoint: **0.1.0-alpha.3**.
 
-Это первая зафиксированная playable alpha на новой multi-place архитектуре. Уже реализованы три архетипа и target-based PvE, открытая progression-зона LV1–14 до Ancient Approach, skills, XP/level-up, loot, inventory/equipment, persistence, Q1–Q7, open-world elites, деревенская экономика с No-Grade крафтом, merchant buy/sell, return scroll, Character Lobby и отдельная mobile-landscape компоновка HUD/UI.
+Приняты production multi-place architecture `Lobby → Moonfall World → отдельные Dungeon/Region Places`, Studio-only `DevCombined`, authored Moonfall и текущий mobile landscape baseline. Опубликованный Lobby → Moonfall переход проверен на реальном мобильном Roblox-клиенте.
 
-`0.1.0-alpha.1` ещё **не является финальным v0.1 Vertical Slice**. По утверждённому Definition of Done до `0.1.0` обязательны прежде всего party до 4 игроков, Ruins of Selene как instanced dungeon и Selene's Fallen Guardian с полноценным boss encounter. Дополнительно остаются art/audio/balance polish, published multi-place acceptance и дальнейшая mobile UX доводка.
+Функциональная база уже включает три архетипа и target-based PvE, open-world progression LV1–14, skills, XP/level-up, loot, inventory/equipment, persistence, Q1–Q7, open-world elites, деревенскую экономику, Character Lobby и responsive gameplay UI.
 
-Подробности: [release notes 0.1.0-alpha.1](docs/releases/2026-09-22-0.1.0-alpha.1.md).
+Следующий обязательный milestone — **M5 Party & Multiplayer Hardening** (Issue #76), затем M6 Ruins of Selene и M7 release candidate. Полный visual world pass и системная балансировка mobs вынесены в v0.2, чтобы не раздувать scope первого vertical slice.
+
+Актуальный план: [Roadmap](docs/ROADMAP.md).
