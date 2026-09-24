@@ -57,7 +57,21 @@ end
 
 local function deleteInvitesFor(userId: number): ()
 	for id, invite in pendingInvitesById do
-		if invite.inviterUserId == userId or invite.targetUserId == userId then pendingInvitesById[id] = nil end
+		if invite.inviterUserId == userId or invite.targetUserId == userId then
+			pendingInvitesById[id] = nil
+			local target = playerByUserId(invite.targetUserId)
+			if target then inviteEvent:Fire(target, { inviteId=id, cancelled=true }) end
+		end
+	end
+end
+
+local function invalidateUnusableInvites(record: PartyRecord): ()
+	for id, invite in pendingInvitesById do
+		if invite.inviterPartyId == record.id and (record.leaderUserId ~= invite.inviterUserId or #record.memberUserIds >= PartyConfig.MaxMembers) then
+			pendingInvitesById[id] = nil
+			local target = playerByUserId(invite.targetUserId)
+			if target then inviteEvent:Fire(target, { inviteId=id, cancelled=true }) end
+		end
 	end
 end
 
@@ -79,7 +93,9 @@ local function leaveUserId(userId: number): (boolean, string?)
 		record.memberUserIds = nextState.memberUserIds
 		record.nextLootCursor = nextState.nextLootCursor
 		record.revision += 1
-		emit(record, affected)
+		invalidateUnusableInvites(record)
+		emit(nil, { userId })
+		emit(record, copyMembers(record.memberUserIds))
 	end
 	return true, nil
 end
@@ -137,6 +153,8 @@ function PartyService.acceptInvite(player: Player, inviteId: string): (boolean, 
 	if nextState == record then return false, "PartyFull" end
 	record.memberUserIds = nextState.memberUserIds; record.revision += 1
 	partyIdByUserId[player.UserId] = record.id
+	deleteInvitesFor(player.UserId)
+	invalidateUnusableInvites(record)
 	emit(record, record.memberUserIds)
 	return true, nil
 end
@@ -160,6 +178,9 @@ function PartyService.getOrderedMembers(player: Player): { number }
 end
 
 function PartyService.resolveEligibleMembers(killer: Player, deathPosition: Vector3): { Player }
+	if partyIdByUserId[killer.UserId] == nil then
+		return if PlayerDataService.isReady(killer) and killer.Parent == Players then { killer } else {}
+	end
 	local candidates = {}
 	for _, userId in PartyService.getOrderedMembers(killer) do
 		local player = playerByUserId(userId)

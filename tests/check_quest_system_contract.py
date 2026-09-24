@@ -15,7 +15,8 @@ for project in ('default.project.json','test.project.json'):
     value=read(project)
     for remote in ('QuestAcceptRequest','QuestTurnInRequest','QuestSnapshotRequest','QuestSnapshot','QuestActionResult','DialogueOpen','TravelRequest','TravelResult'):
         require(value, f'"{remote}"', f'{project} lacks {remote}')
-require(quest,'MobService.MobDied:Connect','kill credit must consume authoritative MobDied')
+require(quest,'KillCreditService.KillResolved:Connect','quest credit must consume canonical resolved kills')
+require(quest,'context.eligiblePlayers','quest credit must use server-resolved eligibility')
 require(quest,'humanoid.Health>0','location credit must require a living character')
 require(quest,'nearLivingNpc','quest requests must validate NPC proximity')
 require(quest,'select("#", ...) ~= 2','quest action schema must enforce exact argument count')
