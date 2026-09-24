@@ -13,6 +13,8 @@ for token in ('target.Parent ~= Players','PlayerDataService.isReady','PartyInvit
               'record.leaderUserId ~= inviter.UserId','PartyConfig.MaxMembers','Players.PlayerRemoving',
               'PartyInviteRules.findForTarget','task.delay(PartyConfig.InviteTtlSeconds'):
     assert token in service, f'party authority guard missing {token}'
+for token in ('function PartyService.kick','PartyRules.canKick','partyIdByUserId[targetUserId] ~= record.id'):
+    assert token in service, f'party kick authority guard missing {token}'
 for token in ('PartyRequestRules.validate','lastRequestAt[player]','lastRequestAt[player] = nil'):
     assert token in network, f'party network hardening missing {token}'
 assert 'RunService:IsStudio()' in network, 'synthetic user ids must be enabled only by the authoritative Studio server'

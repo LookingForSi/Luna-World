@@ -40,6 +40,7 @@ local function handle(player: Player, ...: unknown): ()
 		else ok, reason = PartyService.invite(player, target) end
 	elseif action == "Accept" then ok, reason = PartyService.acceptInvite(player, inviteId :: string)
 	elseif action == "Decline" then ok, reason = PartyService.declineInvite(player, inviteId :: string)
+	elseif action == "Kick" then ok, reason = PartyService.kick(player, targetUserId :: number)
 	elseif action == "Leave" then ok, reason = PartyService.leave(player) end
 	resultEvent:FireClient(player, { action=action, ok=ok, reason=reason })
 end

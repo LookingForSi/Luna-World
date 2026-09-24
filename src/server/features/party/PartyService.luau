@@ -191,6 +191,14 @@ function PartyService.declineInvite(player: Player, inviteId: string): (boolean,
 end
 
 function PartyService.leave(player: Player): (boolean, string?) return leaveUserId(player.UserId) end
+function PartyService.kick(leader: Player, targetUserId: number): (boolean, string?)
+	local partyId = partyIdByUserId[leader.UserId]
+	local record = if partyId then partiesById[partyId] else nil
+	local allowed, reason = PartyRules.canKick(record, leader.UserId, targetUserId)
+	if not allowed then return false, reason end
+	if record == nil or partyIdByUserId[targetUserId] ~= record.id then return false, "TargetNotMember" end
+	return leaveUserId(targetUserId)
+end
 function PartyService.getPartyId(player: Player): string? return partyIdByUserId[player.UserId] end
 function PartyService.getSnapshot(player: Player): any?
 	local id = partyIdByUserId[player.UserId]

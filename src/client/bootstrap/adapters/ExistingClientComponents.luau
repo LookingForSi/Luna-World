@@ -136,6 +136,7 @@ function ExistingClientComponents.gameplay(): RuntimeComponent.RuntimeComponent
 			accept = PartyController.accept,
 			decline = PartyController.decline,
 			leave = PartyController.leave,
+			kick = PartyController.kick,
 		}) end)
 		startComponent("PartyController", function() PartyController.start(PartyUi) end)
 		CombatHud.setPartyInviteHandler(PartyController.invite)

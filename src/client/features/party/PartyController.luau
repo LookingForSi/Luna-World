@@ -15,6 +15,7 @@ function PartyController.invite(userId: number): () actionRequest:FireServer({ a
 function PartyController.accept(inviteId: string): () actionRequest:FireServer({ action="Accept", inviteId=inviteId }) end
 function PartyController.decline(inviteId: string): () actionRequest:FireServer({ action="Decline", inviteId=inviteId }) end
 function PartyController.leave(): () actionRequest:FireServer({ action="Leave" }) end
+function PartyController.kick(userId: number): () actionRequest:FireServer({ action="Kick", targetUserId=userId }) end
 
 function PartyController.start(partyUi: any): ()
 	PartyController.stop(); ui = partyUi

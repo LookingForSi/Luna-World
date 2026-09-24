@@ -55,6 +55,14 @@ function PartyRules.removeMember(state: PartyState, userId: number): PartyState?
 	return nextState
 end
 
+function PartyRules.canKick(state: PartyState?, actorUserId: number, targetUserId: number): (boolean, string?)
+	if state == nil or not contains(state.memberUserIds, actorUserId) then return false, "NotInParty" end
+	if state.leaderUserId ~= actorUserId then return false, "NotLeader" end
+	if actorUserId == targetUserId then return false, "CannotKickSelf" end
+	if not contains(state.memberUserIds, targetUserId) then return false, "TargetNotMember" end
+	return true, nil
+end
+
 function PartyRules.splitXP(totalXP: number, orderedUserIds: { number }): { [number]: number }
 	assert(totalXP >= 0 and totalXP % 1 == 0, "totalXP must be a non-negative integer")
 	local result: { [number]: number } = {}

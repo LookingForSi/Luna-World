@@ -19,6 +19,13 @@ return function(TestRunner)
 		assert(RequestRules.validate(1, { action="Invite", targetUserId=math.huge }) == nil)
 	end)
 
+	TestRunner.run("kick requests use the same validated user id contract", function()
+		assert(RequestRules.validate(1, { action="Kick", targetUserId=42 }, false) == "Kick")
+		assert(RequestRules.validate(1, { action="Kick", targetUserId=-2 }, true) == "Kick")
+		assert(RequestRules.validate(1, { action="Kick", targetUserId=-2 }, false) == nil)
+		assert(RequestRules.validate(1, { action="Kick", targetUserId=0 }, true) == nil)
+	end)
+
 	TestRunner.run("death and respawn do not mutate membership state", function()
 		local state = { leaderUserId=1, memberUserIds={1,2}, nextLootCursor=1 }
 		local before = table.concat(state.memberUserIds, ",")

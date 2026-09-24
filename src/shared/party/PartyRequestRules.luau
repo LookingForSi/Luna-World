@@ -16,9 +16,9 @@ end
 function PartyRequestRules.validate(argumentCount: number, payload: unknown, allowStudioSyntheticUserIds: boolean?): (string?, number?, string?)
 	if argumentCount ~= 1 or typeof(payload) ~= "table" then return nil, nil, nil end
 	local value = payload :: any
-	if value.action == "Invite" then
+	if value.action == "Invite" or value.action == "Kick" then
 		if not validUserId(value.targetUserId, allowStudioSyntheticUserIds == true) then return nil, nil, nil end
-		return "Invite", value.targetUserId, nil
+		return value.action, value.targetUserId, nil
 	elseif value.action == "Accept" or value.action == "Decline" then
 		if not validInviteId(value.inviteId) then return nil, nil, nil end
 		return value.action, nil, value.inviteId
