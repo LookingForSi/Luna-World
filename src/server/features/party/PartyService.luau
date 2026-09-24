@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PartyConfig = require(ReplicatedStorage.Shared.party.PartyConfig)
 local PartyRules = require(ReplicatedStorage.Shared.party.PartyRules)
+local PartyInviteRules = require(ReplicatedStorage.Shared.party.PartyInviteRules)
 local KillCreditRules = require(ReplicatedStorage.Shared.party.KillCreditRules)
 local PlayerDataService = require(script.Parent.Parent.Parent.services.PlayerDataService)
 
@@ -134,13 +135,12 @@ function PartyService.invite(inviter: Player, target: Player): (boolean, string?
 	if not PartyRules.canInvite(record, inviter.UserId, target.UserId) then return false, "NotAllowed", nil end
 	local key = pairKey(inviter.UserId, target.UserId)
 	local timestamp = now()
-	if invitePairCooldown[key] and timestamp - invitePairCooldown[key] < PartyConfig.InvitePairCooldownSeconds then return false, "InviteCooldown", nil end
+	if PartyInviteRules.isPairCoolingDown(invitePairCooldown[key], timestamp, PartyConfig.InvitePairCooldownSeconds) then return false, "InviteCooldown", nil end
 	invitePairCooldown[key] = timestamp
 	-- A player has at most one actionable invite. A newer valid invite replaces
 	-- the previous banner and invalidates its server token.
-	for pendingId, pending in pendingInvitesById do
-		if pending.targetUserId == target.UserId then cancelInvite(pendingId) end
-	end
+	local previousInviteId = PartyInviteRules.findForTarget(pendingInvitesById, target.UserId)
+	if previousInviteId then cancelInvite(previousInviteId) end
 	local id = HttpService:GenerateGUID(false)
 	local invite = { id=id, inviterUserId=inviter.UserId, targetUserId=target.UserId, createdAt=timestamp, inviterPartyId=if record then record.id else nil }
 	pendingInvitesById[id] = invite
@@ -155,9 +155,10 @@ end
 
 function PartyService.acceptInvite(player: Player, inviteId: string): (boolean, string?)
 	local invite = pendingInvitesById[inviteId]
-	if invite == nil or invite.targetUserId ~= player.UserId then return false, "InvalidInvite" end
+	local consumable, consumeReason = PartyInviteRules.canConsume(invite, player.UserId, now(), PartyConfig.InviteTtlSeconds)
+	if not consumable then return false, consumeReason end
 	pendingInvitesById[inviteId] = nil
-	if PartyRules.isInviteExpired(invite.createdAt, now()) then return false, "ExpiredInvite" end
+	assert(invite ~= nil)
 	local inviter = playerByUserId(invite.inviterUserId)
 	if inviter == nil or not PlayerDataService.isReady(player) or not PlayerDataService.isReady(inviter) then return false, "NotReady" end
 	if partyIdByUserId[player.UserId] ~= nil then return false, "AlreadyInParty" end
@@ -183,7 +184,8 @@ end
 
 function PartyService.declineInvite(player: Player, inviteId: string): (boolean, string?)
 	local invite = pendingInvitesById[inviteId]
-	if invite == nil or invite.targetUserId ~= player.UserId then return false, "InvalidInvite" end
+	local consumable, consumeReason = PartyInviteRules.canConsume(invite, player.UserId, now(), PartyConfig.InviteTtlSeconds)
+	if not consumable then return false, consumeReason end
 	pendingInvitesById[inviteId] = nil
 	return true, nil
 end

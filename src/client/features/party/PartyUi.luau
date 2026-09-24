@@ -18,11 +18,27 @@ local hudRows: Frame? = nil
 local inviteBanner: Frame? = nil
 local inviteMessage: TextLabel? = nil
 local statusLabel: TextLabel? = nil
+local feedbackLabel: TextLabel? = nil
 local snapshot: any = nil
 local callbacks: any = nil
 local connections: { RBXScriptConnection } = {}
 local observed: { RBXScriptConnection } = {}
 local inviteGeneration = 0
+local feedbackGeneration = 0
+
+local RESULT_TEXT = table.freeze({
+	NotReady = "Игрок ещё не готов",
+	AlreadyInParty = "Игрок уже состоит в группе",
+	PartyFull = "В группе нет свободных мест",
+	InviteCooldown = "Подождите перед повторным приглашением",
+	TargetUnavailable = "Игрок недоступен",
+	NotAllowed = "Приглашать может только лидер группы",
+	SelfInvite = "Нельзя пригласить самого себя",
+	InvalidInvite = "Приглашение больше не действительно",
+	ExpiredInvite = "Срок приглашения истёк",
+	PartyChanged = "Состав группы уже изменился",
+	NotInParty = "Вы не состоите в группе",
+})
 
 local function label(parent: Instance, text: string, position: UDim2, size: UDim2, textSize: number?): TextLabel
 	local value = Instance.new("TextLabel")
@@ -124,7 +140,19 @@ function PartyUi.setInvite(value: any): ()
 end
 
 function PartyUi.showResult(value: any): ()
-	if statusLabel and typeof(value) == "table" then statusLabel.Text = if value.ok then "Готово" else tostring(value.reason or "Отклонено") end
+	if typeof(value) ~= "table" then return end
+	local message = if value.ok and value.action == "Invite" then "Приглашение отправлено"
+		elseif value.ok then "Готово"
+		else RESULT_TEXT[value.reason] or tostring(value.reason or "Действие отклонено")
+	if statusLabel then statusLabel.Text = message end
+	if feedbackLabel == nil then return end
+	feedbackGeneration += 1
+	local ownGeneration = feedbackGeneration
+	feedbackLabel.Text = message
+	feedbackLabel.Visible = true
+	task.delay(2.5, function()
+		if feedbackGeneration == ownGeneration and feedbackLabel ~= nil then feedbackLabel.Visible = false end
+	end)
 end
 
 function PartyUi.toggle(): ()
@@ -136,6 +164,10 @@ function PartyUi.start(actions: any): ()
 	gui = Instance.new("ScreenGui"); gui.Name = "PartyUi"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = false
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
 	local mobile = UserInputService.TouchEnabled
+	feedbackLabel = label(gui, "", UDim2.new(0.5, -150, 0, if mobile then 128 else 180), UDim2.fromOffset(300, 32), if mobile then 12 else 14)
+	feedbackLabel.Name = "PartyActionFeedback"; feedbackLabel.BackgroundColor3 = Color3.fromRGB(22, 24, 31)
+	feedbackLabel.BackgroundTransparency = 0.12; feedbackLabel.TextXAlignment = Enum.TextXAlignment.Center
+	feedbackLabel.Visible = false
 
 	partyWidget = Instance.new("Frame"); partyWidget.Name = "PartyHud"; partyWidget.BackgroundTransparency = 1
 	partyWidget.AnchorPoint = Vector2.new(1, 0); partyWidget.Position = UDim2.new(1, if mobile then -8 else -24, 0, if mobile then 132 else 224)
@@ -171,11 +203,12 @@ end
 
 function PartyUi.stop(): ()
 	inviteGeneration += 1
+	feedbackGeneration += 1
 	for _, connection in connections do connection:Disconnect() end
 	for _, connection in observed do connection:Disconnect() end
 	table.clear(connections); table.clear(observed)
 	if gui then gui:Destroy() end
-	gui=nil; panel=nil; memberList=nil; partyWidget=nil; hudRows=nil; inviteBanner=nil; inviteMessage=nil; statusLabel=nil
+	gui=nil; panel=nil; memberList=nil; partyWidget=nil; hudRows=nil; inviteBanner=nil; inviteMessage=nil; statusLabel=nil; feedbackLabel=nil
 	snapshot=nil; callbacks=nil
 end
 

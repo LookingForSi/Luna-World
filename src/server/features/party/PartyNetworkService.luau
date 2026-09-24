@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local PartyConfig = require(ReplicatedStorage.Shared.party.PartyConfig)
 local PartyRequestRules = require(ReplicatedStorage.Shared.party.PartyRequestRules)
@@ -23,7 +24,11 @@ local function sendSnapshot(userId: number, value: any?): ()
 end
 
 local function handle(player: Player, ...: unknown): ()
-	local action, targetUserId, inviteId = PartyRequestRules.validate(select("#", ...), select(1, ...))
+	local action, targetUserId, inviteId = PartyRequestRules.validate(
+		select("#", ...),
+		select(1, ...),
+		RunService:IsStudio()
+	)
 	if action == nil then return end
 	local timestamp = workspace:GetServerTimeNow()
 	if lastRequestAt[player] and timestamp - lastRequestAt[player] < PartyConfig.RequestCooldownSeconds then return end

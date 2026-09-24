@@ -20,6 +20,9 @@ for token in ('Players:GetPlayerFromCharacter(current)','targetPlayer ~= localPl
 for token in ('PartyActionRequest','PartySnapshot','PartyInviteReceived','PartyResult'):
     assert token in controller, f'party controller missing {token}'
 assert 'FireServer({ action="Invite", targetUserId=userId })' in controller
+assert 'PartyActionFeedback' in ui and 'Приглашение отправлено' in ui
+for reason in ('NotReady','AlreadyInParty','PartyFull','InviteCooldown','TargetUnavailable','NotAllowed'):
+    assert reason in ui, f'party result feedback missing {reason}'
 assert 'PartyUi.start' in adapter and 'PartyUi.stop' in adapter
 assert 'PartyController.start' in adapter and 'PartyController.stop' in adapter
 print('Party client UI contract: PASS')
