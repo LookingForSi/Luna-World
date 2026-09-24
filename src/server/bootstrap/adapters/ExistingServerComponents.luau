@@ -14,6 +14,11 @@ local CombatService = require(serverRoot.features.combat.CombatCoordinator)
 local PartyService = require(serverRoot.features.party.PartyService)
 local PartyNetworkService = require(serverRoot.features.party.PartyNetworkService)
 local KillCreditService = require(serverRoot.features.party.KillCreditService)
+local DungeonRunService = require(serverRoot.features.dungeon.DungeonRunService)
+local DungeonTransferService = require(serverRoot.features.dungeon.DungeonTransferService)
+local DungeonAdmissionService = require(serverRoot.features.dungeon.DungeonAdmissionService)
+local DungeonWorldService = require(serverRoot.features.dungeon.DungeonWorldService)
+local DungeonEncounterService = require(serverRoot.features.dungeon.DungeonEncounterService)
 local MobService = require(serverRoot.services.MobService)
 local MobAIService = require(serverRoot.services.MobAIService)
 local MobAbilityService = require(serverRoot.services.MobAbilityService)
@@ -252,6 +257,26 @@ end
 
 function ExistingServerComponents.mobs(): RuntimeComponent.RuntimeComponent
 	return component("MobService", MobService.start, MobService.stop)
+end
+
+function ExistingServerComponents.dungeonRun(): RuntimeComponent.RuntimeComponent
+	return component("DungeonRunService", DungeonRunService.start, DungeonRunService.stop)
+end
+
+function ExistingServerComponents.dungeonTransfer(): RuntimeComponent.RuntimeComponent
+	return component("DungeonTransferService", DungeonTransferService.start, DungeonTransferService.stop)
+end
+
+function ExistingServerComponents.dungeonAdmission(): RuntimeComponent.RuntimeComponent
+	return component("DungeonAdmissionService", DungeonAdmissionService.start, DungeonAdmissionService.stop)
+end
+
+function ExistingServerComponents.dungeonWorld(): RuntimeComponent.RuntimeComponent
+	return component("DungeonWorldService", DungeonWorldService.start, DungeonWorldService.stop)
+end
+
+function ExistingServerComponents.dungeonEncounters(): RuntimeComponent.RuntimeComponent
+	return component("DungeonEncounterService", DungeonEncounterService.start, DungeonEncounterService.stop)
 end
 
 function ExistingServerComponents.party(): RuntimeComponent.RuntimeComponent

@@ -32,6 +32,7 @@ local function signatureResourceEntry(itemId: string, chance: number, minQuantit
 end
 
 local definitions: { [string]: LootTypes.LootTableDefinition } = {
+	loot_empty = loot({ id = "loot_empty", lunaMin = 0, lunaMax = 0, entries = {} }),
 	loot_young_wolf = loot({ id = "loot_young_wolf", lunaMin = 1, lunaMax = 3, entries = {
 		resourceEntry("material_wolf_pelt", 0.45), resourceEntry("material_sharp_fang", 0.15),
 		entry("consumable_minor_healing_draught", 0.05), entry("armor_worn_gloves", 0.01),

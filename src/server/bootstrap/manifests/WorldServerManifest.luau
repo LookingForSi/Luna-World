@@ -15,6 +15,7 @@ return RuntimeManifest.new("WorldServer", {
 	Components.playerData(),
 	Components.party(),
 	Components.partyNetwork(),
+	Components.dungeonTransfer(),
 	Components.progression(),
 	Components.combat(),
 	Components.regeneration(),

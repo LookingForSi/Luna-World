@@ -282,6 +282,13 @@ local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
 	return model
 end
 
+-- Dungeon content uses the same authoritative entity/combat pipeline without
+-- adding its instanced spawn markers to the open-world WorldLayout contract.
+function MobService.spawnConfigured(definitionKey: string, position: Vector3, spawnMarkerId: string, spawnIndex: number): Model?
+	if not started or MobDefinitions[definitionKey] == nil then return nil end
+	return createMob({ definitionKey=definitionKey, cframe=CFrame.new(position), spawnMarkerId=spawnMarkerId, spawnIndex=spawnIndex, socialGroupId=spawnMarkerId, patrolRadius=8, patrolCycleSeconds=10 })
+end
+
 function MobService.start(): ()
 	if started then
 		return
