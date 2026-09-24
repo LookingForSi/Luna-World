@@ -255,14 +255,15 @@ local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
 
 		local lastAttacker = lastAttackerByEntityId[entityId]
 		lastAttackerByEntityId[entityId] = nil
+		local deathPosition = model:GetPivot().Position
 		CombatPresentationService.publish(CombatPresentationRules.create("Death", HttpService:GenerateGUID(false), "mob:" .. entityId, workspace:GetServerTimeNow(), {
 			outcome = "Dead",
 			definitionId = definition.id,
 		}))
 		if lastAttacker ~= nil and lastAttacker.Parent == Players then
-			mobDiedEvent:Fire(lastAttacker, definition.id, entityId)
+			mobDiedEvent:Fire(lastAttacker, definition.id, entityId, deathPosition)
 		else
-			mobDiedEvent:Fire(nil, definition.id, entityId)
+			mobDiedEvent:Fire(nil, definition.id, entityId, deathPosition)
 		end
 
 		local expectedGeneration = serviceGeneration

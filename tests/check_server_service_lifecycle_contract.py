@@ -67,7 +67,7 @@ require(PLAYER_DATA, "function PlayerDataService.stop()", "PlayerDataService mus
 require(PLAYER_DATA, "connection:Disconnect()", "PlayerDataService stop must disconnect player lifecycle events")
 require(PLAYER_DATA, "releasePlayer(player)", "PlayerDataService shutdown must release active profile leases")
 require(LOOT, "function LootService.stop()", "LootService must expose lifecycle cleanup")
-require(LOOT, "mobDiedConnection:Disconnect()", "LootService stop must disconnect mob reward events")
+require(LOOT, "killResolvedConnection:Disconnect()", "LootService stop must disconnect resolved reward events")
 require(WORLD_DROP, "function WorldDropService.stop()", "WorldDropService must expose lifecycle cleanup")
 require(WORLD_DROP, "connection:Disconnect()", "WorldDropService stop must disconnect pickup prompts")
 

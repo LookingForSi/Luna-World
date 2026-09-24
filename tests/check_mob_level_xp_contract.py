@@ -45,8 +45,8 @@ for token in (
     if token not in PROGRESSION:
         raise AssertionError(f"level-scaled XP rule is missing {token}")
 
-if "ProgressionService.awardMobXP(killer, definition.rewardXP, definition.level)" not in LOOT:
-    raise AssertionError("mob death reward must use base XP and mob level")
+if "ProgressionService.awardMobXP(player, xpShares[player.UserId], definition.level)" not in LOOT:
+    raise AssertionError("party mob rewards must use budget-preserving XP shares and mob level")
 
 if 'target:GetAttribute("Level")' not in HUD or '"LV %d · %s"' not in HUD:
     raise AssertionError("target HUD must display mob level")

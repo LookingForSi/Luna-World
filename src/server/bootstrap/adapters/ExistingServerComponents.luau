@@ -11,6 +11,9 @@ local MoonfallAuthoringContract = require(ReplicatedStorage.Shared.world.Moonfal
 local serverRoot = script.Parent.Parent.Parent
 local MoonfallWorldRuntime = require(serverRoot.features.world.MoonfallWorldRuntime)
 local CombatService = require(serverRoot.features.combat.CombatCoordinator)
+local PartyService = require(serverRoot.features.party.PartyService)
+local PartyNetworkService = require(serverRoot.features.party.PartyNetworkService)
+local KillCreditService = require(serverRoot.features.party.KillCreditService)
 local MobService = require(serverRoot.services.MobService)
 local MobAIService = require(serverRoot.services.MobAIService)
 local MobAbilityService = require(serverRoot.services.MobAbilityService)
@@ -76,6 +79,9 @@ local function stopDevCombinedGameplay(): ()
 	EconomyNetworkService.stop()
 	EconomyService.stop()
 	LootService.stop()
+	KillCreditService.stop()
+	PartyNetworkService.stop()
+	PartyService.stop()
 	MobAIService.stop()
 	MobAbilityService.stop()
 	MobService.stop()
@@ -91,6 +97,8 @@ function ExistingServerComponents.devCombinedGameplay(): RuntimeComponent.Runtim
 			-- Accepted deterministic DevCombined gameplay startup order.
 			EconomyService.start()
 			PlayerDataService.start()
+			PartyService.start()
+			PartyNetworkService.start()
 			CharacterService.start()
 			ProgressionService.start()
 			CombatService.start()
@@ -100,6 +108,7 @@ function ExistingServerComponents.devCombinedGameplay(): RuntimeComponent.Runtim
 			MobAbilityService.start()
 			MobAIService.start(MobAbilityService.requestAttack)
 			MobService.start()
+			KillCreditService.start()
 			LootService.start()
 			WorldDropService.start()
 			InventoryNetworkService.start()
@@ -243,6 +252,18 @@ end
 
 function ExistingServerComponents.mobs(): RuntimeComponent.RuntimeComponent
 	return component("MobService", MobService.start, MobService.stop)
+end
+
+function ExistingServerComponents.party(): RuntimeComponent.RuntimeComponent
+	return component("PartyService", PartyService.start, PartyService.stop)
+end
+
+function ExistingServerComponents.partyNetwork(): RuntimeComponent.RuntimeComponent
+	return component("PartyNetworkService", PartyNetworkService.start, PartyNetworkService.stop)
+end
+
+function ExistingServerComponents.killCredit(): RuntimeComponent.RuntimeComponent
+	return component("KillCreditService", KillCreditService.start, KillCreditService.stop)
 end
 
 function ExistingServerComponents.loot(): RuntimeComponent.RuntimeComponent
