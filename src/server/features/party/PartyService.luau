@@ -146,7 +146,8 @@ function PartyService.acceptInvite(player: Player, inviteId: string): (boolean, 
 	if partyIdByUserId[player.UserId] ~= nil then return false, "AlreadyInParty" end
 	local currentPartyId = partyIdByUserId[inviter.UserId]
 	local record = if currentPartyId then partiesById[currentPartyId] else nil
-	local inviterChanged = invite.inviterPartyId ~= currentPartyId or (record ~= nil and record.leaderUserId ~= inviter.UserId)
+	local inviterChanged = (invite.inviterPartyId ~= nil and invite.inviterPartyId ~= currentPartyId)
+		or (record ~= nil and record.leaderUserId ~= inviter.UserId)
 	if not PartyRules.canAccept(record, false, inviterChanged, true) then return false, "PartyChanged" end
 	if record == nil then
 		record = { id=HttpService:GenerateGUID(false), revision=1, leaderUserId=inviter.UserId, memberUserIds={ inviter.UserId }, nextLootCursor=1 }
