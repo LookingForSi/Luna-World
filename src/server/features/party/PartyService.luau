@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PartyConfig = require(ReplicatedStorage.Shared.party.PartyConfig)
 local PartyRules = require(ReplicatedStorage.Shared.party.PartyRules)
+local KillCreditRules = require(ReplicatedStorage.Shared.party.KillCreditRules)
 local PlayerDataService = require(script.Parent.Parent.Parent.services.PlayerDataService)
 
 type PartyRecord = {
@@ -159,16 +160,20 @@ function PartyService.getOrderedMembers(player: Player): { number }
 end
 
 function PartyService.resolveEligibleMembers(killer: Player, deathPosition: Vector3): { Player }
-	local result = {}
+	local candidates = {}
 	for _, userId in PartyService.getOrderedMembers(killer) do
 		local player = playerByUserId(userId)
 		local character = if player then player.Character else nil
 		local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
 		local humanoid = if character then character:FindFirstChildOfClass("Humanoid") else nil
-		if player and PlayerDataService.isReady(player) and root and root:IsA("BasePart") and humanoid and humanoid.Health > 0
-			and (root.Position - deathPosition).Magnitude <= PartyConfig.RewardRadiusStuds then table.insert(result, player) end
+		if player then table.insert(candidates, {
+			value = player,
+			ready = PlayerDataService.isReady(player),
+			alive = humanoid ~= nil and humanoid.Health > 0,
+			position = if root and root:IsA("BasePart") then root.Position else nil,
+		}) end
 	end
-	return result
+	return KillCreditRules.resolveEligible(candidates, deathPosition, PartyConfig.RewardRadiusStuds)
 end
 
 function PartyService.selectLootRecipient(killer: Player, eligiblePlayers: { Player }): Player?
