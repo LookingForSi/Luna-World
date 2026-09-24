@@ -104,6 +104,10 @@ function PartyService.start(): ()
 	if started then return end
 	started = true
 	table.insert(connections, Players.PlayerRemoving:Connect(function(player) leaveUserId(player.UserId); deleteInvitesFor(player.UserId) end))
+	table.insert(connections, PlayerDataService.ProfileReady:Connect(function(player)
+		local id = partyIdByUserId[player.UserId]
+		changedEvent:Fire(player.UserId, if id and partiesById[id] then snapshot(partiesById[id]) else nil)
+	end))
 end
 
 function PartyService.stop(): ()
