@@ -26,6 +26,19 @@ local ARCHETYPES = {
 	{ id = "mystic", label = "Мистик" },
 }
 
+local TELEPORTS = {
+	{ id = "village", label = "ДЕРЕВНЯ" },
+	{ id = "farm", label = "ФЕРМА" },
+	{ id = "moonfall", label = "MOONFALL" },
+	{ id = "goblins", label = "ГОБЛИНЫ" },
+	{ id = "spiders", label = "ПАУКИ" },
+	{ id = "woodland", label = "DARK WOOD" },
+	{ id = "cemetery", label = "КЛАДБИЩЕ" },
+	{ id = "shrine", label = "SHRINE" },
+	{ id = "ancient", label = "ANCIENT" },
+	{ id = "ruins", label = "RUINS" },
+}
+
 local function updateSelection(): ()
 	local selected = player:GetAttribute(CombatConfig.ArchetypeAttribute)
 	for archetypeId, button in buttons do
@@ -64,14 +77,23 @@ function StudioTestPanel.start(): ()
 	local levelCandidate = remotes:WaitForChild("StudioSetLevel", 5)
 	local unlockRuinsCandidate = remotes:WaitForChild("StudioUnlockRuins", 5)
 	local speedCandidate = remotes:WaitForChild("StudioToggleSpeed", 5)
+	local unlockAllMissionsCandidate = remotes:WaitForChild("StudioUnlockAllMissions", 5)
+	local topGearCandidate = remotes:WaitForChild("StudioGrantTopGear", 5)
+	local teleportCandidate = remotes:WaitForChild("StudioTeleport", 5)
 	if candidate == nil or not candidate:IsA("RemoteEvent") then return end
 	if levelCandidate == nil or not levelCandidate:IsA("RemoteEvent") then return end
 	if unlockRuinsCandidate == nil or not unlockRuinsCandidate:IsA("RemoteEvent") then return end
 	if speedCandidate == nil or not speedCandidate:IsA("RemoteEvent") then return end
+	if unlockAllMissionsCandidate == nil or not unlockAllMissionsCandidate:IsA("RemoteEvent") then return end
+	if topGearCandidate == nil or not topGearCandidate:IsA("RemoteEvent") then return end
+	if teleportCandidate == nil or not teleportCandidate:IsA("RemoteEvent") then return end
 	local remote = candidate :: RemoteEvent
 	local levelRemote = levelCandidate :: RemoteEvent
 	local unlockRuinsRemote = unlockRuinsCandidate :: RemoteEvent
 	local speedRemote = speedCandidate :: RemoteEvent
+	local unlockAllMissionsRemote = unlockAllMissionsCandidate :: RemoteEvent
+	local topGearRemote = topGearCandidate :: RemoteEvent
+	local teleportRemote = teleportCandidate :: RemoteEvent
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "StudioTestPanel"
@@ -81,7 +103,7 @@ function StudioTestPanel.start(): ()
 	local frame = Instance.new("Frame")
 	frame.Name = "ArchetypeSwitcher"
 	frame.Position = UDim2.fromOffset(18, 82)
-	frame.Size = UDim2.fromOffset(300, 142)
+	frame.Size = UDim2.fromOffset(300, 332)
 	frame.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
 	frame.BackgroundTransparency = 0.12
 	frame.BorderSizePixel = 0
@@ -96,7 +118,7 @@ function StudioTestPanel.start(): ()
 	title.TextColor3 = Color3.fromRGB(205, 205, 212)
 	title.TextSize = 12
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = "STUDIO · тест класса"
+	title.Text = "STUDIO · инструменты"
 	title.Parent = frame
 
 	for index, archetype in ARCHETYPES do
@@ -159,6 +181,48 @@ function StudioTestPanel.start(): ()
 	table.insert(buttonConnections, speedButton.Activated:Connect(function()
 		speedRemote:FireServer()
 	end))
+
+	local unlockAll = makeLevelButton("UnlockAllMissions", "ALL MISSIONS", 8, 140)
+	unlockAll.Position = UDim2.fromOffset(8, 142)
+	table.insert(buttonConnections, unlockAll.Activated:Connect(function()
+		unlockAllMissionsRemote:FireServer()
+	end))
+
+	local topGear = makeLevelButton("TopGear", "TOP GEAR", 156, 136)
+	topGear.Position = UDim2.fromOffset(156, 142)
+	table.insert(buttonConnections, topGear.Activated:Connect(function()
+		topGearRemote:FireServer()
+	end))
+
+	local teleportTitle = Instance.new("TextLabel")
+	teleportTitle.Name = "TeleportTitle"
+	teleportTitle.BackgroundTransparency = 1
+	teleportTitle.Position = UDim2.fromOffset(8, 180)
+	teleportTitle.Size = UDim2.new(1, -16, 0, 18)
+	teleportTitle.Font = Enum.Font.GothamMedium
+	teleportTitle.TextColor3 = Color3.fromRGB(170, 172, 182)
+	teleportTitle.TextSize = 11
+	teleportTitle.TextXAlignment = Enum.TextXAlignment.Left
+	teleportTitle.Text = "ТЕЛЕПОРТ"
+	teleportTitle.Parent = frame
+
+	for index, destination in TELEPORTS do
+		local column = (index - 1) % 3
+		local row = math.floor((index - 1) / 3)
+		local button = Instance.new("TextButton")
+		button.Name = "Teleport_" .. destination.id
+		button.Position = UDim2.fromOffset(8 + column * 96, 202 + row * 31)
+		button.Size = UDim2.fromOffset(88, 26)
+		button.BackgroundColor3 = Color3.fromRGB(42, 45, 56)
+		button.TextColor3 = Color3.fromRGB(240, 240, 244)
+		button.Font = Enum.Font.GothamBold
+		button.TextSize = 10
+		button.Text = destination.label
+		button.Parent = frame
+		table.insert(buttonConnections, button.Activated:Connect(function()
+			teleportRemote:FireServer(destination.id)
+		end))
+	end
 
 	archetypeAttributeConnection = player:GetAttributeChangedSignal(CombatConfig.ArchetypeAttribute):Connect(updateSelection)
 	levelAttributeConnection = player:GetAttributeChangedSignal(ProgressionConfig.LevelAttribute):Connect(updateLevel)
