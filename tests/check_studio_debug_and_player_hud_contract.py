@@ -38,6 +38,9 @@ require(SERVER_DEBUG, 'Instance.new("RemoteEvent")', "Studio archetype remote mu
 require(SERVER_DEBUG, 'createRemote("StudioSetArchetype")', "Studio archetype remote name is missing")
 require(SERVER_DEBUG, 'createRemote("StudioSetLevel")', "Studio level remote name is missing")
 require(SERVER_DEBUG, 'createRemote("StudioToggleSpeed")', "Studio x5 speed remote name is missing")
+require(SERVER_DEBUG, 'createRemote("StudioUnlockRuins")', "Studio Ruins unlock remote name is missing")
+require(SERVER_DEBUG, "PlayerDataService.mutate", "Studio Ruins unlock must mutate authoritative profile state")
+require(SERVER_DEBUG, "DungeonUnlockRules.prepareStudioUnlock", "Studio Ruins unlock must use the shared quest-state contract")
 require(SERVER_DEBUG, "ProgressionService._setLevelForStudio", "Studio debug service must delegate level changes to ProgressionService")
 require(SERVER_DEBUG, "CombatCoordinator._setMovementMultiplierForStudio", "Studio debug service must delegate speed changes to CombatService")
 require(SERVER_DEBUG, "CombatCoordinator._setArchetypeForStudio", "Studio debug service must delegate lifecycle reset to CombatService")
@@ -65,6 +68,11 @@ for token in ('"LevelDown"', '"LevelUp"', '"LevelMax"'):
     require(CLIENT_DEBUG, token, f"Studio level controls are missing {token}")
 for token in ('"SpeedX5"', '"SPEED x5"', '"StudioToggleSpeed"'):
     require(CLIENT_DEBUG, token, f"Studio speed control is missing {token}")
+for token in ('"UnlockRuins"', '"RUINS OPEN"', '"StudioUnlockRuins"'):
+    require(CLIENT_DEBUG, token, f"Studio Ruins control is missing {token}")
+for removed in ("StudioGrantTestItems", "ТЕСТ ЛУТ +"):
+    if removed in read(SERVER_DEBUG) or removed in read(CLIENT_DEBUG):
+        raise AssertionError(f"obsolete Studio loot control remains: {removed}")
 require(CLIENT_MAIN, "StudioTestPanel.start()", "client bootstrap must start the Studio-only panel")
 
 # Player HUD has four rows: PvP-only CP, HP, archetype resource, and XP.

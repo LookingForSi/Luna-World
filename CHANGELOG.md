@@ -18,6 +18,7 @@
 
 ### Fixed
 
+- Studio-панель теперь открывает Ruins через schema-valid `quest_ancient_approach` mutation и обычный `ProfileChanged` pipeline; production kill Moonbound Warden без активного квеста по-прежнему не снимает печать.
 - DevCombined bootstrap теперь переиспользует принятый `MoonfallAuthoredWorld`, перестраивает только generator-owned blockout и fail-closed отклоняет неизвестный ownership или несколько конкурирующих roots; повторный Studio Start больше не требует ручного удаления Workspace content.
 - Ошибка server bootstrap реплицируется в `ServerBootstrapState`, поэтому Character Lobby показывает диагностируемую ошибку вместо бесконечного «Загрузка аккаунта…».
 - Вход в Ruins of Selene перенесён на surface-resolved anchor у Ancient Approach и теперь появляется только после authoritative Moonbound Warden progression; до unlock отсутствуют stone, prompt и доступная точка карты.

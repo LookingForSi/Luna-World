@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.dungeon.DungeonConfig)
 local UnlockRules = require(ReplicatedStorage.Shared.dungeon.DungeonUnlockRules)
@@ -98,7 +99,15 @@ function Service.start(): ()
 	table.insert(connections, KillCreditService.KillResolved:Connect(function(context)
 		if context.mobId ~= "mob_moonbound_warden" then return end
 		task.defer(function()
-			for _, player in context.eligiblePlayers do refreshPlayer(player) end
+			for _, player in context.eligiblePlayers do
+				refreshPlayer(player)
+				if RunService:IsStudio() then
+					local profile = PlayerDataService.getProfileCopy(player)
+					if profile == nil or not UnlockRules.isUnlocked(profile.Quests) then
+						warn("STUDIO: Moonbound Warden killed, but Ruins remain locked because quest_ancient_approach has no unlock progress. Use RUINS debug button or activate the quest.")
+					end
+				end
+			end
 		end)
 	end))
 	for _, player in Players:GetPlayers() do if PlayerDataService.isReady(player) then refreshPlayer(player) end end

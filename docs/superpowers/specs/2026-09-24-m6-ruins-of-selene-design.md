@@ -140,3 +140,9 @@ World map показывает `Ruins of Selene` только при replicated 
 Существующий стабильный ID `npc_moonfall_scout` остаётся у дозорного на `poi_moonfall_crossroads`, но его отображаемое имя — «Дозорный Moonfall Road». Он завершает участок Stone Circle → Goblin Camp → Spider Hollow. Completion Spider Hollow направляет игрока к отдельному `npc_dark_woodland_scout` на `poi_dark_woodland_gate`; следующий quest у старого дозорного не появляется.
 
 Дозорный Dark Woodland выдаёт и принимает `quest_dark_woodland`, затем выдаёт и принимает `quest_ancient_approach`. Таким образом authoritative giver/turn-in IDs одновременно управляют диалогами и quest markers без client-side исключений. После Spider Hollow также открывается data-driven платный маршрут `travel_dark_woodland` между Стражем ворот Luna Village и северным дозором; стоимость использует общую travel economy и `loot_dire_wolf`.
+
+## 18. Studio shortcut для Ruins
+
+В `DevCombined` Studio-панель содержит `RUINS OPEN` вместо выдачи тестового loot. Динамический remote `StudioUnlockRuins` создаётся сервером только при `RunService:IsStudio()` и через `PlayerDataService.mutate` переводит `quest_ancient_approach` в schema-valid `ReadyToTurnIn`, заполняя progress из текущих objective definitions. Дальше камень создаёт исключительно production-цепочка `ProfileChanged → DungeonEntranceService.refreshPlayer → DungeonUnlockRules.isUnlocked → createPortal`; debug service не создаёт world instances и не телепортирует игрока.
+
+Повторное действие сохраняет `Completed` без изменений, а для `ReadyToTurnIn` остаётся идемпотентным благодаря единственному portal latch. Production contract не ослаблен: canonical kill credit обрабатывает только уже активные quests, поэтому Warden без активного Ancient Approach не открывает Ruins. В Studio такой kill пишет диагностический warning с предложением активировать quest или использовать кнопку.
