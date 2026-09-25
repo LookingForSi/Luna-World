@@ -25,3 +25,12 @@
 9. Переключить Studio на production `projects/moonfall.project.json` и запустить без authoring tooling. Production runtime должен принять authored root и не генерировать мир заново.
 
 Physical bake и визуальное сравнение остаются owner acceptance checkpoint.
+
+## DevCombined и сохранённый authored root
+
+`DevCombinedWorldBootstrap` различает два допустимых ownership-состояния `Workspace/LunaWorldPlayableBlockout`:
+
+- `ManagedBy=PlayableWorldBlockout` — root принадлежит dev generator и может быть детерминированно перестроен;
+- `ManagedBy=MoonfallAuthoredWorld` — root принадлежит принятому authored Place и переиспользуется без второго worldgen.
+
+Два одноимённых root или неизвестный/missing `ManagedBy` по-прежнему останавливают bootstrap fail-closed. Обычный Rojo sync не требует ручного удаления принятого authored root. `stop()` освобождает traversal lifecycle, поэтому повторный `start()` в той же Studio session безопасен.

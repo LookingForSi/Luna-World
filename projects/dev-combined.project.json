@@ -120,6 +120,9 @@
         },
         "WorldBootstrap": {
           "$path": "../tools/worldgen/WorldBootstrap.luau"
+        },
+        "DevCombinedWorldBootstrap": {
+          "$path": "../tools/worldgen/DevCombinedWorldBootstrap.luau"
         }
       }
     },

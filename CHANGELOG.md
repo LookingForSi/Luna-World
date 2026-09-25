@@ -15,6 +15,11 @@
 
 - Dungeon entry/return/rejoin используют короткоживущие server-issued MemoryStore contracts; membership, profile ownership, completion и rewards не принимаются из client payload.
 
+### Fixed
+
+- DevCombined bootstrap теперь переиспользует принятый `MoonfallAuthoredWorld`, перестраивает только generator-owned blockout и fail-closed отклоняет неизвестный ownership или несколько конкурирующих roots; повторный Studio Start больше не требует ручного удаления Workspace content.
+- Ошибка server bootstrap реплицируется в `ServerBootstrapState`, поэтому Character Lobby показывает диагностируемую ошибку вместо бесконечного «Загрузка аккаунта…».
+
 ## [0.1.0-alpha.3] - 2026-09-23
 
 Published-client transfer repair checkpoint.

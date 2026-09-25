@@ -67,8 +67,8 @@ end
 local function loadDevWorldBootstrap(): any
 	local worldgen = ServerScriptService:FindFirstChild("Worldgen")
 	assert(worldgen ~= nil, "DevCombined Worldgen mapping is missing")
-	local bootstrap = worldgen:FindFirstChild("WorldBootstrap")
-	assert(bootstrap ~= nil and bootstrap:IsA("ModuleScript"), "DevCombined WorldBootstrap module is missing")
+	local bootstrap = worldgen:FindFirstChild("DevCombinedWorldBootstrap")
+	assert(bootstrap ~= nil and bootstrap:IsA("ModuleScript"), "DevCombined world bootstrap module is missing")
 	return require(bootstrap)
 end
 
