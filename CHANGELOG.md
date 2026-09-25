@@ -10,6 +10,7 @@
 
 - Добавлен runtime-complete candidate первого instanced dungeon Ruins of Selene: profile-safe party transfer, authoritative encounters/wipe/reset, Fallen Guardian, exactly-once rewards, return в Moonfall, scoped rejoin и Studio-only DevCombined flow.
 - Добавлен минимальный dungeon UX для подтверждения входа, objective status, wipe/enrage feedback и completion/return.
+- Поздняя Moonfall quest-chain разделена между дозорными Moonfall Road и Dark Woodland; после Spider Hollow открывается двусторонний маршрут к северному дозору.
 
 ### Security
 

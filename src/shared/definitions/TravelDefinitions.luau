@@ -26,6 +26,17 @@ local definitions = {
 		villageArrivalOffset = Vector3.new(10, 3, 5),
 		fieldArrivalOffset = Vector3.new(9, 3, 7),
 	}),
+	travel_dark_woodland = table.freeze({
+		id = "travel_dark_woodland",
+		displayName = "Дозор Dark Woodland",
+		unlockQuestId = "quest_spider_hollow",
+		villageNpcId = "npc_gatekeeper",
+		fieldNpcId = "npc_dark_woodland_scout",
+		representativeLootTableId = "loot_dire_wolf",
+		killEquivalent = 4,
+		villageArrivalOffset = Vector3.new(10, 3, 5),
+		fieldArrivalOffset = Vector3.new(-10, 3, -8),
+	}),
 }
 
 return table.freeze(definitions)

@@ -64,3 +64,11 @@ Tracking: #79, release gate #63
 - [ ] Map marker появляется только у unlocked player.
 - [ ] Respawn/rejoin/Completed quest восстанавливают unlock без duplicate stone.
 - [ ] Solo и M5 party используют прежний M6 reserved-server transfer.
+
+### Owner retest — передача между дозорными
+
+- [ ] Сдать Spider Hollow NPC «Дозорный Moonfall Road» на crossroads.
+- [ ] Убедиться, что у него больше нет следующего quest, а `!` появился у входа в Dark Woodland.
+- [ ] У NPC «Дозорный Dark Woodland» принять и сдать «Через Dark Woodland».
+- [ ] У него же принять Ancient Approach; после Moonbound Warden вернуться к нему, а не к Стражу ворот.
+- [ ] После Spider Hollow проверить маршрут Luna Village ↔ «Дозор Dark Woodland» в обе стороны и безопасную arrival position.
