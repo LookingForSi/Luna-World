@@ -20,6 +20,9 @@ for room_id in ("Entrance", "Pack1", "Miniboss", "Pack2", "Guardian", "Exit"):
     if f'id = "{room_id}"' not in layout:
         raise AssertionError(f"missing readable dungeon room: {room_id}")
 
+if "Layout.CorridorWidth = 90" not in layout or layout.count("width = Layout.CorridorWidth") != 6:
+    raise AssertionError("all Selene rooms must use one canonical corridor width")
+
 for token in (
     "Layout.Rooms",
     "definition.endZ - definition.startZ",
@@ -28,6 +31,9 @@ for token in (
     "function Service.toWorld",
     "function Service.isWithinBounds",
     "Layout.GateZ[index]",
+    "Vector3.new(Layout.CorridorWidth, 26, 4)",
+    '"RouteEndWall"',
+    "Config.RetreatPromptName",
 ):
     if token not in world:
         raise AssertionError(f"unified dungeon geometry contract missing: {token}")
