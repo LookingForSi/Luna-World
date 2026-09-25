@@ -21,6 +21,28 @@ return function(TestRunner: any)
 		QuestRules.credit(active, "KillMob", "mob_moonbound_warden")
 		assert(Rules.isUnlocked(active.Quests))
 	end)
+	TestRunner.run("retreat reactivates only the Moonbound Warden gate", function()
+		local definition = require(ReplicatedStorage.Shared.definitions.QuestDefinitions)[Rules.QuestId]
+		local progress = {}
+		for _, objective in definition.objectives do progress[objective.id] = objective.required end
+		local quests = { [Rules.QuestId] = { State="ReadyToTurnIn", Progress=progress } }
+		assert(Rules.prepareRetry(quests, definition))
+		local record = quests[Rules.QuestId]
+		assert(record.State == "Active")
+		assert(record.Progress[Rules.ObjectiveId] == 0)
+		for _, objective in definition.objectives do
+			if objective.id ~= Rules.ObjectiveId then assert(record.Progress[objective.id] == objective.required) end
+		end
+		assert(not Rules.isUnlocked(quests))
+	end)
+	TestRunner.run("retreat from a completed quest latches the old reward", function()
+		local definition = require(ReplicatedStorage.Shared.definitions.QuestDefinitions)[Rules.QuestId]
+		local progress = {}
+		for _, objective in definition.objectives do progress[objective.id] = objective.required end
+		local quests = { [Rules.QuestId] = { State="Completed", Progress=progress } }
+		assert(Rules.prepareRetry(quests, definition))
+		assert(quests[Rules.QuestId].RewardClaimed == true)
+	end)
 	TestRunner.run("Studio unlock prepares a schema-valid ready quest from definitions", function()
 		local definition = require(ReplicatedStorage.Shared.definitions.QuestDefinitions)[Rules.QuestId]
 		local quests = {}
