@@ -53,10 +53,14 @@ function QuestRules.turnIn(profile: any, questId: string, npcId: string): (boole
 	if definition == nil then return false, "UnknownQuest" end
 	if definition.turnInNpcId ~= npcId then return false, "WrongNpc" end
 	if record == nil or record.State ~= "ReadyToTurnIn" then return false, "NotReady" end
-	-- State and rewards are changed inside one profile mutation. Completed makes replay idempotent.
-	local progression = ProgressionRules.applyXP(profile.Level, profile.XP, definition.rewardXP)
-	profile.Level, profile.XP = progression.level, progression.xp
-	profile.Luna += definition.rewardLuna
+	-- RewardClaimed survives a retreat/retry cycle so a previously completed
+	-- quest can be reactivated for gating without duplicating XP/Luna.
+	if record.RewardClaimed ~= true then
+		local progression = ProgressionRules.applyXP(profile.Level, profile.XP, definition.rewardXP)
+		profile.Level, profile.XP = progression.level, progression.xp
+		profile.Luna += definition.rewardLuna
+		record.RewardClaimed = true
+	end
 	record.State = "Completed"
 	return true, nil
 end
