@@ -16,6 +16,7 @@ local PartyNetworkService = require(serverRoot.features.party.PartyNetworkServic
 local KillCreditService = require(serverRoot.features.party.KillCreditService)
 local DungeonRunService = require(serverRoot.features.dungeon.DungeonRunService)
 local DungeonTransferService = require(serverRoot.features.dungeon.DungeonTransferService)
+local DungeonEntranceService = require(serverRoot.features.dungeon.DungeonEntranceService)
 local DungeonAdmissionService = require(serverRoot.features.dungeon.DungeonAdmissionService)
 local DungeonWorldService = require(serverRoot.features.dungeon.DungeonWorldService)
 local DungeonEncounterService = require(serverRoot.features.dungeon.DungeonEncounterService)
@@ -78,6 +79,7 @@ local function stopDevCombinedGameplay(): ()
 	-- until these services expose explicit dependency ordering.
 	StudioDebugService.stop()
 	DevCombinedDungeonAdapter.stop()
+	DungeonEntranceService.stop()
 	DungeonTransferService.stop()
 	RespawnService.stop()
 	PlayerRegenerationService.stop()
@@ -128,6 +130,7 @@ function ExistingServerComponents.devCombinedGameplay(): RuntimeComponent.Runtim
 			EconomyNetworkService.start()
 			EconomyWorldService.start()
 			QuestService.start()
+			DungeonEntranceService.start()
 			TravelService.start()
 			NpcWorldService.start()
 		end)
@@ -282,6 +285,10 @@ end
 
 function ExistingServerComponents.dungeonTransfer(): RuntimeComponent.RuntimeComponent
 	return component("DungeonTransferService", DungeonTransferService.start, DungeonTransferService.stop)
+end
+
+function ExistingServerComponents.dungeonEntrance(): RuntimeComponent.RuntimeComponent
+	return component("DungeonEntranceService", DungeonEntranceService.start, DungeonEntranceService.stop)
 end
 
 function ExistingServerComponents.dungeonAdmission(): RuntimeComponent.RuntimeComponent

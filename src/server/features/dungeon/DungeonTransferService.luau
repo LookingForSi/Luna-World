@@ -8,13 +8,14 @@ local Config=require(ReplicatedStorage.Shared.dungeon.DungeonConfig)
 local PlaceConfig=require(ReplicatedStorage.Shared.config.PlaceConfig)
 local PlaceRole=require(ReplicatedStorage.Shared.core.runtime.PlaceRole)
 local Rules=require(ReplicatedStorage.Shared.dungeon.DungeonHandoffRules)
+local UnlockRules=require(ReplicatedStorage.Shared.dungeon.DungeonUnlockRules)
 local TransferConfig=require(ReplicatedStorage.Shared.config.TransferConfig)
 local PartyService=require(script.Parent.Parent.party.PartyService)
 local PlayerDataService=require(script.Parent.Parent.Parent.services.PlayerDataService)
 local IntentStore=require(script.Parent.Parent.Parent.core.transfer.MemoryStoreTransferIntentStore)
 local Store=require(script.Parent.DungeonHandoffStore)
 local Diagnostics=require(script.Parent.DungeonDiagnostics)
-local Service={}; local connections={}; local pending:{[Player]:any}={}; local confirmations:{[Player]:number}={}; local prompt:ProximityPrompt?=nil; local studioHandler:((Player,any)->())?=nil
+local Service={}; local connections={}; local pending:{[Player]:any}={}; local confirmations:{[Player]:number}={}; local prompt:ProximityPrompt?=nil; local promptConnection:RBXScriptConnection?=nil; local studioHandler:((Player,any)->())?=nil
 local event=ReplicatedStorage.Remotes:WaitForChild("DungeonEvent")::RemoteEvent
 local action=ReplicatedStorage.Remotes:WaitForChild("DungeonAction")::RemoteEvent
 local intents=IntentStore.new()
@@ -31,7 +32,8 @@ local function prepare(leader:Player):()
 	local snapshot=PartyService.getSnapshot(leader);local members=if snapshot then snapshot.memberUserIds else {leader.UserId};local leaderId=if snapshot then snapshot.leaderUserId else leader.UserId
 	if leaderId~=leader.UserId then send(leader,"FAILED","Только лидер группы может начать подземелье.");return end
 	send(leader,"PREPARING","Подготовка подземелья...")
-	local players={};for _,id in members do local p=Players:GetPlayerByUserId(id);if not p or not PlayerDataService.isReady(p) then send(leader,"FAILED","Не все участники готовы.");return end;table.insert(players,p) end
+	local players={};local partyUnlocked=false;for _,id in members do local p=Players:GetPlayerByUserId(id);if not p or not PlayerDataService.isReady(p) then send(leader,"FAILED","Не все участники готовы.");return end;local profile=PlayerDataService.getProfileCopy(p);partyUnlocked=partyUnlocked or (profile~=nil and UnlockRules.isUnlocked(profile.Quests));table.insert(players,p) end
+	if not partyUnlocked then send(leader,"FAILED","Древняя печать ещё не разрушена.");return end
 	if snapshot and PartyService.getSnapshot(leader).revision~=snapshot.revision then send(leader,"FAILED","Состав группы изменился. Попробуйте снова.");return end
 	if RunService:IsStudio() and studioHandler then local now=os.time();local contract={schemaVersion=Config.SchemaVersion,kind="DungeonEntry",runId=HttpService:GenerateGUID(false),nonce=HttpService:GenerateGUID(false)..HttpService:GenerateGUID(false),sourceRole="World",destinationRole="Dungeon",leaderUserId=leaderId,memberUserIds=table.clone(members),profiles={},accessCode="STUDIO",issuedAt=now,expiresAt=now+Config.RunTtlSeconds};studioHandler(leader,contract);return end
 	local destination=PlaceConfig.getPlaceId(game.GameId,PlaceRole.Dungeon);if not destination and not (RunService:IsStudio() and studioHandler) then send(leader,"FAILED","Dungeon Place ещё не настроен.");return end
@@ -65,13 +67,22 @@ local function tryRejoin(player: Player): ()
 	local options=Instance.new("TeleportOptions");options.ReservedServerAccessCode=ticket.accessCode;options:SetTeleportData(Rules.routingPayload(token,contract));local ok=pcall(function()TeleportService:TeleportAsync(destination,{player},options)end);if not ok then recover(player,record,"RejoinTeleportFailed")end
 end
 function Service.setStudioHandler(handler:((Player,any)->())?):() studioHandler=handler end
+function Service.bindEntrancePrompt(nextPrompt: ProximityPrompt?): ()
+	if promptConnection then promptConnection:Disconnect();promptConnection=nil end
+	prompt=nextPrompt
+	if prompt then
+		promptConnection=prompt.Triggered:Connect(function(player)
+			if confirmations[player]and os.clock()-confirmations[player]<Config.PromptDebounceSeconds then return end
+			confirmations[player]=os.clock();local s=PartyService.getSnapshot(player);local count=if s then #s.memberUserIds else 1
+			send(player,"CONFIRM_ENTRY",if s then string.format("Войти в Руины Селены группой? Участников: %d/4",count) else "Войти в Руины Селены?",{memberCount=count})
+		end)
+	end
+end
 function Service.start():()
-	local entrance=workspace:FindFirstChild(Config.EntrancePromptName,true);if not entrance then local marker=Instance.new("Part");marker.Name=Config.EntrancePromptName;marker.Size=Vector3.new(8,10,2);marker.Position=Vector3.new(35,5,35);marker.Anchored=true;marker.Color=Color3.fromRGB(70,55,95);marker.Parent=workspace;local p=Instance.new("ProximityPrompt");p.ActionText="Войти";p.ObjectText="Руины Селены";p.MaxActivationDistance=12;p.Parent=marker;entrance=marker end
-	prompt=entrance:FindFirstChildOfClass("ProximityPrompt");if prompt then table.insert(connections,prompt.Triggered:Connect(function(player)if confirmations[player]and os.clock()-confirmations[player]<Config.PromptDebounceSeconds then return end;confirmations[player]=os.clock();local s=PartyService.getSnapshot(player);local count=if s then #s.memberUserIds else 1;send(player,"CONFIRM_ENTRY",if s then string.format("Войти в Руины Селены группой? Участников: %d/4",count) else "Войти в Руины Селены?",{memberCount=count}) end)) end
 	table.insert(connections,action.OnServerEvent:Connect(function(player,payload)if typeof(payload)~="table" or payload.action~="ConfirmEntry" then return end;prepare(player) end))
 	table.insert(connections,TeleportService.TeleportInitFailed:Connect(function(player,_result,message)local record=pending[player];if record then recover(player,record,message) end end))
 	table.insert(connections,Players.PlayerRemoving:Connect(function(player)pending[player]=nil;confirmations[player]=nil end))
 	table.insert(connections,PlayerDataService.CharacterReady:Connect(function(player) task.delay(.5,tryRejoin,player) end))
 end
-function Service.stop():()for _,c in connections do c:Disconnect() end;table.clear(connections);table.clear(pending);table.clear(confirmations);prompt=nil;studioHandler=nil end
+function Service.stop():()Service.bindEntrancePrompt(nil);for _,c in connections do c:Disconnect() end;table.clear(connections);table.clear(pending);table.clear(confirmations);studioHandler=nil end
 return Service

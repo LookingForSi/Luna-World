@@ -30,6 +30,7 @@ return RuntimeManifest.new("WorldServer", {
 	Components.economyNetwork(),
 	Components.economyWorld(),
 	Components.quests(),
+	Components.dungeonEntrance(),
 	Components.travel(),
 	Components.npcWorld(),
 })

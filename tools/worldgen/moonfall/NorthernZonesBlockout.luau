@@ -775,6 +775,16 @@ local function createAncientApproach(parent: Instance, positions: { [string]: Ve
 	P.part(approach, "SeleneGateRight", Vector3.new(18, 52, 18), CFrame.new(northGround + Vector3.new(46, 26, 0)), Enum.Material.Limestone, COLORS.ancientStone)
 	P.part(approach, "SeleneGateLintel", Vector3.new(110, 12, 20), CFrame.new(northGround + Vector3.new(0, 52, 0)), Enum.Material.Limestone, COLORS.ancientStone)
 
+	P.groundedPart(
+		approach,
+		"RuinsOfSeleneEntranceSpawn",
+		WorldLayout.RuinsOfSeleneEntranceQuery,
+		Vector3.new(4, 0.5, 4),
+		Enum.Material.SmoothPlastic,
+		COLORS.ancientStone,
+		{ canCollide = false, transparency = 1, attributes = { Purpose = "DungeonEntranceAnchor" } }
+	)
+
 	local horizon = positions.poi_selene_horizon
 	for index, x in ipairs({ -95, 0, 95 }) do
 		local monolithPosition = horizon + Vector3.new(x, 0, 0)

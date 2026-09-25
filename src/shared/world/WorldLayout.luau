@@ -57,6 +57,7 @@ export type WorldLayoutDefinition = {
 	SpiderHollowRoute: { Vector3 },
 	SpiderReturnRoute: { Vector3 },
 	AncientApproachRoute: { Vector3 },
+	RuinsOfSeleneEntranceQuery: Vector3,
 }
 
 local WORLD_DISTANCE_SCALE = 2.0
@@ -368,6 +369,10 @@ local WorldLayout: WorldLayoutDefinition = {
 		scaleXZ(0, 104, 1700),
 		scaleXZ(0, 124, 1770),
 	},
+
+	-- X/Z authoring target only. Runtime/worldgen resolves the actual Terrain
+	-- surface; Y must never be used as a placement height.
+	RuinsOfSeleneEntranceQuery = scaleXZ(0, 0, 1950),
 }
 
 return table.freeze(WorldLayout)
