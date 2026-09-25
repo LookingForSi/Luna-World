@@ -20,6 +20,9 @@
 
 ### Fixed
 
+- Ruins of Selene приведены к единой ширине коридора: gate перекрывают проход целиком, боковые щели устранены, а оба края маршрута закрыты физическими торцевыми стенами.
+- На стартовом пьедестале Ruins добавлен безопасный retreat: solo или лидер party может подтвердить выход в Moonfall без победы; после возврата реактивируется objective Moonbound Warden, лунный камень снова закрывается до повторного убийства, а уже полученная quest-награда защищена от повторной выдачи.
+
 - DevCombined admission теперь атомарно подтверждает размещение у dungeon checkpoint на следующем Heartbeat до активации OOB/death lifecycle; Moonfall traversal recovery временно исключает принятых dungeon participants и больше не возвращает их от изолированного Selene origin ко входу.
 - Исправлен критический цикл смерти Ruins of Selene: `RespawnService` теперь единолично выполняет `LoadCharacter` и размещает участника по authoritative dungeon checkpoint, а dungeon lifecycle только задаёт respawn context, считает wipe/reset и защищает ещё не размещённый Character от повторного OOB.
 - Greybox Ruins of Selene перестроен в непрерывную последовательность помещений без дыр и progression deadlock; DevCombined использует единый изолированный dungeon origin, а выход за bounds запускает штатный death/wipe/checkpoint lifecycle.
