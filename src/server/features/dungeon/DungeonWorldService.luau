@@ -75,6 +75,13 @@ function Service.getRoot(): Folder?
 	return root
 end
 
+function Service.getRetreatPrompt(): ProximityPrompt?
+	if root == nil then return nil end
+	local spawn = root:FindFirstChild("DungeonEntranceSpawn")
+	if spawn == nil then return nil end
+	return spawn:FindFirstChild(Config.RetreatPromptName) :: ProximityPrompt?
+end
+
 function Service.getCheckpoint(index: number): BasePart?
 	return if root ~= nil then root:FindFirstChild("Checkpoint" .. tostring(math.clamp(index, 0, 3))) :: BasePart? else nil
 end
@@ -88,7 +95,7 @@ function Service.setGateClosed(index: number, closed: boolean): ()
 		return
 	end
 	if gate ~= nil then return end
-	local created = part(root, name, Vector3.new(68, 26, 4), Vector3.new(0, 11, Layout.GateZ[index]), Color3.fromRGB(80, 55, 95))
+	local created = part(root, name, Vector3.new(Layout.CorridorWidth, 26, 4), Vector3.new(0, 11, Layout.GateZ[index]), Color3.fromRGB(80, 55, 95))
 	created:SetAttribute("EncounterGate", index)
 end
 
@@ -102,6 +109,8 @@ function Service.start(devCombined: boolean?): ()
 	root.Parent = workspace
 
 	for index, definition in Layout.Rooms do room(root, definition, index) end
+	part(root, "RouteStartWall", Vector3.new(Layout.CorridorWidth + 8, 30, 4), Vector3.new(0, 13, Layout.Rooms[1].startZ), STONE)
+	part(root, "RouteEndWall", Vector3.new(Layout.CorridorWidth + 8, 30, 4), Vector3.new(0, 13, Layout.Rooms[#Layout.Rooms].endZ), STONE)
 	for index = 1, 3 do Service.setGateClosed(index, true) end
 
 	for index, position in Layout.CheckpointPositions do
@@ -120,6 +129,15 @@ function Service.start(devCombined: boolean?): ()
 	spawn.Anchored = true
 	spawn.Neutral = true
 	spawn.Parent = root
+
+	local retreatPrompt = Instance.new("ProximityPrompt")
+	retreatPrompt.Name = Config.RetreatPromptName
+	retreatPrompt.ActionText = "Покинуть руины"
+	retreatPrompt.ObjectText = "Пьедестал возвращения"
+	retreatPrompt.Enabled = true
+	retreatPrompt.RequiresLineOfSight = false
+	retreatPrompt.MaxActivationDistance = 12
+	retreatPrompt.Parent = spawn
 
 	local exit = part(root, Config.ExitPromptName, Vector3.new(12, 1, 12), Layout.ExitPosition, Color3.fromRGB(90, 120, 150))
 	local prompt = Instance.new("ProximityPrompt")
