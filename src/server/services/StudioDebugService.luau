@@ -5,18 +5,20 @@ local RunService = game:GetService("RunService")
 
 local CombatCoordinator = require(script.Parent.Parent.features.combat.CombatCoordinator)
 local EconomyService = require(script.Parent.EconomyService)
-local InventoryService = require(script.Parent.InventoryService)
 local ProgressionService = require(script.Parent.ProgressionService)
+local PlayerDataService = require(script.Parent.PlayerDataService)
+local QuestDefinitions = require(ReplicatedStorage.Shared.definitions.QuestDefinitions)
+local DungeonUnlockRules = require(ReplicatedStorage.Shared.dungeon.DungeonUnlockRules)
 
 local StudioDebugService = {}
 
 local archetypeRemote: RemoteEvent? = nil
 local levelRemote: RemoteEvent? = nil
-local testItemsRemote: RemoteEvent? = nil
+local unlockRuinsRemote: RemoteEvent? = nil
 local speedRemote: RemoteEvent? = nil
 local archetypeConnection: RBXScriptConnection? = nil
 local levelConnection: RBXScriptConnection? = nil
-local testItemsConnection: RBXScriptConnection? = nil
+local unlockRuinsConnection: RBXScriptConnection? = nil
 local speedConnection: RBXScriptConnection? = nil
 local started = false
 
@@ -40,7 +42,7 @@ function StudioDebugService.start(): ()
 	started = true
 	archetypeRemote = createRemote("StudioSetArchetype")
 	levelRemote = createRemote("StudioSetLevel")
-	testItemsRemote = createRemote("StudioGrantTestItems")
+	unlockRuinsRemote = createRemote("StudioUnlockRuins")
 	speedRemote = createRemote("StudioToggleSpeed")
 	archetypeConnection = (archetypeRemote :: RemoteEvent).OnServerEvent:Connect(function(player: Player, archetypeId: unknown, ...)
 		if select("#", ...) ~= 0 or typeof(archetypeId) ~= "string" then return end
@@ -53,17 +55,15 @@ function StudioDebugService.start(): ()
 		if select("#", ...) ~= 0 or typeof(level) ~= "number" then return end
 		ProgressionService._setLevelForStudio(player, level)
 	end)
-	testItemsConnection = (testItemsRemote :: RemoteEvent).OnServerEvent:Connect(function(player: Player, ...)
+	unlockRuinsConnection = (unlockRuinsRemote :: RemoteEvent).OnServerEvent:Connect(function(player: Player, ...)
 		if select("#", ...) ~= 0 then return end
-		for _, grant in {
-			{ "weapon_training_sword", 1 },
-			{ "weapon_ash_bow", 1 },
-			{ "weapon_ash_staff", 1 },
-			{ "armor_worn_chest", 1 },
-			{ "consumable_minor_healing_draught", 3 },
-			{ "consumable_minor_resource_draught", 3 },
-		} do
-			InventoryService.grantItem(player, grant[1] :: string, grant[2] :: number)
+		local definition = QuestDefinitions[DungeonUnlockRules.QuestId]
+		assert(definition ~= nil, "Ruins unlock quest definition is missing")
+		local mutated, reason = PlayerDataService.mutate(player, function(profile)
+			DungeonUnlockRules.prepareStudioUnlock(profile.Quests, definition)
+		end)
+		if not mutated then
+			warn(string.format("STUDIO: RUINS debug unlock rejected for userId=%d: %s", player.UserId, tostring(reason)))
 		end
 	end)
 	speedConnection = (speedRemote :: RemoteEvent).OnServerEvent:Connect(function(player: Player, ...)
@@ -78,11 +78,11 @@ function StudioDebugService.stop(): ()
 	started = false
 	if archetypeConnection ~= nil then archetypeConnection:Disconnect(); archetypeConnection = nil end
 	if levelConnection ~= nil then levelConnection:Disconnect(); levelConnection = nil end
-	if testItemsConnection ~= nil then testItemsConnection:Disconnect(); testItemsConnection = nil end
+	if unlockRuinsConnection ~= nil then unlockRuinsConnection:Disconnect(); unlockRuinsConnection = nil end
 	if speedConnection ~= nil then speedConnection:Disconnect(); speedConnection = nil end
 	if archetypeRemote ~= nil then archetypeRemote:Destroy(); archetypeRemote = nil end
 	if levelRemote ~= nil then levelRemote:Destroy(); levelRemote = nil end
-	if testItemsRemote ~= nil then testItemsRemote:Destroy(); testItemsRemote = nil end
+	if unlockRuinsRemote ~= nil then unlockRuinsRemote:Destroy(); unlockRuinsRemote = nil end
 	if speedRemote ~= nil then speedRemote:Destroy(); speedRemote = nil end
 end
 

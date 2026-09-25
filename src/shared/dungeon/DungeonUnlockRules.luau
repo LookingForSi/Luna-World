@@ -5,6 +5,25 @@ local Rules = {}
 Rules.QuestId = "quest_ancient_approach"
 Rules.ObjectiveId = "kill_moonbound_warden"
 
+function Rules.prepareStudioUnlock(quests: any, definition: any): boolean
+	if typeof(quests) ~= "table" or typeof(definition) ~= "table" or definition.id ~= Rules.QuestId then
+		return false
+	end
+	local existing = quests[Rules.QuestId]
+	if typeof(existing) == "table" and existing.State == "Completed" then
+		return false
+	end
+	local progress = {}
+	for _, objective in definition.objectives do
+		progress[objective.id] = objective.required
+	end
+	quests[Rules.QuestId] = {
+		State = "ReadyToTurnIn",
+		Progress = progress,
+	}
+	return true
+end
+
 function Rules.isUnlocked(quests: any): boolean
 	if typeof(quests) ~= "table" then return false end
 	local record = quests[Rules.QuestId]

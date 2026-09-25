@@ -62,15 +62,15 @@ function StudioTestPanel.start(): ()
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	local candidate = remotes:WaitForChild("StudioSetArchetype", 5)
 	local levelCandidate = remotes:WaitForChild("StudioSetLevel", 5)
-	local testItemsCandidate = remotes:WaitForChild("StudioGrantTestItems", 5)
+	local unlockRuinsCandidate = remotes:WaitForChild("StudioUnlockRuins", 5)
 	local speedCandidate = remotes:WaitForChild("StudioToggleSpeed", 5)
 	if candidate == nil or not candidate:IsA("RemoteEvent") then return end
 	if levelCandidate == nil or not levelCandidate:IsA("RemoteEvent") then return end
-	if testItemsCandidate == nil or not testItemsCandidate:IsA("RemoteEvent") then return end
+	if unlockRuinsCandidate == nil or not unlockRuinsCandidate:IsA("RemoteEvent") then return end
 	if speedCandidate == nil or not speedCandidate:IsA("RemoteEvent") then return end
 	local remote = candidate :: RemoteEvent
 	local levelRemote = levelCandidate :: RemoteEvent
-	local testItemsRemote = testItemsCandidate :: RemoteEvent
+	local unlockRuinsRemote = unlockRuinsCandidate :: RemoteEvent
 	local speedRemote = speedCandidate :: RemoteEvent
 
 	local gui = Instance.new("ScreenGui")
@@ -148,10 +148,10 @@ function StudioTestPanel.start(): ()
 		levelRemote:FireServer(ProgressionConfig.LevelCap)
 	end))
 
-	local testItems = makeLevelButton("GrantTestItems", "ТЕСТ ЛУТ +", 8, 140)
-	testItems.Position = UDim2.fromOffset(8, 104)
-	table.insert(buttonConnections, testItems.Activated:Connect(function()
-		testItemsRemote:FireServer()
+	local unlockRuins = makeLevelButton("UnlockRuins", "RUINS OPEN", 8, 140)
+	unlockRuins.Position = UDim2.fromOffset(8, 104)
+	table.insert(buttonConnections, unlockRuins.Activated:Connect(function()
+		unlockRuinsRemote:FireServer()
 	end))
 
 	speedButton = makeLevelButton("SpeedX5", "SPEED x5", 156, 136)

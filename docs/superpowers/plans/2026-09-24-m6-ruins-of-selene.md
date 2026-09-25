@@ -72,3 +72,11 @@ Tracking: #79, release gate #63
 - [ ] У NPC «Дозорный Dark Woodland» принять и сдать «Через Dark Woodland».
 - [ ] У него же принять Ancient Approach; после Moonbound Warden вернуться к нему, а не к Стражу ворот.
 - [ ] После Spider Hollow проверить маршрут Luna Village ↔ «Дозор Dark Woodland» в обе стороны и безопасную arrival position.
+
+### Owner retest — Studio Ruins shortcut
+
+- [ ] Запустить `dev-combined` и нажать `RUINS OPEN`.
+- [ ] Увидеть сообщение production flow об открытии Ancient Approach.
+- [ ] Проверить ровно один лунный камень и prompt `Войти — Лунный камень — Ruins of Selene`.
+- [ ] Нажать `RUINS OPEN` повторно и убедиться, что stone/prompt не дублируются.
+- [ ] Отдельно убить Warden без активного Ancient Approach: Ruins остаются закрыты, а Studio Output содержит диагностический warning.

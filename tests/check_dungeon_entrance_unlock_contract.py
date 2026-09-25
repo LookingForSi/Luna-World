@@ -5,6 +5,8 @@ def read(path): return (ROOT/path).read_text()
 layout=read('src/shared/world/WorldLayout.luau')
 worldgen=read('tools/worldgen/moonfall/NorthernZonesBlockout.luau')
 service=read('src/server/features/dungeon/DungeonEntranceService.luau')
+debug=read('src/server/services/StudioDebugService.luau')
+rules=read('src/shared/dungeon/DungeonUnlockRules.luau')
 transfer=read('src/server/features/dungeon/DungeonTransferService.luau')
 quest=read('src/shared/definitions/QuestDefinitions.luau')
 map_client=read('src/client/features/quests/QuestController.luau')
@@ -14,6 +16,13 @@ assert '"RuinsOfSeleneEntranceSpawn"' in worldgen and 'P.groundedPart' in worldg
 assert 'TerrainGrounding.surfaceAt(WorldLayout.RuinsOfSeleneEntranceQuery)' in service
 assert 'assert(hit,' in service
 assert 'UnlockRules.isUnlocked' in service and 'KillCreditService.KillResolved' in service
+assert 'PlayerDataService.ProfileChanged:Connect(refreshPlayer)' in service
+assert 'if portalStone ~= nil and portalStone.Parent ~= nil then return end' in service
+assert 'RunService:IsStudio()' in service and 'Moonbound Warden killed, but Ruins remain locked' in service
+assert 'createRemote("StudioUnlockRuins")' in debug and 'RunService:IsStudio()' in debug
+assert 'PlayerDataService.mutate' in debug and 'DungeonUnlockRules.prepareStudioUnlock' in debug
+assert 'definition.objectives' in rules and 'State = "ReadyToTurnIn"' in rules
+assert 'StudioGrantTestItems' not in debug
 assert 'DungeonTransferService.bindEntrancePrompt(prompt)' in service
 assert 'local partyUnlocked=false' in transfer and 'UnlockRules.isUnlocked(profile.Quests)' in transfer
 assert 'Древняя печать ещё не разрушена.' in transfer
