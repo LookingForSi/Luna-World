@@ -20,6 +20,29 @@ function Rules.prepareStudioUnlock(quests: any, definition: any): boolean
 	quests[Rules.QuestId] = {
 		State = "ReadyToTurnIn",
 		Progress = progress,
+		RewardClaimed = if typeof(existing) == "table" then existing.RewardClaimed else nil,
+	}
+	return true
+end
+
+function Rules.prepareRetry(quests: any, definition: any): boolean
+	if typeof(quests) ~= "table" or typeof(definition) ~= "table" or definition.id ~= Rules.QuestId then
+		return false
+	end
+	local existing = quests[Rules.QuestId]
+	if typeof(existing) ~= "table" or typeof(existing.Progress) ~= "table" then
+		return false
+	end
+
+	local progress = {}
+	for _, objective in definition.objectives do
+		progress[objective.id] = if objective.id == Rules.ObjectiveId then 0 else objective.required
+	end
+
+	quests[Rules.QuestId] = {
+		State = "Active",
+		Progress = progress,
+		RewardClaimed = existing.RewardClaimed == true or existing.State == "Completed",
 	}
 	return true
 end
