@@ -146,3 +146,13 @@ World map показывает `Ruins of Selene` только при replicated 
 В `DevCombined` Studio-панель содержит `RUINS OPEN` вместо выдачи тестового loot. Динамический remote `StudioUnlockRuins` создаётся сервером только при `RunService:IsStudio()` и через `PlayerDataService.mutate` переводит `quest_ancient_approach` в schema-valid `ReadyToTurnIn`, заполняя progress из текущих objective definitions. Дальше камень создаёт исключительно production-цепочка `ProfileChanged → DungeonEntranceService.refreshPlayer → DungeonUnlockRules.isUnlocked → createPortal`; debug service не создаёт world instances и не телепортирует игрока.
 
 Повторное действие сохраняет `Completed` без изменений, а для `ReadyToTurnIn` остаётся идемпотентным благодаря единственному portal latch. Production contract не ослаблен: canonical kill credit обрабатывает только уже активные quests, поэтому Warden без активного Ancient Approach не открывает Ruins. В Studio такой kill пишет диагностический warning с предложением активировать quest или использовать кнопку.
+
+## 19. Проходимый greybox и единое пространство координат
+
+Dungeon использует локальный `DungeonLayout`: Entrance → Pack 1 → Gate 1 → Miniboss → Gate 2 → Pack 2 → Gate 3 → Guardian → Exit. Encounter position всегда находится перед gate, который открывается после его завершения. Пол комнат стыкуется общей границей без промежутков; разные ширины и room markers делают функциональные зоны читаемыми без art pass.
+
+`DungeonWorldService` является единственным владельцем transform API. В production локальный origin равен нулю Dungeon Place, а DevCombined применяет один изолированный offset ко всей геометрии. Encounter spawns, gates, checkpoints, entrance, exit и boss telegraph получают world positions через тот же service; самостоятельных offsets в encounter logic нет.
+
+Server heartbeat проверяет участников относительно dungeon-local bounds. Выход ниже пола или за пределы маршрута один раз убивает текущий Humanoid, после чего штатные death/wipe правила возвращают игрока к последнему checkpoint и сбрасывают только незавершённый encounter. Generation-specific spawn markers запрещают отложенный respawn mobs из уже завершённого или сброшенного encounter.
+
+DevCombined exit сначала снимает active latch и connections, затем закрывает encounters/run/world и возвращает только participants в Moonfall. Удаление dungeon root аварийным cleanup также закрывает run; следующий entrance может создать новый run без stale `active=true`.

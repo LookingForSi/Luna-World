@@ -18,6 +18,7 @@
 
 ### Fixed
 
+- Greybox Ruins of Selene перестроен в непрерывную последовательность помещений без дыр и progression deadlock; DevCombined использует единый изолированный dungeon origin, а выход за bounds запускает штатный death/wipe/checkpoint lifecycle.
 - Studio-панель теперь открывает Ruins через schema-valid `quest_ancient_approach` mutation и обычный `ProfileChanged` pipeline; production kill Moonbound Warden без активного квеста по-прежнему не снимает печать.
 - DevCombined bootstrap теперь переиспользует принятый `MoonfallAuthoredWorld`, перестраивает только generator-owned blockout и fail-closed отклоняет неизвестный ownership или несколько конкурирующих roots; повторный Studio Start больше не требует ручного удаления Workspace content.
 - Ошибка server bootstrap реплицируется в `ServerBootstrapState`, поэтому Character Lobby показывает диагностируемую ошибку вместо бесконечного «Загрузка аккаунта…».

@@ -15,9 +15,12 @@ assert "PlayerDataService.beginTransfer" in transfer and "MemoryStoreTransferInt
 assert "setPreClaimValidator" in admission and "IntentRules.validate" in admission
 assert "DungeonRejoin" in transfer and "ReservedServerAccessCode" in transfer
 assert "Humanoid" in run and "PARTY_WIPE" in run and "Checkpoint" in run
+assert "DungeonWorld.isWithinBounds" in run and "PLAYER_OUT_OF_BOUNDS" in run
 assert "removeConfigured" in encounter and "DungeonResetGeneration" in encounter
+assert "DungeonWorld.toWorld" in encounter and "Layout.EncounterPositions" in encounter
 assert "BOSS_ENRAGED" in encounter and "GuardianDangerZone" in encounter
 assert "DungeonReturn" in returned and "returnInProgress" in returned
 assert "restoreTrusted" in party
 assert 'assert(RunService:IsStudio()' in dev
+assert 'DungeonWorld.start(true)' in dev and 'DungeonWorld.getRoot() == nil' in dev
 print("Dungeon M6 runtime integration contract: PASS")

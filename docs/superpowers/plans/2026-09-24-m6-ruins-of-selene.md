@@ -80,3 +80,13 @@ Tracking: #79, release gate #63
 - [ ] Проверить ровно один лунный камень и prompt `Войти — Лунный камень — Ruins of Selene`.
 - [ ] Нажать `RUINS OPEN` повторно и убедиться, что stone/prompt не дублируются.
 - [ ] Отдельно убить Warden без активного Ancient Approach: Ruins остаются закрыты, а Studio Output содержит диагностический warning.
+
+### Owner retest — dungeon traversal и DevCombined isolation
+
+- [ ] Пройти без debug-команд после входа: Pack 1 → Gate 1 → Miniboss → Gate 2 → Pack 2 → Gate 3 → Guardian → Exit.
+- [ ] Проверить непрерывный пол и отсутствие падения между комнатами.
+- [ ] Убедиться, что каждый encounter доступен до своего закрытого gate, а следующий roster появляется только после завершения предыдущего.
+- [ ] Проверить, что Guardian отсутствует до Pack 2, а exit prompt disabled до его смерти.
+- [ ] Упасть/выйти за dungeon bounds: death → wipe/reset текущего encounter → последний checkpoint, без потери run/rewards.
+- [ ] В DevCombined убедиться, что Moonfall geometry не пересекается и не видна из dungeon.
+- [ ] Завершить run, выйти в Moonfall и штатно начать второй run; stale active state отсутствует.
