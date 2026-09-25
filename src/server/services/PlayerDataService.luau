@@ -207,7 +207,7 @@ function PlayerDataService.beginTransfer(player: Player): (boolean, string?)
 	if not save(player, true) then return false, "SaveFailed" end
 	return true, nil
 end
-function PlayerDataService.recoverTransfer(player: Player): (boolean, string?)
+function PlayerDataService.recoverTransfer(player: Player, resumeCharacter: boolean?): (boolean, string?)
 	local session = sessions[player]
 	if session == nil or session.state ~= "Released" or store == nil then return false, "NotReleased" end
 	local result = (store :: ProfileStoreContract.Store):claim(player.UserId, session.token, os.time())
@@ -224,6 +224,11 @@ function PlayerDataService.recoverTransfer(player: Player): (boolean, string?)
 	-- persisted, but the player must be able to request Enter World again.
 	session.activeCharacterId = nil
 	setState(player, session, "AccountReady")
+	if resumeCharacter == true then
+		local selected, reason = PlayerDataService.selectCharacter(player, characterId)
+		if not selected then return false, reason end
+		PlayerDataService.confirmArrival(player)
+	end
 	return true, nil
 end
 

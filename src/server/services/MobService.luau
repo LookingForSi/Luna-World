@@ -289,6 +289,17 @@ function MobService.spawnConfigured(definitionKey: string, position: Vector3, sp
 	return createMob({ definitionKey=definitionKey, cframe=CFrame.new(position), spawnMarkerId=spawnMarkerId, spawnIndex=spawnIndex, socialGroupId=spawnMarkerId, patrolRadius=8, patrolCycleSeconds=10 })
 end
 
+function MobService.removeConfigured(spawnMarkerId: string): ()
+	for model in spawnedModels do
+		if model:GetAttribute("SpawnMarkerId") == spawnMarkerId then
+			local entityId = model:GetAttribute("EntityId")
+			if typeof(entityId) == "string" then mobsByEntityId[entityId] = nil; lastAttackerByEntityId[entityId] = nil end
+			spawnedModels[model] = nil
+			model:Destroy()
+		end
+	end
+end
+
 function MobService.start(): ()
 	if started then
 		return

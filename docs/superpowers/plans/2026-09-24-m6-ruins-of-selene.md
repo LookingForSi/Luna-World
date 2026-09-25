@@ -42,3 +42,15 @@ Tracking: #79, release gate #63
 - FAILURE: disconnect/rejoin, full wipe/reset, repeated entry, leader disconnect, stale party snapshot/token, duplicate requests.
 - DEV-COMBINED: local dungeon iteration доступна, production role boundaries/worldgen exclusion сохранены.
 - PUBLISHED: реальный Lobby → Moonfall → reserved Dungeon → Moonfall teleport в test Experience; Studio Play не заменяет эту проверку.
+
+## Integration/hardening pass
+
+- [x] Profile lease release/acquire встроен в entry и return handoff.
+- [x] Dungeon return и trusted M5 reconstruction подключены.
+- [x] Scoped rejoin ticket направляет игрока в исходный reserved server.
+- [x] Humanoid-based wipe, checkpoints и deterministic encounter reset подключены.
+- [x] Guardian telegraph/enrage feedback и reset generation подключены.
+- [x] Studio-only DevCombined adapter использует production dungeon services.
+- [x] Entrance confirmation, objective HUD, completion/return и failure feedback добавлены.
+- [x] TTL namespaces, structured diagnostics и replay/duplicate guards добавлены.
+- [ ] **DEFERRED — OWNER ACCEPTANCE REQUIRED:** Studio multiplayer и published multi-Place проверки.
