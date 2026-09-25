@@ -134,3 +134,9 @@ Entrance имеет отдельный невидимый world anchor `RuinsOfS
 После credit Guardian death `DungeonEntranceService` повторно читает authoritative profile, идемпотентно создаёт один portal stone на anchor и передаёт его prompt существующему `DungeonTransferService`. Сам transfer дополнительно проверяет unlock в server-owned solo/party snapshot, поэтому forged `DungeonAction` без progression не начинает run; запуск по-прежнему доступен только leader. `ReadyToTurnIn` и `Completed` восстанавливают stone/map state после respawn, rejoin или нового Moonfall server.
 
 World map показывает `Ruins of Selene` только при replicated server-owned attribute `RuinsOfSeleneUnlocked=true`. До unlock карта Moonfall не раскрывает доступную dungeon-точку.
+
+## 17. Передача северной quest-chain
+
+Существующий стабильный ID `npc_moonfall_scout` остаётся у дозорного на `poi_moonfall_crossroads`, но его отображаемое имя — «Дозорный Moonfall Road». Он завершает участок Stone Circle → Goblin Camp → Spider Hollow. Completion Spider Hollow направляет игрока к отдельному `npc_dark_woodland_scout` на `poi_dark_woodland_gate`; следующий quest у старого дозорного не появляется.
+
+Дозорный Dark Woodland выдаёт и принимает `quest_dark_woodland`, затем выдаёт и принимает `quest_ancient_approach`. Таким образом authoritative giver/turn-in IDs одновременно управляют диалогами и quest markers без client-side исключений. После Spider Hollow также открывается data-driven платный маршрут `travel_dark_woodland` между Стражем ворот Luna Village и северным дозором; стоимость использует общую travel economy и `loot_dire_wolf`.
