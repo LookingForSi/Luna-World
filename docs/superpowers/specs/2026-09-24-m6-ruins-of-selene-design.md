@@ -156,3 +156,12 @@ Dungeon использует локальный `DungeonLayout`: Entrance → Pa
 Server heartbeat проверяет участников относительно dungeon-local bounds. Выход ниже пола или за пределы маршрута один раз убивает текущий Humanoid, после чего штатные death/wipe правила возвращают игрока к последнему checkpoint и сбрасывают только незавершённый encounter. Generation-specific spawn markers запрещают отложенный respawn mobs из уже завершённого или сброшенного encounter.
 
 DevCombined exit сначала снимает active latch и connections, затем закрывает encounters/run/world и возвращает только participants в Moonfall. Удаление dungeon root аварийным cleanup также закрывает run; следующий entrance может создать новый run без stale `active=true`.
+
+
+## 20. Fail-safe retreat и sealed corridor polish
+
+Greybox Ruins of Selene использует единый `CorridorWidth` на всём маршруте. Side walls, encounter gates и торцевые blockers стыкуются с одной шириной, поэтому между gate и стеной нет обходных щелей, а оба края dungeon route физически закрыты и не позволяют выйти в пустоту через визуальное «окно».
+
+Стартовая площадка `DungeonEntranceSpawn` одновременно является пьедесталом безопасного отступления. Во время `ACTIVE/BOSS` она выдаёт server-issued confirmation token; solo-игрок может прервать run сам, а в party это действие доступно только leader и возвращает всю присутствующую группу в Moonfall. Return contract помечается `returnMode = "Retreat"`; обычный completion return остаётся отдельным режимом.
+
+После retreat Moonfall реактивирует `quest_ancient_approach`: все предыдущие objective считаются выполненными, а `kill_moonbound_warden` сбрасывается в 0. Лунный камень снова закрыт до повторной authoritative смерти Moonbound Warden. Для уже завершённого ранее квеста persistent `RewardClaimed` latch запрещает повторную выдачу XP/Luna после retry-turn-in.
