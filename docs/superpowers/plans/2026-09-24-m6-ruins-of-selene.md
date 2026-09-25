@@ -54,3 +54,13 @@ Tracking: #79, release gate #63
 - [x] Entrance confirmation, objective HUD, completion/return и failure feedback добавлены.
 - [x] TTL namespaces, structured diagnostics и replay/duplicate guards добавлены.
 - [ ] **DEFERRED — OWNER ACCEPTANCE REQUIRED:** Studio multiplayer и published multi-Place проверки.
+
+### Owner retest — Guardian entrance gate
+
+- [ ] Новый Moonfall session: в Ancient Approach нет stone/prompt до Guardian kill.
+- [ ] Невидимый `RuinsOfSeleneEntranceSpawn` стоит на Terrain surface у северного края.
+- [ ] Forged/replayed `ConfirmEntry` до unlock отклоняется сервером.
+- [ ] Moonbound Warden death завершает existing quest objective и создаёт ровно один stone/prompt.
+- [ ] Map marker появляется только у unlocked player.
+- [ ] Respawn/rejoin/Completed quest восстанавливают unlock без duplicate stone.
+- [ ] Solo и M5 party используют прежний M6 reserved-server transfer.

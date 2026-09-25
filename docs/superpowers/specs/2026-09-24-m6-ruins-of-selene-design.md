@@ -124,3 +124,13 @@ Transfer UI проходит состояния `PREPARING/TELEPORTING/FAILED/RE
 ## 15. DevCombined
 
 Только при одновременных условиях `RunService:IsStudio()` и явной роли `DevCombined` adapter подменяет transport, но не dungeon logic: создаёт тот же contract, запускает те же `DungeonWorldService`, `DungeonRunService` и `DungeonEncounterService`, а exit закрывает локальную session и возвращает к Moonfall iteration. Production roles не имеют fallback в этот adapter.
+
+## 16. Moonfall entrance и Guardian gate
+
+Entrance имеет отдельный невидимый world anchor `RuinsOfSeleneEntranceSpawn` у северного окончания Ancient Approach. `WorldLayout` хранит только X/Z authoring query, а worldgen и runtime fallback определяют настоящий Terrain surface raycast-ом. Portal stone никогда не использует фиксированный Y.
+
+До authoritative kill `mob_moonbound_warden` существуют только anchor и sealed lore state: stone, prompt и доступный map marker отсутствуют. Existing quest progression `quest_ancient_approach.kill_moonbound_warden` является persistent unlock flag; новый persistence schema не вводится.
+
+После credit Guardian death `DungeonEntranceService` повторно читает authoritative profile, идемпотентно создаёт один portal stone на anchor и передаёт его prompt существующему `DungeonTransferService`. Сам transfer дополнительно проверяет unlock в server-owned solo/party snapshot, поэтому forged `DungeonAction` без progression не начинает run; запуск по-прежнему доступен только leader. `ReadyToTurnIn` и `Completed` восстанавливают stone/map state после respawn, rejoin или нового Moonfall server.
+
+World map показывает `Ruins of Selene` только при replicated server-owned attribute `RuinsOfSeleneUnlocked=true`. До unlock карта Moonfall не раскрывает доступную dungeon-точку.

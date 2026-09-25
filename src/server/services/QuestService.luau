@@ -137,13 +137,13 @@ function QuestService.openNpc(player: Player, npcId: string): ()
 				rewardLuna=definition.rewardLuna,
 			})
 		elseif record and record.State == "ReadyToTurnIn" and definition.turnInNpcId == npcId and not definition.autoTurnIn then
-			if message == nil then message = "Похоже, ты справился." end
+			if message == nil then message = definition.completionDescription or "Похоже, ты справился." end
 			table.insert(topics, {
 				kind="TurnInQuest",
 				questId=questId,
 				text="Квест",
 				title=definition.displayName,
-				description=definition.description,
+				description=definition.completionDescription or definition.description,
 				rewardXP=definition.rewardXP,
 				rewardLuna=definition.rewardLuna,
 			})
