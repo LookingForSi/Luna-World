@@ -46,8 +46,8 @@ if "Vector3.new(0,5,110)" in encounter or "index*120-60" in encounter:
     raise AssertionError("EncounterService must not carry an independent coordinate system")
 
 for token in (
-    "DungeonWorld.isWithinBounds(rootPart.Position)",
-    'humanoid.Health=0',
+    "DungeonWorld.inspectBounds(rootPart.Position)",
+    'humanoid.Health = 0',
     'log("PLAYER_OUT_OF_BOUNDS"',
     "DungeonWorld.getCheckpoint",
 ):

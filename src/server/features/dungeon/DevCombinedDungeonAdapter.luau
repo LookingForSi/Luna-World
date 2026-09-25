@@ -50,7 +50,10 @@ local function enter(_leader: Player, contract: any): ()
 		DungeonWorld.start(true)
 		DungeonRun.start()
 		for _, player in Players:GetPlayers() do
-			if participantIds[player.UserId] then DungeonRun.admit(player, contract) end
+			if participantIds[player.UserId] then
+				local admitted, admitReason = DungeonRun.admit(player, contract)
+				assert(admitted, "DevCombined dungeon admission failed: " .. tostring(admitReason))
+			end
 		end
 		Encounters.start()
 

@@ -55,13 +55,21 @@ function Service.toLocal(worldPosition: Vector3): Vector3
 	return origin:PointToObjectSpace(worldPosition)
 end
 
-function Service.isWithinBounds(worldPosition: Vector3): boolean
+function Service.inspectBounds(worldPosition: Vector3): (boolean, string?, Vector3)
 	local position = Service.toLocal(worldPosition)
-	return position.Y >= Layout.OutOfBoundsY
-		and math.abs(position.X) <= Layout.RouteHalfWidth
-		and position.Z >= Layout.RouteMinZ
-		and position.Z <= Layout.RouteMaxZ
+	if position.Y < Layout.OutOfBoundsY then return false, "Y", position end
+	if math.abs(position.X) > Layout.RouteHalfWidth then return false, "X", position end
+	if position.Z < Layout.RouteMinZ then return false, "minZ", position end
+	if position.Z > Layout.RouteMaxZ then return false, "maxZ", position end
+	return true, nil, position
 end
+
+function Service.isWithinBounds(worldPosition: Vector3): boolean
+	local within = Service.inspectBounds(worldPosition)
+	return within
+end
+
+function Service.getOrigin(): Vector3 return origin.Position end
 
 function Service.getRoot(): Folder?
 	return root

@@ -6,6 +6,9 @@ local Components = require(script.Parent.Parent.adapters.ExistingServerComponent
 
 return RuntimeManifest.new("DungeonServer", {
 	Components.dungeonWorld(),
+	-- Admission installs an authoritative dungeon respawn context, so its generic
+	-- owner must already be accepting contexts before AccountReady can fire.
+	Components.respawn(),
 	Components.dungeonAdmission(),
 	Components.playerData(),
 	Components.progression(),
@@ -14,7 +17,6 @@ return RuntimeManifest.new("DungeonServer", {
 	Components.dungeonRun(),
 	Components.combat(),
 	Components.regeneration(),
-	Components.respawn(),
 	Components.mobAbilities(),
 	Components.mobAI(),
 	Components.mobs(),
