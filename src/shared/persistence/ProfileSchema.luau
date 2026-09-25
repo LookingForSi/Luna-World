@@ -60,7 +60,7 @@ function ProfileSchema.clone(profile: PersistenceTypes.Profile): PersistenceType
 	}
 	local quests: { [string]: PersistenceTypes.QuestRecord } = {}
 	for questId, quest in profile.Quests do
-		quests[questId] = { State = quest.State, Progress = table.clone(quest.Progress) }
+		quests[questId] = { State = quest.State, Progress = table.clone(quest.Progress), RewardClaimed = quest.RewardClaimed }
 	end
 	return {
 		DataVersion = profile.DataVersion,
@@ -102,6 +102,9 @@ function ProfileSchema.validateCurrent(profile: unknown): (boolean, string?)
 		local definition = if typeof(questId) == "string" then QuestDefinitions[questId] else nil
 		if definition == nil or typeof(record) ~= "table" or (record.State ~= "Active" and record.State ~= "ReadyToTurnIn" and record.State ~= "Completed") or typeof(record.Progress) ~= "table" then
 			return fail("quest record is invalid")
+		end
+		if record.RewardClaimed ~= nil and typeof(record.RewardClaimed) ~= "boolean" then
+			return fail("quest reward latch is invalid")
 		end
 		local known = {}
 		for _, objective in definition.objectives do known[objective.id] = objective.required end
