@@ -12,6 +12,13 @@ return function(TestRunner: any)
 		assert(Layout.Rooms[#Layout.Rooms].endZ <= Layout.RouteMaxZ)
 	end)
 
+	TestRunner.run("all Selene rooms use one corridor width", function()
+		for _, room in Layout.Rooms do
+			assert(room.width == Layout.CorridorWidth)
+		end
+		assert(Layout.RouteHalfWidth >= Layout.CorridorWidth * 0.5)
+	end)
+
 	TestRunner.run("each required encounter precedes the gate it unlocks", function()
 		for index = 1, 3 do
 			assert(Layout.EncounterPositions[index].Z < Layout.GateZ[index])
