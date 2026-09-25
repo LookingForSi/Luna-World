@@ -8,6 +8,7 @@ local DungeonWorld = require(script.Parent.DungeonWorldService)
 local DungeonRun = require(script.Parent.DungeonRunService)
 local Encounters = require(script.Parent.DungeonEncounterService)
 local Diagnostics = require(script.Parent.DungeonDiagnostics)
+local TraversalRecovery = require(script.Parent.Parent.Parent.world.TraversalRecovery)
 
 local Service = {}
 local active = false
@@ -20,7 +21,7 @@ local function disconnectRuntimeSignals(): ()
 	if rootConnection ~= nil then rootConnection:Disconnect(); rootConnection = nil end
 end
 
-local function close(): ()
+local function close(returnToMoonfallSpawn: boolean?): ()
 	if not active then return end
 	active = false
 	disconnectRuntimeSignals()
@@ -28,12 +29,13 @@ local function close(): ()
 	DungeonRun.stop()
 	DungeonWorld.stop()
 
-	local destination = workspace:FindFirstChild("LunaVillageSpawn", true)
-	if destination ~= nil and destination:IsA("BasePart") then
-		for _, player in Players:GetPlayers() do
-			if participantIds[player.UserId] and player.Character ~= nil then
+	local destination = if returnToMoonfallSpawn then workspace:FindFirstChild("LunaVillageSpawn", true) else nil
+	for _, player in Players:GetPlayers() do
+		if participantIds[player.UserId] then
+			if destination ~= nil and destination:IsA("BasePart") and player.Character ~= nil then
 				player.Character:PivotTo(destination.CFrame + Vector3.new(0, 4, 0))
 			end
+			TraversalRecovery.setPlayerExcluded(player, false)
 		end
 	end
 	table.clear(participantIds)
@@ -51,6 +53,9 @@ local function enter(_leader: Player, contract: any): ()
 		DungeonRun.start()
 		for _, player in Players:GetPlayers() do
 			if participantIds[player.UserId] then
+				-- Moonfall recovery would otherwise see the isolated dungeon offset as OOB
+				-- and undo the authoritative checkpoint PivotTo on its next 0.2s tick.
+				TraversalRecovery.setPlayerExcluded(player, true)
 				local admitted, admitReason = DungeonRun.admit(player, contract)
 				assert(admitted, "DevCombined dungeon admission failed: " .. tostring(admitReason))
 			end
@@ -60,14 +65,14 @@ local function enter(_leader: Player, contract: any): ()
 		local dungeonRoot = DungeonWorld.getRoot()
 		assert(dungeonRoot ~= nil, "DevCombined dungeon root was not created")
 		rootConnection = dungeonRoot.AncestryChanged:Connect(function(_, parent)
-			if active and parent == nil then task.defer(close) end
+			if active and parent == nil then task.defer(close, false) end
 		end)
 		local exit = dungeonRoot:FindFirstChild("RuinsOfSeleneExit")
 		local prompt = if exit ~= nil then exit:FindFirstChildOfClass("ProximityPrompt") else nil
 		assert(prompt ~= nil, "DevCombined dungeon exit prompt is missing")
 		exitConnection = prompt.Triggered:Connect(function(player)
 			local snapshot = DungeonRun.getSnapshot()
-			if DungeonRun.isParticipant(player) and snapshot ~= nil and snapshot.state == "COMPLETED" then close() end
+			if DungeonRun.isParticipant(player) and snapshot ~= nil and snapshot.state == "COMPLETED" then close(true) end
 		end)
 	end)
 	if not ok then

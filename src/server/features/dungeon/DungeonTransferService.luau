@@ -15,7 +15,7 @@ local PlayerDataService=require(script.Parent.Parent.Parent.services.PlayerDataS
 local IntentStore=require(script.Parent.Parent.Parent.core.transfer.MemoryStoreTransferIntentStore)
 local Store=require(script.Parent.DungeonHandoffStore)
 local Diagnostics=require(script.Parent.DungeonDiagnostics)
-local Service={}; local connections={}; local pending:{[Player]:any}={}; local confirmations:{[Player]:number}={}; local prompt:ProximityPrompt?=nil; local promptConnection:RBXScriptConnection?=nil; local studioHandler:((Player,any)->())?=nil
+local Service={}; local connections={}; local pending:{[Player]:any}={}; local confirmations:{[Player]:any}={}; local prompt:ProximityPrompt?=nil; local promptConnection:RBXScriptConnection?=nil; local studioHandler:((Player,any)->())?=nil
 local event=ReplicatedStorage.Remotes:WaitForChild("DungeonEvent")::RemoteEvent
 local action=ReplicatedStorage.Remotes:WaitForChild("DungeonAction")::RemoteEvent
 local intents=IntentStore.new()
@@ -26,8 +26,9 @@ local function recover(player:Player,record:any,reason:string):()
 	if player.Parent==Players then PlayerDataService.recoverTransfer(player,true);send(player,"RETRY_AVAILABLE","Не удалось войти в подземелье. Попробуйте ещё раз.") end
 	Diagnostics.reject("TRANSFER",{userId=player.UserId,reason=reason})
 end
-local function prepare(leader:Player):()
-	local confirmedAt=confirmations[leader];confirmations[leader]=nil;if not confirmedAt or os.clock()-confirmedAt>10 then send(leader,"FAILED","Подойдите ко входу ещё раз.");return end
+local function prepare(leader:Player,confirmationToken:any):()
+	local confirmation=confirmations[leader];confirmations[leader]=nil
+	if typeof(confirmationToken)~="string" or not confirmation or confirmation.token~=confirmationToken or os.clock()>confirmation.expiresAt then Diagnostics.reject("ENTRY_CONFIRMATION",{userId=leader.UserId,reason="ExpiredOrSpoofed"});send(leader,"RETRY_AVAILABLE","Подтверждение входа недействительно. Активируйте вход ещё раз.");return end
 	if pending[leader] then return end; if not PlayerDataService.isReady(leader) then send(leader,"FAILED","Персонаж ещё не готов.");return end
 	local snapshot=PartyService.getSnapshot(leader);local members=if snapshot then snapshot.memberUserIds else {leader.UserId};local leaderId=if snapshot then snapshot.leaderUserId else leader.UserId
 	if leaderId~=leader.UserId then send(leader,"FAILED","Только лидер группы может начать подземелье.");return end
@@ -72,14 +73,14 @@ function Service.bindEntrancePrompt(nextPrompt: ProximityPrompt?): ()
 	prompt=nextPrompt
 	if prompt then
 		promptConnection=prompt.Triggered:Connect(function(player)
-			if confirmations[player]and os.clock()-confirmations[player]<Config.PromptDebounceSeconds then return end
-			confirmations[player]=os.clock();local s=PartyService.getSnapshot(player);local count=if s then #s.memberUserIds else 1
-			send(player,"CONFIRM_ENTRY",if s then string.format("Войти в Руины Селены группой? Участников: %d/4",count) else "Войти в Руины Селены?",{memberCount=count})
+			if confirmations[player]and os.clock()-confirmations[player].issuedAt<Config.PromptDebounceSeconds then return end
+			local token=HttpService:GenerateGUID(false);local now=os.clock();confirmations[player]={token=token,issuedAt=now,expiresAt=now+Config.ConfirmationTtlSeconds};local s=PartyService.getSnapshot(player);local count=if s then #s.memberUserIds else 1
+			send(player,"CONFIRM_ENTRY",if s then string.format("Войти в Руины Селены группой? Участников: %d/4",count) else "Войти в Руины Селены?",{memberCount=count,confirmationToken=token})
 		end)
 	end
 end
 function Service.start():()
-	table.insert(connections,action.OnServerEvent:Connect(function(player,payload)if typeof(payload)~="table" or payload.action~="ConfirmEntry" then return end;prepare(player) end))
+	table.insert(connections,action.OnServerEvent:Connect(function(player,payload)if typeof(payload)~="table" or payload.action~="ConfirmEntry" then return end;prepare(player,payload.confirmationToken) end))
 	table.insert(connections,TeleportService.TeleportInitFailed:Connect(function(player,_result,message)local record=pending[player];if record then recover(player,record,message) end end))
 	table.insert(connections,Players.PlayerRemoving:Connect(function(player)pending[player]=nil;confirmations[player]=nil end))
 	table.insert(connections,PlayerDataService.CharacterReady:Connect(function(player) task.delay(.5,tryRejoin,player) end))

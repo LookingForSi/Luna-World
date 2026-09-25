@@ -15,9 +15,11 @@
 ### Security
 
 - Dungeon entry/return/rejoin используют короткоживущие server-issued MemoryStore contracts; membership, profile ownership, completion и rewards не принимаются из client payload.
+- Подтверждение входа в Ruins of Selene теперь использует одноразовый server-issued token с 30-секундным TTL; повторный, просроченный или не связанный с физическим prompt запрос отклоняется.
 
 ### Fixed
 
+- DevCombined admission теперь атомарно подтверждает размещение у dungeon checkpoint на следующем Heartbeat до активации OOB/death lifecycle; Moonfall traversal recovery временно исключает принятых dungeon participants и больше не возвращает их от изолированного Selene origin ко входу.
 - Исправлен критический цикл смерти Ruins of Selene: `RespawnService` теперь единолично выполняет `LoadCharacter` и размещает участника по authoritative dungeon checkpoint, а dungeon lifecycle только задаёт respawn context, считает wipe/reset и защищает ещё не размещённый Character от повторного OOB.
 - Greybox Ruins of Selene перестроен в непрерывную последовательность помещений без дыр и progression deadlock; DevCombined использует единый изолированный dungeon origin, а выход за bounds запускает штатный death/wipe/checkpoint lifecycle.
 - Studio-панель теперь открывает Ruins через schema-valid `quest_ancient_approach` mutation и обычный `ProfileChanged` pipeline; production kill Moonbound Warden без активного квеста по-прежнему не снимает печать.

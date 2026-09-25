@@ -17,6 +17,7 @@ local started = false
 local serviceGeneration = 0
 local connections: { RBXScriptConnection } = {}
 local lastSafe: { [Player]: CFrame } = {}
+local excluded: { [Player]: boolean } = {}
 
 local function insidePlayableBounds(position: Vector3): boolean
 	local bounds = WorldLayout.WorldBounds
@@ -92,6 +93,7 @@ function TraversalRecovery.start(worldRoot: Instance, spawn: SpawnLocation)
 	table.insert(connections, Players.PlayerAdded:Connect(registerPlayer))
 	table.insert(connections, Players.PlayerRemoving:Connect(function(player)
 		lastSafe[player] = nil
+		excluded[player] = nil
 	end))
 
 	task.spawn(function()
@@ -102,6 +104,9 @@ function TraversalRecovery.start(worldRoot: Instance, spawn: SpawnLocation)
 			end
 
 			for _, player in ipairs(Players:GetPlayers()) do
+				if excluded[player] then
+					continue
+				end
 				local character = player.Character
 				if character == nil then
 					continue
@@ -128,6 +133,12 @@ function TraversalRecovery.start(worldRoot: Instance, spawn: SpawnLocation)
 	end)
 end
 
+-- DevCombined temporarily puts admitted players outside Moonfall's authored bounds.
+-- Its transport adapter owns this exception; production dungeon servers never call it.
+function TraversalRecovery.setPlayerExcluded(player: Player, value: boolean): ()
+	excluded[player] = if value then true else nil
+end
+
 function TraversalRecovery.stop(): ()
 	if not started then
 		return
@@ -139,6 +150,7 @@ function TraversalRecovery.stop(): ()
 	end
 	table.clear(connections)
 	table.clear(lastSafe)
+	table.clear(excluded)
 end
 
 return table.freeze(TraversalRecovery)

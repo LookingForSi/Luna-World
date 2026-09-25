@@ -20,6 +20,7 @@ local connections: { RBXScriptConnection } = {}
 local characterProtected: { [Player]: boolean } = {}
 local oobCharacters: { [Model]: boolean } = {}
 local unavailableParticipants: { [number]: boolean } = {}
+local admissionPending: { [Player]: boolean } = {}
 local deathBatchGeneration = 0
 local wipeLatched = false
 local missingWorldReported = false
@@ -65,6 +66,13 @@ local function checkpoint(): BasePart?
 	return DungeonWorld.getCheckpoint(Rules.checkpointForEncounter(if run ~= nil then run.encounter else 0))
 end
 
+local function inspectCharacter(character: Model?): (boolean, string?, Vector3, Vector3?)
+	local root = if character ~= nil then character:FindFirstChild("HumanoidRootPart") else nil
+	if root == nil or not root:IsA("BasePart") then return false, "missingRoot", Vector3.zero, nil end
+	local within, boundary, localPosition = DungeonWorld.inspectBounds(root.Position)
+	return within, boundary, localPosition, root.Position
+end
+
 local function clearRespawnContext(player: Player): ()
 	if run ~= nil then RespawnService.clearContext(player, "dungeon:" .. run.runId) end
 	characterProtected[player] = nil
@@ -95,19 +103,25 @@ end
 
 local function onParticipantPlaced(player: Player, character: Model): ()
 	if run == nil or not run.memberSet[player.UserId] then return end
+	local within, boundary, localPosition, placedPosition = inspectCharacter(character)
+	if admissionPending[player] or not within then
+		characterProtected[player] = true
+		if not within then unavailableParticipants[player.UserId] = true end
+		log("DUNGEON_ADMISSION_CALLBACK", { runId = run.runId, userId = player.UserId, withinBounds = within, boundary = boundary, localPosition = localPosition })
+		return
+	end
 	run.alive[player.UserId] = true
 	characterProtected[player] = false
 	oobCharacters[character] = nil
 	unavailableParticipants[player.UserId] = nil
 	wipeLatched = false
-	local root = character:FindFirstChild("HumanoidRootPart")
 	local cp = checkpoint()
 	log("DUNGEON_RESPAWN_PLACED", {
 		runId = run.runId,
 		userId = player.UserId,
 		checkpointIndex = Rules.checkpointForEncounter(run.encounter),
 		checkpointWorldPosition = if cp ~= nil then cp.Position else "missing",
-		characterWorldPosition = if root ~= nil and root:IsA("BasePart") then root.Position else character:GetPivot().Position,
+		characterWorldPosition = placedPosition or character:GetPivot().Position,
 	})
 end
 
@@ -164,31 +178,52 @@ end
 function Service.admit(player: Player, contract: any): (boolean, string?)
 	if not Service.create(contract) or run.runId ~= contract.runId then return false, "WrongRun" end
 	if not run.memberSet[player.UserId] then return false, "NotParticipant" end
-	run.arrived[player.UserId] = true
-	run.connected[player.UserId] = true
-	run.alive[player.UserId] = true
 	characterProtected[player] = true
-	if not installRespawnContext(player) then return false, "RespawnServiceUnavailable" end
-	if run.state == "ENTERING" then
-		transition("ACTIVE")
-		log("ENCOUNTER_STARTED", { runId = run.runId, encounterId = 1 })
+	admissionPending[player] = true
+	local character = player.Character
+	local _, _, _, before = inspectCharacter(character)
+	local cp = checkpoint()
+	log("DUNGEON_ADMISSION_STARTED", { runId = run.runId, userId = player.UserId, dungeonOrigin = DungeonWorld.getOrigin(), checkpointWorldPosition = if cp ~= nil then cp.Position else "missing", characterWorldPositionBeforePivot = before or "missing" })
+	if not installRespawnContext(player) then
+		admissionPending[player] = nil
+		transition("FAILED")
+		log("DUNGEON_ADMISSION_REJECTED", { runId = run.runId, userId = player.UserId, reason = "RespawnServiceUnavailable" })
+		broadcast("RETRY_AVAILABLE", "Система размещения персонажа недоступна. Попробуйте ещё раз.")
+		return false, "RespawnServiceUnavailable"
 	end
 	if not RespawnService.placeAtContext(player) then
 		RespawnService.clearContext(player, "dungeon:" .. run.runId)
-		characterProtected[player] = true
+		admissionPending[player] = nil
 		unavailableParticipants[player.UserId] = true
+		transition("FAILED")
+		log("DUNGEON_ADMISSION_REJECTED", { runId = run.runId, userId = player.UserId, reason = "DungeonCheckpointUnavailable" })
+		broadcast("RETRY_AVAILABLE", "Точка входа в подземелье недоступна. Попробуйте ещё раз.")
 		return false, "DungeonCheckpointUnavailable"
 	end
-	local character = player.Character
-	local root = if character ~= nil then character:FindFirstChild("HumanoidRootPart") else nil
-	local cp = checkpoint()
-	log("PLAYER_ADMISSION_PLACED", {
-		runId = run.runId,
-		userId = player.UserId,
-		dungeonOrigin = DungeonWorld.getOrigin(),
-		checkpointWorldPosition = if cp ~= nil then cp.Position else "missing",
-		characterWorldPosition = if root ~= nil and root:IsA("BasePart") then root.Position else "missing",
-	})
+	local immediateWithin, immediateBoundary, _, immediate = inspectCharacter(character)
+	log("DUNGEON_ADMISSION_PIVOTED", { runId = run.runId, userId = player.UserId, characterWorldPosition = immediate or "missing", withinBounds = immediateWithin, boundary = immediateBoundary })
+	RunService.Heartbeat:Wait()
+	local within, boundary, localPosition, deferred = inspectCharacter(if player.Character == character then character else nil)
+	local nearCheckpoint = deferred ~= nil and cp ~= nil and (deferred - cp.Position).Magnitude <= 20
+	if not within or not nearCheckpoint then
+		RespawnService.clearContext(player, "dungeon:" .. run.runId)
+		admissionPending[player] = nil
+		unavailableParticipants[player.UserId] = true
+		if character ~= nil and before ~= nil and player.Character == character then character:PivotTo(CFrame.new(before)) end
+		transition("FAILED")
+		log("DUNGEON_ADMISSION_REJECTED", { runId = run.runId, userId = player.UserId, characterWorldPositionNextHeartbeat = deferred or "missing", withinBounds = within, boundary = boundary, localPosition = localPosition, nearCheckpoint = nearCheckpoint })
+		broadcast("RETRY_AVAILABLE", "Не удалось безопасно разместить персонажа в подземелье. Попробуйте ещё раз.")
+		return false, "DungeonPlacementRejected"
+	end
+	admissionPending[player] = nil
+	unavailableParticipants[player.UserId] = nil
+	run.arrived[player.UserId] = true
+	run.connected[player.UserId] = true
+	run.alive[player.UserId] = true
+	characterProtected[player] = false
+	oobCharacters[character :: Model] = nil
+	log("DUNGEON_ADMISSION_PLACED", { runId = run.runId, userId = player.UserId, characterWorldPositionNextHeartbeat = deferred, withinBounds = within, localPosition = localPosition, nearCheckpoint = nearCheckpoint })
+	if run.state == "ENTERING" then transition("ACTIVE"); log("ENCOUNTER_STARTED", { runId = run.runId, encounterId = 1 }) end
 	broadcast("ACTIVE", nil)
 	return true, nil
 end
@@ -279,6 +314,7 @@ function Service.stop(): ()
 	table.clear(characterProtected)
 	table.clear(oobCharacters)
 	table.clear(unavailableParticipants)
+	table.clear(admissionPending)
 	if run ~= nil then log("RUN_CLOSED", { runId = run.runId }) end
 	run = nil
 	deathBatchGeneration += 1

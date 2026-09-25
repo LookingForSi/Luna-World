@@ -19,7 +19,7 @@ for token in (
     "Rules.checkpointForEncounter", "onParticipantDeath", "onParticipantPlaced",
     "wipeLatched", "characterProtected[player]", "unavailableParticipants[player.UserId]",
     'Diagnostics.reject("DUNGEON_WORLD_UNAVAILABLE"', 'Diagnostics.reject("RESPAWN_CONTEXT_UNAVAILABLE"',
-    'log("PLAYER_ADMISSION_PLACED"', 'boundary = boundary', "DungeonWorld.inspectBounds",
+    'log("DUNGEON_ADMISSION_PLACED"', 'log("DUNGEON_ADMISSION_REJECTED"', 'boundary = boundary', "DungeonWorld.inspectBounds",
 ):
     assert token in run, f"dungeon respawn/OOB contract missing: {token}"
 assert "function Service.inspectBounds" in world
