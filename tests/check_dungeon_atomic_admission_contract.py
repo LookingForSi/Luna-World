@@ -36,7 +36,7 @@ assert 'confirmationToken=token' in transfer
 assert 'confirmations[leader]=nil' in transfer
 assert 'confirmation.token~=confirmationToken' in transfer
 assert 'os.clock()>confirmation.expiresAt' in transfer
-assert 'payload.confirmationToken' in transfer and 'confirmationToken=confirmationToken' in client
+assert 'payload.confirmationToken' in transfer and 'payload.confirmationToken = token' in client
 assert 'ENTRY_CONFIRMATION' in transfer
 
 # A failed local admission closes the same run; active=false permits a retry rather than a second live run.
