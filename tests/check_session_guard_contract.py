@@ -35,6 +35,9 @@ for token in (
     "store:release",
     "player:Kick",
     "attachRoutingPayload",
+    "beginHandoff",
+    "cancelHandoff",
+    "handoffPending",
     "experienceSessionIds",
 ):
     assert token in service, f"SessionGuard service missing {token}"
@@ -49,8 +52,14 @@ assert "Components.sessionGuard()" not in dev
 
 assert "sessionGuard = SessionGuardService" in components
 assert "self.sessionGuard.attachRoutingPayload" in place_transfer
+assert "self.sessionGuard.beginHandoff" in place_transfer
+assert "self.sessionGuard.cancelHandoff" in place_transfer
 assert "SessionGuardService.attachRoutingPayload" in dungeon_transfer
+assert "SessionGuardService.beginHandoff" in dungeon_transfer
+assert "SessionGuardService.cancelHandoff" in dungeon_transfer
 assert "SessionGuardService.attachRoutingPayload" in dungeon_return
+assert "SessionGuardService.beginHandoff" in dungeon_return
+assert "SessionGuardService.cancelHandoff" in dungeon_return
 
 assert "experienceSessionIds" in rules
 assert "AuthoritativeStateForbidden" in read("src/shared/core/transfer/TransferIntentRules.luau")
