@@ -73,6 +73,7 @@ config = (ROOT / "src/shared/config/PlaceConfig.luau").read_text()
 assert "gameId = 10767283011" in config
 assert "[81197415020315] = PlaceRole.Lobby" in config
 assert "[133570003635782] = PlaceRole.World" in config
+assert "[72524197323645] = PlaceRole.Dungeon" in config
 assert "local deployments: { Deployment } = {}" not in config
 assert "StudioDefaultRole = PlaceRole.DevCombined" in config
-print("Place project mappings, Studio roles, role boundaries, and fail-closed test deployment config: PASS")
+print("Place project mappings, Studio roles, role boundaries, and production deployment config: PASS")

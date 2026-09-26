@@ -13,6 +13,7 @@ local deployments: { Deployment } = {
 		roles = {
 			[81197415020315] = PlaceRole.Lobby,
 			[133570003635782] = PlaceRole.World,
+			[72524197323645] = PlaceRole.Dungeon,
 		},
 	},
 }
