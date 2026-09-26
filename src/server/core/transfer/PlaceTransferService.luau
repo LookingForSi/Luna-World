@@ -156,6 +156,18 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 			return false, guardReason or "SessionGuardRoutingFailed"
 		end
 		routingPayload = guardedPayload
+		local handoffStarted, handoffReason = self.sessionGuard.beginHandoff({ player })
+		if not handoffStarted then
+			self.teleportProtected[player] = nil
+			local removed, removeReason = self.intents:remove(transferId)
+			if removed then
+				self.data.recoverTransfer(player)
+			else
+				self.data.failSession(player, removeReason or "IntentCleanupFailed")
+			end
+			self.pending[player] = nil
+			return false, handoffReason or "SessionGuardHandoffFailed"
+		end
 	end
 	local sent, sendReason = self.gateway:teleport(destination.placeId, { player }, routingPayload)
 
@@ -188,6 +200,9 @@ function Service:recover(player: Player, _reason: string?): (boolean, string?)
 		return false, "NoTransferInProgress"
 	end
 	self.teleportProtected[player] = nil
+	if self.sessionGuard ~= nil then
+		self.sessionGuard.cancelHandoff({ player })
+	end
 
 	local removed, removeReason = self.intents:remove(transferId)
 	if not removed then
