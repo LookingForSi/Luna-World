@@ -9,7 +9,6 @@ export type SessionRecord = {
 	version: number,
 	sessionId: string,
 	jobId: string,
-	placeId: number,
 	refreshedAt: number,
 	expiresAt: number,
 }
@@ -30,8 +29,6 @@ function Rules.isRecord(value: any): boolean
 		and Rules.isSessionId(value.sessionId)
 		and typeof(value.jobId) == "string"
 		and value.jobId ~= ""
-		and typeof(value.placeId) == "number"
-		and finite(value.placeId)
 		and typeof(value.refreshedAt) == "number"
 		and finite(value.refreshedAt)
 		and typeof(value.expiresAt) == "number"
@@ -59,7 +56,6 @@ end
 function Rules.makeRecord(
 	sessionId: string,
 	jobId: string,
-	placeId: number,
 	now: number,
 	ttlSeconds: number
 ): SessionRecord
@@ -71,7 +67,6 @@ function Rules.makeRecord(
 		version = Config.Version,
 		sessionId = sessionId,
 		jobId = jobId,
-		placeId = placeId,
 		refreshedAt = now,
 		expiresAt = now + ttlSeconds,
 	}
