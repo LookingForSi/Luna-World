@@ -1,6 +1,6 @@
 # Luna World — Ingredient & Material Sources
 
-Статус: рабочий reverse reference для loot/crafting economy.  
+Статус: рабочий reverse reference для loot/crafting economy.
 Цель документа — быстро ответить на вопрос **«где добыть этот материал?»** и позже использовать ту же модель для in-game подсказок, codex/энциклопедии и tooltips у кузнеца.
 
 Authoritative sources:
@@ -11,7 +11,7 @@ Authoritative sources:
 
 ## Как читать вероятности
 
-Для обычных ресурсов `resourceEntry(...)` в текущем runtime применяется множитель ×0.5.  
+Для обычных ресурсов `resourceEntry(...)` в текущем runtime применяется множитель ×0.5.
 В таблицах ниже уже указана **фактическая вероятность после этого множителя**.
 
 `signatureResourceEntry(...)` не режется глобальным множителем. Поэтому, например, Магическая пыль с Гоблина-шамана имеет фактический шанс 100%.
