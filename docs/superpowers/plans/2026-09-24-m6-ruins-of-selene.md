@@ -1,7 +1,7 @@
 # M6 — Ruins of Selene — Implementation Plan
 
-Дата: 2026-09-24  
-Design: `docs/superpowers/specs/2026-09-24-m6-ruins-of-selene-design.md`  
+Дата: 2026-09-24
+Design: `docs/superpowers/specs/2026-09-24-m6-ruins-of-selene-design.md`
 Tracking: #79, release gate #63
 
 ## Batch 1 — contracts, handoff и lifecycle
