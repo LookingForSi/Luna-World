@@ -10,6 +10,7 @@ return RuntimeManifest.new("DungeonServer", {
 	-- owner must already be accepting contexts before AccountReady can fire.
 	Components.respawn(),
 	Components.dungeonAdmission(),
+	Components.sessionGuard(),
 	Components.playerData(),
 	Components.progression(),
 	Components.party(),
