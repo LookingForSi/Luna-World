@@ -139,7 +139,6 @@ function Service.start(): ()
 						player.UserId,
 						session.sessionId,
 						session.jobId,
-						game.PlaceId,
 						os.time(),
 						Config.LeaseSeconds
 					)
