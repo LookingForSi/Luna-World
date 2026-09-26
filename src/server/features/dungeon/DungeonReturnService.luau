@@ -40,6 +40,7 @@ end
 
 local function recover(player: Player, record: any): ()
 	if pending[player] ~= record then return end
+	SessionGuardService.cancelHandoff({ player })
 	pending[player] = nil
 	returnInProgress = false
 	local profile = record.profiles[tostring(player.UserId)]
@@ -163,6 +164,15 @@ local function begin(player: Player, mode: string): ()
 		Diagnostics.reject("RETURN_SESSION_GUARD", {
 			runId = snapshot.runId,
 			reason = routingReason or "SessionGuardRoutingFailed",
+		})
+		return
+	end
+	local handoffOk, handoffReason = SessionGuardService.beginHandoff(current)
+	if not handoffOk then
+		for _, candidate in current do recover(candidate, record) end
+		Diagnostics.reject("RETURN_SESSION_GUARD", {
+			runId = snapshot.runId,
+			reason = handoffReason or "SessionGuardHandoffFailed",
 		})
 		return
 	end
