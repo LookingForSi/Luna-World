@@ -23,6 +23,7 @@ local intents=IntentStore.new()
 local function send(player:Player,state:string,message:string?,extra:any?) local payload=extra or {};payload.state=state;payload.message=message;event:FireClient(player,payload) end
 local function recover(player:Player,record:any,reason:string):()
 	if pending[player]~=record then return end
+	SessionGuardService.cancelHandoff({player})
 	pending[player]=nil; for _,profile in record.profiles do intents:remove(profile.transferId) end
 	if player.Parent==Players then PlayerDataService.recoverTransfer(player,true);send(player,"RETRY_AVAILABLE","Не удалось войти в подземелье. Попробуйте ещё раз.") end
 	Diagnostics.reject("TRANSFER",{userId=player.UserId,reason=reason})
@@ -52,6 +53,7 @@ local function prepare(leader:Player,confirmationToken:any):()
 	local stored=Store.put(token,contract);if not stored then for _,p in prepared do PlayerDataService.recoverTransfer(p,true) end;send(leader,"RETRY_AVAILABLE","Не удалось сохранить пропуск.");return end
 	local record={token=token,profiles=profiles,players=players,runId=runId};for _,p in players do pending[p]=record;send(p,"TELEPORTING","Переход в Руины Селены...") end;Diagnostics.event("TRANSFER_PREPARED",{runId=runId,leaderUserId=leaderId,count=#players})
 	local routingPayload,routingReason=SessionGuardService.attachRoutingPayload(Rules.routingPayload(token,contract),players);if not routingPayload then for _,p in players do recover(p,record,routingReason or "SessionGuardRoutingFailed") end;return end
+	local handoffOk,handoffReason=SessionGuardService.beginHandoff(players);if not handoffOk then for _,p in players do recover(p,record,handoffReason or "SessionGuardHandoffFailed") end;return end
 	local options=Instance.new("TeleportOptions");options.ReservedServerAccessCode=accessCode;options:SetTeleportData(routingPayload);local ok,err=pcall(function() TeleportService:TeleportAsync(destination::number,players,options) end);if not ok then for _,p in players do recover(p,record,tostring(err)) end end
 end
 local function tryRejoin(player: Player): ()
@@ -68,6 +70,7 @@ local function tryRejoin(player: Player): ()
 	if not Store.put(token,contract) then PlayerDataService.recoverTransfer(player,true); return end
 	local record={token=token,profiles=profiles,players={player},runId=ticket.runId};pending[player]=record;send(player,"TELEPORTING","Возвращение в активное подземелье...")
 	local routingPayload,routingReason=SessionGuardService.attachRoutingPayload(Rules.routingPayload(token,contract),{player});if not routingPayload then recover(player,record,routingReason or "SessionGuardRoutingFailed");return end
+	local handoffOk,handoffReason=SessionGuardService.beginHandoff({player});if not handoffOk then recover(player,record,handoffReason or "SessionGuardHandoffFailed");return end
 	local options=Instance.new("TeleportOptions");options.ReservedServerAccessCode=ticket.accessCode;options:SetTeleportData(routingPayload);local ok=pcall(function()TeleportService:TeleportAsync(destination,{player},options)end);if not ok then recover(player,record,"RejoinTeleportFailed")end
 end
 function Service.setStudioHandler(handler:((Player,any)->())?):() studioHandler=handler end
