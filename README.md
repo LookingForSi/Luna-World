@@ -53,6 +53,7 @@
 - [Design specification v0.1](docs/superpowers/specs/2026-09-13-luna-world-v0.1-design.md)
 - [M5 Party & Multiplayer Hardening — design](docs/superpowers/specs/2026-09-24-m5-party-multiplayer-hardening-design.md)
 - [M5 Party & Multiplayer Hardening — implementation plan](docs/superpowers/plans/2026-09-24-m5-party-multiplayer-hardening.md)
+- [Release 0.1.0-beta.1](docs/releases/2026-09-26-0.1.0-beta.1.md)
 - [Release 0.1.0-alpha.1](docs/releases/2026-09-22-0.1.0-alpha.1.md)
 - [Исторический dev0.1 checkpoint](docs/releases/2026-09-20-dev0.1-checkpoint.md)
 - [Правила для AI-агентов](AGENTS.md)
@@ -73,12 +74,12 @@ Git является source of truth для исходного кода и до�
 
 ## Статус
 
-Текущий release checkpoint: **0.1.0-alpha.3**.
+Текущий release checkpoint: **0.1.0-beta.1**.
 
-Приняты production multi-place architecture `Lobby → Moonfall World → отдельные Dungeon/Region Places`, Studio-only `DevCombined`, authored Moonfall и текущий mobile landscape baseline. Опубликованный Lobby → Moonfall переход проверен на реальном мобильном Roblox-клиенте.
+Приняты production multi-place architecture `Lobby → Moonfall World → отдельные Dungeon/Region Places`, Studio-only `DevCombined`, authored Moonfall и текущий mobile landscape baseline. `0.1.0-beta.1` фиксирует feature-complete локальный vertical slice: M5 Party и M6 Ruins of Selene находятся в `main`; опубликованный Lobby → Moonfall переход уже проверен на реальном мобильном Roblox-клиенте.
 
 Функциональная база уже включает три архетипа и target-based PvE, open-world progression LV1–14, skills, XP/level-up, loot, inventory/equipment, persistence, Q1–Q7, open-world elites, деревенскую экономику, Character Lobby и responsive gameplay UI.
 
-**M5 Party & Multiplayer Hardening** и локально принятая **M6 Ruins of Selene** завершены и находятся в `main`. Следующий обязательный этап — **M7 / 0.1.0 Release Candidate**: published Lobby → Moonfall → Dungeon acceptance, multiplayer/persistence regression, внешний playtest и release-sanity polish. Полный visual world pass и системная балансировка mobs вынесены в v0.2, чтобы не раздувать scope первого vertical slice.
+Текущий этап — **M7 / beta hardening → 0.1.0 Release Candidate**: published Lobby → Moonfall → Ruins → Moonfall acceptance, multiplayer/persistence regression, внешний playtest и release-sanity polish. Найденные blockers исправляются в `0.1.0-beta.x`; после прохождения release gate версия повышается до `0.1.0-rc.1`. Полный visual world pass и системная балансировка mobs вынесены в v0.2, чтобы не раздувать scope первого vertical slice.
 
 Актуальный план: [Roadmap](docs/ROADMAP.md).
