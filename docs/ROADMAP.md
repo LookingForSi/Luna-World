@@ -65,9 +65,9 @@ Alpha checkpoint не означает завершение `0.1.0`. Финал�
 
 Архитектурный baseline закрыт и считается целевым для дальнейшей разработки.
 
-## M5 — Party & Multiplayer Hardening
+## M5 — Party & Multiplayer Hardening — завершён
 
-Обязательный следующий продуктовый блок:
+M5 реализован и локально принят; party baseline включён в `main` через итоговый M6 integration PR #80:
 
 - party invite / accept / leave;
 - до 4 игроков;
@@ -84,9 +84,9 @@ Alpha checkpoint не означает завершение `0.1.0`. Финал�
 - reward eligibility/duplication review;
 - server-authority review.
 
-## M6 — Ruins of Selene
+## M6 — Ruins of Selene — локально завершён 2026-09-26
 
-Добавить отдельный Dungeon Place и законченный 1–4 player encounter:
+Реализован production-shaped Dungeon runtime и законченный 1–4 player encounter:
 
 `Entrance → mobs → encounter/miniboss → mobs → Selene's Fallen Guardian`
 
@@ -100,13 +100,9 @@ Boss LV15 минимум:
 
 ### Stabilization gate M6
 
-- dungeon isolation;
-- party lifecycle;
-- transfer/rejoin;
-- reward idempotency;
-- published-client runtime acceptance.
+Локальная Studio / DevCombined owner acceptance пройдена: dungeon isolation, encounter progression, death/wipe/checkpoints, Guardian completion, safe retreat и reward lifecycle проверены. Published multi-place runtime acceptance (`Lobby → Moonfall → Dungeon → Moonfall`), MemoryStore/TeleportService и multiplayer smoke остаются release-gate задачами M7.
 
-## M7 — 0.1.0 Release Candidate
+## M7 — 0.1.0 Release Candidate — текущий этап
 
 Собрать полный путь нового игрока:
 
