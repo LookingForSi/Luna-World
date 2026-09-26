@@ -24,7 +24,6 @@ function Store:claim(
 	userId: number,
 	sessionId: string,
 	jobId: string,
-	placeId: number,
 	now: number,
 	ttlSeconds: number
 ): (boolean, string?)
@@ -40,7 +39,7 @@ function Store:claim(
 				return current
 			end
 			claimed = true
-			return Rules.makeRecord(sessionId, jobId, placeId, now, ttlSeconds)
+			return Rules.makeRecord(sessionId, jobId, now, ttlSeconds)
 		end, ttlSeconds)
 	end)
 	if not ok then return false, "StoreError:" .. tostring(reason) end
@@ -51,7 +50,6 @@ function Store:renew(
 	userId: number,
 	sessionId: string,
 	jobId: string,
-	placeId: number,
 	now: number,
 	ttlSeconds: number
 ): (boolean, string?)
@@ -78,7 +76,7 @@ function Store:renew(
 				return current
 			end
 			renewed = true
-			return Rules.makeRecord(sessionId, jobId, placeId, now, ttlSeconds)
+			return Rules.makeRecord(sessionId, jobId, now, ttlSeconds)
 		end, ttlSeconds)
 	end)
 	if not ok then return false, "StoreError:" .. tostring(reason) end
