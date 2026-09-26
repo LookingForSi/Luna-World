@@ -135,7 +135,7 @@ function Service.start(): ()
 			task.wait(Config.HeartbeatSeconds)
 			if not started or generation ~= myGeneration or store == nil then break end
 			for player, session in sessions do
-				if player.Parent == Players then
+				if player.Parent == Players and not session.handoffPending then
 					local ok, reason = store:renew(
 						player.UserId,
 						session.sessionId,
