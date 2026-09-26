@@ -11,6 +11,7 @@ local PlaceConfig = require(ReplicatedStorage.Shared.config.PlaceConfig)
 local PlaceRole = require(ReplicatedStorage.Shared.core.runtime.PlaceRole)
 local Rules = require(ReplicatedStorage.Shared.dungeon.DungeonHandoffRules)
 local PlayerData = require(script.Parent.Parent.Parent.services.PlayerDataService)
+local SessionGuardService = require(script.Parent.Parent.Parent.session.SessionGuardService)
 local IntentStore = require(script.Parent.Parent.Parent.core.transfer.MemoryStoreTransferIntentStore)
 local DungeonRun = require(script.Parent.DungeonRunService)
 local DungeonWorld = require(script.Parent.DungeonWorldService)
@@ -39,6 +40,7 @@ end
 
 local function recover(player: Player, record: any): ()
 	if pending[player] ~= record then return end
+	SessionGuardService.cancelHandoff({ player })
 	pending[player] = nil
 	returnInProgress = false
 	local profile = record.profiles[tostring(player.UserId)]
@@ -153,8 +155,30 @@ local function begin(player: Player, mode: string): ()
 		count = #current,
 	})
 
+	local routingPayload, routingReason = SessionGuardService.attachRoutingPayload(
+		Rules.routingPayload(token, contract),
+		current
+	)
+	if routingPayload == nil then
+		for _, candidate in current do recover(candidate, record) end
+		Diagnostics.reject("RETURN_SESSION_GUARD", {
+			runId = snapshot.runId,
+			reason = routingReason or "SessionGuardRoutingFailed",
+		})
+		return
+	end
+	local handoffOk, handoffReason = SessionGuardService.beginHandoff(current)
+	if not handoffOk then
+		for _, candidate in current do recover(candidate, record) end
+		Diagnostics.reject("RETURN_SESSION_GUARD", {
+			runId = snapshot.runId,
+			reason = handoffReason or "SessionGuardHandoffFailed",
+		})
+		return
+	end
+
 	local options = Instance.new("TeleportOptions")
-	options:SetTeleportData(Rules.routingPayload(token, contract))
+	options:SetTeleportData(routingPayload)
 	local ok = pcall(function()
 		TeleportService:TeleportAsync(destination, current, options)
 	end)
