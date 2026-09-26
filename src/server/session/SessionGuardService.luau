@@ -15,6 +15,7 @@ local Service = {}
 type ActiveSession = {
 	sessionId: string,
 	jobId: string,
+	handoffPending: boolean,
 }
 
 local sessions: { [Player]: ActiveSession } = {}
@@ -35,6 +36,10 @@ local function releasePlayer(player: Player): ()
 	local session = sessions[player]
 	sessions[player] = nil
 	if session == nil or store == nil then return end
+	-- Once a server-authoritative teleport has started, keep the short lease alive
+	-- for the destination. Releasing here would create a gap where a second device
+	-- could steal the account between source PlayerRemoving and destination admission.
+	if session.handoffPending then return end
 	local ok, reason = store:release(player.UserId, session.sessionId, session.jobId)
 	if not ok and reason ~= "Moved" and reason ~= "Busy" then
 		warn(string.format("SessionGuard release failed for %s: %s", player.Name, tostring(reason)))
@@ -73,6 +78,7 @@ function Service.admit(player: Player): (boolean, string?)
 	sessions[player] = {
 		sessionId = sessionId,
 		jobId = game.JobId,
+		handoffPending = false,
 	}
 	return true, nil
 end
@@ -80,6 +86,24 @@ end
 function Service.getSessionId(player: Player): string?
 	local session = sessions[player]
 	return if session ~= nil then session.sessionId else nil
+end
+
+function Service.beginHandoff(players: { Player }): (boolean, string?)
+	for _, player in players do
+		local session = sessions[player]
+		if session == nil then return false, "SessionGuardMissing" end
+	end
+	for _, player in players do
+		(sessions[player] :: ActiveSession).handoffPending = true
+	end
+	return true, nil
+end
+
+function Service.cancelHandoff(players: { Player }): ()
+	for _, player in players do
+		local session = sessions[player]
+		if session ~= nil then session.handoffPending = false end
+	end
 end
 
 function Service.attachRoutingPayload(payload: any, players: { Player }): (any?, string?)
