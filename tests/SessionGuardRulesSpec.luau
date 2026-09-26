@@ -8,7 +8,7 @@ local SESSION_B = "22222222-2222-2222-2222-222222222222"
 
 return function(TestRunner)
 	TestRunner.run("session guard claim rules distinguish same session from another device", function()
-		local active = Rules.makeRecord(SESSION_A, "job-a", 100, 10, 45)
+		local active = Rules.makeRecord(SESSION_A, "job-a", 10, 45)
 		assert(Rules.canClaim(nil, SESSION_A, 20))
 		assert(Rules.canClaim(active, SESSION_A, 20))
 		local allowed, reason = Rules.canClaim(active, SESSION_B, 20)
