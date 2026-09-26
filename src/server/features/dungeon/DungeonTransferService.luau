@@ -12,6 +12,7 @@ local UnlockRules=require(ReplicatedStorage.Shared.dungeon.DungeonUnlockRules)
 local TransferConfig=require(ReplicatedStorage.Shared.config.TransferConfig)
 local PartyService=require(script.Parent.Parent.party.PartyService)
 local PlayerDataService=require(script.Parent.Parent.Parent.services.PlayerDataService)
+local SessionGuardService=require(script.Parent.Parent.Parent.session.SessionGuardService)
 local IntentStore=require(script.Parent.Parent.Parent.core.transfer.MemoryStoreTransferIntentStore)
 local Store=require(script.Parent.DungeonHandoffStore)
 local Diagnostics=require(script.Parent.DungeonDiagnostics)
@@ -50,7 +51,8 @@ local function prepare(leader:Player,confirmationToken:any):()
 	local contract={schemaVersion=Config.SchemaVersion,kind="DungeonEntry",runId=runId,nonce=token,sourceRole="World",destinationRole="Dungeon",leaderUserId=leaderId,memberUserIds=table.clone(members),profiles=profiles,accessCode=accessCode,issuedAt=now,expiresAt=now+Config.HandoffTtlSeconds}
 	local stored=Store.put(token,contract);if not stored then for _,p in prepared do PlayerDataService.recoverTransfer(p,true) end;send(leader,"RETRY_AVAILABLE","Не удалось сохранить пропуск.");return end
 	local record={token=token,profiles=profiles,players=players,runId=runId};for _,p in players do pending[p]=record;send(p,"TELEPORTING","Переход в Руины Селены...") end;Diagnostics.event("TRANSFER_PREPARED",{runId=runId,leaderUserId=leaderId,count=#players})
-	local options=Instance.new("TeleportOptions");options.ReservedServerAccessCode=accessCode;options:SetTeleportData(Rules.routingPayload(token,contract));local ok,err=pcall(function() TeleportService:TeleportAsync(destination::number,players,options) end);if not ok then for _,p in players do recover(p,record,tostring(err)) end end
+	local routingPayload,routingReason=SessionGuardService.attachRoutingPayload(Rules.routingPayload(token,contract),players);if not routingPayload then for _,p in players do recover(p,record,routingReason or "SessionGuardRoutingFailed") end;return end
+	local options=Instance.new("TeleportOptions");options.ReservedServerAccessCode=accessCode;options:SetTeleportData(routingPayload);local ok,err=pcall(function() TeleportService:TeleportAsync(destination::number,players,options) end);if not ok then for _,p in players do recover(p,record,tostring(err)) end end
 end
 local function tryRejoin(player: Player): ()
 	if pending[player] or not PlayerDataService.isReady(player) then return end
@@ -65,7 +67,8 @@ local function tryRejoin(player: Player): ()
 	local contract={schemaVersion=Config.SchemaVersion,kind="DungeonRejoin",runId=ticket.runId,nonce=token,sourceRole="World",destinationRole="Dungeon",leaderUserId=ticket.leaderUserId,memberUserIds=ticket.memberUserIds,profiles=profiles,accessCode=ticket.accessCode,issuedAt=now,expiresAt=now+Config.HandoffTtlSeconds}
 	if not Store.put(token,contract) then PlayerDataService.recoverTransfer(player,true); return end
 	local record={token=token,profiles=profiles,players={player},runId=ticket.runId};pending[player]=record;send(player,"TELEPORTING","Возвращение в активное подземелье...")
-	local options=Instance.new("TeleportOptions");options.ReservedServerAccessCode=ticket.accessCode;options:SetTeleportData(Rules.routingPayload(token,contract));local ok=pcall(function()TeleportService:TeleportAsync(destination,{player},options)end);if not ok then recover(player,record,"RejoinTeleportFailed")end
+	local routingPayload,routingReason=SessionGuardService.attachRoutingPayload(Rules.routingPayload(token,contract),{player});if not routingPayload then recover(player,record,routingReason or "SessionGuardRoutingFailed");return end
+	local options=Instance.new("TeleportOptions");options.ReservedServerAccessCode=ticket.accessCode;options:SetTeleportData(routingPayload);local ok=pcall(function()TeleportService:TeleportAsync(destination,{player},options)end);if not ok then recover(player,record,"RejoinTeleportFailed")end
 end
 function Service.setStudioHandler(handler:((Player,any)->())?):() studioHandler=handler end
 function Service.bindEntrancePrompt(nextPrompt: ProximityPrompt?): ()
