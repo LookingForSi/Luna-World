@@ -1,7 +1,7 @@
 # M6 — Ruins of Selene — Design Specification
 
-Дата: 2026-09-24  
-Tracking: GitHub Issue #79, release gate #63  
+Дата: 2026-09-24
+Tracking: GitHub Issue #79, release gate #63
 Baseline: принятый owner runtime-тестом M5 Party API (#76)
 
 ## 1. Цель и границы
