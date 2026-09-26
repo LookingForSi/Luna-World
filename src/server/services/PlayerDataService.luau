@@ -34,6 +34,7 @@ local serviceGeneration = 0
 local store: ProfileStoreContract.Store? = nil
 local connections: { RBXScriptConnection } = {}
 local preClaimValidator: ((Player) -> (boolean, string?))? = nil
+local admissionValidators: { [string]: (Player) -> (boolean, string?) } = {}
 local accountReadyEvent, characterReadyEvent, profileChangedEvent =
 	Instance.new("BindableEvent"), Instance.new("BindableEvent"), Instance.new("BindableEvent")
 PlayerDataService.AccountReady = accountReadyEvent.Event
@@ -79,6 +80,19 @@ local function loadPlayer(player: Player, generation: number): ()
 		if not admitted then
 			setState(player, session, "Error")
 			warn("Account admission rejected for " .. player.Name .. ": " .. tostring(admissionReason))
+			return
+		end
+	end
+	for validatorName, validator in admissionValidators do
+		local admitted, admissionReason = validator(player)
+		if not admitted then
+			setState(player, session, "Error")
+			warn(string.format(
+				"Account admission validator %s rejected %s: %s",
+				validatorName,
+				player.Name,
+				tostring(admissionReason)
+			))
 			return
 		end
 	end
@@ -234,6 +248,18 @@ end
 
 function PlayerDataService.setPreClaimValidator(validator: ((Player) -> (boolean, string?))?): ()
 	preClaimValidator = validator
+end
+
+function PlayerDataService.setAdmissionValidator(
+	name: string,
+	validator: ((Player) -> (boolean, string?))?
+): ()
+	assert(name ~= "", "admission validator name must not be empty")
+	if validator == nil then
+		admissionValidators[name] = nil
+	else
+		admissionValidators[name] = validator
+	end
 end
 
 function PlayerDataService.prepareTransferCharacter(player: Player, characterId: string): (boolean, string?)
