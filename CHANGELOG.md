@@ -6,6 +6,10 @@
 
 ## [Unreleased]
 
+## [0.1.0-beta.1] - 2026-09-26
+
+Первый beta checkpoint v0.1 Vertical Slice. Функциональный контур M0–M6 собран в `main`; локально приняты Party & Multiplayer Hardening и Ruins of Selene. Beta переводит проект из добавления обязательных систем в published multi-place acceptance, regression, внешний playtest и release-sanity polish.
+
 ### Added
 
 - Studio debug-панель расширена быстрыми телепортами по ключевым зонам Moonfall, кнопкой завершения всей mission/quest progression и выдачей/экипировкой текущего top gear для выбранного класса.
