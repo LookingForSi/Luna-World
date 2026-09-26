@@ -2,19 +2,24 @@
 
 ## Контур окружений
 
-Числовые идентификаторы не хранятся в исходниках до создания владельцем отдельных test и production Experience. `PlaceConfig` работает fail-closed: неизвестный `GameId` или `PlaceId` не превращается в `DevCombined`. Роль `DevCombined` разрешена только явным Studio-контуром.
+Production multi-place контур Luna World зафиксирован в `PlaceConfig`:
+
+- Experience / GameId: `10767283011`
+- Lobby: `81197415020315`
+- Moonfall World: `133570003635782`
+- Ruins of Selene: `72524197323645`
+
+`PlaceConfig` работает fail-closed: неизвестный `GameId` или `PlaceId` не превращается в `DevCombined`. Роль `DevCombined` разрешена только явным Studio-контуром.
 
 ## Порядок публикации
 
-1. Создать отдельный тестовый Experience и Places Lobby, Moonfall World и зарезервированный Ruins of Selene.
-2. Назначить Lobby стартовым Place.
-3. Записать полученные `GameId`/`PlaceId` в отдельные deployment-записи `PlaceConfig`, не смешивая test и production.
-4. На backup/copy Moonfall Place выполнить one-shot authored-world bake через `projects/moonfall-authoring.project.json` по инструкции `tools/worldgen/README.md`.
-5. Проверить, что authored root имеет `ManagedBy=MoonfallAuthoredWorld`, ожидаемый terrain revision и `LunaVillageSpawn`; отдельно убедиться, что отключённый Goblin/Cemetery lake не вернулся.
-6. Переключить Moonfall Studio на production `projects/moonfall.project.json` и убедиться, что Place стартует без `PlayableWorldBlockout.rebuild()`.
-7. Собрать и опубликовать `projects/lobby.project.json`, затем `projects/moonfall.project.json`; dungeon mapping до контентного gate остаётся резервным.
-8. Проверить опубликованным клиентом переход Lobby → Moonfall, восстановление после ошибки и повторный вход двумя клиентами.
-9. Повторить для production только после принятия тестового контура.
+1. Убедиться, что Lobby остаётся Start Place Experience.
+2. На backup/copy Moonfall Place выполнить one-shot authored-world bake через `projects/moonfall-authoring.project.json` по инструкции `tools/worldgen/README.md`.
+3. Проверить, что authored root имеет `ManagedBy=MoonfallAuthoredWorld`, ожидаемый terrain revision и `LunaVillageSpawn`; отдельно убедиться, что отключённый Goblin/Cemetery lake не вернулся.
+4. Переключить Moonfall Studio на production `projects/moonfall.project.json` и убедиться, что Place стартует без `PlayableWorldBlockout.rebuild()`.
+5. Собрать и опубликовать `projects/lobby.project.json` в Lobby Place, `projects/moonfall.project.json` в Moonfall World и `projects/dungeon-selene.project.json` в Ruins of Selene.
+6. Проверить опубликованным клиентом переход Lobby → Moonfall → Ruins of Selene → Moonfall.
+7. Повторить переход минимум двумя клиентами в party и проверить reserved-server handoff, retreat/return и восстановление после ошибки.
 
 ## Authoring / production boundary
 
@@ -32,10 +37,11 @@ Lobby, Moonfall и Dungeon production projects не должны маппить 
 
 Если authored Moonfall bake не принят визуально/runtime, вернуть backup Place и не публиковать production Moonfall mapping поверх непроверенного Terrain.
 
-## BLOCKED_OWNER_ACTION
+## OWNER ACCEPTANCE
 
-- Создать Lobby Place и назначить его Start Place.
-- Создать Moonfall World Place и при необходимости reserved Dungeon placeholder.
-- Предоставить test/prod `GameId` и `PlaceId` для fail-closed deployment config.
-- Выполнить physical Moonfall bake + visual comparison в Roblox Studio.
-- Выполнить published-client acceptance: 1 server + 2 clients.
+До завершения multi-place release gate остаются owner-side действия:
+
+- Опубликовать актуальный `projects/dungeon-selene.project.json` в Place `72524197323645`.
+- Убедиться, что Moonfall World опубликован из актуального `projects/moonfall.project.json`.
+- Выполнить published-client acceptance: Lobby → Moonfall → Ruins of Selene → Moonfall.
+- Выполнить multiplayer acceptance: 1 server + минимум 2 clients.
