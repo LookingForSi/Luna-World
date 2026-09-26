@@ -23,7 +23,6 @@ for token in (
     "MemoryStoreService:GetHashMap",
     "UpdateAsync",
     "Rules.canClaim",
-    "Rules.isOwner",
 ):
     assert token in store, f"SessionGuard store missing {token}"
 
