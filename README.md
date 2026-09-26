@@ -79,6 +79,6 @@ Git является source of truth для исходного кода и до�
 
 Функциональная база уже включает три архетипа и target-based PvE, open-world progression LV1–14, skills, XP/level-up, loot, inventory/equipment, persistence, Q1–Q7, open-world elites, деревенскую экономику, Character Lobby и responsive gameplay UI.
 
-Следующий обязательный milestone — **M5 Party & Multiplayer Hardening** (Issue #76), затем M6 Ruins of Selene и M7 release candidate. Полный visual world pass и системная балансировка mobs вынесены в v0.2, чтобы не раздувать scope первого vertical slice.
+**M5 Party & Multiplayer Hardening** и локально принятая **M6 Ruins of Selene** завершены и находятся в `main`. Следующий обязательный этап — **M7 / 0.1.0 Release Candidate**: published Lobby → Moonfall → Dungeon acceptance, multiplayer/persistence regression, внешний playtest и release-sanity polish. Полный visual world pass и системная балансировка mobs вынесены в v0.2, чтобы не раздувать scope первого vertical slice.
 
 Актуальный план: [Roadmap](docs/ROADMAP.md).
