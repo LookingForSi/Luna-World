@@ -2,9 +2,9 @@
 
 Roadmap фиксирует текущий продуктовый baseline и оставшиеся gates до первого Vertical Slice. Это не календарный план.
 
-## Текущий checkpoint — 0.1.0-alpha.3 — 2026-09-24
+## Текущий checkpoint — 0.1.0-beta.1 — 2026-09-26
 
-`0.1.0-alpha.3` — принятый playable checkpoint после физического multi-place deployment и мобильной проверки.
+`0.1.0-beta.1` — feature-complete beta checkpoint первого vertical slice. M0–M6 собраны в `main`; дальнейший scope до RC ограничен published multi-place acceptance, regression, внешним playtest и release-sanity исправлениями.
 
 Уже приняты и находятся в `main`:
 
@@ -22,7 +22,7 @@ Roadmap фиксирует текущий продуктовый baseline и о�
 
 Текущая multi-place архитектура считается принятой. Дальнейшая разработка v0.1 идёт поверх этого baseline без возврата к combined-production topology.
 
-Alpha checkpoint не означает завершение `0.1.0`. Финальный release gate отслеживается в GitHub Issue #63.
+Beta checkpoint не означает завершение `0.1.0`. Финальный release gate отслеживается в GitHub Issue #63; blockers, найденные на опубликованном контуре, выпускаются как последующие `0.1.0-beta.x`.
 
 ## Завершённые milestones
 
@@ -102,7 +102,7 @@ Boss LV15 минимум:
 
 Локальная Studio / DevCombined owner acceptance пройдена: dungeon isolation, encounter progression, death/wipe/checkpoints, Guardian completion, safe retreat и reward lifecycle проверены. Published multi-place runtime acceptance (`Lobby → Moonfall → Dungeon → Moonfall`), MemoryStore/TeleportService и multiplayer smoke остаются release-gate задачами M7.
 
-## M7 — 0.1.0 Release Candidate — текущий этап
+## M7 — Beta hardening → 0.1.0 Release Candidate — текущий этап
 
 Собрать полный путь нового игрока:
 
