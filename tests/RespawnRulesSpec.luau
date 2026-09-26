@@ -19,6 +19,15 @@ return function(TestRunner)
 		assert(RespawnRules.nearestAnchorId(Vector3.zero, {}) == nil)
 	end)
 
+	TestRunner.run("authoritative override wins over a nearer settlement anchor", function()
+		local anchors = {
+			{ id = "luna", settlementId = "luna_village", position = Vector3.zero },
+			{ id = "checkpoint", settlementId = "dungeon_selene", position = Vector3.new(0, 500, -12000) },
+		}
+		assert(RespawnRules.selectAnchorId("checkpoint", Vector3.zero, anchors) == "checkpoint")
+		assert(RespawnRules.selectAnchorId(nil, Vector3.zero, anchors) == "luna")
+	end)
+
 	TestRunner.run("stale respawn generations cannot affect a newer character", function()
 		assert(RespawnRules.isCurrentGeneration(5, 5))
 		assert(not RespawnRules.isCurrentGeneration(4, 5))

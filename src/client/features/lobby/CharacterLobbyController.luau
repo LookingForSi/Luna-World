@@ -12,6 +12,7 @@ local roster: any
 local stopObserve: (() -> ())?
 local resultConnection: RBXScriptConnection?
 local accountReadyConnection: RBXScriptConnection?
+local bootstrapStateConnection: RBXScriptConnection?
 local onEnterWorld: ((string) -> ())?
 local layoutMetrics: ResponsiveLayout.Metrics?
 local lastLayoutMode: ResponsiveLayout.Mode?
@@ -179,6 +180,11 @@ local function render()
 		Font = Enum.Font.Gotham,
 		TextSize = if smallTouch then 14 else 18,
 	})
+	local bootstrapState = ReplicatedStorage:FindFirstChild("ServerBootstrapState")
+	if not roster and bootstrapState ~= nil and bootstrapState:IsA("StringValue") and string.sub(bootstrapState.Value, 1, 7) == "Failed:" then
+		status.Text = "Сервер не запустился. Проверьте Studio Output."
+		status.TextColor3 = palette.danger
+	end
 	if not roster then
 		return
 	end
@@ -659,6 +665,17 @@ function CharacterLobbyController.start(options: StartOptions?): ()
 		end
 	end)
 	local player = Players.LocalPlayer
+	local bootstrapState = ReplicatedStorage:FindFirstChild("ServerBootstrapState")
+	if bootstrapState ~= nil and bootstrapState:IsA("StringValue") then
+		bootstrapStateConnection = bootstrapState.Changed:Connect(render)
+	else
+		bootstrapStateConnection = ReplicatedStorage.ChildAdded:Connect(function(child)
+			if child.Name ~= "ServerBootstrapState" or not child:IsA("StringValue") then return end
+			if bootstrapStateConnection ~= nil then bootstrapStateConnection:Disconnect() end
+			bootstrapStateConnection = child.Changed:Connect(render)
+			render()
+		end)
+	end
 	if player:GetAttribute("AccountReady") then
 		send("Roster")
 	else
@@ -682,6 +699,10 @@ function CharacterLobbyController.stop(): ()
 	if accountReadyConnection ~= nil then
 		accountReadyConnection:Disconnect()
 		accountReadyConnection = nil
+	end
+	if bootstrapStateConnection ~= nil then
+		bootstrapStateConnection:Disconnect()
+		bootstrapStateConnection = nil
 	end
 	if screen then
 		screen:Destroy()

@@ -195,6 +195,26 @@ local definitions: { [string]: CombatTypes.MobDefinition } = {
 		attackWindupSeconds = 0.48, attackIntervalSeconds = 1.82, chaseSpeed = 9.5, decisionIntervalSeconds = 0.42,
 		restoreHealthOnReturn = true, socialAssistRadius = 0, abilityIds = ids({ "warden_enrage", "warden_moon_bolt", "warden_ground_slam" }),
 	}),
+	selene_warden = mob({
+		id="mob_selene_warden", displayName="Страж руин Селены", level=14, maxHealth=680, physicalDefense=21, magicDefense=15, rewardXP=360, lootTableId="loot_ancient_sentinel", respawnSeconds=3600,
+		aggressionMode="Aggressive", rank="Ordinary", attackKind="Melee", faction="selene", visualProfile="Sentinel", detectionRadius=52, aggroRadius=46, reacquireRadius=64, leashDistance=90,
+		attackRange=13, basicAttackRange=12, basicAttackDamage=58, basicAttackDamageType="Physical", attackWindupSeconds=.4, attackIntervalSeconds=1.65, chaseSpeed=10, decisionIntervalSeconds=.4, restoreHealthOnReturn=true, socialAssistRadius=42, abilityIds=ids({"ancient_sentinel_slam"}),
+	}),
+	selene_acolyte = mob({
+		id="mob_selene_acolyte", displayName="Аколит Селены", level=14, maxHealth=470, physicalDefense=11, magicDefense=20, rewardXP=350, lootTableId="loot_fallen_acolyte", respawnSeconds=3600,
+		aggressionMode="Aggressive", rank="Ordinary", attackKind="Ranged", faction="selene", visualProfile="Acolyte", detectionRadius=58, aggroRadius=50, reacquireRadius=68, leashDistance=90,
+		attackRange=50, basicAttackRange=40, basicAttackDamage=34, basicAttackDamageType="Magic", attackWindupSeconds=.45, attackIntervalSeconds=1.75, chaseSpeed=9, decisionIntervalSeconds=.45, restoreHealthOnReturn=true, socialAssistRadius=42, abilityIds=ids({"acolyte_arcane_bolt"}),
+	}),
+	ruin_sentinel = mob({
+		id="mob_ruin_sentinel", displayName="Часовой разрушенного храма", level=15, maxHealth=1800, physicalDefense=28, magicDefense=22, rewardXP=700, lootTableId="loot_moonbound_warden", respawnSeconds=3600,
+		aggressionMode="Aggressive", rank="Elite", attackKind="Melee", faction="selene", visualProfile="Warden", detectionRadius=60, aggroRadius=54, reacquireRadius=72, leashDistance=100,
+		attackRange=15, basicAttackRange=14, basicAttackDamage=72, basicAttackDamageType="Physical", attackWindupSeconds=.5, attackIntervalSeconds=1.8, chaseSpeed=9.5, decisionIntervalSeconds=.4, restoreHealthOnReturn=true, socialAssistRadius=0, abilityIds=ids({"warden_ground_slam"}),
+	}),
+	selenes_fallen_guardian = mob({
+		id="mob_selenes_fallen_guardian", displayName="Павший хранитель Селены", level=15, maxHealth=5200, physicalDefense=32, magicDefense=28, rewardXP=0, lootTableId="loot_empty", respawnSeconds=3600,
+		aggressionMode="Aggressive", rank="Elite", attackKind="Melee", faction="selene", visualProfile="Warden", detectionRadius=75, aggroRadius=65, reacquireRadius=90, leashDistance=115,
+		attackRange=24, basicAttackRange=15, basicAttackDamage=84, basicAttackDamageType="Physical", attackWindupSeconds=.55, attackIntervalSeconds=1.7, chaseSpeed=10, decisionIntervalSeconds=.35, restoreHealthOnReturn=true, socialAssistRadius=0, abilityIds=ids({"warden_enrage","warden_ground_slam","warden_moon_bolt"}),
+	}),
 }
 
 return table.freeze(definitions)

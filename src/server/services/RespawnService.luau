@@ -9,6 +9,14 @@ local RespawnConfig = require(ReplicatedStorage.Shared.config.RespawnConfig)
 local CharacterConfig = require(ReplicatedStorage.Shared.config.CharacterConfig)
 local CombatCoordinator = require(script.Parent.Parent.features.combat.CombatCoordinator)
 
+export type RespawnContext = {
+	id: string,
+	resolveAnchor: () -> BasePart?,
+	onDeath: ((Model) -> ())?,
+	onPlaced: ((Model) -> ())?,
+	onUnavailable: (() -> ())?,
+}
+
 type PlayerRecord = {
 	generation: number,
 	pending: boolean,
@@ -16,6 +24,7 @@ type PlayerRecord = {
 	anchor: BasePart?,
 	characterConnection: RBXScriptConnection?,
 	deathConnection: RBXScriptConnection?,
+	context: RespawnContext?,
 }
 
 local RespawnService = {}
@@ -95,9 +104,21 @@ local function onDied(player: Player, character: Model, deathPosition: Vector3):
 	record.pending = true
 	record.respawning = false
 	record.generation = generation
-	record.anchor = nearestAnchor(deathPosition)
+	local context = record.context
+	if context ~= nil then
+		record.anchor = context.resolveAnchor()
+		if record.anchor == nil or record.anchor.Parent == nil then
+			warn(string.format("Respawn context %s unavailable for %s; using safe world fallback", context.id, player.Name))
+			if context.onUnavailable ~= nil then context.onUnavailable() end
+			record.context = nil
+			record.anchor = nearestAnchor(deathPosition)
+		end
+	else
+		record.anchor = nearestAnchor(deathPosition)
+	end
 	setPending(player, true)
 	CombatCoordinator.handlePlayerDeath(player)
+	if context ~= nil and context.onDeath ~= nil then context.onDeath(character) end
 	if record.anchor == nil then
 		warn(string.format("Respawn unavailable for %s: no registered RespawnAnchor or SpawnLocation", player.Name))
 	end
@@ -126,6 +147,7 @@ local function bindCharacter(player: Player, character: Model): ()
 	end
 	if root ~= nil and root:IsA("BasePart") and record.pending and record.anchor ~= nil and record.anchor.Parent ~= nil then
 		character:PivotTo(RespawnRules.spawnCFrame(record.anchor.CFrame, humanoid.HipHeight, root.Size.Y))
+		if record.context ~= nil and record.context.onPlaced ~= nil then record.context.onPlaced(character) end
 	end
 	record.pending = false
 	record.respawning = false
@@ -148,6 +170,7 @@ local function addPlayer(player: Player): ()
 		anchor = nil,
 		characterConnection = nil,
 		deathConnection = nil,
+		context = nil,
 	}
 	records[player] = record
 	setPending(player, false)
@@ -158,6 +181,37 @@ local function addPlayer(player: Player): ()
 	if player.Character ~= nil then
 		bindCharacter(player, player.Character)
 	end
+end
+
+-- A gameplay system may override anchor selection, but this service remains the
+-- sole owner of LoadCharacter and post-CharacterAdded placement.
+function RespawnService.setContext(player: Player, context: RespawnContext): boolean
+	local record = records[player]
+	if record == nil or context.id == "" then return false end
+	record.context = context
+	return true
+end
+
+function RespawnService.clearContext(player: Player, contextId: string?): ()
+	local record = records[player]
+	if record == nil or record.context == nil then return end
+	if contextId == nil or record.context.id == contextId then record.context = nil end
+end
+
+function RespawnService.placeAtContext(player: Player): boolean
+	local record = records[player]
+	local character = player.Character
+	if record == nil or record.context == nil or character == nil then return false end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local root = character:FindFirstChild("HumanoidRootPart")
+	local anchor = record.context.resolveAnchor()
+	if humanoid == nil or root == nil or not root:IsA("BasePart") or anchor == nil or anchor.Parent == nil then
+		if record.context.onUnavailable ~= nil then record.context.onUnavailable() end
+		return false
+	end
+	character:PivotTo(RespawnRules.spawnCFrame(anchor.CFrame, humanoid.HipHeight, root.Size.Y))
+	if record.context.onPlaced ~= nil then record.context.onPlaced(character) end
+	return true
 end
 
 local function removePlayer(player: Player): ()

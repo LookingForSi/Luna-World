@@ -115,6 +115,7 @@ end
 
 local mobsByEntityId: { [string]: Model } = {}
 local spawnedModels: { [Model]: boolean } = {}
+local configuredMarkerActive: { [string]: boolean } = {}
 local lastAttackerByEntityId: { [string]: Player } = {}
 local mobDiedEvent = Instance.new("BindableEvent")
 local mobSpawnedEvent = Instance.new("BindableEvent")
@@ -255,14 +256,15 @@ local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
 
 		local lastAttacker = lastAttackerByEntityId[entityId]
 		lastAttackerByEntityId[entityId] = nil
+		local deathPosition = model:GetPivot().Position
 		CombatPresentationService.publish(CombatPresentationRules.create("Death", HttpService:GenerateGUID(false), "mob:" .. entityId, workspace:GetServerTimeNow(), {
 			outcome = "Dead",
 			definitionId = definition.id,
 		}))
 		if lastAttacker ~= nil and lastAttacker.Parent == Players then
-			mobDiedEvent:Fire(lastAttacker, definition.id, entityId)
+			mobDiedEvent:Fire(lastAttacker, definition.id, entityId, deathPosition)
 		else
-			mobDiedEvent:Fire(nil, definition.id, entityId)
+			mobDiedEvent:Fire(nil, definition.id, entityId, deathPosition)
 		end
 
 		local expectedGeneration = serviceGeneration
@@ -274,11 +276,34 @@ local function createMob(spawn: SpawnSpec, isRespawn: boolean?): Model
 			if not started or serviceGeneration ~= expectedGeneration then
 				return
 			end
+			if configuredMarkerActive[spawn.spawnMarkerId] == false then
+				return
+			end
 			createMob(spawn, true)
 		end)
 	end)
 
 	return model
+end
+
+-- Dungeon content uses the same authoritative entity/combat pipeline without
+-- adding its instanced spawn markers to the open-world WorldLayout contract.
+function MobService.spawnConfigured(definitionKey: string, position: Vector3, spawnMarkerId: string, spawnIndex: number): Model?
+	if not started or MobDefinitions[definitionKey] == nil then return nil end
+	configuredMarkerActive[spawnMarkerId] = true
+	return createMob({ definitionKey=definitionKey, cframe=CFrame.new(position), spawnMarkerId=spawnMarkerId, spawnIndex=spawnIndex, socialGroupId=spawnMarkerId, patrolRadius=8, patrolCycleSeconds=10 })
+end
+
+function MobService.removeConfigured(spawnMarkerId: string): ()
+	configuredMarkerActive[spawnMarkerId] = false
+	for model in spawnedModels do
+		if model:GetAttribute("SpawnMarkerId") == spawnMarkerId then
+			local entityId = model:GetAttribute("EntityId")
+			if typeof(entityId) == "string" then mobsByEntityId[entityId] = nil; lastAttackerByEntityId[entityId] = nil end
+			spawnedModels[model] = nil
+			model:Destroy()
+		end
+	end
 end
 
 function MobService.start(): ()
@@ -425,6 +450,7 @@ function MobService.stop(): ()
 	end
 
 	table.clear(spawnedModels)
+	table.clear(configuredMarkerActive)
 	table.clear(mobsByEntityId)
 	table.clear(lastAttackerByEntityId)
 end

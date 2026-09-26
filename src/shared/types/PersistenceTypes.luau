@@ -17,6 +17,7 @@ export type Equipment = {
 export type QuestRecord = {
 	State: "Active" | "ReadyToTurnIn" | "Completed",
 	Progress: { [string]: number },
+	RewardClaimed: boolean?,
 }
 
 export type Profile = {

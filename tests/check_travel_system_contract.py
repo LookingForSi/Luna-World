@@ -18,6 +18,11 @@ for token in (
     'unlockQuestId = "quest_stone_circle_pack"',
     'fieldNpcId = "npc_moonfall_scout"',
     'representativeLootTableId = "loot_grey_wolf"',
+	'id = "travel_dark_woodland"',
+	'displayName = "Дозор Dark Woodland"',
+	'unlockQuestId = "quest_spider_hollow"',
+	'fieldNpcId = "npc_dark_woodland_scout"',
+	'representativeLootTableId = "loot_dire_wolf"',
     'killEquivalent = 4',
 ):
     if token not in defs: raise AssertionError(f"travel definition missing: {token}")

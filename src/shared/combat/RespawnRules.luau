@@ -23,6 +23,11 @@ function RespawnRules.nearestAnchorId(origin: Vector3, anchors: { AnchorCandidat
 	return nearestId
 end
 
+function RespawnRules.selectAnchorId(overrideId: string?, origin: Vector3, anchors: { AnchorCandidate }): string?
+	if overrideId ~= nil then return overrideId end
+	return RespawnRules.nearestAnchorId(origin, anchors)
+end
+
 function RespawnRules.beginDeath(alreadyPending: boolean, generation: number): (boolean, number)
 	if alreadyPending then return false, generation end
 	return true, generation + 1

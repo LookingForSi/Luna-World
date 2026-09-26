@@ -82,6 +82,24 @@
         },
         "CharacterResult": {
           "$className": "RemoteEvent"
+        },
+        "PartyActionRequest": {
+          "$className": "RemoteEvent"
+        },
+        "PartySnapshot": {
+          "$className": "RemoteEvent"
+        },
+        "PartyInviteReceived": {
+          "$className": "RemoteEvent"
+        },
+        "PartyResult": {
+          "$className": "RemoteEvent"
+        },
+        "DungeonAction": {
+          "$className": "RemoteEvent"
+        },
+        "DungeonEvent": {
+          "$className": "RemoteEvent"
         }
       },
       "TestRemotes": {

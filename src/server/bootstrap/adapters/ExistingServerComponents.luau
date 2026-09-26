@@ -11,6 +11,18 @@ local MoonfallAuthoringContract = require(ReplicatedStorage.Shared.world.Moonfal
 local serverRoot = script.Parent.Parent.Parent
 local MoonfallWorldRuntime = require(serverRoot.features.world.MoonfallWorldRuntime)
 local CombatService = require(serverRoot.features.combat.CombatCoordinator)
+local PartyService = require(serverRoot.features.party.PartyService)
+local PartyNetworkService = require(serverRoot.features.party.PartyNetworkService)
+local KillCreditService = require(serverRoot.features.party.KillCreditService)
+local DungeonRunService = require(serverRoot.features.dungeon.DungeonRunService)
+local DungeonTransferService = require(serverRoot.features.dungeon.DungeonTransferService)
+local DungeonEntranceService = require(serverRoot.features.dungeon.DungeonEntranceService)
+local DungeonAdmissionService = require(serverRoot.features.dungeon.DungeonAdmissionService)
+local DungeonWorldService = require(serverRoot.features.dungeon.DungeonWorldService)
+local DungeonEncounterService = require(serverRoot.features.dungeon.DungeonEncounterService)
+local DungeonReturnService = require(serverRoot.features.dungeon.DungeonReturnService)
+local DungeonWorldArrivalService = require(serverRoot.features.dungeon.DungeonWorldArrivalService)
+local DevCombinedDungeonAdapter = require(serverRoot.features.dungeon.DevCombinedDungeonAdapter)
 local MobService = require(serverRoot.services.MobService)
 local MobAIService = require(serverRoot.services.MobAIService)
 local MobAbilityService = require(serverRoot.services.MobAbilityService)
@@ -39,6 +51,7 @@ local PlaceRole = require(ReplicatedStorage.Shared.core.runtime.PlaceRole)
 local ExistingServerComponents = {}
 local transferRuntime = nil
 local arrivalRuntime = nil
+local dungeonWorldArrivalRuntime = nil
 
 local function component(
 	name: string,
@@ -55,8 +68,8 @@ end
 local function loadDevWorldBootstrap(): any
 	local worldgen = ServerScriptService:FindFirstChild("Worldgen")
 	assert(worldgen ~= nil, "DevCombined Worldgen mapping is missing")
-	local bootstrap = worldgen:FindFirstChild("WorldBootstrap")
-	assert(bootstrap ~= nil and bootstrap:IsA("ModuleScript"), "DevCombined WorldBootstrap module is missing")
+	local bootstrap = worldgen:FindFirstChild("DevCombinedWorldBootstrap")
+	assert(bootstrap ~= nil and bootstrap:IsA("ModuleScript"), "DevCombined world bootstrap module is missing")
 	return require(bootstrap)
 end
 
@@ -65,6 +78,9 @@ local function stopDevCombinedGameplay(): ()
 	-- gameplay service graph. Do not assume generic reverse-start order is safe
 	-- until these services expose explicit dependency ordering.
 	StudioDebugService.stop()
+	DevCombinedDungeonAdapter.stop()
+	DungeonEntranceService.stop()
+	DungeonTransferService.stop()
 	RespawnService.stop()
 	PlayerRegenerationService.stop()
 	InventoryNetworkService.stop()
@@ -76,6 +92,9 @@ local function stopDevCombinedGameplay(): ()
 	EconomyNetworkService.stop()
 	EconomyService.stop()
 	LootService.stop()
+	KillCreditService.stop()
+	PartyNetworkService.stop()
+	PartyService.stop()
 	MobAIService.stop()
 	MobAbilityService.stop()
 	MobService.stop()
@@ -91,6 +110,10 @@ function ExistingServerComponents.devCombinedGameplay(): RuntimeComponent.Runtim
 			-- Accepted deterministic DevCombined gameplay startup order.
 			EconomyService.start()
 			PlayerDataService.start()
+			PartyService.start()
+			PartyNetworkService.start()
+			DungeonTransferService.start()
+			DevCombinedDungeonAdapter.start()
 			CharacterService.start()
 			ProgressionService.start()
 			CombatService.start()
@@ -100,12 +123,14 @@ function ExistingServerComponents.devCombinedGameplay(): RuntimeComponent.Runtim
 			MobAbilityService.start()
 			MobAIService.start(MobAbilityService.requestAttack)
 			MobService.start()
+			KillCreditService.start()
 			LootService.start()
 			WorldDropService.start()
 			InventoryNetworkService.start()
 			EconomyNetworkService.start()
 			EconomyWorldService.start()
 			QuestService.start()
+			DungeonEntranceService.start()
 			TravelService.start()
 			NpcWorldService.start()
 		end)
@@ -199,15 +224,24 @@ function ExistingServerComponents.placeArrival(role: string): RuntimeComponent.R
 			playerData = PlayerDataService,
 			intentStore = MemoryStoreTransferIntentStore.new(),
 			destinationRole = role,
+			shouldHandle = function(player)
+				return role ~= PlaceRole.World or not DungeonWorldArrivalService.isPayload(player)
+			end,
 		})
 		PlayerDataService.setPreClaimValidator(function(player)
+			if role == PlaceRole.World and DungeonWorldArrivalService.isPayload(player) then
+				return DungeonWorldArrivalService.admit(player)
+			end
 			return arrivalRuntime:admit(player)
 		end)
+		if role == PlaceRole.World then dungeonWorldArrivalRuntime = DungeonWorldArrivalService; dungeonWorldArrivalRuntime.start() end
 		arrivalRuntime:start()
 	end, function()
 		PlayerDataService.setPreClaimValidator(nil)
 		if arrivalRuntime ~= nil then arrivalRuntime:stop() end
+		if dungeonWorldArrivalRuntime ~= nil then dungeonWorldArrivalRuntime.stop() end
 		arrivalRuntime = nil
+		dungeonWorldArrivalRuntime = nil
 	end)
 end
 
@@ -243,6 +277,46 @@ end
 
 function ExistingServerComponents.mobs(): RuntimeComponent.RuntimeComponent
 	return component("MobService", MobService.start, MobService.stop)
+end
+
+function ExistingServerComponents.dungeonRun(): RuntimeComponent.RuntimeComponent
+	return component("DungeonRunService", DungeonRunService.start, DungeonRunService.stop)
+end
+
+function ExistingServerComponents.dungeonTransfer(): RuntimeComponent.RuntimeComponent
+	return component("DungeonTransferService", DungeonTransferService.start, DungeonTransferService.stop)
+end
+
+function ExistingServerComponents.dungeonEntrance(): RuntimeComponent.RuntimeComponent
+	return component("DungeonEntranceService", DungeonEntranceService.start, DungeonEntranceService.stop)
+end
+
+function ExistingServerComponents.dungeonAdmission(): RuntimeComponent.RuntimeComponent
+	return component("DungeonAdmissionService", DungeonAdmissionService.start, DungeonAdmissionService.stop)
+end
+
+function ExistingServerComponents.dungeonWorld(): RuntimeComponent.RuntimeComponent
+	return component("DungeonWorldService", DungeonWorldService.start, DungeonWorldService.stop)
+end
+
+function ExistingServerComponents.dungeonEncounters(): RuntimeComponent.RuntimeComponent
+	return component("DungeonEncounterService", DungeonEncounterService.start, DungeonEncounterService.stop)
+end
+
+function ExistingServerComponents.dungeonReturn(): RuntimeComponent.RuntimeComponent
+	return component("DungeonReturnService", DungeonReturnService.start, DungeonReturnService.stop)
+end
+
+function ExistingServerComponents.party(): RuntimeComponent.RuntimeComponent
+	return component("PartyService", PartyService.start, PartyService.stop)
+end
+
+function ExistingServerComponents.partyNetwork(): RuntimeComponent.RuntimeComponent
+	return component("PartyNetworkService", PartyNetworkService.start, PartyNetworkService.stop)
+end
+
+function ExistingServerComponents.killCredit(): RuntimeComponent.RuntimeComponent
+	return component("KillCreditService", KillCreditService.start, KillCreditService.stop)
 end
 
 function ExistingServerComponents.loot(): RuntimeComponent.RuntimeComponent

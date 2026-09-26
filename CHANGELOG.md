@@ -6,6 +6,31 @@
 
 ## [Unreleased]
 
+### Added
+
+- Studio debug-панель расширена быстрыми телепортами по ключевым зонам Moonfall, кнопкой завершения всей mission/quest progression и выдачей/экипировкой текущего top gear для выбранного класса.
+- Добавлен runtime-complete candidate первого instanced dungeon Ruins of Selene: profile-safe party transfer, authoritative encounters/wipe/reset, Fallen Guardian, exactly-once rewards, return в Moonfall, scoped rejoin и Studio-only DevCombined flow.
+- Добавлен минимальный dungeon UX для подтверждения входа, objective status, wipe/enrage feedback и completion/return.
+- Поздняя Moonfall quest-chain разделена между дозорными Moonfall Road и Dark Woodland; после Spider Hollow открывается двусторонний маршрут к северному дозору.
+
+### Security
+
+- Dungeon entry/return/rejoin используют короткоживущие server-issued MemoryStore contracts; membership, profile ownership, completion и rewards не принимаются из client payload.
+- Подтверждение входа в Ruins of Selene теперь использует одноразовый server-issued token с 30-секундным TTL; повторный, просроченный или не связанный с физическим prompt запрос отклоняется.
+
+### Fixed
+
+- Ruins of Selene приведены к единой ширине коридора: gate перекрывают проход целиком, боковые щели устранены, а оба края маршрута закрыты физическими торцевыми стенами.
+- На стартовом пьедестале Ruins добавлен безопасный retreat: solo или лидер party может подтвердить выход в Moonfall без победы; после возврата реактивируется objective Moonbound Warden, лунный камень снова закрывается до повторного убийства, а уже полученная quest-награда защищена от повторной выдачи.
+
+- DevCombined admission теперь атомарно подтверждает размещение у dungeon checkpoint на следующем Heartbeat до активации OOB/death lifecycle; Moonfall traversal recovery временно исключает принятых dungeon participants и больше не возвращает их от изолированного Selene origin ко входу.
+- Исправлен критический цикл смерти Ruins of Selene: `RespawnService` теперь единолично выполняет `LoadCharacter` и размещает участника по authoritative dungeon checkpoint, а dungeon lifecycle только задаёт respawn context, считает wipe/reset и защищает ещё не размещённый Character от повторного OOB.
+- Greybox Ruins of Selene перестроен в непрерывную последовательность помещений без дыр и progression deadlock; DevCombined использует единый изолированный dungeon origin, а выход за bounds запускает штатный death/wipe/checkpoint lifecycle.
+- Studio-панель теперь открывает Ruins через schema-valid `quest_ancient_approach` mutation и обычный `ProfileChanged` pipeline; production kill Moonbound Warden без активного квеста по-прежнему не снимает печать.
+- DevCombined bootstrap теперь переиспользует принятый `MoonfallAuthoredWorld`, перестраивает только generator-owned blockout и fail-closed отклоняет неизвестный ownership или несколько конкурирующих roots; повторный Studio Start больше не требует ручного удаления Workspace content.
+- Ошибка server bootstrap реплицируется в `ServerBootstrapState`, поэтому Character Lobby показывает диагностируемую ошибку вместо бесконечного «Загрузка аккаунта…».
+- Вход в Ruins of Selene перенесён на surface-resolved anchor у Ancient Approach и теперь появляется только после authoritative Moonbound Warden progression; до unlock отсутствуют stone, prompt и доступная точка карты.
+
 ## [0.1.0-alpha.3] - 2026-09-23
 
 Published-client transfer repair checkpoint.

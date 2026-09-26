@@ -37,6 +37,7 @@ local mapFrame: Frame? = nil
 local modalBlocker: TextButton? = nil
 local mapCanvas: Frame? = nil
 local playerDot: TextLabel? = nil
+local dungeonEntranceLabel: TextLabel? = nil
 
 local snapshot: any = { quests = {}, markers = {} }
 local firstSnapshotReceived = false
@@ -811,6 +812,21 @@ local function updateNavigation(): ()
 		playerDot.Position = mapPosition(root.Position)
 		playerDot.Visible = true
 	end
+	if mapCanvas ~= nil and dungeonEntranceLabel == nil then
+		dungeonEntranceLabel = makeText(mapCanvas, "◆ Ruins of Selene", 11)
+		dungeonEntranceLabel.Name = "RuinsOfSeleneMapMarker"
+		dungeonEntranceLabel.AnchorPoint = Vector2.new(0, 0.5)
+		dungeonEntranceLabel.Position = mapPosition(WorldLayout.RuinsOfSeleneEntranceQuery)
+		dungeonEntranceLabel.Size = UDim2.fromOffset(145, 20)
+		dungeonEntranceLabel.TextColor3 = Color3.fromRGB(150, 174, 255)
+		dungeonEntranceLabel.TextStrokeColor3 = Color3.fromRGB(12, 16, 24)
+		dungeonEntranceLabel.TextStrokeTransparency = 0.35
+		dungeonEntranceLabel.ZIndex = 13
+	end
+	if dungeonEntranceLabel ~= nil then
+		dungeonEntranceLabel.Visible = mapFrame ~= nil and mapFrame.Visible
+			and player:GetAttribute("RuinsOfSeleneUnlocked") == true
+	end
 
 	local visibleQuestIds: { [string]: boolean } = {}
 	local activeIndex = 0
@@ -1033,6 +1049,7 @@ function QuestController.stop(): ()
 	for _, label in waypointLabels do label:Destroy() end
 	table.clear(waypointLabels)
 	table.clear(mapQuestDots)
+	dungeonEntranceLabel = nil
 
 	if gui ~= nil then gui:Destroy() end
 	gui = nil

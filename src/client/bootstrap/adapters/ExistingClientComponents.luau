@@ -15,6 +15,9 @@ local MovementController = require(clientRoot.controllers.MovementController)
 local InventoryController = require(clientRoot.features.inventory.InventoryController)
 local EconomyController = require(clientRoot.features.economy.EconomyController)
 local QuestController = require(clientRoot.features.quests.QuestController)
+local PartyController = require(clientRoot.features.party.PartyController)
+local PartyUi = require(clientRoot.features.party.PartyUi)
+local DungeonController = require(clientRoot.features.dungeon.DungeonController)
 local CombatPresentationController = require(clientRoot.controllers.CombatPresentationController)
 local ResponsiveUiController = require(clientRoot.controllers.ResponsiveUiController)
 local CharacterLobbyController = require(clientRoot.features.lobby.CharacterLobbyController)
@@ -83,6 +86,10 @@ function ExistingClientComponents.gameplay(): RuntimeComponent.RuntimeComponent
 		end
 
 		InventoryController.stop()
+		DungeonController.stop()
+		CombatHud.setPartyInviteHandler(nil)
+		PartyController.stop()
+		PartyUi.stop()
 		EconomyController.stop()
 		QuestController.stop()
 		ResponsiveUiController.stop()
@@ -126,6 +133,16 @@ function ExistingClientComponents.gameplay(): RuntimeComponent.RuntimeComponent
 			assignQuickSlot = InventoryController.assignQuickSlot,
 		}) end)
 		startComponent("InventoryController", function() InventoryController.start(InventoryUi.toggle, InventoryUi.setSnapshot, InventoryUi.showResult) end)
+		startComponent("PartyUi", function() PartyUi.start({
+			invite = PartyController.invite,
+			accept = PartyController.accept,
+			decline = PartyController.decline,
+			leave = PartyController.leave,
+			kick = PartyController.kick,
+		}) end)
+		startComponent("PartyController", function() PartyController.start(PartyUi) end)
+		startComponent("DungeonController", function() DungeonController.start() end)
+		CombatHud.setPartyInviteHandler(PartyController.invite)
 
 		-- Preserve the accepted order: core combat input becomes operational before
 		-- optional economy/quest/responsive presentation.
