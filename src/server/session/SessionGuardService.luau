@@ -62,7 +62,6 @@ function Service.admit(player: Player): (boolean, string?)
 		player.UserId,
 		sessionId,
 		game.JobId,
-		game.PlaceId,
 		os.time(),
 		Config.LeaseSeconds
 	)
