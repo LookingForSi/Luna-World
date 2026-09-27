@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+### Removed
+
+- Удалён отключённый prototype Goblin/Cemetery lake вместе с больше не используемыми terrain-carving helpers; v0.1 сохраняет текущий принятый сухой baseline этой зоны.
+- Удалены два неиспользуемых client helper-а в Character Lobby и Quest UI.
+
 ## [0.1.0-rc.1] - 2026-09-27
 
 Первый release candidate v0.1 после полного solo walkthrough опубликованного vertical slice.
