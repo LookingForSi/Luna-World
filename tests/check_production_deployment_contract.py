@@ -1,4 +1,8 @@
 import json
+import hashlib
+import sys
+import tempfile
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -21,12 +25,47 @@ for forbidden in ("dev-combined", "tests.project", "test.project", "moonfall-aut
 assert config["places"][-1]["key"] == "lobby"
 assert "project" not in config["places"][1], "Moonfall must not be a code-only Rojo build"
 assert config["places"][1]["canonicalManifest"] == "deploy/canonical/moonfall.manifest.json"
-assert manifest["ready"] is False
-assert manifest["sha256"] is None
+assert manifest["ready"] is True
+assert manifest["artifact"] == "../../tools/worldgen/moonfall-current-accepted.rbxlx"
+assert manifest["sha256"] == "e7346cdc211c6e1e1e41df8f258d7537b751f4a93402448d53ad049c935cd9ba"
+assert hashlib.sha256((ROOT / "tools/worldgen/moonfall-current-accepted.rbxlx").read_bytes()).hexdigest() == manifest["sha256"]
+assert not (ROOT / "deploy/canonical/moonfall.rbxlx").exists()
+assert "allow-incomplete-moonfall" not in build
 assert "ready must be true" in build
 assert "SHA-256 mismatch" in build
 assert 'os.environ.get("ROBLOX_API_KEY")' in publish
 assert '"versionType": "Published"' in publish
+
+# Source validation must fail before invoking Rojo, including tampered bytes.
+sys.path.insert(0, str(ROOT / "tools/deploy"))
+import build as deployment_build
+
+with tempfile.TemporaryDirectory() as directory:
+    fixture = Path(directory)
+    manifest_path = fixture / "deploy/canonical/moonfall.manifest.json"
+    manifest_path.parent.mkdir(parents=True)
+    source = fixture / "tools/worldgen/moonfall-current-accepted.rbxlx"
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b"accepted fixture")
+    (fixture / "VERSION").write_text("0.1.0")
+    valid = dict(manifest, sha256=hashlib.sha256(source.read_bytes()).hexdigest())
+    with patch.object(deployment_build, "ROOT", fixture):
+        for changes, reason in [
+            ({"sha256": "0" * 64}, "SHA-256 mismatch"),
+            ({"ready": False}, "ready must be true"),
+            ({"artifact": "moonfall.rbxlx"}, "source path"),
+            ({"sourcePlaceId": "1"}, "Place ID"),
+            ({"gameVersion": "0.0.0"}, "gameVersion"),
+        ]:
+            manifest_path.write_text(json.dumps(dict(valid, **changes)), encoding="utf-8")
+            try:
+                deployment_build.canonical_moonfall_source(config["places"][1])
+            except SystemExit as error:
+                assert reason in str(error)
+            else:
+                raise AssertionError(f"accepted invalid manifest: {changes}")
+        manifest_path.write_text(json.dumps(valid), encoding="utf-8")
+        assert deployment_build.canonical_moonfall_source(config["places"][1]) == source.resolve()
 
 trigger_section = workflow.split("permissions:", 1)[0]
 assert "workflow_dispatch:" in trigger_section

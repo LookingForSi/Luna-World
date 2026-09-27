@@ -286,14 +286,17 @@ Numeric deployment mapping заполнен в `PlaceConfig` для Lobby, Moonf
 Whole-place publication разделяет два вида source of truth. Lobby и Ruins
 воспроизводятся непосредственно из Rojo projects. Code-only Moonfall project не
 содержит сохранённые Terrain/static environment и не может публиковаться. Полным
-deployment source после owner migration служит canonical authored `.rbxlx` с
-зафиксированным SHA-256; пока export отсутствует, production workflow fail-closed
-останавливается до любой сетевой публикации.
+deployment source служит принятый `tools/worldgen/moonfall-current-accepted.rbxlx`
+с зафиксированным SHA-256. Историческое расположение под worldgen не меняет его
+роль канонического authored baseline. Production build проверяет source/SHA,
+сохраняет Workspace/Terrain/static environment и Lighting, заменяет управляемые
+production code/config-поддеревья результатом текущего Rojo project и удаляет
+остаточный `ServerStorage/MoonfallAuthoring`. Worldgen не запускается.
 
 Актуальная процедура, guard и rollback: `docs/MULTI_PLACE_DEPLOYMENT.md`.
 
 Опубликованный Lobby → Moonfall transition уже проходил acceptance на реальном
 Roblox-клиенте. Финальный deployment checkpoint перед публичным stable rollout —
-мигрировать и принять canonical Moonfall, вручную запустить managed workflow и
+после merge обновлённой сборки вручную запустить managed workflow и
 пройти полный published-client путь Lobby → Moonfall → Ruins → Moonfall, включая
 multiplayer smoke.

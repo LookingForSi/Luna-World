@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "ready": false,
-  "artifact": "moonfall.rbxlx",
-  "sha256": null,
+  "ready": true,
+  "artifact": "../../tools/worldgen/moonfall-current-accepted.rbxlx",
+  "sha256": "e7346cdc211c6e1e1e41df8f258d7537b751f4a93402448d53ad049c935cd9ba",
   "sourcePlaceId": "133570003635782",
   "gameVersion": "0.1.0",
-  "note": "Guard remains closed until the accepted authored Place is exported, reviewed, hashed, and committed."
+  "note": "Принятый owner-side authored baseline; production code накладывается из текущего Git через projects/moonfall.project.json без worldgen."
 }

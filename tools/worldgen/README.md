@@ -1,6 +1,15 @@
 # Инструменты генерации Moonfall
 
-Этот каталог — **только authoring/dev tooling**. Production Lobby / Moonfall / Dungeon Place не должны маппить `tools/worldgen` и не должны запускать `PlayableWorldBlockout.rebuild()` на старте сервера.
+Код этого каталога — **только authoring/dev tooling**. Production Lobby / Moonfall / Dungeon Place не должны маппить `tools/worldgen` и не должны запускать `PlayableWorldBlockout.rebuild()` на старте сервера.
+
+Исключение по назначению файла: `moonfall-current-accepted.rbxlx` — текущий
+канонический authored baseline принятого production Moonfall, несмотря на
+расположение в историческом каталоге worldgen. Его SHA-256:
+`e7346cdc211c6e1e1e41df8f258d7537b751f4a93402448d53ad049c935cd9ba`.
+Production build использует этот export как окружение и накладывает текущий
+Git-managed код; не запускает bake/worldgen и не заменяет Terrain.
+Manifest хранится в `deploy/canonical/moonfall.manifest.json`; второго canonical
+Place нет. Процедура сборки: `docs/MULTI_PLACE_DEPLOYMENT.md`.
 
 ## Режимы
 

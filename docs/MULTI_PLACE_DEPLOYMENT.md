@@ -11,16 +11,29 @@ Production multi-place контур Luna World зафиксирован в `Plac
 
 `PlaceConfig` работает fail-closed: неизвестный `GameId` или `PlaceId` не превращается в `DevCombined`. Роль `DevCombined` разрешена только явным Studio-контуром.
 
-## Source of truth и обнаруженный разрыв
+## Source of truth
 
 - **Lobby**: `projects/lobby.project.json` и Git-managed `src/**`; полностью собирается Rojo.
 - **Ruins of Selene**: `projects/dungeon-selene.project.json` и Git-managed `src/**`; полностью собирается Rojo.
 - **Moonfall runtime code**: `projects/moonfall.project.json` и `src/**`.
-- **Moonfall Terrain/static environment**: принят только внутри production Place. В Git пока есть contracts и generator tooling, но нет точного export принятого мира.
+- **Moonfall Terrain/static environment**: принятый owner-side export `tools/worldgen/moonfall-current-accepted.rbxlx`, уже сохранённый в Git. Это текущий канонический authored baseline, несмотря на историческое расположение под worldgen.
 
-`rojo build projects/moonfall.project.json` создаёт code-only Place без сохранённых Terrain/static instances. Публикация такого файла whole-place API уничтожила бы принятый мир. Поэтому этот build **никогда** не является deployment artifact. `tools/deploy/build.py` принимает Moonfall только как полный проверенный `deploy/canonical/moonfall.rbxlx`, сверяет его SHA-256 и требует `ready: true` в manifest. Пока файла нет, guard закрыт и GitHub Actions не может начать ни одну сетевую публикацию.
+`rojo build projects/moonfall.project.json` создаёт code-only Place без сохранённых Terrain/static instances. Поэтому он используется только как источник текущего production code/config для overlay и **никогда** не публикуется самостоятельно. `tools/deploy/build.py` проверяет canonical path, source Place ID, release version и SHA-256 baseline; manifest `deploy/canonical/moonfall.manifest.json` имеет `ready: true`.
 
-Следовательно, сейчас чистый checkout безопасно воспроизводит Lobby и Ruins, но не все три Places. Это намеренный fail-closed промежуточный контур.
+Принятый SHA-256: `e7346cdc211c6e1e1e41df8f258d7537b751f4a93402448d53ad049c935cd9ba`.
+`.gitattributes` запрещает преобразование строк этого файла при checkout, в том
+числе на Windows. Второй canonical export в `deploy/canonical` не создаётся.
+
+Сборка заменяет целиком управляемые поддеревья `ReplicatedStorage/Shared`,
+`ReplicatedStorage/Remotes`, `ReplicatedStorage/StudioPlaceRole`,
+`ServerScriptService/Server`, `StarterPlayer/StarterPlayerScripts/Client`.
+Так удаляется устаревший код и добавляется текущий код Git, включая BuildInfo
+`0.1.0`. Контейнеры и прочее authored окружение сохраняются; остаточный
+`ServerStorage/MoonfallAuthoring` удаляется из выходного файла. Worldgen не запускается.
+Referents согласуются по путям экземпляров; неоднозначные пути, dangling references,
+неожиданные исполняемые модули и неподдерживаемые изменения ownership останавливают сборку.
+После записи XML проверяется неизменность полного Workspace (Terrain и static
+environment) и Lighting. Канонический входной файл не изменяется.
 
 ## Development, authoring и production
 
@@ -28,20 +41,20 @@ Production multi-place контур Luna World зафиксирован в `Plac
 - **Authoring**: `projects/moonfall-authoring.project.json` выполняет one-shot bake на backup/copy; не является runtime Place и не публикуется.
 - **Production**: Lobby, полный canonical authored Moonfall и Ruins. Test, preview, authoring и DevCombined projects исключены из deployment config.
 
-`tools/worldgen` разрешён только в development/authoring projects. Production projects его не маппят и не запускают `PlayableWorldBlockout.rebuild()`. После однократной миграции полный canonical Moonfall export становится source of truth для развёртываемого authored Place; layout contracts, generator tooling и gameplay source остаются в своих Git-каталогах.
+Код `tools/worldgen` разрешён только в development/authoring projects. Production projects его не маппят и не запускают `PlayableWorldBlockout.rebuild()`. Сохранённый в этом каталоге canonical Moonfall export — отдельный authored asset; layout contracts, generator tooling и gameplay source остаются в своих Git-каталогах.
 
-## Однократная миграция Moonfall в Git
+## Обновление принятого authored baseline
 
-1. Сделать backup/copy production Moonfall `133570003635782` и записать текущую опубликованную version для rollback.
-2. Открыть copy в Studio и визуально подтвердить, что это принятый v0.1.0 Terrain/static environment.
-3. Синхронизировать на copy **production** `projects/moonfall.project.json`, не authoring project. Не запускать worldgen.
-4. Выполнить solo runtime smoke: root `ManagedBy=MoonfallAuthoredWorld`, ожидаемая terrain revision, `LunaVillageSpawn`, дороги, encounter floors и gameplay intact.
-5. Сохранить copy локально как полный XML Place `deploy/canonical/moonfall.rbxlx` (`Save to File`, формат `.rbxlx`). Не использовать результат `rojo build`.
-6. Выполнить `sha256sum deploy/canonical/moonfall.rbxlx`; записать digest в `deploy/canonical/moonfall.manifest.json` и переключить `ready` в `true`.
-7. Выполнить `python3 tools/deploy/build.py`, открыть `artifacts/deploy/moonfall.rbxlx` в Studio и повторить визуальный/runtime acceptance на backup/copy.
-8. Закоммитить `.rbxlx` и manifest вместе. Если размер превышает GitHub limits, до commit настроить Git LFS для этого единственного пути; не хранить файл как Actions secret/artifact.
+Первичная owner-side миграция выполнена: принятый export находится в Git.
+Для будущего изменения окружения владелец сохраняет backup production version,
+принимает изменённый Place в Studio и заменяет тот же
+`tools/worldgen/moonfall-current-accepted.rbxlx`, обновляя SHA в manifest вместе
+с файлом. Повторная генерация текущего accepted Terrain для deployment запрещена.
+Обычные code/config-изменения не требуют нового export: они поступают из Git при сборке.
 
-Эта миграция является **DEFERRED — pending owner runtime acceptance**. До неё production workflow закономерно падает до deploy job.
+Открытие собранного `artifacts/deploy/moonfall.rbxlx` на backup/copy и первый
+managed production deployment остаются owner-side проверками; автоматическая
+сохранность XML не заменяет runtime/visual acceptance Roblox.
 
 ## Сборка
 
@@ -51,13 +64,10 @@ Rokit закрепляет Rojo `7.7.0`. Полная production сборка:
 python3 tools/deploy/build.py
 ```
 
-Результаты: `artifacts/deploy/dungeon-selene.rbxlx`, `moonfall.rbxlx`, `lobby.rbxlx`. Для аудита до миграции можно собрать только безопасные Places:
-
-```bash
-python3 tools/deploy/build.py --allow-incomplete-moonfall
-```
-
-Этот флаг не создаёт Moonfall и не используется workflow для публикации.
+Результаты: `artifacts/deploy/dungeon-selene.rbxlx`, `moonfall.rbxlx`, `lobby.rbxlx`.
+Сначала весь набор собирается и проверяется во временном каталоге, затем файлы
+переносятся в output. Режим неполной сборки удалён. Ошибка source/SHA или overlay
+по-прежнему блокирует deployment job до публикации любого Place.
 
 ## Публикация и порядок
 
@@ -87,7 +97,7 @@ Fail-fast не является транзакцией: если следующ�
 
 ## Первый production deploy v0.1.0 — OWNER CHECKLIST
 
-1. Завершить и закоммитить однократную миграцию Moonfall выше; проверить clean checkout и полный `python3 tools/deploy/build.py`.
+1. Включить обновлённую сборку в `main`; проверить clean checkout и полный `python3 tools/deploy/build.py`; открыть собранный Moonfall на backup/copy в Studio и подтвердить сохранность мира и runtime.
 2. Убедиться, что `VERSION` и runtime BuildInfo равны `0.1.0`, ref — merge commit в `main` или `v0.1.0`, Lobby остаётся Start Place.
 3. Записать текущие опубликованные Roblox version всех трёх Places для rollback.
 4. Проверить Environment `ROBLOX_API_KEY`, required reviewer и secret с `universe-places:write` только для universe `10767283011`.

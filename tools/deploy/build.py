@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
-import shutil
+import tempfile
+import xml.etree.ElementTree as ET
+
+from moonfall_overlay import MANAGED_PATHS, apply_overlay, child
 import subprocess
 from pathlib import Path
 
@@ -43,70 +45,84 @@ def build_project(project: Path, output: Path) -> None:
     subprocess.run(["rojo", "build", str(project), "-o", str(output)], cwd=ROOT, check=True)
 
 
-def copy_canonical_moonfall(place: dict, output: Path) -> None:
+def canonical_moonfall_source(place: dict) -> Path:
     manifest_path = ROOT / place["canonicalManifest"]
     manifest = load_json(manifest_path)
     if manifest.get("ready") is not True:
         fail("Moonfall canonical authored-place guard is closed (ready must be true)")
-    source = manifest_path.parent / str(manifest.get("artifact", ""))
+    source = (manifest_path.parent / str(manifest.get("artifact", ""))).resolve()
+    if source != (ROOT / "tools/worldgen/moonfall-current-accepted.rbxlx").resolve():
+        fail("unexpected canonical Moonfall source path")
+    if manifest.get("sourcePlaceId") != place["placeId"]:
+        fail("Moonfall source Place ID does not match deployment")
+    if manifest.get("gameVersion") != (ROOT / "VERSION").read_text().strip():
+        fail("Moonfall manifest gameVersion does not match VERSION")
     expected = manifest.get("sha256")
     if not source.is_file() or source.stat().st_size == 0:
-        fail(f"canonical Moonfall artifact is missing or empty: {source.relative_to(ROOT)}")
+        fail("canonical Moonfall artifact is missing or empty")
     if not isinstance(expected, str) or len(expected) != 64:
         fail("Moonfall manifest must contain a full SHA-256 digest")
     actual = hashlib.sha256(source.read_bytes()).hexdigest()
     if actual != expected.lower():
         fail(f"Moonfall SHA-256 mismatch: expected {expected.lower()}, got {actual}")
-    print(f"Copying verified canonical Moonfall -> {output.relative_to(ROOT)}")
-    shutil.copyfile(source, output)
+    print(f"Canonical Moonfall SHA-256: {actual}")
+    return source
 
 
-def canonical_moonfall_is_ready(place: dict) -> bool:
-    manifest = load_json(ROOT / place["canonicalManifest"])
-    return manifest.get("ready") is True
+def build_moonfall(source: Path, output: Path, donor: Path) -> None:
+    build_project(ROOT / "projects/moonfall.project.json", donor)
+    baseline = ET.parse(source)
+    root = baseline.getroot()
+    # Full subtrees include Terrain binary payloads, static objects and Lighting.
+    preserved = {name: ET.tostring(child(root, name))
+                 for name in ("Workspace", "Lighting")}
+    code = ET.parse(donor).getroot()
+    try:
+        apply_overlay(root, code)
+    except ValueError as error:
+        fail(str(error))
+    for path in MANAGED_PATHS:
+        parent = root
+        for name in path:
+            parent = child(parent, name)
+            if parent is None:
+                fail(f"missing production code root: {'/'.join(path)}")
+    build_info = child(child(child(root, "ReplicatedStorage"), "Shared"), "config")
+    build_info = child(build_info, "BuildInfo")
+    if build_info.findtext("Properties/*[@name='Source']") != (ROOT / "src/shared/config/BuildInfo.luau").read_text(encoding="utf-8"):
+        fail("output BuildInfo differs from Git-managed release metadata")
+    baseline.write(output, encoding="utf-8", xml_declaration=True)
+    written = ET.parse(output).getroot()
+    for name, payload in preserved.items():
+        if ET.tostring(child(written, name)) != payload:
+            fail(f"accepted {name} changed during production overlay")
+    print("Moonfall: accepted Workspace/Terrain and Lighting preserved; current Git code applied")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--allow-incomplete-moonfall",
-        action="store_true",
-        help="build only reproducible Places while retaining the Moonfall guard",
-    )
-    args = parser.parse_args()
     config = load_json(CONFIG_PATH)
     places = config.get("places")
     if not isinstance(places, list) or [p.get("key") for p in places] != ["ruins", "moonfall", "lobby"]:
         fail("production place order must be ruins, moonfall, lobby")
-
-    moonfall = next(place for place in places if place["key"] == "moonfall")
-    if not canonical_moonfall_is_ready(moonfall) and not args.allow_incomplete_moonfall:
-        fail("Moonfall canonical authored-place guard is closed (ready must be true)")
-
+    source = canonical_moonfall_source(places[1])
     verify_rojo()
-    shutil.rmtree(OUTPUT_DIR, ignore_errors=True)
-    OUTPUT_DIR.mkdir(parents=True)
-    incomplete = False
-    for place in places:
-        output = OUTPUT_DIR / place["artifact"]
-        if place["key"] == "moonfall":
-            try:
-                copy_canonical_moonfall(place, output)
-            except SystemExit:
-                if not args.allow_incomplete_moonfall:
-                    raise
-                incomplete = True
-                print("Moonfall: BLOCKED — canonical authored-place artifact is not ready")
-        else:
-            build_project(ROOT / place["project"], output)
-
-    for artifact in OUTPUT_DIR.glob("*.rbxlx"):
-        if artifact.stat().st_size == 0:
-            fail(f"generated artifact is empty: {artifact.relative_to(ROOT)}")
-    if incomplete:
-        print("Safe Place builds passed; full production artifact set remains BLOCKED")
-    else:
-        print("All production artifacts built and validated")
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    # Stage the entire set before replacing outputs; never expose partial builds.
+    with tempfile.TemporaryDirectory(dir=OUTPUT_DIR, prefix="build-") as temporary:
+        stage = Path(temporary)
+        for place in places:
+            output = stage / place["artifact"]
+            if place["key"] == "moonfall":
+                build_moonfall(source, output, stage / "moonfall-code.rbxlx")
+            else:
+                build_project(ROOT / place["project"], output)
+            if output.stat().st_size == 0:
+                fail(f"generated artifact is empty: {place['artifact']}")
+        for place in places:
+            output = OUTPUT_DIR / place["artifact"]
+            (stage / place["artifact"]).replace(output)
+            print(f"{output.name}: {output.stat().st_size} bytes")
+    print("All production artifacts built and validated")
 
 
 if __name__ == "__main__":
