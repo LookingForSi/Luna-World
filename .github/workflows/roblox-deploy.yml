@@ -1,0 +1,102 @@
+name: Roblox Production Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout selected release ref
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require main or a release tag from main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags
+          if [[ "$GITHUB_REF" == refs/heads/main ]]; then
+            exit 0
+          fi
+          if [[ "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+            exit 0
+          fi
+          echo "::error::Production deployment is allowed only from main or a vMAJOR.MINOR.PATCH tag reachable from main."
+          exit 1
+
+      - name: Python contract checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for check in tests/check_*.py; do
+            python3 "$check"
+          done
+
+      - name: Setup Rokit
+        uses: paradoxum-games/setup-rokit@v3
+        with:
+          cache: true
+
+      - name: Build and validate complete production artifact set
+        run: python3 tools/deploy/build.py
+
+      - name: Artifact sanity checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s artifacts/deploy/dungeon-selene.rbxlx
+          test -s artifacts/deploy/moonfall.rbxlx
+          test -s artifacts/deploy/lobby.rbxlx
+          test "$(find artifacts/deploy -maxdepth 1 -name '*.rbxlx' -type f | wc -l)" -eq 3
+
+      - name: Upload immutable deployment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: roblox-production-${{ github.sha }}
+          path: artifacts/deploy/*.rbxlx
+          if-no-files-found: error
+          retention-days: 30
+
+  deploy:
+    needs: validate-and-build
+    runs-on: ubuntu-latest
+    environment: ROBLOX_API_KEY
+    env:
+      ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+    steps:
+      - name: Checkout exact validated commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Download validated deployment artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: roblox-production-${{ github.sha }}
+          path: artifacts/deploy
+
+      - name: Publish Ruins, Moonfall, then Lobby
+        run: python3 tools/deploy/publish.py
+
+      - name: Deployment summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Roblox production deployment"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            if [[ -s artifacts/deploy/publish-results.json ]]; then
+              echo '- Result: all Places published in order Ruins → Moonfall → Lobby'
+              echo '```json'
+              cat artifacts/deploy/publish-results.json
+              echo '```'
+            else
+              echo '- Result: publication stopped or did not start; inspect the failed step.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
