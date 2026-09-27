@@ -32,4 +32,10 @@ return function(TestRunner: any)
 		assert(Layout.DevCombinedOffset.Magnitude > 8000)
 		assert(Layout.OutOfBoundsY < Layout.FloorY)
 	end)
+
+	TestRunner.run("production Selene is buried below surface terrain", function()
+		assert(Layout.ProductionOffset.X == 0)
+		assert(Layout.ProductionOffset.Z == 0)
+		assert(Layout.ProductionOffset.Y <= -100)
+	end)
 end
