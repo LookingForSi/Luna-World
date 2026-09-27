@@ -28,11 +28,15 @@ for token in (
     "definition.endZ - definition.startZ",
     "origin * CFrame.new(localPosition)",
     "Layout.DevCombinedOffset",
+    "Layout.ProductionOffset",
     "function Service.toWorld",
     "function Service.isWithinBounds",
     "Layout.GateZ[index]",
     "Vector3.new(Layout.CorridorWidth, 26, 4)",
     '"RouteEndWall"',
+    '"Ceiling"',
+    'Instance.new("PointLight")',
+    '"WarmLight"',
     "Config.RetreatPromptName",
 ):
     if token not in world:
