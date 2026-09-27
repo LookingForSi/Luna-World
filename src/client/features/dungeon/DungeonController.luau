@@ -3,10 +3,14 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local QuestController = require(script.Parent.Parent.quests.QuestController)
+
 local Controller = {}
 local connection: RBXScriptConnection? = nil
 local gui: ScreenGui? = nil
 local action = ReplicatedStorage.Remotes:WaitForChild("DungeonAction") :: RemoteEvent
+local STATUS_VISIBLE_SECONDS = 12
+local statusGeneration = 0
 
 local function label(parent: Instance, name: string, size: UDim2, pos: UDim2, text: string, textSize: number): TextLabel
 	local value = Instance.new("TextLabel")
@@ -37,6 +41,18 @@ local function button(parent: Instance, name: string, pos: UDim2, text: string, 
 	value.Parent = parent
 	value.Activated:Connect(callback)
 	return value
+end
+
+local function showStatus(status: TextLabel, text: string): ()
+	statusGeneration += 1
+	local generation = statusGeneration
+	status.Text = text
+	status.Visible = true
+	task.delay(STATUS_VISIBLE_SECONDS, function()
+		if generation == statusGeneration and status.Parent ~= nil then
+			status.Visible = false
+		end
+	end)
 end
 
 local function clearModal(): ()
@@ -73,7 +89,7 @@ function Controller.start(): ()
 	gui.Name = "DungeonUi"
 	gui.ResetOnSpawn = false
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
-	local status = label(gui, "DungeonStatus", UDim2.fromOffset(330, 70), UDim2.new(0.5, -165, 0, 12), "", 15)
+	local status = label(gui, "DungeonStatus", UDim2.fromOffset(330, 70), UDim2.new(0.5, -165, 0, 92), "", 15)
 	status.Visible = false
 
 	connection = (ReplicatedStorage.Remotes.DungeonEvent :: RemoteEvent).OnClientEvent:Connect(function(payload)
@@ -88,6 +104,7 @@ function Controller.start(): ()
 		end
 		if payload.state == "COMPLETED" then
 			local reward = payload.reward or {}
+			QuestController.setRuntimeStatus("dungeon_selene", "Руины Селены", "Подземелье завершено")
 			modal(
 				string.format("РУИНЫ СЕЛЕНЫ ПРОЙДЕНЫ\n+%s XP  +%s Luna\nОсквернённая реликвия", tostring(reward.xp or 0), tostring(reward.luna or 0)),
 				"Вернуться в Moonfall",
@@ -95,8 +112,17 @@ function Controller.start(): ()
 				nil
 			)
 		end
-		status.Visible = true
-		status.Text = "Руины Селены\n" .. tostring(payload.objective or payload.message or "Подготовка...")
+
+		local objective = if typeof(payload.objective) == "string" and payload.objective ~= ""
+			then payload.objective
+			else nil
+		if objective ~= nil then
+			QuestController.setRuntimeStatus("dungeon_selene", "Руины Селены", objective)
+		elseif payload.state == "ENTRANCE_UNLOCKED" and typeof(payload.message) == "string" and payload.message ~= "" then
+			QuestController.setRuntimeStatus("dungeon_selene", "Руины Селены", payload.message)
+		end
+
+		local statusText = "Руины Селены\n" .. tostring(payload.objective or payload.message or "Подготовка...")
 		if payload.state == "RETURNING"
 			or payload.state == "RETURN_RETRY"
 			or payload.state == "FAILED"
@@ -104,12 +130,15 @@ function Controller.start(): ()
 			or payload.state == "BOSS_ENRAGED"
 			or payload.state == "ENTRANCE_UNLOCKED"
 		then
-			status.Text = tostring(payload.message or status.Text)
+			statusText = tostring(payload.message or statusText)
 		end
+		showStatus(status, statusText)
 	end)
 end
 
 function Controller.stop(): ()
+	statusGeneration += 1
+	QuestController.clearRuntimeStatus("dungeon_selene")
 	if connection then connection:Disconnect(); connection = nil end
 	if gui then gui:Destroy(); gui = nil end
 end
