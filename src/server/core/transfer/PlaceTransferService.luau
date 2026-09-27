@@ -15,6 +15,7 @@ function Service.new(deps: any): any
 		data = deps.playerData,
 		intents = deps.intentStore,
 		gateway = deps.gateway,
+		sessionGuard = deps.sessionGuard,
 		clock = deps.clock or os.time,
 		ttl = deps.ttl or TransferConfig.IntentTtlSeconds,
 		sourceRole = deps.sourceRole or "Lobby",
@@ -140,7 +141,35 @@ function Service:begin(player: Player, characterId: string, destination: any): (
 	-- From this point shutdown must not eagerly reclaim/remove the handoff:
 	-- TeleportAsync can yield after Roblox has accepted the destination.
 	self.teleportProtected[player] = true
-	local sent, sendReason = self.gateway:teleport(destination.placeId, { player }, Rules.routingPayload(intent))
+	local routingPayload = Rules.routingPayload(intent)
+	if self.sessionGuard ~= nil then
+		local guardedPayload, guardReason = self.sessionGuard.attachRoutingPayload(routingPayload, { player })
+		if guardedPayload == nil then
+			self.teleportProtected[player] = nil
+			local removed, removeReason = self.intents:remove(transferId)
+			if removed then
+				self.data.recoverTransfer(player)
+			else
+				self.data.failSession(player, removeReason or "IntentCleanupFailed")
+			end
+			self.pending[player] = nil
+			return false, guardReason or "SessionGuardRoutingFailed"
+		end
+		routingPayload = guardedPayload
+		local handoffStarted, handoffReason = self.sessionGuard.beginHandoff({ player })
+		if not handoffStarted then
+			self.teleportProtected[player] = nil
+			local removed, removeReason = self.intents:remove(transferId)
+			if removed then
+				self.data.recoverTransfer(player)
+			else
+				self.data.failSession(player, removeReason or "IntentCleanupFailed")
+			end
+			self.pending[player] = nil
+			return false, handoffReason or "SessionGuardHandoffFailed"
+		end
+	end
+	local sent, sendReason = self.gateway:teleport(destination.placeId, { player }, routingPayload)
 
 	-- stop()/PlayerRemoving may have deliberately forgotten the source side
 	-- while the TeleportAsync call yielded. In that case the intent must remain.
@@ -171,6 +200,9 @@ function Service:recover(player: Player, _reason: string?): (boolean, string?)
 		return false, "NoTransferInProgress"
 	end
 	self.teleportProtected[player] = nil
+	if self.sessionGuard ~= nil then
+		self.sessionGuard.cancelHandoff({ player })
+	end
 
 	local removed, removeReason = self.intents:remove(transferId)
 	if not removed then
