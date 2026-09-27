@@ -12,6 +12,7 @@ return RuntimeManifest.new("WorldServer", {
 	Components.worldSpawnAnchor(),
 	Components.economy(),
 	Components.placeArrival("World"),
+	Components.sessionGuard(),
 	Components.playerData(),
 	Components.party(),
 	Components.partyNetwork(),
