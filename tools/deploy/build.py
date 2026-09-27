@@ -8,7 +8,7 @@ import json
 import tempfile
 import xml.etree.ElementTree as ET
 
-from moonfall_overlay import MANAGED_PATHS, apply_overlay, child
+from moonfall_overlay import MANAGED_PATHS, child, overlay_place, serialized_item
 import subprocess
 from pathlib import Path
 
@@ -71,16 +71,17 @@ def canonical_moonfall_source(place: dict) -> Path:
 
 def build_moonfall(source: Path, output: Path, donor: Path) -> None:
     build_project(ROOT / "projects/moonfall.project.json", donor)
-    baseline = ET.parse(source)
-    root = baseline.getroot()
-    # Full subtrees include Terrain binary payloads, static objects and Lighting.
-    preserved = {name: ET.tostring(child(root, name))
+    source_document = source.read_bytes()
+    root = ET.fromstring(source_document)
+    # Preserve the exact Studio serialization, not merely equivalent XML values.
+    preserved = {name: serialized_item(source_document, child(root, name))
                  for name in ("Workspace", "Lighting")}
-    code = ET.parse(donor).getroot()
     try:
-        apply_overlay(root, code)
+        overlay_place(source, donor, output)
     except ValueError as error:
         fail(str(error))
+    output_document = output.read_bytes()
+    root = ET.fromstring(output_document)
     for path in MANAGED_PATHS:
         parent = root
         for name in path:
@@ -91,12 +92,10 @@ def build_moonfall(source: Path, output: Path, donor: Path) -> None:
     build_info = child(build_info, "BuildInfo")
     if build_info.findtext("Properties/*[@name='Source']") != (ROOT / "src/shared/config/BuildInfo.luau").read_text(encoding="utf-8"):
         fail("output BuildInfo differs from Git-managed release metadata")
-    baseline.write(output, encoding="utf-8", xml_declaration=True)
-    written = ET.parse(output).getroot()
     for name, payload in preserved.items():
-        if ET.tostring(child(written, name)) != payload:
-            fail(f"accepted {name} changed during production overlay")
-    print("Moonfall: accepted Workspace/Terrain and Lighting preserved; current Git code applied")
+        if serialized_item(output_document, child(root, name)) != payload:
+            fail(f"accepted {name} serialization changed during production overlay")
+    print("Moonfall: accepted Workspace/Terrain and Lighting bytes preserved; current Git code applied")
 
 
 def main() -> None:
