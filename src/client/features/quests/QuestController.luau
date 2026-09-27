@@ -370,13 +370,6 @@ local function activeTargetForQuest(quest: any): (Vector3?, string?)
 	return nil, nil
 end
 
-local function questById(questId: string): any?
-	for _, quest in snapshot.quests or {} do
-		if quest.id == questId then return quest end
-	end
-	return nil
-end
-
 local function syncActiveQuestState(): ()
 	local present: { [string]: boolean } = {}
 	for _, quest in snapshot.quests or {} do
