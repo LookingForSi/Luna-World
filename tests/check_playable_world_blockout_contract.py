@@ -156,10 +156,10 @@ def main() -> None:
     ):
         assert token in north
     assert "BillboardGui" not in north
-    assert "lake generation is intentionally disabled" in north
-    assert "\n\tcreateGoblinCemeteryLake(north, positions)\n" not in north
+    assert "createGoblinCemeteryLake" not in north
+    assert "shapeGoblinCemeteryLakeHillCliff" not in north
+    assert "lake generation is intentionally disabled" not in north
     assert "WaterRecovery" not in north
-    assert "Enum.Material.Water" in north
     assert "Enum.Material.Glass" not in north
     assert "Enum.Material.Mud" in north
     assert "postSpacing = 4.0" in north
