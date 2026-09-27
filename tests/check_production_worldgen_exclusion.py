@@ -63,8 +63,9 @@ assert "Contract.GeneratorManagedBy" in builder
 assert "Contract.TerrainRevision" in builder
 
 north = (ROOT / "tools/worldgen/moonfall/NorthernZonesBlockout.luau").read_text(encoding="utf-8")
-assert "lake generation is intentionally disabled" in north
-assert "\n\tcreateGoblinCemeteryLake(north, positions)\n" not in north
+assert "createGoblinCemeteryLake" not in north
+assert "shapeGoblinCemeteryLakeHillCliff" not in north
+assert "lake generation is intentionally disabled" not in north
 
 layout = (ROOT / "src/shared/world/WorldLayout.luau").read_text(encoding="utf-8")
 for stable_id in (
