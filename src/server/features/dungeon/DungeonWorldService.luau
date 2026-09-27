@@ -12,6 +12,9 @@ local root: Folder? = nil
 local origin = CFrame.identity
 
 local STONE = Color3.fromRGB(62, 65, 78)
+local CEILING = Color3.fromRGB(45, 47, 58)
+local SCONCE_METAL = Color3.fromRGB(82, 70, 56)
+local SCONCE_GLOW = Color3.fromRGB(255, 184, 92)
 local ROOM_COLORS = {
 	Color3.fromRGB(57, 64, 78),
 	Color3.fromRGB(66, 62, 80),
@@ -32,12 +35,34 @@ local function part(parent: Instance, name: string, size: Vector3, localPosition
 	return value
 end
 
+local function sconce(parent: Instance, name: string, localPosition: Vector3): ()
+	local mount = part(parent, name .. "Mount", Vector3.new(1.2, 3, 1.2), localPosition, SCONCE_METAL)
+	mount.Material = Enum.Material.Metal
+	mount.CanCollide = false
+
+	local flame = part(parent, name .. "Glow", Vector3.new(0.8, 1.4, 0.8), localPosition + Vector3.new(0, 1.8, 0), SCONCE_GLOW)
+	flame.Material = Enum.Material.Neon
+	flame.CanCollide = false
+
+	local light = Instance.new("PointLight")
+	light.Name = "WarmLight"
+	light.Color = SCONCE_GLOW
+	light.Brightness = 2
+	light.Range = 34
+	light.Shadows = false
+	light.Parent = flame
+end
+
 local function room(parent: Instance, definition: any, index: number): ()
 	local length = definition.endZ - definition.startZ
 	local centerZ = (definition.startZ + definition.endZ) * 0.5
 	part(parent, definition.id .. "Floor", Vector3.new(definition.width, 4, length), Vector3.new(0, -2, centerZ), ROOM_COLORS[index])
 	part(parent, definition.id .. "WallL", Vector3.new(4, 30, length), Vector3.new(-definition.width * 0.5 - 2, 13, centerZ), STONE)
 	part(parent, definition.id .. "WallR", Vector3.new(4, 30, length), Vector3.new(definition.width * 0.5 + 2, 13, centerZ), STONE)
+	part(parent, definition.id .. "Ceiling", Vector3.new(definition.width + 8, 4, length), Vector3.new(0, 28, centerZ), CEILING)
+
+	sconce(parent, definition.id .. "SconceL", Vector3.new(-definition.width * 0.5 + 1.5, 9, centerZ))
+	sconce(parent, definition.id .. "SconceR", Vector3.new(definition.width * 0.5 - 1.5, 9, centerZ))
 
 	local marker = part(parent, definition.id .. "RoomMarker", Vector3.new(18, 1, 4), Vector3.new(0, 0.5, definition.startZ + 8), ROOM_COLORS[index])
 	marker.CanCollide = false
@@ -101,7 +126,9 @@ end
 
 function Service.start(devCombined: boolean?): ()
 	if root ~= nil then return end
-	origin = if devCombined == true then CFrame.new(Layout.DevCombinedOffset) else CFrame.identity
+	origin = if devCombined == true
+		then CFrame.new(Layout.DevCombinedOffset)
+		else CFrame.new(Layout.ProductionOffset)
 	root = Instance.new("Folder")
 	root.Name = "RuinsOfSelene"
 	root:SetAttribute("DevCombinedIsolated", devCombined == true)

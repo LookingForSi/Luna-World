@@ -40,6 +40,7 @@ local playerDot: TextLabel? = nil
 local dungeonEntranceLabel: TextLabel? = nil
 
 local snapshot: any = { quests = {}, markers = {} }
+local runtimeStatus: { [string]: { title: string, text: string } } = {}
 local firstSnapshotReceived = false
 local connections: { RBXScriptConnection } = {}
 local markerGuis: { BillboardGui } = {}
@@ -398,8 +399,29 @@ local function buildJournal(): ()
 	layout.Padding = UDim.new(0, 8)
 	layout.Parent = journalList
 
+	local hasRuntimeStatus = next(runtimeStatus) ~= nil
+	for statusId, entry in runtimeStatus do
+		local row = Instance.new("Frame")
+		row.Name = "RuntimeStatus_" .. statusId
+		row.Size = UDim2.new(1, -10, 0, 76)
+		row.BackgroundColor3 = Color3.fromRGB(31, 34, 42)
+		row.BackgroundTransparency = 0.15
+		row.BorderSizePixel = 0
+		row.Parent = journalList
+
+		local title = makeText(row, entry.title, 15)
+		title.Position = UDim2.fromOffset(12, 8)
+		title.Size = UDim2.new(1, -24, 0, 24)
+		title.Font = Enum.Font.GothamBold
+
+		local body = makeText(row, "Текущее состояние: " .. entry.text, 12)
+		body.Position = UDim2.fromOffset(12, 36)
+		body.Size = UDim2.new(1, -24, 0, 30)
+		body.TextYAlignment = Enum.TextYAlignment.Top
+	end
+
 	local quests = snapshot.quests or {}
-	if #quests == 0 then
+	if #quests == 0 and not hasRuntimeStatus then
 		local empty = makeText(journalList, "Активных заданий пока нет.", 14)
 		empty.Size = UDim2.new(1, -12, 0, 44)
 		return
@@ -874,7 +896,10 @@ local function updateNavigation(): ()
 				center.X + direction.X * math.max(120, center.X - 150),
 				center.Y + direction.Y * math.max(80, center.Y - 110) + (activeIndex - 1) * 28
 			)
-			waypoint.Text = "➤ " .. waypoint.Text
+			local prefix = if math.abs(direction.X) >= math.abs(direction.Y)
+				then (if direction.X >= 0 then "> " else "< ")
+				else (if direction.Y >= 0 then "v " else "^ ")
+			waypoint.Text = prefix .. waypoint.Text
 		end
 	end
 
@@ -884,6 +909,17 @@ local function updateNavigation(): ()
 	for questId, dot in mapQuestDots do
 		if visibleQuestIds[questId] ~= true then dot.Visible = false end
 	end
+end
+
+function QuestController.setRuntimeStatus(id: string, title: string, text: string): ()
+	if id == "" or text == "" then return end
+	runtimeStatus[id] = { title = title, text = text }
+	buildJournal()
+end
+
+function QuestController.clearRuntimeStatus(id: string): ()
+	runtimeStatus[id] = nil
+	buildJournal()
 end
 
 function QuestController.toggleMap(): ()
@@ -1049,6 +1085,7 @@ function QuestController.stop(): ()
 	for _, label in waypointLabels do label:Destroy() end
 	table.clear(waypointLabels)
 	table.clear(mapQuestDots)
+	table.clear(runtimeStatus)
 	dungeonEntranceLabel = nil
 
 	if gui ~= nil then gui:Destroy() end

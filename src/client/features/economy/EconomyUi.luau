@@ -31,6 +31,7 @@ local rowConnections: { RBXScriptConnection } = {}
 local sellCart: { [string]: number } = {}
 local onboarded = false
 local stopObserving: (() -> ())? = nil
+local ONBOARDING_TOAST_SECONDS = 12
 
 local function isWorkspaceMode(): boolean
 	return mode == "Sell" or mode == "Buy" or string.sub(mode, 1, 5) == "Craft"
@@ -94,7 +95,7 @@ local function updateOnboarding(): ()
 	if onboarded or typeof(level) ~= "number" or level < 6 or toast == nil then return end
 	onboarded = true
 	toast.Visible = true
-	task.delay(8, function()
+	task.delay(ONBOARDING_TOAST_SECONDS, function()
 		if toast ~= nil then toast.Visible = false end
 	end)
 end
@@ -596,7 +597,7 @@ function EconomyUi.start(actionCallbacks: any): ()
 	toast = label(
 		screen,
 		"У тебя уже есть материалы — кузнец в Luna Village может обработать сырьё и изготовить No-Grade экипировку. Торговец покупает добычу и продаёт расходники.",
-		UDim2.new(0.5, -300, 0, 80),
+		UDim2.new(0.5, -300, 0, 170),
 		UDim2.fromOffset(600, 70),
 		14
 	)

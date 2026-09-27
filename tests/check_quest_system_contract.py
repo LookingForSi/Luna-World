@@ -11,6 +11,8 @@ profile=read('src/shared/persistence/ProfileSchema.luau')
 migration=read('src/shared/persistence/MigrationRules.luau')
 client=read('src/client/features/quests/QuestController.luau')
 action=read('src/client/ui/ActionBar.luau')
+dungeon=read('src/client/features/dungeon/DungeonController.luau')
+economy=read('src/client/features/economy/EconomyUi.luau')
 for project in ('default.project.json','test.project.json'):
     value=read(project)
     for remote in ('QuestAcceptRequest','QuestTurnInRequest','QuestSnapshotRequest','QuestSnapshot','QuestActionResult','DialogueOpen','TravelRequest','TravelResult'):
@@ -53,6 +55,14 @@ require(quest,'PlayerDataService.isReady(player)','QuestService catch-up must on
 require(client,'billboard.Parent = adornee','NPC quest markers must attach directly to the visible actor')
 require(client,'WAYPOINT_HIDE_DISTANCE = 80','waypoint must disappear near the objective')
 require(client,'STUDS_PER_METER = 10','waypoint distance must be displayed in approximate meters')
+require(client,'waypoint.Text = prefix .. waypoint.Text','off-screen waypoint must use font-safe direction text')
+assert '➤' not in client, 'unsupported waypoint arrow glyph must not return'
+require(client,'function QuestController.setRuntimeStatus','runtime quest state must be recordable in the journal')
+require(client,'"Текущее состояние: " .. entry.text','runtime quest state must be visible in the journal')
+require(dungeon,'STATUS_VISIBLE_SECONDS = 12','dungeon guidance must auto-hide after 12 seconds')
+require(dungeon,'QuestController.setRuntimeStatus','dungeon objective must be mirrored into quest state')
+require(dungeon,'UDim2.new(0.5, -165, 0, 92)','dungeon guidance must sit below the target HUD')
+require(economy,'ONBOARDING_TOAST_SECONDS = 12','quest-adjacent onboarding hint must use the 12-second policy')
 require(client,'Enum.KeyCode.Y','quest journal keyboard binding is missing')
 require(client,'UserInputService:GetFocusedTextBox()','quest journal hotkey must bypass CoreScript processing without typing into text boxes')
 require(client,'activeQuestIds','quest navigation must support per-quest active state')
