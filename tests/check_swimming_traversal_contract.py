@@ -30,15 +30,15 @@ for forbidden in (
 
 if "Enum.Material.Water" not in south:
     raise AssertionError("river must use real Terrain water")
-if "\n\tcreateGoblinCemeteryLake(north, positions)\n" in north:
-    raise AssertionError("dev0.3 playtest must not generate the experimental lake")
+if "createGoblinCemeteryLake" in north:
+    raise AssertionError("abandoned Goblin/Cemetery lake generator must not return")
 
 for source_name, source in (("river", south), ("recovery", recovery)):
     if "WaterRecovery" in source:
         raise AssertionError(f"{source_name} still contains a hidden water teleport hazard")
 
-if "lake generation is intentionally disabled" not in north:
-    raise AssertionError("release must explicitly keep lake generation disabled")
+if "lake generation is intentionally disabled" in north:
+    raise AssertionError("obsolete disabled-lake compatibility comment must not return")
 
 for forbidden in (
     "fellIntoRiver",
