@@ -1,6 +1,7 @@
 """Exercise actual XML overlay, including stale code and cross-tree references."""
 import sys
 from copy import deepcopy
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -18,6 +19,18 @@ def item(parent, name, kind, ref, source=None):
     return node
 
 
+def apply(base, donor):
+    with tempfile.TemporaryDirectory() as directory:
+        directory = Path(directory)
+        source = directory / "base.rbxlx"
+        code = directory / "code.rbxlx"
+        output = directory / "output.rbxlx"
+        source.write_bytes(ET.tostring(base))
+        code.write_bytes(ET.tostring(donor))
+        overlay.overlay_place(source, code, output)
+        return ET.fromstring(output.read_bytes())
+
+
 base = ET.Element("roblox", version="4")
 world = item(base, "Workspace", "Workspace", "world")
 terrain = item(world, "Terrain", "Terrain", "terrain")
@@ -28,6 +41,9 @@ item(old, "Deleted", "ModuleScript", "deleted", "stale")
 item(old, "BuildInfo", "ModuleScript", "old-build", "old version")
 server_storage = item(base, "ServerStorage", "ServerStorage", "server-storage")
 item(server_storage, "MoonfallAuthoring", "Folder", "authoring")
+item(base, "ServerScriptService", "ServerScriptService", "base-server")
+base_player = item(base, "StarterPlayer", "StarterPlayer", "base-player")
+item(base_player, "StarterPlayerScripts", "StarterPlayerScripts", "base-scripts")
 fresh = ET.Element("roblox", version="4")
 fresh_storage = item(fresh, "ReplicatedStorage", "ReplicatedStorage", "storage")
 shared = item(fresh_storage, "Shared", "Folder", "old")
@@ -44,13 +60,15 @@ ET.SubElement(shared.find("Properties"), "Ref", name="InternalReference").text =
 missing = deepcopy(fresh)
 overlay.child(missing, "ReplicatedStorage").remove(overlay.child(overlay.child(missing, "ReplicatedStorage"), "Shared"))
 try:
-    overlay.apply_overlay(deepcopy(base), missing)
+    apply(deepcopy(base), missing)
 except ValueError as error:
     assert "missing production" in str(error)
 else:
     raise AssertionError("missing donor root accepted")
 preserved = ET.tostring(world)
-overlay.apply_overlay(base, fresh)
+base = apply(base, fresh)
+world = overlay.child(base, "Workspace")
+server_storage = overlay.child(base, "ServerStorage")
 assert ET.tostring(world) == preserved
 assert base.find(".//ProtectedString").text == 'Version = "0.1.0"'
 assert not any(n.text == "Deleted" for n in base.iter("string"))
@@ -62,17 +80,26 @@ assert base.find(".//Ref[@name='ExternalReference']").text == "old-build"
 assert base.find(".//Ref[@name='InternalReference']").text == "old-build"
 broken = deepcopy(base)
 ET.SubElement(overlay.child(broken, "Workspace").find("Properties"), "Ref", name="Broken").text = "deleted"
-try:
-    overlay.apply_overlay(broken, fresh)
-except ValueError as error:
-    assert "dangling" in str(error)
-else:
-    raise AssertionError("dangling reference accepted")
+with tempfile.TemporaryDirectory() as directory:
+    directory = Path(directory)
+    source = directory / "base.rbxlx"
+    code = directory / "code.rbxlx"
+    output = directory / "output.rbxlx"
+    source.write_bytes(ET.tostring(broken))
+    code.write_bytes(ET.tostring(fresh))
+    output.write_bytes(b"previous valid artifact")
+    try:
+        overlay.overlay_place(source, code, output)
+    except ValueError as error:
+        assert "dangling" in str(error)
+    else:
+        raise AssertionError("dangling reference accepted")
+    assert output.read_bytes() == b"previous valid artifact"
 
 # An unexpected executable outside managed roots must not silently ship.
 item(world, "Unexpected", "Script", "unexpected", "print('unsafe')")
 try:
-    overlay.apply_overlay(base, fresh)
+    apply(base, fresh)
 except ValueError as error:
     assert "unmanaged" in str(error)
 else:

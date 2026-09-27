@@ -30,10 +30,19 @@ Production multi-place контур Luna World зафиксирован в `Plac
 Так удаляется устаревший код и добавляется текущий код Git, включая BuildInfo
 `0.1.0`. Контейнеры и прочее authored окружение сохраняются; остаточный
 `ServerStorage/MoonfallAuthoring` удаляется из выходного файла. Worldgen не запускается.
-Referents согласуются по путям экземпляров; неоднозначные пути, dangling references,
-неожиданные исполняемые модули и неподдерживаемые изменения ownership останавливают сборку.
-После записи XML проверяется неизменность полного Workspace (Terrain и static
-environment) и Lighting. Канонический входной файл не изменяется.
+Referents согласуются по путям экземпляров; неоднозначные управляемые пути,
+dangling references, неожиданные исполняемые модули и неподдерживаемые изменения
+ownership останавливают сборку. Одноимённые authored props вне управляемых путей
+допустимы.
+
+Overlay работает с исходной Studio/Rojo serialization как с байтами и заменяет
+только полные `<Item>` управляемых корней. Полная пересериализация canonical Place
+через generic XML writer запрещена: она удаляет CDATA и namespace declarations,
+переписывает binary/empty property representation и может создать XML, который
+Studio открывает локально, но Open Cloud Place Publishing отклоняет как
+`Invalid Content stream`. После сборки проверяется побайтная неизменность полного
+Workspace (Terrain и static environment) и Lighting. Канонический входной файл
+не изменяется.
 
 ## Development, authoring и production
 
