@@ -283,6 +283,17 @@ Persistent `DataVersion` изменяется отдельно только пр
 
 Numeric deployment mapping заполнен в `PlaceConfig` для Lobby, Moonfall World и Ruins of Selene. Production projects не содержат dev worldgen и fail-closed определяют runtime role по `GameId/PlaceId`.
 
-Актуальная процедура: `docs/MULTI_PLACE_DEPLOYMENT.md`.
+Whole-place publication разделяет два вида source of truth. Lobby и Ruins
+воспроизводятся непосредственно из Rojo projects. Code-only Moonfall project не
+содержит сохранённые Terrain/static environment и не может публиковаться. Полным
+deployment source после owner migration служит canonical authored `.rbxlx` с
+зафиксированным SHA-256; пока export отсутствует, production workflow fail-closed
+останавливается до любой сетевой публикации.
 
-Опубликованный Lobby → Moonfall transition уже проходил acceptance на реальном Roblox-клиенте. Финальный deployment checkpoint перед публичным stable rollout — опубликовать текущие Moonfall/Dungeon builds и пройти полный published-client путь Lobby → Moonfall → Ruins → Moonfall, включая multiplayer smoke.
+Актуальная процедура, guard и rollback: `docs/MULTI_PLACE_DEPLOYMENT.md`.
+
+Опубликованный Lobby → Moonfall transition уже проходил acceptance на реальном
+Roblox-клиенте. Финальный deployment checkpoint перед публичным stable rollout —
+мигрировать и принять canonical Moonfall, вручную запустить managed workflow и
+пройти полный published-client путь Lobby → Moonfall → Ruins → Moonfall, включая
+multiplayer smoke.
