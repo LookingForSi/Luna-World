@@ -39,8 +39,8 @@ assert 'displayName = "Паук-матка", level = 8' in mobs
 assert 'aggressionMode = "Passive"' in mobs
 
 assert "fillCurvedRidge" in world
-assert "lake generation is intentionally disabled" in world
-assert "\n\tcreateGoblinCemeteryLake(north, positions)\n" not in world
+assert "createGoblinCemeteryLake" not in world
+assert "lake generation is intentionally disabled" not in world
 
 assert "Enum.HumanoidStateType.Swimming" in movement
 assert "Enum.ContextActionResult.Pass" in movement
