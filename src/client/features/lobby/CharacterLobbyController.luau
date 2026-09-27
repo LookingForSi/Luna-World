@@ -73,20 +73,6 @@ local function styleButton(button: TextButton, selectedState: boolean?): ()
 	outlined(button, if selectedState then palette.accentBright else palette.line, if selectedState then 0 else 0.2)
 end
 
-local function sectionLabel(parent: Instance, textValue: string, y: number): TextLabel
-	return new("TextLabel", parent, {
-		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(32, y),
-		Size = UDim2.new(1, -64, 0, 22),
-		Text = textValue,
-		TextColor3 = palette.muted,
-		TextSize = 13,
-		Font = Enum.Font.GothamMedium,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 7,
-	})
-end
-
 local function createModalShade(root: Frame): TextButton
 	local shade = new("TextButton", root, {
 		Name = "ModalShade",
