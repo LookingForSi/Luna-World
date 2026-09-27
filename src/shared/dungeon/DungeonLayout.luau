@@ -3,6 +3,7 @@
 local Layout = {}
 
 Layout.DevCombinedOffset = Vector3.new(0, 500, -12000)
+Layout.ProductionOffset = Vector3.new(0, -100, 0)
 Layout.FloorY = 0
 Layout.OutOfBoundsY = -60
 Layout.RouteMinZ = -55
