@@ -36,6 +36,7 @@ local NpcWorldService = require(serverRoot.services.NpcWorldService)
 local QuestService = require(serverRoot.services.QuestService)
 local TravelService = require(serverRoot.services.TravelService)
 local PlayerDataService = require(serverRoot.services.PlayerDataService)
+local SessionGuardService = require(serverRoot.session.SessionGuardService)
 local CharacterService = require(serverRoot.services.CharacterService)
 local ProgressionService = require(serverRoot.services.ProgressionService)
 local PlayerRegenerationService = require(serverRoot.services.PlayerRegenerationService)
@@ -177,6 +178,10 @@ function ExistingServerComponents.economy(): RuntimeComponent.RuntimeComponent
 	return component("EconomyService", EconomyService.start, EconomyService.stop)
 end
 
+function ExistingServerComponents.sessionGuard(): RuntimeComponent.RuntimeComponent
+	return component("SessionGuardService", SessionGuardService.start, SessionGuardService.stop)
+end
+
 function ExistingServerComponents.playerData(): RuntimeComponent.RuntimeComponent
 	return component("PlayerDataService", PlayerDataService.start, PlayerDataService.stop)
 end
@@ -191,6 +196,7 @@ function ExistingServerComponents.placeTransfer(): RuntimeComponent.RuntimeCompo
 		assert(destinationPlaceId ~= nil, "Moonfall destination is not configured for this universe")
 		transferRuntime = PlaceTransferService.new({
 			playerData = PlayerDataService,
+			sessionGuard = SessionGuardService,
 			intentStore = MemoryStoreTransferIntentStore.new(),
 			gateway = TeleportGateway.new(),
 			sourceRole = PlaceRole.Lobby,
