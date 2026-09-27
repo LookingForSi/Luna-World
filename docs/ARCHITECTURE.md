@@ -151,18 +151,22 @@ Game release version и persistent `DataVersion` независимы.
 
 Lobby → World — server-authoritative lifecycle:
 
-1. validate selection/concurrency;
-2. freeze gameplay mutations;
-3. save/release source profile lease;
-4. create one-shot transfer intent в `MemoryStoreService`;
-5. вызвать teleport;
-6. destination валидирует routing metadata;
-7. claim authoritative profile;
-8. atomарно consume transfer intent;
-9. проверить ownership/destination/entry point;
-10. активировать Character и readiness.
+1. SessionGuard допускает только одну logical Experience session на Roblox `UserId`;
+2. validate selection/concurrency;
+3. freeze gameplay mutations;
+4. save/release source profile lease;
+5. create one-shot transfer intent в `MemoryStoreService`;
+6. server добавляет correlation/session routing metadata и переводит SessionGuard lease в handoff;
+7. вызвать teleport;
+8. destination принимает тот же logical session и атомарно переносит SessionGuard ownership на новый `JobId`;
+9. destination валидирует routing metadata и claim authoritative profile;
+10. atomарно consume transfer intent;
+11. проверить ownership/destination/entry point;
+12. активировать Character и readiness.
 
-`TeleportData` содержит только routing/correlation metadata. Inventory, Luna, XP, equipment, quests и иное authoritative state через него не передаются.
+SessionGuard — отдельный короткий MemoryStore lease с heartbeat; DataStore account/profile lease остаётся вторым независимым уровнем защиты данных. Studio/DevCombined не зависит от MemoryStore SessionGuard.
+
+`TeleportData` содержит только routing/correlation metadata, включая opaque Experience session id. Inventory, Luna, XP, equipment, quests и иное authoritative state через него не передаются.
 
 Failure paths обязаны cleanup/recover lease/intent безопасно и не позволять старой session перезаписать новую ownership.
 
