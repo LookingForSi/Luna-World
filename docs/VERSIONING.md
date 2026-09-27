@@ -25,7 +25,7 @@ Luna World использует Semantic Versioning в формате:
 - `0.1.0-beta.1`;
 - `0.1.0-rc.1`.
 
-Текущий зафиксированный checkpoint проекта: `0.1.0-rc.1`. Следующая стадия после прохождения RC release-gate — стабильная версия vertical slice `0.1.0`.
+Текущий зафиксированный release проекта: `0.1.0` — первый стабильный Vertical Slice. Следующий feature milestone использует `0.2.0-dev.x` / prerelease progression по тем же правилам.
 
 ## 3. Когда меняется номер
 
