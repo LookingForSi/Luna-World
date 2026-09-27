@@ -15,7 +15,7 @@ Production multi-place контур Luna World зафиксирован в `Plac
 
 1. Убедиться, что Lobby остаётся Start Place Experience.
 2. На backup/copy Moonfall Place выполнить one-shot authored-world bake через `projects/moonfall-authoring.project.json` по инструкции `tools/worldgen/README.md`.
-3. Проверить, что authored root имеет `ManagedBy=MoonfallAuthoredWorld`, ожидаемый terrain revision и `LunaVillageSpawn`; отдельно убедиться, что отключённый Goblin/Cemetery lake не вернулся.
+3. Проверить, что authored root имеет `ManagedBy=MoonfallAuthoredWorld`, ожидаемый terrain revision и `LunaVillageSpawn`; Goblin/Cemetery зона должна соответствовать принятому сухому v0.1 baseline — заброшенный lake prototype удалён из generator tooling.
 4. Переключить Moonfall Studio на production `projects/moonfall.project.json` и убедиться, что Place стартует без `PlayableWorldBlockout.rebuild()`.
 5. Собрать и опубликовать `projects/lobby.project.json` в Lobby Place, `projects/moonfall.project.json` в Moonfall World и `projects/dungeon-selene.project.json` в Ruins of Selene.
 6. Проверить опубликованным клиентом переход Lobby → Moonfall → Ruins of Selene → Moonfall.
