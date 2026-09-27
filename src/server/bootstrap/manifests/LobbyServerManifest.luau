@@ -6,6 +6,7 @@ local Components = require(script.Parent.Parent.adapters.ExistingServerComponent
 
 -- Gate A skeleton. Transfer service is introduced in Gate C.
 return RuntimeManifest.new("LobbyServer", {
+	Components.sessionGuard(),
 	Components.playerData(),
 	Components.placeTransfer(),
 	Components.character(),
