@@ -2,9 +2,9 @@
 
 Roadmap фиксирует текущий продуктовый baseline и оставшиеся gates до первого Vertical Slice. Это не календарный план.
 
-## Текущий checkpoint — 0.1.0-rc.1 — 2026-09-27
+## Текущий release — 0.1.0 — 2026-09-27
 
-`0.1.0-rc.1` — первый release candidate первого vertical slice после полного solo walkthrough открытого мира и Ruins of Selene. M0–M6 собраны в `main`; дальнейший scope до стабильного `0.1.0` ограничен внешним mobile/multiplayer acceptance, persistence regression и release-blocker исправлениями.
+`0.1.0` — первый стабильный Vertical Slice Luna World. M0–M7 завершены; release candidate прошёл owner acceptance, architecture/contracts CI и canonical Rojo builds. Дальнейшие крупные изменения относятся к post-v0.1 / v0.2.
 
 Уже приняты и находятся в `main`:
 
@@ -22,7 +22,7 @@ Roadmap фиксирует текущий продуктовый baseline и о�
 
 Текущая multi-place архитектура считается принятой. Дальнейшая разработка v0.1 идёт поверх этого baseline без возврата к combined-production topology.
 
-RC checkpoint не означает завершение `0.1.0`. Финальный release gate отслеживается в GitHub Issue #63; в RC допускаются только blocker/sanity fixes без добавления новых крупных систем.
+`0.1.0` release gate закрыт. Дальнейшие исправления без нового крупного gameplay scope выпускаются как `0.1.x`; visual/content expansion начинается в `0.2.0`.
 
 ## Завершённые milestones
 
@@ -102,28 +102,17 @@ Boss LV15 минимум:
 
 Локальная Studio / DevCombined owner acceptance пройдена: dungeon isolation, encounter progression, death/wipe/checkpoints, Guardian completion, safe retreat и reward lifecycle проверены. Published multi-place runtime acceptance (`Lobby → Moonfall → Dungeon → Moonfall`), MemoryStore/TeleportService и multiplayer smoke остаются release-gate задачами M7.
 
-## M7 — 0.1.0 Release Candidate → stable — текущий этап
+## M7 — Release Candidate → stable — завершён 2026-09-27
 
 Собрать полный путь нового игрока:
 
 `Luna Village → Moonfall Valley → Ruins of Selene → final boss`
 
-Перед RC:
-
-- UX cleanup только по реальным blockers/usability-проблемам;
-- release-sanity balance pass, необходимый для проходимости vertical slice;
-- минимальный art consistency pass без полной замены placeholder-графики;
-- sound/music first pass;
-- persistence migration verification;
-- multiplayer regression;
-- known issues;
-- внешние playtests без объяснений разработчика.
-
-Текущая неудовлетворительная визуальная детализация мира и системная балансировка мобов сознательно не раздувают scope v0.1: они вынесены в отдельный post-v0.1 блок.
+В M7 выполнены release-sanity UX/world fixes, финальный code/documentation cleanup и owner walkthrough acceptance. Полный visual asset pass, системная замена placeholder-графики и глубокая балансировка mobs сознательно не вошли в v0.1 и переходят в v0.2.
 
 ## 0.1.0 release gate
 
-`0.1.0` выпускается только когда:
+`0.1.0` был выпущен после прохождения следующего release gate:
 
 - Definition of Done из `GAME_DESIGN_V0.1.md` выполнен;
 - Party и Ruins of Selene работают;

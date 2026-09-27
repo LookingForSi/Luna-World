@@ -6,6 +6,10 @@
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-27
+
+Первый стабильный Vertical Slice Luna World: полный маршрут Luna Village → Moonfall Valley → Ruins of Selene, уровни 1–15, три архетипа, quests/economy/persistence, party и финальный dungeon boss. Release candidate принят владельцем проекта после полного прохождения; repository architecture/contracts и все canonical Rojo builds прошли CI.
+
 ### Removed
 
 - Удалён отключённый prototype Goblin/Cemetery lake вместе с больше не используемыми terrain-carving helpers; v0.1 сохраняет текущий принятый сухой baseline этой зоны.

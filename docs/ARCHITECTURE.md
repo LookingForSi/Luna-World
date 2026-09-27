@@ -2,7 +2,7 @@
 
 ## 1. Текущий architectural baseline
 
-Архитектура `0.1.0-rc.1` построена вокруг server-authoritative gameplay и multi-place Experience.
+Архитектура `0.1.0` построена вокруг server-authoritative gameplay и multi-place Experience.
 
 Production topology:
 
