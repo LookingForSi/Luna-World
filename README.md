@@ -53,6 +53,7 @@
 - [Design specification v0.1](docs/superpowers/specs/2026-09-13-luna-world-v0.1-design.md)
 - [M5 Party & Multiplayer Hardening — design](docs/superpowers/specs/2026-09-24-m5-party-multiplayer-hardening-design.md)
 - [M5 Party & Multiplayer Hardening — implementation plan](docs/superpowers/plans/2026-09-24-m5-party-multiplayer-hardening.md)
+- [Release 0.1.0](docs/releases/2026-09-27-0.1.0.md)
 - [Release 0.1.0-rc.1](docs/releases/2026-09-27-0.1.0-rc.1.md)
 - [Release 0.1.0-beta.1](docs/releases/2026-09-26-0.1.0-beta.1.md)
 - [Release 0.1.0-alpha.1](docs/releases/2026-09-22-0.1.0-alpha.1.md)
@@ -75,12 +76,12 @@ Git является source of truth для исходного кода и до�
 
 ## Статус
 
-Текущий release checkpoint: **0.1.0-rc.1**.
+Текущий release checkpoint: **0.1.0**.
 
-Приняты production multi-place architecture `Lobby → Moonfall World → отдельные Dungeon/Region Places`, Studio-only `DevCombined`, authored Moonfall и текущий mobile landscape baseline. `0.1.0-rc.1` фиксирует feature-complete vertical slice после полного solo walkthrough: M5 Party и M6 Ruins of Selene находятся в `main`, опубликованный Lobby → Moonfall → Ruins → Moonfall контур собран, а release-sanity polish ограничен исправлениями без расширения scope.
+Приняты production multi-place architecture `Lobby → Moonfall World → отдельные Dungeon/Region Places`, Studio-only `DevCombined`, authored Moonfall и текущий mobile landscape baseline. `0.1.0` фиксирует первый стабильный Vertical Slice: M0–M7 завершены, полный gameplay-контур Luna Village → Moonfall Valley → Ruins of Selene принят, а source/runtime baseline очищен от отключённого lake prototype и неиспользуемых client helpers.
 
 Функциональная база уже включает три архетипа и target-based PvE, open-world progression LV1–14, skills, XP/level-up, loot, inventory/equipment, persistence, Q1–Q7, open-world elites, деревенскую экономику, Character Lobby и responsive gameplay UI.
 
-Текущий этап — **M7 / 0.1.0 Release Candidate**: внешний mobile/multiplayer playtest, persistence regression и только release-blocker/sanity fixes. После чистого RC acceptance версия повышается до стабильной `0.1.0`. Полный visual world pass и системная балансировка mobs вынесены в v0.2, чтобы не раздувать scope первого vertical slice.
+Текущий этап — **post-v0.1 / подготовка v0.2**. Полный visual world pass, замена placeholder-моделей, дальнейшая работа с атмосферой и системная балансировка mobs вынесены в v0.2.
 
 Актуальный план: [Roadmap](docs/ROADMAP.md).
