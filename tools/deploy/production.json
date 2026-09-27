@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "universeId": "10767283011",
+  "places": [
+    {
+      "key": "ruins",
+      "name": "Ruins of Selene",
+      "placeId": "72524197323645",
+      "artifact": "dungeon-selene.rbxlx",
+      "project": "projects/dungeon-selene.project.json"
+    },
+    {
+      "key": "moonfall",
+      "name": "Moonfall World",
+      "placeId": "133570003635782",
+      "artifact": "moonfall.rbxlx",
+      "canonicalManifest": "deploy/canonical/moonfall.manifest.json"
+    },
+    {
+      "key": "lobby",
+      "name": "Lobby",
+      "placeId": "81197415020315",
+      "artifact": "lobby.rbxlx",
+      "project": "projects/lobby.project.json"
+    }
+  ]
+}

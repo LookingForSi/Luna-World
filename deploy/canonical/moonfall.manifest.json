@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "ready": false,
+  "artifact": "moonfall.rbxlx",
+  "sha256": null,
+  "sourcePlaceId": "133570003635782",
+  "gameVersion": "0.1.0",
+  "note": "Guard remains closed until the accepted authored Place is exported, reviewed, hashed, and committed."
+}
