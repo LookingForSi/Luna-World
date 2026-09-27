@@ -6,6 +6,22 @@
 
 ## [Unreleased]
 
+## [0.1.0-rc.1] - 2026-09-27
+
+Первый release candidate v0.1 после полного solo walkthrough опубликованного vertical slice.
+
+### Changed
+
+- Квестовые и dungeon-подсказки переведены в краткоживущие 12-секундные сообщения; актуальная цель Ruins of Selene дополнительно сохраняется в журнале как текущее состояние задания.
+- Ruins of Selene получили закрытый потолок и базовый тёплый свет от настенных светильников вместо открытой сверху greybox-коробки.
+
+### Fixed
+
+- Экранный указатель расстояния больше не использует нестабильный Unicode-глиф стрелки: вне экрана применяются безопасные ASCII-направления.
+- Production Ruins of Selene опущены на 100 studs ниже, чтобы исключить пересечение dungeon с surface terrain.
+- Dungeon guidance смещён ниже target HUD и больше не остаётся поверх полоски HP выбранной цели.
+- LV6 onboarding-подсказка кузнеца использует тот же 12-секундный transient policy и не занимает область target HUD.
+
 ## [0.1.0-beta.1] - 2026-09-26
 
 Первый beta checkpoint v0.1 Vertical Slice. Функциональный контур M0–M6 собран в `main`; локально приняты Party & Multiplayer Hardening и Ruins of Selene. Beta переводит проект из добавления обязательных систем в published multi-place acceptance, regression, внешний playtest и release-sanity polish.
