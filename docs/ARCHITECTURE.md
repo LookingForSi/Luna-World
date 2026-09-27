@@ -2,17 +2,18 @@
 
 ## 1. Текущий architectural baseline
 
-Архитектура `0.1.0-alpha.1` построена вокруг server-authoritative gameplay и multi-place Experience.
+Архитектура `0.1.0-rc.1` построена вокруг server-authoritative gameplay и multi-place Experience.
 
 Production topology:
 
 ```text
 Luna Experience
-├─ Lobby [Start Place]
+├─ Lobby [Start Place] — 81197415020315
 │    └─ server-authoritative transfer
-├─ Moonfall World
-│    └─ future region/dungeon transitions
-└─ Ruins of Selene [reserved Dungeon Place]
+├─ Moonfall World — 133570003635782
+│    └─ server-authoritative dungeon admission / return
+└─ Ruins of Selene — 72524197323645
+     └─ isolated Dungeon runtime
 ```
 
 Development topology:
@@ -237,7 +238,7 @@ Dev/authoring paths:
 
 Production `MoonfallWorldRuntime` принимает authored root с ожидаемыми authoring attributes/revision и обязательным `LunaVillageSpawn`.
 
-Отключённый Goblin/Cemetery lake не является частью accepted alpha world и не должен случайно возвращаться при bake.
+Goblin/Cemetery lake не входит в accepted v0.1 world: заброшенный prototype и его terrain-carving helpers удалены из generator tooling, а зона сохраняет принятый сухой baseline.
 
 Физический bake и visual/runtime acceptance реального Moonfall Place — owner-side deployment checkpoint.
 
@@ -265,26 +266,23 @@ Contract test требует синхронности этих значений.
 
 Persistent `DataVersion` изменяется отдельно только при изменении save schema.
 
-## 15. Что ещё не реализовано для 0.1.0
+## 15. Зафиксированный scope v0.1
 
-Текущая архитектура уже подготовлена, но продуктовые feature-модули ещё нужны для:
+В текущем baseline уже реализованы:
 
 - Party до 4 игроков;
-- party kill/XP/drop eligibility;
+- shared kill credit и простые XP/drop eligibility rules;
 - Ruins of Selene runtime/content;
-- dungeon session/reward lifecycle;
-- Selene's Fallen Guardian.
+- dungeon admission, handoff, wipe/checkpoint, reward и return lifecycle;
+- Selene's Fallen Guardian;
+- Character Lobby, persistence DataVersion 3 и multi-place transfer.
 
-Они должны встраиваться в существующие role/manifests и server-authoritative boundaries, а не возвращать монолитный manager.
+Следующий крупный этап не должен расширять v0.1 новыми системами. Visual asset pass, системная замена placeholder-моделей и дальнейшее насыщение мира относятся к v0.2.
 
 ## 16. Deployment state
 
-Repo-side architecture готова для test deployment, но numeric deployment mapping пока намеренно не заполнен до создания физических Roblox test Places.
+Numeric deployment mapping заполнен в `PlaceConfig` для Lobby, Moonfall World и Ruins of Selene. Production projects не содержат dev worldgen и fail-closed определяют runtime role по `GameId/PlaceId`.
 
 Актуальная процедура: `docs/MULTI_PLACE_DEPLOYMENT.md`.
 
-До published acceptance нельзя считать проверенными:
-
-- реальный Lobby → Moonfall teleport;
-- physical authored Moonfall bake;
-- multi-client published rejoin/transfer.
+Опубликованный Lobby → Moonfall transition уже проходил acceptance на реальном Roblox-клиенте. Финальный deployment checkpoint перед публичным stable rollout — опубликовать текущие Moonfall/Dungeon builds и пройти полный published-client путь Lobby → Moonfall → Ruins → Moonfall, включая multiplayer smoke.
